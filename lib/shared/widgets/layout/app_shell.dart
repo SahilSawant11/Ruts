@@ -12,11 +12,13 @@ class AppShell extends StatelessWidget {
     required this.moduleTitle,
     required this.moduleShortcutLabel,
     required this.body,
-  });
+    String? statusModuleName,
+  }) : statusModuleName = statusModuleName ?? moduleTitle;
 
   final String moduleTitle;
   final String moduleShortcutLabel;
   final Widget body;
+  final String statusModuleName;
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +34,7 @@ class AppShell extends StatelessWidget {
                   moduleShortcutLabel: moduleShortcutLabel,
                 ),
                 Expanded(child: body),
-                const AppStatusBar(),
+                AppStatusBar(moduleName: statusModuleName),
               ],
             ),
           ),

@@ -6,7 +6,9 @@ import '../../../core/theme/app_typography.dart';
 /// Thin dark strip fixed to the bottom of the app shell with session
 /// info on the left and quick shortcut hints on the right.
 class AppStatusBar extends StatelessWidget {
-  const AppStatusBar({super.key});
+  const AppStatusBar({super.key, required this.moduleName});
+
+  final String moduleName;
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +23,7 @@ class AppStatusBar extends StatelessWidget {
           const SizedBox(width: 6),
           Text('admin · online', style: muted),
           const SizedBox(width: AppSpacing.md),
-          Text('Module: Sale', style: muted),
+          Text('Module: $moduleName', style: muted),
           const SizedBox(width: AppSpacing.md),
           const Icon(Icons.calendar_today_outlined, size: 12, color: AppColors.shellTextMuted),
           const SizedBox(width: 5),

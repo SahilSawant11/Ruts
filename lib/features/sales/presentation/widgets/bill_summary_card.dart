@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
+import '../cart_controller.dart';
 
 /// Right-column summary card: line-by-line totals with the grand
-/// total called out in a dark highlight band, per the reference design.
-class BillSummaryCard extends StatelessWidget {
+/// total called out in a dark highlight band. All figures are derived
+/// live from the cart — nothing here is hardcoded.
+class BillSummaryCard extends ConsumerWidget {
   const BillSummaryCard({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cart = ref.watch(cartControllerProvider);
+
+    String money(double v) => v.toStringAsFixed(0);
+
     return AppCard(
       padding: EdgeInsets.zero,
       child: Column(
@@ -23,11 +30,11 @@ class BillSummaryCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
             child: Column(
-              children: const [
-                _SummaryRow(label: 'Total Qty', value: '24'),
-                _SummaryRow(label: 'Taxable Value', value: '3,240'),
-                _SummaryRow(label: 'Total Discount', value: '0'),
-                _SummaryRow(label: 'Total Tax', value: '162'),
+              children: [
+                _SummaryRow(label: 'Total Qty', value: '${cart.totalQty}'),
+                _SummaryRow(label: 'Taxable Value', value: money(cart.taxableValue)),
+                _SummaryRow(label: 'Total Discount', value: money(cart.totalDiscount)),
+                _SummaryRow(label: 'Total Tax', value: money(cart.totalTax)),
               ],
             ),
           ),
@@ -41,8 +48,7 @@ class BillSummaryCard extends StatelessWidget {
               children: [
                 Text('Total Amount',
                     style: AppTypography.body.copyWith(color: Colors.white, fontWeight: FontWeight.w600)),
-                Text('3,402',
-                    style: AppTypography.h2.copyWith(color: Colors.white)),
+                Text(money(cart.totalAmount), style: AppTypography.h2.copyWith(color: Colors.white)),
               ],
             ),
           ),
@@ -52,7 +58,7 @@ class BillSummaryCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('Balance Due', style: AppTypography.bodyMuted),
-                Text('3,402',
+                Text(money(cart.totalAmount),
                     style: AppTypography.body.copyWith(color: AppColors.danger, fontWeight: FontWeight.w700)),
               ],
             ),

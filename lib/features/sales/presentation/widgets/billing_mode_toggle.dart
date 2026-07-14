@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../sales_providers.dart';
 
 /// F2 Purchase Bill / F3 Sales Bill segmented toggle shown just under
-/// the screen title.
-class BillingModeToggle extends ConsumerWidget {
+/// the screen title on both the Purchase and Sales screens. Selection
+/// follows the current route and tapping navigates to the other one.
+class BillingModeToggle extends StatelessWidget {
   const BillingModeToggle({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final mode = ref.watch(billingModeProvider);
+  Widget build(BuildContext context) {
+    final location = GoRouterState.of(context).uri.toString();
+    final isSale = location == '/sales';
 
     return Container(
       padding: const EdgeInsets.all(4),
@@ -25,20 +26,16 @@ class BillingModeToggle extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           _segment(
-            context: context,
-            ref: ref,
             label: 'Purchase Bill',
             shortcut: 'F2',
-            selected: mode == BillingMode.purchase,
-            onTap: () => ref.read(billingModeProvider.notifier).state = BillingMode.purchase,
+            selected: !isSale,
+            onTap: () => context.go('/purchase'),
           ),
           _segment(
-            context: context,
-            ref: ref,
             label: 'Sales Bill',
             shortcut: 'F3',
-            selected: mode == BillingMode.sale,
-            onTap: () => ref.read(billingModeProvider.notifier).state = BillingMode.sale,
+            selected: isSale,
+            onTap: () => context.go('/sales'),
           ),
         ],
       ),
@@ -46,8 +43,6 @@ class BillingModeToggle extends ConsumerWidget {
   }
 
   Widget _segment({
-    required BuildContext context,
-    required WidgetRef ref,
     required String label,
     required String shortcut,
     required bool selected,

@@ -1,34 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
 import '../../domain/sale_line_item.dart';
+import '../cart_controller.dart';
 
-/// "Item Details" table: one row per scanned product. Dummy data only —
-/// wiring to Drift + a real Add-line flow comes in a later pass.
-class ItemDetailsTable extends StatelessWidget {
+/// "Item Details" table: one row per scanned product, sourced live from
+/// [cartControllerProvider]. Empty-state prompts the user toward the
+/// barcode field above instead of showing a bare table.
+class ItemDetailsTable extends ConsumerWidget {
   const ItemDetailsTable({super.key});
 
-  static const _headers = [
-    '#',
-    'BARCODE',
-    'TYPE',
-    'MATERIAL',
-    'BATCH',
-    'PACK',
-    'QTY',
-    'RATE',
-    'DIS',
-    'TAX',
-    'AMOUNT',
-    '',
-  ];
-
   @override
-  Widget build(BuildContext context) {
-    final items = SaleLineItem.dummy();
-    final totalQty = items.fold<int>(0, (a, b) => a + b.qty);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cart = ref.watch(cartControllerProvider);
+    final items = cart.items;
 
     return AppCard(
       padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.sm),
@@ -37,20 +25,37 @@ class ItemDetailsTable extends StatelessWidget {
         children: [
           SectionHeader(
             title: 'Item Details',
-            subtitle: '${items.length} line · $totalQty units',
+            subtitle: items.isEmpty ? 'No items yet' : '${items.length} line · ${cart.totalQty} units',
           ),
           const SizedBox(height: AppSpacing.sm),
-          _headerRow(),
-          const Divider(height: 1, color: AppColors.border),
-          for (final item in items) _dataRow(item),
-          const SizedBox(height: AppSpacing.xs),
-          _addLineButton(),
+          if (items.isEmpty)
+            _emptyState()
+          else ...[
+            _headerRow(),
+            const Divider(height: 1, color: AppColors.border),
+            for (var i = 0; i < items.length; i++) _dataRow(context, ref, i, items[i]),
+          ],
           const SizedBox(height: AppSpacing.xs),
           Text(
-            'Enter adds a new line · F10 deletes the highlighted line',
+            'Scan a barcode above to add a line · click the trash icon to remove one',
             style: AppTypography.caption,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _emptyState() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+      child: Center(
+        child: Column(
+          children: [
+            const Icon(Icons.qr_code_scanner_rounded, size: 28, color: AppColors.textMuted),
+            const SizedBox(height: AppSpacing.xs),
+            Text('Scan or type a barcode to start this bill', style: AppTypography.bodyMuted),
+          ],
+        ),
       ),
     );
   }
@@ -77,7 +82,7 @@ class ItemDetailsTable extends StatelessWidget {
     );
   }
 
-  Widget _dataRow(SaleLineItem item) {
+  Widget _dataRow(BuildContext context, WidgetRef ref, int index, SaleLineItem item) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
@@ -90,17 +95,20 @@ class ItemDetailsTable extends StatelessWidget {
           _cell(item.pack, flex: 1),
           _cell('${item.qty}', flex: 1, alignEnd: true),
           _cell(item.rate.toStringAsFixed(0), flex: 1, alignEnd: true),
-          _cell(item.discount.toStringAsFixed(0), flex: 1, alignEnd: true),
-          _cell(item.tax.toStringAsFixed(0), flex: 1, alignEnd: true),
+          _cell(item.discountAmount.toStringAsFixed(0), flex: 1, alignEnd: true),
+          _cell(item.taxAmount.toStringAsFixed(0), flex: 1, alignEnd: true),
           _cell(item.amount.toStringAsFixed(0), flex: 2, alignEnd: true, bold: true),
           Expanded(
             flex: 1,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
-              children: const [
-                Icon(Icons.check_circle_rounded, size: 17, color: AppColors.success),
-                SizedBox(width: 8),
-                Icon(Icons.delete_outline_rounded, size: 17, color: AppColors.danger),
+              children: [
+                const Icon(Icons.check_circle_rounded, size: 17, color: AppColors.success),
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: () => ref.read(cartControllerProvider.notifier).removeAt(index),
+                  child: const Icon(Icons.delete_outline_rounded, size: 17, color: AppColors.danger),
+                ),
               ],
             ),
           ),
@@ -119,24 +127,6 @@ class ItemDetailsTable extends StatelessWidget {
         style: header
             ? AppTypography.label
             : AppTypography.body.copyWith(fontWeight: bold ? FontWeight.w700 : FontWeight.w500),
-      ),
-    );
-  }
-
-  Widget _addLineButton() {
-    return InkWell(
-      onTap: () {},
-      borderRadius: BorderRadius.circular(AppRadius.sm),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.add_circle_outline_rounded, size: 16, color: AppColors.primary),
-            SizedBox(width: 6),
-            Text('Add line', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 13)),
-          ],
-        ),
       ),
     );
   }

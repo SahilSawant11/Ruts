@@ -38,6 +38,12 @@ class AppColors {
   static const Color shellBorder = Color(0xFF2A2A38);
   static const Color shellTextMuted = Color(0xFF9494A6);
 
+  // Chart accents
+  static const Color chartIndigo = Color(0xFF6366F1);
+  static const Color chartBlue = Color(0xFF0EA5E9);
+  static const Color chartTeal = Color(0xFF14B8A6);
+  static const Color chartAmber = Color(0xFFF59E0B);
+
   // Highlight for totals
   static const Color totalDark = Color(0xFF15151F);
 }
