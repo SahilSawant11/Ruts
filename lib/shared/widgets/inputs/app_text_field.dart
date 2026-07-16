@@ -15,6 +15,7 @@ class AppTextField extends StatelessWidget {
     this.enabled = true,
     this.suffix,
     this.readOnly = false,
+    this.onChanged,
   });
 
   final String label;
@@ -23,6 +24,7 @@ class AppTextField extends StatelessWidget {
   final bool enabled;
   final Widget? suffix;
   final bool readOnly;
+  final ValueChanged<String>? onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +37,7 @@ class AppTextField extends StatelessWidget {
           controller: controller,
           enabled: enabled,
           readOnly: readOnly,
+          onChanged: onChanged,
           style: AppTypography.body,
           decoration: InputDecoration(
             hintText: hint,

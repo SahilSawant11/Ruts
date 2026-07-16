@@ -4,6 +4,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/layout/app_shell.dart';
 import '../widgets/inventory_filters_card.dart';
 import '../widgets/inventory_kpi_row.dart';
+import '../widgets/live_stock_table.dart';
 import '../widgets/sku_category_card.dart';
 import '../widgets/stock_health_card.dart';
 import '../widgets/stock_reorder_card.dart';
@@ -24,6 +25,8 @@ class InventoryScreen extends StatelessWidget {
             Text('Inventory', style: AppTypography.h1),
             const SizedBox(height: 4),
             Text('Stock levels, reorder points, and category breakdown.', style: AppTypography.bodyMuted),
+            const SizedBox(height: AppSpacing.lg),
+            const LiveStockTable(),
             const SizedBox(height: AppSpacing.lg),
             const InventoryKpiRow(),
             const SizedBox(height: AppSpacing.lg),
