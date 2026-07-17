@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
-import '../../../../shared/widgets/layout/app_shell.dart';
 import '../widgets/daily_sale_report_table.dart';
 import '../widgets/report_filters_card.dart';
 import '../widgets/report_kpi_row.dart';
@@ -20,10 +19,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AppShell(
-      moduleTitle: 'Reports',
-      moduleShortcutLabel: 'Analysis',
-      body: SingleChildScrollView(
+    return SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -55,7 +51,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
             const DailySaleReportTable(),
           ],
         ),
-      ),
-    );
+      );
   }
 }

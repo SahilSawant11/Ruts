@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
-import '../../../../shared/widgets/layout/app_shell.dart';
 import '../../../sales/presentation/widgets/billing_mode_toggle.dart';
 import '../widgets/bill_details_card.dart';
 import '../widgets/extra_charges_totals_card.dart';
@@ -22,11 +21,7 @@ class PurchaseBillScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppShell(
-      moduleTitle: 'Purchase',
-      moduleShortcutLabel: 'F2 · Purchase Bill',
-      statusModuleName: 'Purchase',
-      body: SingleChildScrollView(
+    return SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -42,8 +37,7 @@ class PurchaseBillScreen extends StatelessWidget {
             ExtraChargesTotalsCard(),
           ],
         ),
-      ),
-    );
+      );
   }
 }
 

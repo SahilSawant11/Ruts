@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/badges/status_chip.dart';
-import '../../../../shared/widgets/layout/app_shell.dart';
 import '../widgets/material_details_card.dart';
 import '../widgets/packing_rate_table.dart';
 
@@ -11,11 +10,7 @@ class MaterialMasterScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppShell(
-      moduleTitle: 'Material',
-      moduleShortcutLabel: 'Master · Material',
-      statusModuleName: 'Material',
-      body: SingleChildScrollView(
+    return SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -27,8 +22,7 @@ class MaterialMasterScreen extends StatelessWidget {
             PackingRateTable(),
           ],
         ),
-      ),
-    );
+      );
   }
 }
 

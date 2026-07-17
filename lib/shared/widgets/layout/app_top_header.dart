@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
-import '../badges/keyboard_shortcut_badge.dart';
 import '../badges/status_chip.dart';
 import '../inputs/search_field.dart';
+import 'sidebar_state.dart';
 
-/// Top bar shown on every screen: hamburger, current module title + its
-/// shortcut, global search, online/weather/date chips, quick icon
-/// actions and the signed-in user.
-class AppTopHeader extends StatelessWidget {
+/// Top bar shown on every screen: hamburger (toggles sidebar collapse),
+/// current module title + its shortcut, global search, online/weather/
+/// date chips, quick icon actions and the signed-in user.
+class AppTopHeader extends ConsumerWidget {
   const AppTopHeader({
     super.key,
     required this.moduleTitle,
@@ -20,7 +21,7 @@ class AppTopHeader extends StatelessWidget {
   final String moduleShortcutLabel;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       height: 64,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
@@ -30,8 +31,16 @@ class AppTopHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.menu_rounded, color: AppColors.textSecondary),
-          const SizedBox(width: AppSpacing.md),
+          InkWell(
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            onTap: () => ref.read(sidebarCollapsedProvider.notifier).state =
+                !ref.read(sidebarCollapsedProvider),
+            child: const Padding(
+              padding: EdgeInsets.all(6),
+              child: Icon(Icons.menu_rounded, color: AppColors.textSecondary),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
           Text(moduleTitle, style: AppTypography.h2),
           const SizedBox(width: AppSpacing.xs),
           _pillBadge(moduleShortcutLabel),

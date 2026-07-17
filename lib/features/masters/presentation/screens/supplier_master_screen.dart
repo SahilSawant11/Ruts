@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/badges/status_chip.dart';
-import '../../../../shared/widgets/layout/app_shell.dart';
 import '../widgets/supplier_form_card.dart';
 
 class SupplierMasterScreen extends StatelessWidget {
@@ -10,11 +9,7 @@ class SupplierMasterScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppShell(
-      moduleTitle: 'Supplier',
-      moduleShortcutLabel: 'Master · Supplier',
-      statusModuleName: 'Supplier',
-      body: SingleChildScrollView(
+    return SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -24,8 +19,7 @@ class SupplierMasterScreen extends StatelessWidget {
             SupplierFormCard(),
           ],
         ),
-      ),
-    );
+      );
   }
 }
 

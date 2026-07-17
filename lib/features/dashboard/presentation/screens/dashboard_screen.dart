@@ -3,7 +3,6 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
-import '../../../../shared/widgets/layout/app_shell.dart';
 import '../widgets/category_sales_card.dart';
 import '../widgets/daily_target_card.dart';
 import '../widgets/kpi_row.dart';
@@ -30,10 +29,7 @@ class DashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppShell(
-      moduleTitle: 'Dashboard',
-      moduleShortcutLabel: 'Home',
-      body: SingleChildScrollView(
+    return SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -50,8 +46,7 @@ class DashboardScreen extends StatelessWidget {
             StockAlertsCard(),
           ],
         ),
-      ),
-    );
+      );
   }
 }
 

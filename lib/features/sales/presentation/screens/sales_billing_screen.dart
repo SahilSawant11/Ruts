@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
-import '../../../../shared/widgets/layout/app_shell.dart';
 import '../widgets/bill_summary_card.dart';
 import '../widgets/billing_mode_toggle.dart';
 import '../widgets/invoice_details_card.dart';
@@ -31,10 +30,7 @@ class SalesBillingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppShell(
-      moduleTitle: 'Sale',
-      moduleShortcutLabel: 'F3 · Sales Bill',
-      body: SingleChildScrollView(
+    return SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,8 +68,7 @@ class SalesBillingScreen extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 }
 
