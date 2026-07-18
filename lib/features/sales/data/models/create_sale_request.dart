@@ -39,12 +39,14 @@ class CreateSaleRequest {
 /// Mirrors `CreateSaleLineItemRequest` on the API exactly.
 class CreateSaleLineItemRequest {
   const CreateSaleLineItemRequest({
+    this.materialId,
     required this.barcodeNo,
     required this.materialType,
     required this.materialName,
     this.batchNo,
     this.packing,
     required this.quantity,
+    this.qtyCase = 0,
     required this.rate,
     required this.discountPercent,
     required this.discountAmount,
@@ -53,12 +55,14 @@ class CreateSaleLineItemRequest {
     required this.amount,
   });
 
+  final String? materialId;
   final String barcodeNo;
   final String materialType;
   final String materialName;
   final String? batchNo;
   final String? packing;
   final int quantity;
+  final int qtyCase;
   final double rate;
   final double discountPercent;
   final double discountAmount;
@@ -67,12 +71,14 @@ class CreateSaleLineItemRequest {
   final double amount;
 
   Map<String, dynamic> toJson() => {
+        'materialId': materialId,
         'barcodeNo': barcodeNo,
         'materialType': materialType,
         'materialName': materialName,
         'batchNo': batchNo,
         'packing': packing,
         'quantity': quantity,
+        'qtyCase': qtyCase,
         'rate': rate,
         'discountPercent': discountPercent,
         'discountAmount': discountAmount,

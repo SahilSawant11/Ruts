@@ -55,12 +55,14 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
         balanceDue: cart.totalAmount,
         lineItems: cart.items
             .map((i) => CreateSaleLineItemRequest(
+                  materialId: i.materialId,
                   barcodeNo: i.barcode,
                   materialType: i.type,
                   materialName: i.material,
                   batchNo: i.batch,
                   packing: i.pack,
                   quantity: i.qty,
+                  qtyCase: 0,
                   rate: i.rate,
                   discountPercent: i.discountPercent,
                   discountAmount: i.discountAmount,

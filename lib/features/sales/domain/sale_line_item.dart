@@ -6,6 +6,7 @@ import '../data/models/material_dto.dart';
 class SaleLineItem {
   const SaleLineItem({
     required this.index,
+    required this.materialId,
     required this.barcode,
     required this.type,
     required this.material,
@@ -18,6 +19,7 @@ class SaleLineItem {
   });
 
   final int index;
+  final String materialId;
   final String barcode;
   final String type;
   final String material;
@@ -46,6 +48,7 @@ class SaleLineItem {
   }) {
     return SaleLineItem(
       index: index,
+      materialId: material.id,
       barcode: material.barcode,
       type: material.category,
       material: material.name,
@@ -61,6 +64,7 @@ class SaleLineItem {
   SaleLineItem copyWith({int? index, int? qty}) {
     return SaleLineItem(
       index: index ?? this.index,
+      materialId: materialId,
       barcode: barcode,
       type: type,
       material: material,

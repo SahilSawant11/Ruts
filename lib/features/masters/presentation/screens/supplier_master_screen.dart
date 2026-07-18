@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/badges/status_chip.dart';
+import '../../data/masters_providers.dart';
 import '../widgets/supplier_form_card.dart';
 
 class SupplierMasterScreen extends StatelessWidget {
@@ -10,24 +12,26 @@ class SupplierMasterScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            _ScreenHeader(),
-            SizedBox(height: AppSpacing.lg),
-            SupplierFormCard(),
-          ],
-        ),
-      );
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          _ScreenHeader(),
+          SizedBox(height: AppSpacing.lg),
+          SupplierFormCard(),
+        ],
+      ),
+    );
   }
 }
 
-class _ScreenHeader extends StatelessWidget {
+class _ScreenHeader extends ConsumerWidget {
   const _ScreenHeader();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final suppliersAsync = ref.watch(suppliersListProvider);
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -41,7 +45,11 @@ class _ScreenHeader extends StatelessWidget {
             ],
           ),
         ),
-        const StatusChip(label: '142 suppliers'),
+        suppliersAsync.when(
+          loading: () => const StatusChip(label: 'Loading…', tone: StatusChipTone.neutral),
+          error: (_, __) => const StatusChip(label: 'Could not load', tone: StatusChipTone.neutral),
+          data: (suppliers) => StatusChip(label: '${suppliers.length} supplier${suppliers.length == 1 ? '' : 's'}'),
+        ),
       ],
     );
   }
