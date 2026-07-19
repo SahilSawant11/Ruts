@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/badges/status_chip.dart';
-import '../widgets/material_details_card.dart';
-import '../widgets/packing_rate_table.dart';
+import '../../data/masters_providers.dart';
+import '../widgets/material_form_card.dart';
 
 class MaterialMasterScreen extends StatelessWidget {
   const MaterialMasterScreen({super.key});
@@ -11,26 +12,26 @@ class MaterialMasterScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            _ScreenHeader(),
-            SizedBox(height: AppSpacing.lg),
-            MaterialDetailsCard(),
-            SizedBox(height: AppSpacing.lg),
-            PackingRateTable(),
-          ],
-        ),
-      );
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          _ScreenHeader(),
+          SizedBox(height: AppSpacing.lg),
+          MaterialFormCard(),
+        ],
+      ),
+    );
   }
 }
 
-class _ScreenHeader extends StatelessWidget {
+class _ScreenHeader extends ConsumerWidget {
   const _ScreenHeader();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final materialsAsync = ref.watch(materialsListProvider);
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -38,13 +39,17 @@ class _ScreenHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('New Material Entry', style: AppTypography.h1),
+              Text('Material Master', style: AppTypography.h1),
               const SizedBox(height: 4),
-              Text('Material master with multi-packing rate list.', style: AppTypography.bodyMuted),
+              Text('Real catalog, keyed by Local Item Code.', style: AppTypography.bodyMuted),
             ],
           ),
         ),
-        const StatusChip(label: 'GST integrated pricing', tone: StatusChipTone.neutral),
+        materialsAsync.when(
+          loading: () => const StatusChip(label: 'Loading…', tone: StatusChipTone.neutral),
+          error: (_, __) => const StatusChip(label: 'Could not load', tone: StatusChipTone.neutral),
+          data: (materials) => StatusChip(label: '${materials.length} material${materials.length == 1 ? '' : 's'}'),
+        ),
       ],
     );
   }

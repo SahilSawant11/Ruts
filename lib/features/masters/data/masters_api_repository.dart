@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../core/network/api_config.dart';
 import '../../../core/network/api_exception.dart';
+import '../../sales/data/models/material_dto.dart';
+import 'models/save_material_request.dart';
 import 'models/save_supplier_request.dart';
 import 'models/supplier_dto.dart';
 
@@ -26,6 +28,22 @@ class MastersApiRepository {
   Future<SupplierDto> updateSupplier(String id, SaveSupplierRequest request) async {
     final response = await _put('/api/suppliers/$id', request.toJson());
     return SupplierDto.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+  }
+
+  Future<List<MaterialDto>> getMaterials() async {
+    final response = await _get('/api/materials');
+    final list = jsonDecode(response.body) as List<dynamic>;
+    return list.map((e) => MaterialDto.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<MaterialDto> createMaterial(SaveMaterialRequest request) async {
+    final response = await _post('/api/materials', request.toJson());
+    return MaterialDto.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+  }
+
+  Future<MaterialDto> updateMaterial(String id, SaveMaterialRequest request) async {
+    final response = await _put('/api/materials/$id', request.toJson());
+    return MaterialDto.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
   }
 
   Future<http.Response> _get(String path) async {
