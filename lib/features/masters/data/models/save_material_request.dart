@@ -4,6 +4,7 @@
 class SaveMaterialRequest {
   const SaveMaterialRequest({
     required this.id,
+    this.barcode,
     required this.name,
     required this.category,
     required this.packing,
@@ -12,6 +13,11 @@ class SaveMaterialRequest {
   });
 
   final String id;
+
+  /// The real scannable barcode, if this item has one — distinct from
+  /// [id] (the internal Local Item Code). Left blank, the server falls
+  /// back to using the item code as the barcode too.
+  final String? barcode;
   final String name;
   final String category;
   final String packing;
@@ -20,6 +26,7 @@ class SaveMaterialRequest {
 
   Map<String, dynamic> toJson() => {
         'id': id,
+        'barcode': barcode,
         'name': name,
         'category': category,
         'packing': packing,

@@ -5,6 +5,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/badges/status_chip.dart';
 import '../../data/masters_providers.dart';
 import '../widgets/material_form_card.dart';
+import '../widgets/materials_table.dart';
 
 class MaterialMasterScreen extends StatelessWidget {
   const MaterialMasterScreen({super.key});
@@ -17,6 +18,8 @@ class MaterialMasterScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: const [
           _ScreenHeader(),
+          SizedBox(height: AppSpacing.lg),
+          MaterialsTable(),
           SizedBox(height: AppSpacing.lg),
           MaterialFormCard(),
         ],

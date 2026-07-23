@@ -29,6 +29,7 @@ class MaterialFormCard extends ConsumerStatefulWidget {
 
 class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
   final _id = TextEditingController();
+  final _barcode = TextEditingController();
   final _name = TextEditingController();
   final _packing = TextEditingController();
   final _saleRate = TextEditingController();
@@ -41,6 +42,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
   @override
   void dispose() {
     _id.dispose();
+    _barcode.dispose();
     _name.dispose();
     _packing.dispose();
     _saleRate.dispose();
@@ -50,6 +52,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
 
   void _populateFrom(MaterialDto? material) {
     _id.text = material?.id ?? '';
+    _barcode.text = material?.barcode ?? '';
     _name.text = material?.name ?? '';
     _packing.text = material?.packing ?? '';
     _saleRate.text = material != null ? material.saleRate.toString() : '0';
@@ -73,6 +76,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
     try {
       final request = SaveMaterialRequest(
         id: _id.text.trim(),
+        barcode: _barcode.text.trim().isEmpty ? null : _barcode.text.trim(),
         name: _name.text.trim(),
         category: _category,
         packing: _packing.text.trim(),
@@ -167,10 +171,20 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
+                    flex: 3,
+                    child: AppTextField(label: 'BARCODE', controller: _barcode, enabled: editable, hint: 'Same as item code if blank'),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
                     flex: 5,
                     child: AppTextField(label: 'NAME *', controller: _name, enabled: editable),
                   ),
-                  const SizedBox(width: AppSpacing.md),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Expanded(
                     flex: 3,
                     child: editable
@@ -183,12 +197,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
                           )
                         : AppTextField(label: 'CATEGORY', hint: _category, enabled: false),
                   ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(flex: 3, child: AppTextField(label: 'PACKING', controller: _packing, enabled: editable)),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(flex: 2, child: AppTextField(label: 'SALE RATE (₹)', controller: _saleRate, enabled: editable)),

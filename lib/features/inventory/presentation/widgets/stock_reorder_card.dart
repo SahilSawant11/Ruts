@@ -1,34 +1,72 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/charts/reorder_bar_chart.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
+import '../../data/inventory_providers.dart';
+import '../../data/models/inventory_overview_item.dart';
 
-class StockReorderCard extends StatelessWidget {
+class StockReorderCard extends ConsumerWidget {
   const StockReorderCard({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final overviewAsync = ref.watch(inventoryOverviewProvider);
+
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SectionHeader(
             title: 'Stock Level vs Reorder',
-            subtitle: 'Top SKUs closest to their reorder threshold',
+            subtitle: 'Materials closest to (or below) their reorder threshold',
           ),
           const SizedBox(height: 12),
-          const ReorderBarChart(
-            data: [
-              ReorderBarData(label: 'London Pilsener 500ml', value: 12, color: AppColors.danger),
-              ReorderBarData(label: 'Kingfisher Strong 650ml', value: 18, color: AppColors.warning),
-              ReorderBarData(label: 'Budweiser Magnum', value: 24, color: AppColors.warning),
-              ReorderBarData(label: 'Carlsberg Smooth', value: 45, color: AppColors.success),
-              ReorderBarData(label: 'Jack Daniels 750ml', value: 8, color: AppColors.danger),
-              ReorderBarData(label: 'Absolut Vodka 1L', value: 52, color: AppColors.success),
-            ],
+          overviewAsync.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            ),
+            error: (_, __) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+              child: Center(child: Text('Could not load stock data.', style: AppTypography.bodyMuted)),
+            ),
+            data: (items) {
+              if (items.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                  child: Center(child: Text('No materials yet.', style: AppTypography.bodyMuted)),
+                );
+              }
+
+              // Sort by how far below/above reorder level each item is —
+              // most at-risk (lowest qty relative to its threshold) first.
+              final sorted = [...items]
+                ..sort((a, b) => (a.qtyOnHand - a.reorderLevel).compareTo(b.qtyOnHand - b.reorderLevel));
+              final topSix = sorted.take(6).toList();
+
+              return ReorderBarChart(
+                data: [
+                  for (final item in topSix)
+                    ReorderBarData(
+                      label: item.name,
+                      value: item.qtyOnHand,
+                      color: _colorFor(item),
+                    ),
+                ],
+              );
+            },
           ),
         ],
       ),
     );
+  }
+
+  Color _colorFor(InventoryOverviewItem item) {
+    if (item.isOutOfStock) return AppColors.danger;
+    if (item.isLowStock) return AppColors.warning;
+    return AppColors.success;
   }
 }
