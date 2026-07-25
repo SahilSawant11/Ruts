@@ -1,71 +1,66 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../../../../shared/widgets/badges/tag_pill.dart';
-import '../../../../shared/widgets/buttons/named_buttons.dart';
+import '../../../../shared/widgets/data/info_list_tile.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
+import '../../data/dashboard_providers.dart';
+import '../../data/models/dashboard_summary_dto.dart';
 
-class RecentTransactionsCard extends StatelessWidget {
+class RecentTransactionsCard extends ConsumerWidget {
   const RecentTransactionsCard({super.key});
 
-  static const _rows = [
-    ('223118', '14:52', 'Counter Sale', '₹1,350', TagPillTone.success, 'Paid'),
-    ('223117', '14:48', 'Walk-in Credit', '₹2,040', TagPillTone.amber, 'Credit'),
-    ('223116', '14:41', 'Counter Sale', '₹680', TagPillTone.success, 'Paid'),
-    ('223115', '14:35', 'CounterSale.Sale', '₹3,402', TagPillTone.success, 'Paid'),
-  ];
+  String _fmt(DateTime d) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${d.day.toString().padLeft(2, '0')}-${months[d.month - 1]}';
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final summaryAsync = ref.watch(dashboardSummaryProvider);
+
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeader(
-            title: 'Recent Transactions',
-            subtitle: 'Live',
-            trailing: SecondaryButton(label: 'View all', onPressed: () {}, dense: true),
+          const SectionHeader(title: 'Recent Transactions'),
+          const SizedBox(height: 4),
+          summaryAsync.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            ),
+            error: (_, __) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+              child: Center(child: Text('Could not load transactions.', style: AppTypography.bodyMuted)),
+            ),
+            data: (summary) {
+              if (summary.recentTransactions.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                  child: Center(child: Text('No transactions yet.', style: AppTypography.bodyMuted)),
+                );
+              }
+              return Column(
+                children: [
+                  for (final tx in summary.recentTransactions) _row(tx),
+                ],
+              );
+            },
           ),
-          const SizedBox(height: AppSpacing.sm),
-          _headerRow(),
-          const Divider(height: 1, color: AppColors.border),
-          for (final row in _rows) _dataRow(row),
         ],
       ),
     );
   }
 
-  Widget _headerRow() {
+  Widget _row(RecentTransactionDto tx) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Expanded(flex: 2, child: Text('BILL', style: AppTypography.label)),
-          Expanded(flex: 2, child: Text('TIME', style: AppTypography.label)),
-          Expanded(flex: 3, child: Text('CUSTOMER', style: AppTypography.label)),
-          Expanded(flex: 2, child: Text('AMOUNT', style: AppTypography.label, textAlign: TextAlign.right)),
-          Expanded(flex: 2, child: Text('STATUS', style: AppTypography.label)),
-        ],
-      ),
-    );
-  }
-
-  Widget _dataRow((String, String, String, String, TagPillTone, String) row) {
-    final (bill, time, customer, amount, tone, status) = row;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 9),
-      child: Row(
-        children: [
-          Expanded(flex: 2, child: Text(bill, style: AppTypography.body.copyWith(fontWeight: FontWeight.w600))),
-          Expanded(flex: 2, child: Text(time, style: AppTypography.bodyMuted)),
-          Expanded(flex: 3, child: Text(customer, style: AppTypography.body, overflow: TextOverflow.ellipsis)),
-          Expanded(
-            flex: 2,
-            child: Text(amount, textAlign: TextAlign.right, style: AppTypography.mono.copyWith(fontSize: 12.5)),
-          ),
-          Expanded(flex: 2, child: TagPill(label: status, tone: tone)),
-        ],
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+      child: InfoListTile(
+        icon: Icons.receipt_outlined,
+        title: tx.billNo,
+        subtitle: '${tx.customerName} · ${_fmt(tx.billDate)} · ${tx.payMode}',
+        trailing: '₹${tx.totalAmount.toStringAsFixed(0)}',
       ),
     );
   }

@@ -1,55 +1,75 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import '../../../../core/theme/app_colors.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../../../../shared/widgets/buttons/named_buttons.dart';
+import '../../../../shared/widgets/badges/tag_pill.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
+import '../../../inventory/data/inventory_providers.dart';
+import '../../../inventory/data/models/inventory_overview_item.dart';
 
-class StockAlertsCard extends StatelessWidget {
+/// Reuses inventoryOverviewProvider from the Inventory feature rather
+/// than duplicating the low/out-of-stock logic here — same source of
+/// truth as the Inventory screen's own KPIs.
+class StockAlertsCard extends ConsumerWidget {
   const StockAlertsCard({super.key});
 
-  static const _alerts = [
-    ('Royal Stag Classic Whisky', '750ml · reorder at 50', '12', true),
-    ("McDowell's No.1 Rum", '750ml · reorder at 40', '31', false),
-    ('Absolut Vodka', '700ml · reorder at 25', '6', true),
-  ];
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final overviewAsync = ref.watch(inventoryOverviewProvider);
+
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeader(
-            title: 'Stock Alerts',
-            subtitle: 'Below reorder level',
-            trailing: SecondaryButton(
-              label: 'Open Stock',
-              dense: true,
-              onPressed: () => context.go('/inventory'),
+          const SectionHeader(title: 'Stock Alerts'),
+          const SizedBox(height: 4),
+          overviewAsync.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
             ),
+            error: (_, __) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+              child: Center(child: Text('Could not load stock.', style: AppTypography.bodyMuted)),
+            ),
+            data: (items) {
+              final atRisk = items.where((i) => i.isLowStock || i.isOutOfStock).toList()
+                ..sort((a, b) => a.qtyOnHand.compareTo(b.qtyOnHand));
+
+              if (atRisk.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                  child: Center(child: Text('Everything is well-stocked.', style: AppTypography.bodyMuted)),
+                );
+              }
+              return Column(
+                children: [for (final item in atRisk.take(6)) _row(item)],
+              );
+            },
           ),
-          const SizedBox(height: AppSpacing.sm),
-          for (final alert in _alerts) _alertRow(alert),
         ],
       ),
     );
   }
 
-  Widget _alertRow((String, String, String, bool) alert) {
-    final (name, meta, stock, severe) = alert;
-    final color = severe ? AppColors.danger : AppColors.warning;
+  Widget _row(InventoryOverviewItem item) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
         children: [
-          Icon(Icons.warning_amber_rounded, size: 17, color: color),
-          const SizedBox(width: AppSpacing.sm),
-          Text(name, style: AppTypography.body.copyWith(fontWeight: FontWeight.w700)),
-          const SizedBox(width: 6),
-          Expanded(child: Text(' · $meta', style: AppTypography.caption)),
-          Text(stock, style: AppTypography.mono.copyWith(color: color, fontWeight: FontWeight.w700)),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(item.name, style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+                Text('${item.qtyOnHand} left · reorder at ${item.reorderLevel}', style: AppTypography.caption),
+              ],
+            ),
+          ),
+          TagPill(
+            label: item.isOutOfStock ? 'OUT' : 'LOW',
+            tone: item.isOutOfStock ? TagPillTone.danger : TagPillTone.amber,
+          ),
         ],
       ),
     );

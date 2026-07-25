@@ -1,40 +1,52 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/data/info_list_tile.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
+import '../../data/dashboard_providers.dart';
 
-class TopSellingItemsCard extends StatelessWidget {
+class TopSellingItemsCard extends ConsumerWidget {
   const TopSellingItemsCard({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final summaryAsync = ref.watch(dashboardSummaryProvider);
+
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          SectionHeader(title: 'Top Selling Items', subtitle: 'By quantity today'),
-          InfoListTile(
-            icon: Icons.inventory_2_outlined,
-            title: 'Royal Stag Classic Whisky',
-            subtitle: '750ml · Batch RS-0199',
-            trailing: '612',
-          ),
-          InfoListTile(
-            icon: Icons.inventory_2_outlined,
-            title: 'London Pilsener Premium Beer',
-            subtitle: '500ml CAN · Batch LP-2290',
-            trailing: '1,240',
-          ),
-          InfoListTile(
-            icon: Icons.inventory_2_outlined,
-            title: 'Budweiser Premium Beer',
-            subtitle: '330ml BTL · Batch BW-3301',
-            trailing: '2,010',
-          ),
-          InfoListTile(
-            icon: Icons.inventory_2_outlined,
-            title: "McDowell's No.1 Rum",
-            subtitle: '750ml · Batch MD-7741',
-            trailing: '388',
+        children: [
+          const SectionHeader(title: 'Top Selling Items', subtitle: 'Last 30 days, by units sold'),
+          const SizedBox(height: 4),
+          summaryAsync.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            ),
+            error: (_, __) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+              child: Center(child: Text('Could not load top items.', style: AppTypography.bodyMuted)),
+            ),
+            data: (summary) {
+              if (summary.topSellingItems.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                  child: Center(child: Text('No sales in the last 30 days.', style: AppTypography.bodyMuted)),
+                );
+              }
+              return Column(
+                children: [
+                  for (final item in summary.topSellingItems)
+                    InfoListTile(
+                      icon: Icons.local_bar_outlined,
+                      title: item.materialName,
+                      subtitle: item.packing ?? '${item.qty} units sold',
+                      trailing: '₹${item.amount.toStringAsFixed(0)}',
+                    ),
+                ],
+              );
+            },
           ),
         ],
       ),
