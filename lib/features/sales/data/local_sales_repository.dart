@@ -19,15 +19,33 @@ class LocalSalesRepository {
   final LocalMastersRepository _masters;
 
   Future<List<SalesBillDto>> getTodaysBills() async {
-    final queued = await _getQueuedBills();
-
     try {
       await syncPendingSales();
-      final remote = await _remote.getTodaysBills();
-      return [...queued, ...remote];
     } on ApiException {
-      return queued;
+      // Fall through to local cache below.
     }
+
+    final now = DateTime.now();
+    final dayStart = DateTime(now.year, now.month, now.day);
+    final dayEnd = dayStart.add(const Duration(days: 1));
+
+    final rows = await (_db.select(_db.cachedSalesBills)
+          ..where((tbl) => tbl.billDate.isBiggerOrEqualValue(dayStart) & tbl.billDate.isSmallerThanValue(dayEnd))
+          ..orderBy([(tbl) => OrderingTerm.desc(tbl.createdAt)]))
+        .get();
+
+    return rows.map((row) {
+      return SalesBillDto(
+        id: row.id,
+        billNo: row.billNo,
+        billDate: row.billDate.toIso8601String(),
+        payMode: row.payMode,
+        totalAmount: row.totalAmount,
+        balanceDue: row.balanceDue,
+        status: row.syncStatus == 'synced' ? row.status : 'pending sync',
+        lineItemCount: 0,
+      );
+    }).toList();
   }
 
   Future<MaterialDto?> getMaterialByBarcode(String barcode) async {
@@ -71,9 +89,17 @@ class LocalSalesRepository {
 
         final request = _decodeRequest(row.payload);
         final syncedRequest = await _resolveDependencies(request);
-        await _remote.createSale(syncedRequest);
+        final result = await _remote.createSale(syncedRequest);
 
-        await (_db.delete(_db.syncQueueItems)..where((tbl) => tbl.id.equals(row.id))).go();
+        await _db.transaction(() async {
+          await _replaceLocalSaleWithSynced(
+            localId: row.entityId,
+            syncedId: result.id,
+            request: syncedRequest,
+            syncedBillNo: result.billNo,
+          );
+          await (_db.delete(_db.syncQueueItems)..where((tbl) => tbl.id.equals(row.id))).go();
+        });
       } on ApiException catch (e) {
         final nextStatus = e.statusCode == null ? 'pending' : 'failed';
         await (_db.update(_db.syncQueueItems)..where((tbl) => tbl.id.equals(row.id))).write(
@@ -92,11 +118,26 @@ class LocalSalesRepository {
     try {
       await syncPendingSales();
       final syncedRequest = await _resolveDependencies(request);
-      return await _remote.createSale(syncedRequest);
+      final result = await _remote.createSale(syncedRequest);
+      await _persistSale(
+        saleId: result.id,
+        request: syncedRequest,
+        syncStatus: 'synced',
+        status: 'paid',
+        billNo: result.billNo,
+      );
+      return result;
     } on ApiException catch (e) {
       if (e.statusCode != null) rethrow;
 
       final localId = 'local-sale-${DateTime.now().microsecondsSinceEpoch}';
+      await _persistSale(
+        saleId: localId,
+        request: request,
+        syncStatus: 'pending_create',
+        status: 'pending sync',
+        billNo: request.billNo,
+      );
       await _db.into(_db.syncQueueItems).insert(
             SyncQueueItemsCompanion.insert(
               entityType: 'sale',
@@ -162,25 +203,79 @@ class LocalSalesRepository {
     throw const ApiException('A selected material is not ready to sync yet.');
   }
 
-  Future<List<SalesBillDto>> _getQueuedBills() async {
-    final rows = await (_db.select(_db.syncQueueItems)
-          ..where((tbl) => tbl.entityType.equals('sale') & tbl.status.isNotValue('failed'))
-          ..orderBy([(tbl) => OrderingTerm.desc(tbl.createdAt)]))
-        .get();
+  Future<void> _persistSale({
+    required String saleId,
+    required CreateSaleRequest request,
+    required String syncStatus,
+    required String status,
+    required String billNo,
+  }) async {
+    final now = DateTime.now().toUtc();
+    final billDate = DateTime(now.year, now.month, now.day);
 
-    return rows.map((row) {
-      final request = _decodeRequest(row.payload);
-      return SalesBillDto(
-        id: row.entityId,
-        billNo: request.billNo,
-        billDate: row.createdAt.toIso8601String(),
-        payMode: request.payMode,
-        totalAmount: request.totalAmount,
-        balanceDue: request.balanceDue,
-        status: 'pending sync',
-        lineItemCount: request.lineItems.length,
-      );
-    }).toList();
+    await _db.transaction(() async {
+      await (_db.delete(_db.cachedSaleLineItems)..where((tbl) => tbl.salesBillId.equals(saleId))).go();
+
+      await _db.into(_db.cachedSalesBills).insert(
+            CachedSalesBillsCompanion.insert(
+              id: saleId,
+              billNo: billNo,
+              customerId: Value(request.customerId),
+              payMode: request.payMode,
+              status: status,
+              totalAmount: request.totalAmount,
+              balanceDue: request.balanceDue,
+              totalTax: request.totalTax,
+              syncStatus: Value(syncStatus),
+              billDate: billDate,
+              createdAt: Value(now),
+              updatedAt: Value(now),
+            ),
+            mode: InsertMode.insertOrReplace,
+          );
+
+      for (var i = 0; i < request.lineItems.length; i++) {
+        final item = request.lineItems[i];
+        await _db.into(_db.cachedSaleLineItems).insert(
+              CachedSaleLineItemsCompanion.insert(
+                id: '$saleId-line-${i + 1}',
+                salesBillId: saleId,
+                materialId: Value(item.materialId),
+                barcodeNo: item.barcodeNo,
+                materialType: item.materialType,
+                materialName: item.materialName,
+                batchNo: Value(item.batchNo),
+                packing: Value(item.packing),
+                quantity: item.quantity,
+                qtyCase: Value(item.qtyCase),
+                rate: item.rate,
+                discountPercent: item.discountPercent,
+                discountAmount: item.discountAmount,
+                taxPercent: item.taxPercent,
+                taxAmount: item.taxAmount,
+                amount: item.amount,
+                lineNumber: i + 1,
+              ),
+            );
+      }
+    });
+  }
+
+  Future<void> _replaceLocalSaleWithSynced({
+    required String localId,
+    required String syncedId,
+    required CreateSaleRequest request,
+    required String syncedBillNo,
+  }) async {
+    await (_db.delete(_db.cachedSaleLineItems)..where((tbl) => tbl.salesBillId.equals(localId))).go();
+    await (_db.delete(_db.cachedSalesBills)..where((tbl) => tbl.id.equals(localId))).go();
+    await _persistSale(
+      saleId: syncedId,
+      request: request,
+      syncStatus: 'synced',
+      status: 'paid',
+      billNo: syncedBillNo,
+    );
   }
 
   CreateSaleRequest _decodeRequest(String raw) {

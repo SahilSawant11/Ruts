@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../shared/widgets/badges/status_chip.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
+import '../../../sales/data/sales_providers.dart';
 import '../../data/reports_providers.dart';
 import '../widgets/daily_sale_report_table.dart';
 import '../widgets/report_filters_card.dart';
@@ -50,6 +52,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final pendingSyncAsync = ref.watch(pendingSalesSyncCountProvider);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
@@ -67,6 +71,16 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     Text('Day-wise, monthly and custom analysis across sales.', style: AppTypography.bodyMuted),
                   ],
                 ),
+              ),
+              pendingSyncAsync.when(
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+                data: (count) => count > 0
+                    ? const Padding(
+                        padding: EdgeInsets.only(right: AppSpacing.sm),
+                        child: StatusChip(label: 'Queued offline', tone: StatusChipTone.neutral),
+                      )
+                    : const SizedBox.shrink(),
               ),
               SecondaryButton(label: 'Export Excel', icon: Icons.download_rounded, onPressed: () {}),
             ],
