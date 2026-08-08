@@ -90,15 +90,22 @@ class CreateSaleLineItemRequest {
 
 /// What the server confirms back after a successful save.
 class CreateSaleResult {
-  const CreateSaleResult({required this.id, required this.billNo, required this.lineItemCount});
+  const CreateSaleResult({
+    required this.id,
+    required this.billNo,
+    required this.lineItemCount,
+    this.isPendingSync = false,
+  });
 
   final String id;
   final String billNo;
   final int lineItemCount;
+  final bool isPendingSync;
 
   factory CreateSaleResult.fromJson(Map<String, dynamic> json) => CreateSaleResult(
         id: json['id'] as String,
         billNo: json['billNo'] as String,
         lineItemCount: json['lineItemCount'] as int,
+        isPendingSync: false,
       );
 }

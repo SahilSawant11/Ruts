@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../shared/widgets/badges/status_chip.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
+import '../../data/sales_providers.dart';
 import '../widgets/bill_summary_card.dart';
 import '../widgets/billing_mode_toggle.dart';
 import '../widgets/invoice_details_card.dart';
@@ -72,11 +75,13 @@ class SalesBillingScreen extends StatelessWidget {
   }
 }
 
-class _ScreenHeader extends StatelessWidget {
+class _ScreenHeader extends ConsumerWidget {
   const _ScreenHeader();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pendingSyncAsync = ref.watch(pendingSalesSyncCountProvider);
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -92,6 +97,16 @@ class _ScreenHeader extends StatelessWidget {
               ),
             ],
           ),
+        ),
+        pendingSyncAsync.when(
+          loading: () => const SizedBox.shrink(),
+          error: (_, __) => const SizedBox.shrink(),
+          data: (count) => count > 0
+              ? const Padding(
+                  padding: EdgeInsets.only(right: AppSpacing.sm),
+                  child: StatusChip(label: 'Queued offline', tone: StatusChipTone.neutral),
+                )
+              : const SizedBox.shrink(),
         ),
         SecondaryButton(label: 'Find / Edit Sale', icon: Icons.search_rounded, onPressed: () {}),
         const SizedBox(width: AppSpacing.sm),

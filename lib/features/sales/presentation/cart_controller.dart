@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_exception.dart';
-import '../data/sales_api_repository.dart';
+import '../data/local_sales_repository.dart';
 import '../data/sales_providers.dart';
 import '../domain/sale_line_item.dart';
 
@@ -38,7 +38,7 @@ class CartState {
 class CartController extends StateNotifier<CartState> {
   CartController(this._repo) : super(const CartState());
 
-  final SalesApiRepository _repo;
+  final LocalSalesRepository _repo;
 
   Future<void> addByBarcode(String rawBarcode) async {
     final barcode = rawBarcode.trim();

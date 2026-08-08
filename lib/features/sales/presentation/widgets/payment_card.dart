@@ -80,7 +80,11 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
       ref.invalidate(todaysBillsProvider);
 
       if (!mounted) return;
-      _showSnack('Bill ${result.billNo} saved · ${result.lineItemCount} item(s).');
+      _showSnack(
+        result.isPendingSync
+            ? 'Bill ${result.billNo} queued offline · ${result.lineItemCount} item(s) will sync later.'
+            : 'Bill ${result.billNo} saved · ${result.lineItemCount} item(s).',
+      );
     } on ApiException catch (e) {
       if (!mounted) return;
       _showSnack(e.message, isError: true);
