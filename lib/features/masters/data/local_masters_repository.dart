@@ -183,16 +183,51 @@ class LocalMastersRepository {
     }
   }
 
-  Future<int> getPendingSyncCount() async {
+  Future<MaterialDto?> getMaterialByBarcode(String barcode) async {
+    try {
+      await syncPendingMasters();
+      final remote = await _remote.getMaterials();
+      await _cacheMaterials(remote);
+    } on ApiException {
+      // Fall back to local cache below.
+    }
+
+    final row = await (_db.select(_db.cachedMaterials)
+          ..where((tbl) => tbl.barcode.equals(barcode) | tbl.id.equals(barcode)))
+        .getSingleOrNull();
+    if (row == null) return null;
+
+    return MaterialDto(
+      id: row.id,
+      barcode: row.barcode,
+      name: row.name,
+      category: row.category,
+      packing: row.packing,
+      saleRate: row.saleRate,
+      taxPercent: row.taxPercent,
+      stockQty: row.stockQty,
+      isPendingSync: row.syncStatus != 'synced',
+    );
+  }
+
+  Future<int> getPendingSyncCount({Set<String>? entityTypes}) async {
     final countExp = _db.syncQueueItems.id.count();
-    final query = _db.selectOnly(_db.syncQueueItems)..addColumns([countExp]);
+    final query = _db.selectOnly(_db.syncQueueItems);
+    if (entityTypes != null && entityTypes.isNotEmpty) {
+      query.where(_db.syncQueueItems.entityType.isIn(entityTypes));
+    }
+    query.addColumns([countExp]);
     final row = await query.getSingle();
     return row.read(countExp) ?? 0;
   }
 
-  Stream<int> watchPendingSyncCount() {
+  Stream<int> watchPendingSyncCount({Set<String>? entityTypes}) {
     final countExp = _db.syncQueueItems.id.count();
-    final query = _db.selectOnly(_db.syncQueueItems)..addColumns([countExp]);
+    final query = _db.selectOnly(_db.syncQueueItems);
+    if (entityTypes != null && entityTypes.isNotEmpty) {
+      query.where(_db.syncQueueItems.entityType.isIn(entityTypes));
+    }
+    query.addColumns([countExp]);
     return query.watchSingle().map((row) => row.read(countExp) ?? 0);
   }
 
@@ -443,6 +478,7 @@ class LocalMastersRepository {
     if (item.operation == 'create') {
       final created = await _remote.createSupplier(request);
       await _db.transaction(() async {
+        await _rebindSupplierReferences(oldId: item.entityId, newId: created.id);
         await (_db.delete(_db.cachedSuppliers)..where((tbl) => tbl.id.equals(item.entityId))).go();
         await _upsertSupplier(created, syncStatus: 'synced');
         await _clearQueueFor(item.entityType, item.entityId);
@@ -533,6 +569,28 @@ class LocalMastersRepository {
     await (_db.delete(_db.syncQueueItems)
           ..where((tbl) => tbl.entityType.equals(entityType) & tbl.entityId.equals(entityId)))
         .go();
+  }
+
+  Future<void> _rebindSupplierReferences({
+    required String oldId,
+    required String newId,
+  }) async {
+    final purchaseRows = await (_db.select(_db.syncQueueItems)
+          ..where((tbl) => tbl.entityType.equals('purchase') & tbl.status.equals('pending')))
+        .get();
+
+    for (final row in purchaseRows) {
+      final payload = _decodePayload(row.payload);
+      if (payload['supplierId'] != oldId) continue;
+      payload['supplierId'] = newId;
+
+      await (_db.update(_db.syncQueueItems)..where((tbl) => tbl.id.equals(row.id))).write(
+        SyncQueueItemsCompanion(
+          payload: Value(jsonEncode(payload)),
+          updatedAt: Value(DateTime.now().toUtc()),
+        ),
+      );
+    }
   }
 
   Map<String, dynamic> _decodePayload(String raw) => jsonDecode(raw) as Map<String, dynamic>;

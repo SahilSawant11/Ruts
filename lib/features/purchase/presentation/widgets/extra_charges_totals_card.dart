@@ -102,7 +102,11 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
       }
 
       if (!mounted) return;
-      _showSnack('Purchase saved · ${result.lineItemCount} item(s) added to inventory.');
+      _showSnack(
+        result.isPendingSync
+            ? 'Purchase queued offline · ${result.lineItemCount} item(s) will sync when back online.'
+            : 'Purchase saved · ${result.lineItemCount} item(s) added to inventory.',
+      );
     } on ApiException catch (e) {
       if (!mounted) return;
       _showSnack(e.message, isError: true);

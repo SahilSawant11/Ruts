@@ -4,7 +4,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/widgets/inputs/app_dropdown.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
-import '../../data/models/supplier_dto.dart';
+import '../../../masters/data/models/supplier_dto.dart';
 import '../../data/purchase_providers.dart';
 import '../purchase_form_controller.dart';
 

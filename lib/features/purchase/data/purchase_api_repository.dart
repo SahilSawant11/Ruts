@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../core/network/api_config.dart';
 import '../../../core/network/api_exception.dart';
+import '../../masters/data/models/supplier_dto.dart';
 import '../../sales/data/models/material_dto.dart';
 import 'models/create_purchase_request.dart';
-import 'models/supplier_dto.dart';
 
 /// The only place in the app that talks HTTP for the Purchase module.
 /// Material lookup reuses the same GET /api/materials/{barcode}

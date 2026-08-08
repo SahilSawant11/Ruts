@@ -98,15 +98,22 @@ class CreatePurchaseLineItemRequest {
 
 /// What the server confirms back after a successful save.
 class CreatePurchaseResult {
-  const CreatePurchaseResult({required this.id, required this.billNo, required this.lineItemCount});
+  const CreatePurchaseResult({
+    required this.id,
+    required this.billNo,
+    required this.lineItemCount,
+    this.isPendingSync = false,
+  });
 
   final String id;
   final String? billNo;
   final int lineItemCount;
+  final bool isPendingSync;
 
   factory CreatePurchaseResult.fromJson(Map<String, dynamic> json) => CreatePurchaseResult(
         id: json['id'] as String,
         billNo: json['billNo'] as String?,
         lineItemCount: json['lineItemCount'] as int,
+        isPendingSync: false,
       );
 }
