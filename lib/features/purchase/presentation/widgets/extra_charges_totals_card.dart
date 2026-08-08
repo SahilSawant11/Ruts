@@ -177,21 +177,32 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          const Divider(height: 1, color: AppColors.border),
+          Divider(height: 1, color: AppColors.borderFor(context)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Net Amount', style: AppTypography.bodyMuted),
-                Text(netAmount.toStringAsFixed(0), style: AppTypography.body.copyWith(fontWeight: FontWeight.w700)),
+                Text(
+                  'Net Amount',
+                  style: AppTypography.bodyMuted.copyWith(
+                    color: AppColors.textSecondaryFor(context),
+                  ),
+                ),
+                Text(
+                  netAmount.toStringAsFixed(0),
+                  style: AppTypography.body.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimaryFor(context),
+                  ),
+                ),
               ],
             ),
           ),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.md),
-            color: AppColors.totalDark,
+            color: AppColors.totalSurfaceFor(context),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [

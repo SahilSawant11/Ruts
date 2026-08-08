@@ -81,7 +81,12 @@ class _DashboardHeader extends ConsumerWidget {
             children: [
               Text('Dashboard', style: AppTypography.h1),
               const SizedBox(height: 4),
-              Text('Store performance at a glance — ${_formatToday()}.', style: AppTypography.bodyMuted),
+              Text(
+                'Store performance at a glance — ${_formatToday()}.',
+                style: AppTypography.bodyMuted.copyWith(
+                  color: AppColors.textSecondaryFor(context),
+                ),
+              ),
             ],
           ),
         ),
@@ -98,15 +103,26 @@ class _DashboardHeader extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 9),
           decoration: BoxDecoration(
-            border: Border.all(color: AppColors.border),
+            color: AppColors.backgroundFor(context),
+            border: Border.all(color: AppColors.borderFor(context)),
             borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Today', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+              Text(
+                'Today',
+                style: AppTypography.body.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimaryFor(context),
+                ),
+              ),
               const SizedBox(width: 6),
-              const Icon(Icons.unfold_more_rounded, size: 16, color: AppColors.textSecondary),
+              Icon(
+                Icons.unfold_more_rounded,
+                size: 16,
+                color: AppColors.textSecondaryFor(context),
+              ),
             ],
           ),
         ),

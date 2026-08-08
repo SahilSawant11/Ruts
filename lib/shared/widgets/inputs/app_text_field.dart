@@ -40,19 +40,37 @@ class AppTextField extends StatelessWidget {
           enabled: enabled,
           readOnly: readOnly,
           onChanged: onChanged,
-          style: AppTypography.body,
+          style: AppTypography.body.copyWith(
+            color: AppColors.textPrimaryFor(context),
+          ),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: AppTypography.bodyMuted,
+            hintStyle: AppTypography.bodyMuted.copyWith(
+              color: AppColors.textMutedFor(context),
+            ),
             isDense: true,
             suffixIcon: suffix,
             filled: true,
-            fillColor: enabled ? AppColors.surface : AppColors.surfaceAlt,
+            fillColor: enabled
+                ? AppColors.surfaceFor(context)
+                : AppColors.surfaceAltFor(context),
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppRadius.md),
-              borderSide: const BorderSide(color: AppColors.border),
+              borderSide: BorderSide(color: AppColors.borderFor(context)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              borderSide: BorderSide(color: AppColors.borderFor(context)),
+            ),
+            disabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              borderSide: BorderSide(color: AppColors.borderFor(context)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              borderSide: const BorderSide(color: AppColors.primary, width: 1.2),
             ),
           ),
         ),

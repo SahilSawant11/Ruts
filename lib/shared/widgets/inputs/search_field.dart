@@ -12,15 +12,18 @@ class SearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final muted = AppColors.textMutedFor(context);
     return SizedBox(
       width: width,
       child: TextField(
         style: AppTypography.body,
         decoration: InputDecoration(
           isDense: true,
-          prefixIcon: const Icon(Icons.search, size: 19, color: AppColors.textMuted),
+          prefixIcon: Icon(Icons.search, size: 19, color: muted),
           hintText: 'Type here to search...',
-          hintStyle: AppTypography.bodyMuted,
+          hintStyle: AppTypography.bodyMuted.copyWith(
+            color: AppColors.textSecondaryFor(context),
+          ),
           suffixIcon: const Padding(
             padding: EdgeInsets.only(right: AppSpacing.xs),
             child: Align(

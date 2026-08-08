@@ -22,21 +22,27 @@ class StatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = tone == StatusChipTone.dark;
     final dotColor = tone == StatusChipTone.neutral
-        ? AppColors.textMuted
+        ? AppColors.textMutedFor(context)
         : AppColors.success;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 7),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.06) : AppColors.background,
+        color: isDark ? Colors.white.withOpacity(0.06) : AppColors.backgroundFor(context),
         borderRadius: BorderRadius.circular(AppRadius.pill),
-        border: Border.all(color: isDark ? AppColors.shellBorder : AppColors.border),
+        border: Border.all(
+          color: isDark ? AppColors.shellBorderFor(context) : AppColors.borderFor(context),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 14, color: isDark ? Colors.white70 : AppColors.textSecondary),
+            Icon(
+              icon,
+              size: 14,
+              color: isDark ? Colors.white70 : AppColors.textSecondaryFor(context),
+            ),
             const SizedBox(width: 6),
           ] else ...[
             Container(
@@ -51,7 +57,7 @@ class StatusChip extends StatelessWidget {
             style: AppTypography.bodyMuted.copyWith(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: isDark ? Colors.white70 : AppColors.textSecondary,
+              color: isDark ? Colors.white70 : AppColors.textSecondaryFor(context),
             ),
           ),
         ],

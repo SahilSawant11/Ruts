@@ -32,7 +32,7 @@ class ItemDetailsTable extends ConsumerWidget {
             _emptyState()
           else ...[
             _headerRow(),
-            const Divider(height: 1, color: AppColors.border),
+            Divider(height: 1, color: AppColors.borderFor(context)),
             for (var i = 0; i < items.length; i++) _dataRow(context, ref, i, items[i]),
           ],
           const SizedBox(height: AppSpacing.xs),
@@ -118,16 +118,20 @@ class ItemDetailsTable extends ConsumerWidget {
   }
 
   Widget _cell(String text, {required int flex, bool header = false, bool alignEnd = false, bool bold = false}) {
-    return Expanded(
+    return Builder(
+      builder: (context) => Expanded(
       flex: flex,
       child: Text(
         text,
         textAlign: alignEnd ? TextAlign.end : TextAlign.start,
         overflow: TextOverflow.ellipsis,
         style: header
-            ? AppTypography.label
-            : AppTypography.body.copyWith(fontWeight: bold ? FontWeight.w700 : FontWeight.w500),
+            ? AppTypography.label.copyWith(color: AppColors.textMutedFor(context))
+            : AppTypography.body.copyWith(
+                fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+                color: AppColors.textPrimaryFor(context),
+              ),
       ),
-    );
+    ));
   }
 }

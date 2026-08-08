@@ -21,9 +21,9 @@ class AppCard extends StatelessWidget {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: AppColors.backgroundFor(context),
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppColors.borderFor(context)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
@@ -70,7 +70,9 @@ class SectionHeader extends StatelessWidget {
                 Expanded(
                   child: Text(
                     subtitle!,
-                    style: AppTypography.bodyMuted,
+                    style: AppTypography.bodyMuted.copyWith(
+                      color: AppColors.textSecondaryFor(context),
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),

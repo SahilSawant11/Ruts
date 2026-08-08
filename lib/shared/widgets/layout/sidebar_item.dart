@@ -23,6 +23,7 @@ class SidebarItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final muted = AppColors.shellTextMutedFor(context);
     final content = Material(
       color: active ? AppColors.primary : Colors.transparent,
       borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -32,16 +33,16 @@ class SidebarItem extends StatelessWidget {
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: collapsed ? 0 : 10, vertical: 10),
           child: collapsed
-              ? Icon(icon, size: 18, color: active ? Colors.white : AppColors.shellTextMuted)
+              ? Icon(icon, size: 18, color: active ? Colors.white : muted)
               : Row(
                   children: [
-                    Icon(icon, size: 17, color: active ? Colors.white : AppColors.shellTextMuted),
+                    Icon(icon, size: 17, color: active ? Colors.white : muted),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         label,
                         style: AppTypography.sidebarItem.copyWith(
-                          color: active ? Colors.white : AppColors.shellTextMuted,
+                          color: active ? Colors.white : muted,
                           fontWeight: active ? FontWeight.w600 : FontWeight.w500,
                         ),
                       ),
@@ -51,7 +52,7 @@ class SidebarItem extends StatelessWidget {
                         shortcut!,
                         style: AppTypography.mono.copyWith(
                           fontSize: 10.5,
-                          color: active ? Colors.white70 : AppColors.shellTextMuted,
+                          color: active ? Colors.white70 : muted,
                         ),
                       ),
                   ],

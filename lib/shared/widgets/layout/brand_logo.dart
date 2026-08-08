@@ -17,6 +17,8 @@ class BrandLogo extends StatelessWidget {
   Widget build(BuildContext context) {
     final markSize = compact ? 32.0 : 38.0;
     final iconSize = compact ? 18.0 : 20.0;
+    final borderColor = AppColors.borderFor(context);
+    final subtitleColor = AppColors.textSecondaryFor(context);
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -27,7 +29,7 @@ class BrandLogo extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.primarySoft,
             borderRadius: BorderRadius.circular(AppRadius.sm),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: borderColor),
           ),
           alignment: Alignment.center,
           child: Icon(
@@ -52,7 +54,7 @@ class BrandLogo extends StatelessWidget {
               Text(
                 'Liquor POS',
                 style: AppTypography.caption.copyWith(
-                  color: AppColors.textSecondary,
+                  color: subtitleColor,
                 ),
               ),
             ],

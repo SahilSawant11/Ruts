@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/theme_mode_provider.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../features/sync/data/sync_providers.dart';
 import '../badges/status_chip.dart';
@@ -25,13 +26,15 @@ class AppTopHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final syncOverviewAsync = ref.watch(syncOverviewProvider);
+    final themeMode = ref.watch(appThemeModeProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       height: 64,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-      decoration: const BoxDecoration(
-        color: AppColors.background,
-        border: Border(bottom: BorderSide(color: AppColors.border)),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundFor(context),
+        border: Border(bottom: BorderSide(color: AppColors.borderFor(context))),
       ),
       child: Row(
         children: [
@@ -39,9 +42,12 @@ class AppTopHeader extends ConsumerWidget {
             borderRadius: BorderRadius.circular(AppRadius.sm),
             onTap: () => ref.read(sidebarCollapsedProvider.notifier).state =
                 !ref.read(sidebarCollapsedProvider),
-            child: const Padding(
-              padding: EdgeInsets.all(6),
-              child: Icon(Icons.menu_rounded, color: AppColors.textSecondary),
+            child: Padding(
+              padding: const EdgeInsets.all(6),
+              child: Icon(
+                Icons.menu_rounded,
+                color: AppColors.textSecondaryFor(context),
+              ),
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
@@ -70,11 +76,19 @@ class AppTopHeader extends ConsumerWidget {
           const SizedBox(width: AppSpacing.xs),
           StatusChip(label: _todayLabel(), tone: StatusChipTone.neutral, icon: Icons.calendar_today_outlined),
           const SizedBox(width: AppSpacing.sm),
-          _iconButton(Icons.calculate_outlined),
+          _themeButton(
+            context: context,
+            isDark: isDark,
+            themeMode: themeMode,
+            onTap: () => ref.read(appThemeModeProvider.notifier).state =
+                isDark ? ThemeMode.light : ThemeMode.dark,
+          ),
           const SizedBox(width: 6),
-          _iconButton(Icons.description_outlined),
+          _iconButton(context, Icons.calculate_outlined),
+          const SizedBox(width: 6),
+          _iconButton(context, Icons.description_outlined),
           const SizedBox(width: AppSpacing.sm),
-          _profile(),
+          _profile(context),
         ],
       ),
     );
@@ -100,23 +114,54 @@ class AppTopHeader extends ConsumerWidget {
     );
   }
 
-  Widget _iconButton(IconData icon) {
+  Widget _iconButton(BuildContext context, IconData icon) {
     return Container(
       width: 38,
       height: 38,
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.border),
+        color: Colors.transparent,
+        border: Border.all(color: AppColors.borderFor(context)),
         borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
-      child: Icon(icon, size: 18, color: AppColors.textSecondary),
+      child: Icon(
+        icon,
+        size: 18,
+        color: AppColors.textSecondaryFor(context),
+      ),
     );
   }
 
-  Widget _profile() {
+  Widget _themeButton({
+    required BuildContext context,
+    required bool isDark,
+    required ThemeMode themeMode,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      child: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.surfaceAltFor(context) : Colors.transparent,
+          border: Border.all(color: AppColors.borderFor(context)),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+        child: Icon(
+          themeMode == ThemeMode.dark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+          size: 18,
+          color: AppColors.textSecondaryFor(context),
+        ),
+      ),
+    );
+  }
+
+  Widget _profile(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 6),
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppColors.borderFor(context)),
         borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Row(
@@ -132,8 +177,19 @@ class AppTopHeader extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('admin', style: AppTypography.body.copyWith(fontWeight: FontWeight.w700)),
-              Text('Store Manager', style: AppTypography.caption),
+              Text(
+                'admin',
+                style: AppTypography.body.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimaryFor(context),
+                ),
+              ),
+              Text(
+                'Store Manager',
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.textSecondaryFor(context),
+                ),
+              ),
             ],
           ),
         ],

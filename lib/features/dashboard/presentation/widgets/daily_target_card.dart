@@ -47,14 +47,17 @@ class DailyTargetCard extends ConsumerWidget {
                     child: LinearProgressIndicator(
                       value: progress,
                       minHeight: 8,
-                      backgroundColor: AppColors.surfaceAlt,
+                      backgroundColor: AppColors.surfaceAltFor(context),
                       color: AppColors.primary,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
                     '${(progress * 100).toStringAsFixed(0)}% achieved · ₹${remaining.toStringAsFixed(0)} to target',
-                    style: AppTypography.bodyMuted.copyWith(color: AppColors.success, fontWeight: FontWeight.w600),
+                    style: AppTypography.bodyMuted.copyWith(
+                      color: AppColors.success,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               );

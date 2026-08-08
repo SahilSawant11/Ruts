@@ -18,20 +18,22 @@ class BillingModeToggle extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.surfaceFor(context),
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppColors.borderFor(context)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           _segment(
+            context: context,
             label: 'Purchase Bill',
             shortcut: 'F2',
             selected: !isSale,
             onTap: () => context.go('/purchase'),
           ),
           _segment(
+            context: context,
             label: 'Sales Bill',
             shortcut: 'F3',
             selected: isSale,
@@ -43,13 +45,14 @@ class BillingModeToggle extends StatelessWidget {
   }
 
   Widget _segment({
+    required BuildContext context,
     required String label,
     required String shortcut,
     required bool selected,
     required VoidCallback onTap,
   }) {
     return Material(
-      color: selected ? AppColors.background : Colors.transparent,
+      color: selected ? AppColors.backgroundFor(context) : Colors.transparent,
       borderRadius: BorderRadius.circular(AppRadius.sm),
       elevation: selected ? 1 : 0,
       child: InkWell(
@@ -64,7 +67,7 @@ class BillingModeToggle extends StatelessWidget {
                 shortcut,
                 style: AppTypography.mono.copyWith(
                   fontSize: 11,
-                  color: selected ? AppColors.primary : AppColors.textMuted,
+                  color: selected ? AppColors.primary : AppColors.textMutedFor(context),
                 ),
               ),
               const SizedBox(width: 6),
@@ -72,7 +75,7 @@ class BillingModeToggle extends StatelessWidget {
                 label,
                 style: AppTypography.body.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: selected ? AppColors.primary : AppColors.textSecondary,
+                  color: selected ? AppColors.primary : AppColors.textSecondaryFor(context),
                 ),
               ),
             ],

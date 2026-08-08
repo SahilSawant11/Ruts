@@ -57,8 +57,8 @@ class PurchaseItemTable extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _headerRow(),
-                  const Divider(height: 1, color: AppColors.border),
-                  for (var i = 0; i < items.length; i++) _dataRow(ref, i, items[i]),
+                  Divider(height: 1, color: AppColors.borderFor(context)),
+                  for (var i = 0; i < items.length; i++) _dataRow(context, ref, i, items[i]),
                 ],
               ),
             ),
@@ -70,21 +70,29 @@ class PurchaseItemTable extends ConsumerWidget {
   }
 
   Widget _headerRow() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        children: [
-          for (final col in _columns)
-            SizedBox(
-              width: col.$2,
-              child: Text(col.$1, textAlign: col.$3 ? TextAlign.right : TextAlign.left, style: AppTypography.label),
-            ),
-        ],
+    return Builder(
+      builder: (context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Row(
+          children: [
+            for (final col in _columns)
+              SizedBox(
+                width: col.$2,
+                child: Text(
+                  col.$1,
+                  textAlign: col.$3 ? TextAlign.right : TextAlign.left,
+                  style: AppTypography.label.copyWith(
+                    color: AppColors.textMutedFor(context),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _dataRow(WidgetRef ref, int index, PurchaseLineItem item) {
+  Widget _dataRow(BuildContext context, WidgetRef ref, int index, PurchaseLineItem item) {
     final values = <String>[
       '${item.index}',
       item.material,
@@ -122,7 +130,8 @@ class PurchaseItemTable extends ConsumerWidget {
                       values[i],
                       textAlign: _columns[i].$3 ? TextAlign.right : TextAlign.left,
                       overflow: TextOverflow.ellipsis,
-                      style: i == 1 ? AppTypography.body.copyWith(fontWeight: FontWeight.w700) : AppTypography.body,
+                      style: (i == 1 ? AppTypography.body.copyWith(fontWeight: FontWeight.w700) : AppTypography.body)
+                          .copyWith(color: AppColors.textPrimaryFor(context)),
                     ),
             ),
         ],

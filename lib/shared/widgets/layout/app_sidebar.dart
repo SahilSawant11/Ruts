@@ -23,12 +23,12 @@ class AppSidebar extends ConsumerWidget {
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOut,
       width: collapsed ? 76 : 264,
-      color: AppColors.shellDark,
+      color: AppColors.shellBackgroundFor(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _brand(collapsed),
-          const Divider(color: AppColors.shellBorder, height: 1),
+          Divider(color: AppColors.shellBorderFor(context), height: 1),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),

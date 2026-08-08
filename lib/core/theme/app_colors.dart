@@ -32,6 +32,16 @@ class AppColors {
   static const Color textMuted = Color(0xFF9B9BAC);
   static const Color textOnPrimary = Color(0xFFFFFFFF);
 
+  // Dark theme neutrals
+  static const Color backgroundDark = Color(0xFF12141B);
+  static const Color surfaceDark = Color(0xFF191C24);
+  static const Color surfaceAltDark = Color(0xFF232735);
+  static const Color borderDark = Color(0xFF313748);
+  static const Color borderStrongDark = Color(0xFF454D63);
+  static const Color textPrimaryDark = Color(0xFFF4F5F8);
+  static const Color textSecondaryDark = Color(0xFFB6BDD0);
+  static const Color textMutedDark = Color(0xFF8189A0);
+
   // Sidebar / status bar (dark shell around the light workspace)
   static const Color shellDark = Color(0xFF121219);
   static const Color shellDarkAlt = Color(0xFF1B1B26);
@@ -46,4 +56,43 @@ class AppColors {
 
   // Highlight for totals
   static const Color totalDark = Color(0xFF15151F);
+
+  static bool isDark(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark;
+
+  static Color backgroundFor(BuildContext context) =>
+      isDark(context) ? backgroundDark : background;
+
+  static Color surfaceFor(BuildContext context) =>
+      isDark(context) ? surfaceDark : surface;
+
+  static Color surfaceAltFor(BuildContext context) =>
+      isDark(context) ? surfaceAltDark : surfaceAlt;
+
+  static Color borderFor(BuildContext context) =>
+      isDark(context) ? borderDark : border;
+
+  static Color borderStrongFor(BuildContext context) =>
+      isDark(context) ? borderStrongDark : borderStrong;
+
+  static Color textPrimaryFor(BuildContext context) =>
+      isDark(context) ? textPrimaryDark : textPrimary;
+
+  static Color textSecondaryFor(BuildContext context) =>
+      isDark(context) ? textSecondaryDark : textSecondary;
+
+  static Color textMutedFor(BuildContext context) =>
+      isDark(context) ? textMutedDark : textMuted;
+
+  static Color shellBackgroundFor(BuildContext context) =>
+      isDark(context) ? shellDarkAlt : shellDark;
+
+  static Color shellBorderFor(BuildContext context) =>
+      isDark(context) ? shellBorder : border;
+
+  static Color shellTextMutedFor(BuildContext context) =>
+      isDark(context) ? shellTextMuted : textSecondary;
+
+  static Color totalSurfaceFor(BuildContext context) =>
+      isDark(context) ? backgroundDark : totalDark;
 }

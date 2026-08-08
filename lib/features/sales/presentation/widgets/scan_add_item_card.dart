@@ -89,7 +89,8 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.primary.withOpacity(0.35)),
+        color: AppColors.surfaceFor(context),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
       ),
       padding: const EdgeInsets.all(6),
       child: Row(
@@ -116,12 +117,16 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
               controller: _controller,
               focusNode: _focusNode,
               onSubmitted: (_) => _submit(),
-              style: AppTypography.body,
+              style: AppTypography.body.copyWith(
+                color: AppColors.textPrimaryFor(context),
+              ),
               decoration: InputDecoration(
                 isDense: true,
                 border: InputBorder.none,
                 hintText: 'Scan barcode or type item code, then press Enter.',
-                hintStyle: AppTypography.bodyMuted,
+                hintStyle: AppTypography.bodyMuted.copyWith(
+                  color: AppColors.textMutedFor(context),
+                ),
               ),
             ),
           ),
@@ -136,13 +141,17 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.surfaceFor(context),
         borderRadius: BorderRadius.circular(AppRadius.sm),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppColors.borderFor(context)),
       ),
       child: Text(
         label.toUpperCase(),
-        style: AppTypography.bodyMuted.copyWith(fontWeight: FontWeight.w700, fontSize: 11.5),
+        style: AppTypography.bodyMuted.copyWith(
+          fontWeight: FontWeight.w700,
+          fontSize: 11.5,
+          color: AppColors.textSecondaryFor(context),
+        ),
       ),
     );
   }

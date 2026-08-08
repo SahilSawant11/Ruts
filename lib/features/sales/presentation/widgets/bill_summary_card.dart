@@ -42,7 +42,7 @@ class BillSummaryCard extends ConsumerWidget {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-            color: AppColors.totalDark,
+            color: AppColors.totalSurfaceFor(context),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -57,7 +57,12 @@ class BillSummaryCard extends ConsumerWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Balance Due', style: AppTypography.bodyMuted),
+                Text(
+                  'Balance Due',
+                  style: AppTypography.bodyMuted.copyWith(
+                    color: AppColors.textSecondaryFor(context),
+                  ),
+                ),
                 Text(money(cart.totalAmount),
                     style: AppTypography.body.copyWith(color: AppColors.danger, fontWeight: FontWeight.w700)),
               ],
@@ -82,8 +87,19 @@ class _SummaryRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: AppTypography.bodyMuted),
-          Text(value, style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            label,
+            style: AppTypography.bodyMuted.copyWith(
+              color: AppColors.textSecondaryFor(context),
+            ),
+          ),
+          Text(
+            value,
+            style: AppTypography.body.copyWith(
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimaryFor(context),
+            ),
+          ),
         ],
       ),
     );

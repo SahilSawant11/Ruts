@@ -29,7 +29,7 @@ class AppButton extends StatelessWidget {
   final bool expand;
   final bool dense;
 
-  _ButtonColors get _colors {
+  _ButtonColors _colors(BuildContext context) {
     switch (variant) {
       case AppButtonVariant.primary:
         return _ButtonColors(AppColors.primary, Colors.white, null);
@@ -38,15 +38,19 @@ class AppButton extends StatelessWidget {
       case AppButtonVariant.danger:
         return _ButtonColors(AppColors.danger, Colors.white, null);
       case AppButtonVariant.dangerOutline:
-        return _ButtonColors(AppColors.background, AppColors.danger, AppColors.dangerSoft);
+        return _ButtonColors(AppColors.backgroundFor(context), AppColors.danger, AppColors.dangerSoft);
       case AppButtonVariant.secondary:
-        return _ButtonColors(AppColors.background, AppColors.textPrimary, null);
+        return _ButtonColors(
+          AppColors.backgroundFor(context),
+          AppColors.textPrimaryFor(context),
+          null,
+        );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final colors = _colors;
+    final colors = _colors(context);
     final needsBorder = variant == AppButtonVariant.secondary ||
         variant == AppButtonVariant.dangerOutline;
     final vPad = dense ? 10.0 : 13.0;
@@ -94,7 +98,7 @@ class AppButton extends StatelessWidget {
                 ? Border.all(
                     color: variant == AppButtonVariant.dangerOutline
                         ? AppColors.danger.withOpacity(0.35)
-                        : AppColors.border,
+                        : AppColors.borderFor(context),
                   )
                 : null,
           ),

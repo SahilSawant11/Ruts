@@ -14,11 +14,13 @@ class AppStatusBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final muted = AppTypography.caption.copyWith(color: AppColors.shellTextMuted);
+    final muted = AppTypography.caption.copyWith(
+      color: AppColors.shellTextMutedFor(context),
+    );
     final syncOverviewAsync = ref.watch(syncOverviewProvider);
     return Container(
       height: 34,
-      color: AppColors.shellDark,
+      color: AppColors.shellBackgroundFor(context),
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       child: Row(
         children: [
@@ -28,7 +30,11 @@ class AppStatusBar extends ConsumerWidget {
           const SizedBox(width: AppSpacing.md),
           Text('Module: $moduleName', style: muted),
           const SizedBox(width: AppSpacing.md),
-          const Icon(Icons.calendar_today_outlined, size: 12, color: AppColors.shellTextMuted),
+          Icon(
+            Icons.calendar_today_outlined,
+            size: 12,
+            color: AppColors.shellTextMutedFor(context),
+          ),
           const SizedBox(width: 5),
           Text(_todayLabel(), style: muted),
           const Spacer(),

@@ -148,12 +148,15 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 13),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: AppColors.surfaceFor(context),
               borderRadius: BorderRadius.circular(AppRadius.md),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: AppColors.borderFor(context)),
             ),
             child: Text(cart.totalAmount.toStringAsFixed(0),
-                style: AppTypography.body.copyWith(fontWeight: FontWeight.w700)),
+                style: AppTypography.body.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimaryFor(context),
+                )),
           ),
           const SizedBox(height: AppSpacing.md),
           SuccessButton(
@@ -201,25 +204,35 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
     required PaymentMethod method,
     required bool selected,
   }) {
+    final context = this.context;
+
     return InkWell(
       onTap: () => ref.read(paymentMethodProvider.notifier).state = method,
       borderRadius: BorderRadius.circular(AppRadius.md),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primarySoft : AppColors.surface,
+          color: selected
+              ? AppColors.primarySoft
+              : AppColors.surfaceFor(context),
           borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: selected ? AppColors.primary : AppColors.border),
+          border: Border.all(
+            color: selected ? AppColors.primary : AppColors.borderFor(context),
+          ),
         ),
         child: Column(
           children: [
-            Icon(icon, size: 19, color: selected ? AppColors.primary : AppColors.textSecondary),
+            Icon(
+              icon,
+              size: 19,
+              color: selected ? AppColors.primary : AppColors.textSecondaryFor(context),
+            ),
             const SizedBox(height: 6),
             Text(
               label,
               style: AppTypography.bodyMuted.copyWith(
                 fontWeight: FontWeight.w600,
-                color: selected ? AppColors.primary : AppColors.textSecondary,
+                color: selected ? AppColors.primary : AppColors.textSecondaryFor(context),
               ),
             ),
           ],
