@@ -167,12 +167,25 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
                 children: [
                   Expanded(
                     flex: 3,
-                    child: AppTextField(label: 'LOCAL ITEM CODE *', controller: _id, enabled: idEditable),
+                    child: AppTextField(
+                      label: 'LOCAL ITEM CODE *',
+                      controller: _id,
+                      enabled: idEditable,
+                      selectAllOnFocus: true,
+                      showPasteButton: true,
+                    ),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
                     flex: 3,
-                    child: AppTextField(label: 'BARCODE', controller: _barcode, enabled: editable, hint: 'Same as item code if blank'),
+                    child: AppTextField(
+                      label: 'BARCODE',
+                      controller: _barcode,
+                      enabled: editable,
+                      hint: 'Same as item code if blank',
+                      selectAllOnFocus: true,
+                      showPasteButton: true,
+                    ),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(

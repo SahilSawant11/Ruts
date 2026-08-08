@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -116,7 +117,15 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
             child: TextField(
               controller: _controller,
               focusNode: _focusNode,
+              textInputAction: TextInputAction.done,
+              enableInteractiveSelection: true,
               onSubmitted: (_) => _submit(),
+              onTap: () {
+                _controller.selection = TextSelection(
+                  baseOffset: 0,
+                  extentOffset: _controller.text.length,
+                );
+              },
               style: AppTypography.body.copyWith(
                 color: AppColors.textPrimaryFor(context),
               ),
@@ -126,6 +135,23 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
                 hintText: 'Scan barcode or type item code, then press Enter.',
                 hintStyle: AppTypography.bodyMuted.copyWith(
                   color: AppColors.textMutedFor(context),
+                ),
+                suffixIcon: IconButton(
+                  tooltip: 'Paste code',
+                  onPressed: () async {
+                    final data = await Clipboard.getData(Clipboard.kTextPlain);
+                    final text = data?.text?.trim();
+                    if (text == null || text.isEmpty) return;
+                    _controller
+                      ..text = text
+                      ..selection = TextSelection.collapsed(offset: text.length);
+                    _focusNode.requestFocus();
+                  },
+                  icon: Icon(
+                    Icons.content_paste_rounded,
+                    size: 18,
+                    color: AppColors.textSecondaryFor(context),
+                  ),
                 ),
               ),
             ),

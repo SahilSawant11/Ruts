@@ -7,48 +7,54 @@ import 'app_colors.dart';
 class AppTypography {
   AppTypography._();
 
-  static TextStyle get h1 => GoogleFonts.inter(
+  static TextStyle get h1 => GoogleFonts.manrope(
         fontSize: 24,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textPrimary,
+        height: 1.15,
+      );
+
+  static TextStyle get h2 => GoogleFonts.manrope(
+        fontSize: 18,
         fontWeight: FontWeight.w700,
         color: AppColors.textPrimary,
         height: 1.2,
       );
 
-  static TextStyle get h2 => GoogleFonts.inter(
-        fontSize: 18,
-        fontWeight: FontWeight.w700,
-        color: AppColors.textPrimary,
-      );
-
-  static TextStyle get sectionTitle => GoogleFonts.inter(
+  static TextStyle get sectionTitle => GoogleFonts.manrope(
         fontSize: 15,
         fontWeight: FontWeight.w600,
         color: AppColors.textPrimary,
+        height: 1.2,
       );
 
-  static TextStyle get body => GoogleFonts.inter(
+  static TextStyle get body => GoogleFonts.manrope(
         fontSize: 13.5,
         fontWeight: FontWeight.w500,
         color: AppColors.textPrimary,
+        height: 1.35,
       );
 
-  static TextStyle get bodyMuted => GoogleFonts.inter(
+  static TextStyle get bodyMuted => GoogleFonts.manrope(
         fontSize: 13,
         fontWeight: FontWeight.w400,
         color: AppColors.textSecondary,
+        height: 1.35,
       );
 
-  static TextStyle get label => GoogleFonts.inter(
+  static TextStyle get label => GoogleFonts.manrope(
         fontSize: 11,
         fontWeight: FontWeight.w600,
         color: AppColors.textMuted,
-        letterSpacing: 0.4,
+        letterSpacing: 0.45,
+        height: 1.2,
       );
 
-  static TextStyle get caption => GoogleFonts.inter(
+  static TextStyle get caption => GoogleFonts.manrope(
         fontSize: 11.5,
         fontWeight: FontWeight.w400,
         color: AppColors.textMuted,
+        height: 1.3,
       );
 
   static TextStyle get mono => GoogleFonts.jetBrainsMono(
@@ -57,16 +63,18 @@ class AppTypography {
         color: AppColors.textPrimary,
       );
 
-  static TextStyle get sidebarSection => GoogleFonts.inter(
+  static TextStyle get sidebarSection => GoogleFonts.manrope(
         fontSize: 10.5,
         fontWeight: FontWeight.w700,
         color: AppColors.shellTextMuted,
-        letterSpacing: 0.8,
+        letterSpacing: 0.9,
+        height: 1.2,
       );
 
-  static TextStyle get sidebarItem => GoogleFonts.inter(
+  static TextStyle get sidebarItem => GoogleFonts.manrope(
         fontSize: 13.5,
         fontWeight: FontWeight.w500,
         color: Colors.white,
+        height: 1.25,
       );
 }

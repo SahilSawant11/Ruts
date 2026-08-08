@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -16,6 +17,12 @@ class AppTextField extends StatelessWidget {
     this.suffix,
     this.readOnly = false,
     this.onChanged,
+    this.onSubmitted,
+    this.focusNode,
+    this.autofocus = false,
+    this.textInputAction,
+    this.selectAllOnFocus = false,
+    this.showPasteButton = false,
   });
 
   final String label;
@@ -25,6 +32,12 @@ class AppTextField extends StatelessWidget {
   final Widget? suffix;
   final bool readOnly;
   final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
+  final FocusNode? focusNode;
+  final bool autofocus;
+  final TextInputAction? textInputAction;
+  final bool selectAllOnFocus;
+  final bool showPasteButton;
 
   @override
   Widget build(BuildContext context) {
@@ -37,9 +50,20 @@ class AppTextField extends StatelessWidget {
         ],
         TextField(
           controller: controller,
+          focusNode: focusNode,
           enabled: enabled,
           readOnly: readOnly,
+          autofocus: autofocus,
           onChanged: onChanged,
+          onSubmitted: onSubmitted,
+          textInputAction: textInputAction,
+          enableInteractiveSelection: true,
+          onTap: selectAllOnFocus && controller != null
+              ? () => controller!.selection = TextSelection(
+                    baseOffset: 0,
+                    extentOffset: controller!.text.length,
+                  )
+              : null,
           style: AppTypography.body.copyWith(
             color: AppColors.textPrimaryFor(context),
           ),
@@ -49,7 +73,7 @@ class AppTextField extends StatelessWidget {
               color: AppColors.textMutedFor(context),
             ),
             isDense: true,
-            suffixIcon: suffix,
+            suffixIcon: _buildSuffix(context),
             filled: true,
             fillColor: enabled
                 ? AppColors.surfaceFor(context)
@@ -74,6 +98,39 @@ class AppTextField extends StatelessWidget {
             ),
           ),
         ),
+      ],
+    );
+  }
+
+  Widget? _buildSuffix(BuildContext context) {
+    final pasteButton = showPasteButton && controller != null && enabled && !readOnly
+        ? IconButton(
+            tooltip: 'Paste',
+            onPressed: () async {
+              final data = await Clipboard.getData(Clipboard.kTextPlain);
+              final text = data?.text;
+              if (text == null || text.isEmpty) return;
+              controller!
+                ..text = text
+                ..selection = TextSelection.collapsed(offset: text.length);
+              onChanged?.call(text);
+            },
+            icon: Icon(
+              Icons.content_paste_rounded,
+              size: 18,
+              color: AppColors.textSecondaryFor(context),
+            ),
+          )
+        : null;
+
+    if (suffix == null) return pasteButton;
+    if (pasteButton == null) return suffix;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        pasteButton,
+        suffix!,
       ],
     );
   }

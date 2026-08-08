@@ -7,7 +7,6 @@ import '../../../core/theme/app_typography.dart';
 import '../../../features/sync/data/sync_providers.dart';
 import '../badges/status_chip.dart';
 import '../inputs/search_field.dart';
-import 'brand_logo.dart';
 import 'sidebar_state.dart';
 
 /// Top bar shown on every screen: hamburger (toggles sidebar collapse),
@@ -29,68 +28,107 @@ class AppTopHeader extends ConsumerWidget {
     final themeMode = ref.watch(appThemeModeProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundFor(context),
-        border: Border(bottom: BorderSide(color: AppColors.borderFor(context))),
-      ),
-      child: Row(
-        children: [
-          InkWell(
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            onTap: () => ref.read(sidebarCollapsedProvider.notifier).state =
-                !ref.read(sidebarCollapsedProvider),
-            child: Padding(
-              padding: const EdgeInsets.all(6),
-              child: Icon(
-                Icons.menu_rounded,
-                color: AppColors.textSecondaryFor(context),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final showSearch = width >= 1120;
+        final showLocalMode = width >= 980;
+        final showDate = width >= 900;
+        final showProfileLabel = width >= 760;
+        final compactTitle = width < 820;
+
+        return Container(
+          height: 64,
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          decoration: BoxDecoration(
+            color: AppColors.backgroundFor(context),
+            border: Border(bottom: BorderSide(color: AppColors.borderFor(context))),
+          ),
+          child: Row(
+            children: [
+              InkWell(
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                onTap: () => ref.read(sidebarCollapsedProvider.notifier).state =
+                    !ref.read(sidebarCollapsedProvider),
+                child: Padding(
+                  padding: const EdgeInsets.all(6),
+                  child: Icon(
+                    Icons.menu_rounded,
+                    color: AppColors.textSecondaryFor(context),
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(width: AppSpacing.sm),
+              Flexible(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        moduleTitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.h2,
+                      ),
+                    ),
+                    if (!compactTitle) ...[
+                      const SizedBox(width: AppSpacing.xs),
+                      _pillBadge(moduleShortcutLabel),
+                    ],
+                  ],
+                ),
+              ),
+              if (showSearch) ...[
+                const SizedBox(width: AppSpacing.lg),
+                const SizedBox(width: 240, child: SearchField()),
+              ],
+              const Spacer(),
+              syncOverviewAsync.when(
+                loading: () => const StatusChip(label: 'Sync…', tone: StatusChipTone.neutral),
+                error: (_, __) => const StatusChip(label: 'Sync unknown', tone: StatusChipTone.neutral),
+                data: (overview) => StatusChip(
+                  label: overview.failed > 0
+                      ? '${overview.failed} failed'
+                      : overview.total > 0
+                          ? '${overview.total} queued'
+                          : 'Sync clean',
+                  tone: overview.failed > 0 ? StatusChipTone.dark : StatusChipTone.neutral,
+                ),
+              ),
+              if (showLocalMode) ...[
+                const SizedBox(width: AppSpacing.xs),
+                const StatusChip(
+                  label: 'Local-first mode',
+                  tone: StatusChipTone.neutral,
+                  icon: Icons.storage_rounded,
+                ),
+              ],
+              if (showDate) ...[
+                const SizedBox(width: AppSpacing.xs),
+                StatusChip(
+                  label: _todayLabel(),
+                  tone: StatusChipTone.neutral,
+                  icon: Icons.calendar_today_outlined,
+                ),
+              ],
+              const SizedBox(width: AppSpacing.sm),
+              _themeButton(
+                context: context,
+                isDark: isDark,
+                themeMode: themeMode,
+                onTap: () => ref.read(appThemeModeProvider.notifier).state =
+                    isDark ? ThemeMode.light : ThemeMode.dark,
+              ),
+              const SizedBox(width: 6),
+              _iconButton(context, Icons.calculate_outlined),
+              const SizedBox(width: 6),
+              _iconButton(context, Icons.description_outlined),
+              const SizedBox(width: AppSpacing.sm),
+              _profile(context, showLabel: showProfileLabel),
+            ],
           ),
-          const SizedBox(width: AppSpacing.sm),
-          const BrandLogo(compact: true, showWordmark: false),
-          const SizedBox(width: AppSpacing.sm),
-          Text(moduleTitle, style: AppTypography.h2),
-          const SizedBox(width: AppSpacing.xs),
-          _pillBadge(moduleShortcutLabel),
-          const SizedBox(width: AppSpacing.lg),
-          const SearchField(),
-          const Spacer(),
-          syncOverviewAsync.when(
-            loading: () => const StatusChip(label: 'Sync…', tone: StatusChipTone.neutral),
-            error: (_, __) => const StatusChip(label: 'Sync unknown', tone: StatusChipTone.neutral),
-            data: (overview) => StatusChip(
-              label: overview.failed > 0
-                  ? '${overview.failed} failed'
-                  : overview.total > 0
-                      ? '${overview.total} queued'
-                      : 'Sync clean',
-              tone: overview.failed > 0 ? StatusChipTone.dark : StatusChipTone.neutral,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.xs),
-          const StatusChip(label: 'Local-first mode', tone: StatusChipTone.neutral, icon: Icons.storage_rounded),
-          const SizedBox(width: AppSpacing.xs),
-          StatusChip(label: _todayLabel(), tone: StatusChipTone.neutral, icon: Icons.calendar_today_outlined),
-          const SizedBox(width: AppSpacing.sm),
-          _themeButton(
-            context: context,
-            isDark: isDark,
-            themeMode: themeMode,
-            onTap: () => ref.read(appThemeModeProvider.notifier).state =
-                isDark ? ThemeMode.light : ThemeMode.dark,
-          ),
-          const SizedBox(width: 6),
-          _iconButton(context, Icons.calculate_outlined),
-          const SizedBox(width: 6),
-          _iconButton(context, Icons.description_outlined),
-          const SizedBox(width: AppSpacing.sm),
-          _profile(context),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -157,7 +195,7 @@ class AppTopHeader extends ConsumerWidget {
     );
   }
 
-  Widget _profile(BuildContext context) {
+  Widget _profile(BuildContext context, {required bool showLabel}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 6),
       decoration: BoxDecoration(
@@ -172,26 +210,35 @@ class AppTopHeader extends ConsumerWidget {
             backgroundColor: AppColors.primary,
             child: Text('AD', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
           ),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'admin',
-                style: AppTypography.body.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimaryFor(context),
-                ),
+          if (showLabel) ...[
+            const SizedBox(width: 8),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 120),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'admin',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.body.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimaryFor(context),
+                    ),
+                  ),
+                  Text(
+                    'Store Manager',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.textSecondaryFor(context),
+                    ),
+                  ),
+                ],
               ),
-              Text(
-                'Store Manager',
-                style: AppTypography.caption.copyWith(
-                  color: AppColors.textSecondaryFor(context),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ],
       ),
     );
