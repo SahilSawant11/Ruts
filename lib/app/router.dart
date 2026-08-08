@@ -8,6 +8,7 @@ import '../features/masters/presentation/screens/supplier_master_screen.dart';
 import '../features/purchase/presentation/screens/purchase_bill_screen.dart';
 import '../features/reports/presentation/screens/reports_screen.dart';
 import '../features/sales/presentation/screens/sales_billing_screen.dart';
+import '../features/sync/presentation/screens/sync_center_screen.dart';
 import '../shared/widgets/layout/app_shell.dart';
 
 /// StatefulShellRoute keeps the sidebar/header/status bar (built once
@@ -46,6 +47,9 @@ final appRouter = GoRouter(
         ]),
         StatefulShellBranch(routes: [
           GoRoute(path: '/reports', builder: (context, state) => const ReportsScreen()),
+        ]),
+        StatefulShellBranch(routes: [
+          GoRoute(path: '/sync', builder: (context, state) => const SyncCenterScreen()),
         ]),
       ],
     ),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../features/sync/data/sync_providers.dart';
 import '../badges/status_chip.dart';
 import '../inputs/search_field.dart';
 import 'sidebar_state.dart';
@@ -22,6 +23,8 @@ class AppTopHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final syncOverviewAsync = ref.watch(syncOverviewProvider);
+
     return Container(
       height: 64,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
@@ -47,11 +50,22 @@ class AppTopHeader extends ConsumerWidget {
           const SizedBox(width: AppSpacing.lg),
           const SearchField(),
           const Spacer(),
-          const StatusChip(label: 'Online'),
+          syncOverviewAsync.when(
+            loading: () => const StatusChip(label: 'Sync…', tone: StatusChipTone.neutral),
+            error: (_, __) => const StatusChip(label: 'Sync unknown', tone: StatusChipTone.neutral),
+            data: (overview) => StatusChip(
+              label: overview.failed > 0
+                  ? '${overview.failed} failed'
+                  : overview.total > 0
+                      ? '${overview.total} queued'
+                      : 'Sync clean',
+              tone: overview.failed > 0 ? StatusChipTone.dark : StatusChipTone.neutral,
+            ),
+          ),
           const SizedBox(width: AppSpacing.xs),
-          const StatusChip(label: '30°C · Mostly cloudy', tone: StatusChipTone.neutral, icon: Icons.wb_cloudy_outlined),
+          const StatusChip(label: 'Local-first mode', tone: StatusChipTone.neutral, icon: Icons.storage_rounded),
           const SizedBox(width: AppSpacing.xs),
-          const StatusChip(label: '28-Jun-2026', tone: StatusChipTone.neutral, icon: Icons.calendar_today_outlined),
+          StatusChip(label: _todayLabel(), tone: StatusChipTone.neutral, icon: Icons.calendar_today_outlined),
           const SizedBox(width: AppSpacing.sm),
           _iconButton(Icons.calculate_outlined),
           const SizedBox(width: 6),
@@ -61,6 +75,12 @@ class AppTopHeader extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  String _todayLabel() {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final now = DateTime.now();
+    return '${now.day.toString().padLeft(2, '0')}-${months[now.month - 1]}-${now.year}';
   }
 
   Widget _pillBadge(String label) {
