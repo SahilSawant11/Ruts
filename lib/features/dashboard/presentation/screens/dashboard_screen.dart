@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../shared/widgets/badges/status_chip.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
 import '../../../inventory/data/inventory_providers.dart';
+import '../../../sales/data/sales_providers.dart';
 import '../../data/dashboard_providers.dart';
 import '../widgets/category_sales_card.dart';
 import '../widgets/daily_target_card.dart';
@@ -68,6 +70,8 @@ class _DashboardHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final pendingSyncAsync = ref.watch(pendingSalesSyncCountProvider);
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -80,6 +84,16 @@ class _DashboardHeader extends ConsumerWidget {
               Text('Store performance at a glance — ${_formatToday()}.', style: AppTypography.bodyMuted),
             ],
           ),
+        ),
+        pendingSyncAsync.when(
+          loading: () => const SizedBox.shrink(),
+          error: (_, __) => const SizedBox.shrink(),
+          data: (count) => count > 0
+              ? const Padding(
+                  padding: EdgeInsets.only(right: AppSpacing.sm),
+                  child: StatusChip(label: 'Queued offline', tone: StatusChipTone.neutral),
+                )
+              : const SizedBox.shrink(),
         ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 9),
