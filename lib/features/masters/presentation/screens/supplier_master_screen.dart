@@ -31,6 +31,7 @@ class _ScreenHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final suppliersAsync = ref.watch(suppliersListProvider);
+    final pendingSyncAsync = ref.watch(pendingMastersSyncCountProvider);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -45,10 +46,23 @@ class _ScreenHeader extends ConsumerWidget {
             ],
           ),
         ),
-        suppliersAsync.when(
-          loading: () => const StatusChip(label: 'Loading…', tone: StatusChipTone.neutral),
-          error: (_, __) => const StatusChip(label: 'Could not load', tone: StatusChipTone.neutral),
-          data: (suppliers) => StatusChip(label: '${suppliers.length} supplier${suppliers.length == 1 ? '' : 's'}'),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            suppliersAsync.when(
+              loading: () => const StatusChip(label: 'Loading…', tone: StatusChipTone.neutral),
+              error: (_, __) => const StatusChip(label: 'Could not load', tone: StatusChipTone.neutral),
+              data: (suppliers) => StatusChip(label: '${suppliers.length} supplier${suppliers.length == 1 ? '' : 's'}'),
+            ),
+            const SizedBox(height: 8),
+            pendingSyncAsync.when(
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+              data: (count) => count > 0
+                  ? const StatusChip(label: 'Pending sync', tone: StatusChipTone.neutral)
+                  : const SizedBox.shrink(),
+            ),
+          ],
         ),
       ],
     );

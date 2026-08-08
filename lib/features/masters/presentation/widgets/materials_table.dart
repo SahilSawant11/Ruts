@@ -111,6 +111,7 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
           _cell('CATEGORY', flex: 1, header: true),
           _cell('PACKING', flex: 2, header: true),
           _cell('BARCODE', flex: 2, header: true),
+          _cell('SYNC', flex: 1, header: true),
           _cell('SALE RATE', flex: 1, header: true, alignEnd: true),
         ],
       ),
@@ -130,6 +131,12 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
             Expanded(flex: 1, child: TagPill(label: m.category, tone: TagPillTone.neutral)),
             _cell(m.packing, flex: 2),
             _cell(m.barcode, flex: 2, mono: true, muted: m.barcode == m.id),
+            Expanded(
+              flex: 1,
+              child: m.isPendingSync
+                  ? const TagPill(label: 'Pending', tone: TagPillTone.amber)
+                  : const SizedBox.shrink(),
+            ),
             _cell(m.saleRate == 0 ? '—' : '₹${m.saleRate.toStringAsFixed(0)}', flex: 1, alignEnd: true),
           ],
         ),

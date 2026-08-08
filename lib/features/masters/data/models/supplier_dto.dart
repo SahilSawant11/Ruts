@@ -11,6 +11,7 @@ class SupplierDto {
     required this.disPercent,
     required this.openingBalance,
     required this.balanceType,
+    this.isPendingSync = false,
   });
 
   final String id;
@@ -23,6 +24,7 @@ class SupplierDto {
   final double disPercent;
   final double openingBalance;
   final String balanceType;
+  final bool isPendingSync;
 
   factory SupplierDto.fromJson(Map<String, dynamic> json) {
     return SupplierDto(
@@ -36,6 +38,7 @@ class SupplierDto {
       disPercent: (json['disPercent'] as num).toDouble(),
       openingBalance: (json['openingBalance'] as num).toDouble(),
       balanceType: json['balanceType'] as String,
+      isPendingSync: false,
     );
   }
 }

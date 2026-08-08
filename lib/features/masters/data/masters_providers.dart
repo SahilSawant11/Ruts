@@ -30,3 +30,7 @@ final suppliersListProvider = FutureProvider<List<SupplierDto>>((ref) {
 final materialsListProvider = FutureProvider<List<MaterialDto>>((ref) {
   return ref.watch(mastersRepositoryProvider).getMaterials();
 });
+
+final pendingMastersSyncCountProvider = FutureProvider<int>((ref) {
+  return ref.watch(mastersRepositoryProvider).getPendingSyncCount();
+});

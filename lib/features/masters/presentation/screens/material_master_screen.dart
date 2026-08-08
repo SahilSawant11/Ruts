@@ -34,6 +34,7 @@ class _ScreenHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final materialsAsync = ref.watch(materialsListProvider);
+    final pendingSyncAsync = ref.watch(pendingMastersSyncCountProvider);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,10 +49,23 @@ class _ScreenHeader extends ConsumerWidget {
             ],
           ),
         ),
-        materialsAsync.when(
-          loading: () => const StatusChip(label: 'Loading…', tone: StatusChipTone.neutral),
-          error: (_, __) => const StatusChip(label: 'Could not load', tone: StatusChipTone.neutral),
-          data: (materials) => StatusChip(label: '${materials.length} material${materials.length == 1 ? '' : 's'}'),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            materialsAsync.when(
+              loading: () => const StatusChip(label: 'Loading…', tone: StatusChipTone.neutral),
+              error: (_, __) => const StatusChip(label: 'Could not load', tone: StatusChipTone.neutral),
+              data: (materials) => StatusChip(label: '${materials.length} material${materials.length == 1 ? '' : 's'}'),
+            ),
+            const SizedBox(height: 8),
+            pendingSyncAsync.when(
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+              data: (count) => count > 0
+                  ? const StatusChip(label: 'Pending sync', tone: StatusChipTone.neutral)
+                  : const SizedBox.shrink(),
+            ),
+          ],
         ),
       ],
     );
