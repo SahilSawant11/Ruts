@@ -38,7 +38,7 @@ class AppStatusBar extends ConsumerWidget {
           const SizedBox(width: 6),
           Text('Sync Center available', style: muted),
           const SizedBox(width: AppSpacing.md),
-          Text('Product 6 Software v8.4', style: muted),
+          Text('Caskly v8.4', style: muted),
         ],
       ),
     );

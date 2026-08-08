@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import 'brand_logo.dart';
 import 'sidebar_item.dart';
 import 'sidebar_state.dart';
 
@@ -127,33 +128,9 @@ class AppSidebar extends ConsumerWidget {
   Widget _brand(bool collapsed) {
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.md),
-      child: Row(
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-            ),
-            alignment: Alignment.center,
-            child: Text('P', style: AppTypography.h2.copyWith(color: Colors.white)),
-          ),
-          if (!collapsed) ...[
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Product 6', style: AppTypography.sidebarItem.copyWith(fontWeight: FontWeight.w700)),
-                  Text('Software · POS Suite',
-                      style: AppTypography.caption.copyWith(color: AppColors.shellTextMuted)),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
+      child: collapsed
+          ? const Center(child: BrandLogo(compact: true, showWordmark: false))
+          : const BrandLogo(),
     );
   }
 

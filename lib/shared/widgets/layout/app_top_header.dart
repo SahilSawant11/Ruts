@@ -6,6 +6,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../features/sync/data/sync_providers.dart';
 import '../badges/status_chip.dart';
 import '../inputs/search_field.dart';
+import 'brand_logo.dart';
 import 'sidebar_state.dart';
 
 /// Top bar shown on every screen: hamburger (toggles sidebar collapse),
@@ -43,6 +44,8 @@ class AppTopHeader extends ConsumerWidget {
               child: Icon(Icons.menu_rounded, color: AppColors.textSecondary),
             ),
           ),
+          const SizedBox(width: AppSpacing.sm),
+          const BrandLogo(compact: true, showWordmark: false),
           const SizedBox(width: AppSpacing.sm),
           Text(moduleTitle, style: AppTypography.h2),
           const SizedBox(width: AppSpacing.xs),
