@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:collection';
 
 import 'package:drift/drift.dart' hide Column;
 
@@ -20,6 +21,7 @@ class LocalMastersRepository {
     final cached = await _getCachedSuppliers();
 
     try {
+      await syncPendingMasters();
       final remote = await _remote.getSuppliers();
       await _cacheSuppliers(remote);
       return await _getCachedSuppliers();
@@ -102,6 +104,7 @@ class LocalMastersRepository {
     final cached = await _getCachedMaterials();
 
     try {
+      await syncPendingMasters();
       final remote = await _remote.getMaterials();
       await _cacheMaterials(remote);
       return await _getCachedMaterials();
@@ -185,6 +188,56 @@ class LocalMastersRepository {
     final query = _db.selectOnly(_db.syncQueueItems)..addColumns([countExp]);
     final row = await query.getSingle();
     return row.read(countExp) ?? 0;
+  }
+
+  Stream<int> watchPendingSyncCount() {
+    final countExp = _db.syncQueueItems.id.count();
+    final query = _db.selectOnly(_db.syncQueueItems)..addColumns([countExp]);
+    return query.watchSingle().map((row) => row.read(countExp) ?? 0);
+  }
+
+  Future<void> syncPendingMasters() async {
+    final rows = await (_db.select(_db.syncQueueItems)
+          ..where((tbl) => tbl.status.equals('pending'))
+          ..orderBy([(tbl) => OrderingTerm.asc(tbl.createdAt), (tbl) => OrderingTerm.asc(tbl.id)]))
+        .get();
+
+    if (rows.isEmpty) return;
+
+    final latestByEntity = LinkedHashMap<String, SyncQueueItem>();
+    for (final row in rows) {
+      latestByEntity['${row.entityType}:${row.entityId}'] = row;
+    }
+
+    for (final item in latestByEntity.values) {
+      try {
+        await _markQueueProcessing(item.entityType, item.entityId);
+
+        switch (item.entityType) {
+          case 'supplier':
+            await _syncSupplier(item);
+            break;
+          case 'material':
+            await _syncMaterial(item);
+            break;
+        }
+      } on ApiException catch (e) {
+        if (e.statusCode == null) {
+          await _markQueuePending(
+            item.entityType,
+            item.entityId,
+            lastError: e.message,
+          );
+          rethrow;
+        }
+
+        await _markQueueFailed(
+          item.entityType,
+          item.entityId,
+          lastError: e.message,
+        );
+      }
+    }
   }
 
   Future<List<SupplierDto>> _getCachedSuppliers() async {
@@ -372,4 +425,117 @@ class LocalMastersRepository {
           ),
         );
   }
+
+  Future<void> _syncSupplier(SyncQueueItem item) async {
+    final payload = _decodePayload(item.payload);
+    final request = SaveSupplierRequest(
+      name: payload['name'] as String,
+      address: payload['address'] as String?,
+      contactNo: payload['contactNo'] as String?,
+      email: payload['email'] as String?,
+      vatNo: payload['vatNo'] as String?,
+      bankDetails: payload['bankDetails'] as String?,
+      disPercent: _asDouble(payload['disPercent']),
+      openingBalance: _asDouble(payload['openingBalance']),
+      balanceType: payload['balanceType'] as String,
+    );
+
+    if (item.operation == 'create') {
+      final created = await _remote.createSupplier(request);
+      await _db.transaction(() async {
+        await (_db.delete(_db.cachedSuppliers)..where((tbl) => tbl.id.equals(item.entityId))).go();
+        await _upsertSupplier(created, syncStatus: 'synced');
+        await _clearQueueFor(item.entityType, item.entityId);
+      });
+      return;
+    }
+
+    final updated = await _remote.updateSupplier(item.entityId, request);
+    await _db.transaction(() async {
+      await _upsertSupplier(updated, syncStatus: 'synced');
+      await _clearQueueFor(item.entityType, item.entityId);
+    });
+  }
+
+  Future<void> _syncMaterial(SyncQueueItem item) async {
+    final payload = _decodePayload(item.payload);
+    final request = SaveMaterialRequest(
+      id: payload['id'] as String,
+      barcode: payload['barcode'] as String?,
+      name: payload['name'] as String,
+      category: payload['category'] as String,
+      packing: payload['packing'] as String,
+      saleRate: _asDouble(payload['saleRate']),
+      taxPercent: _asDouble(payload['taxPercent']),
+    );
+
+    if (item.operation == 'create') {
+      final created = await _remote.createMaterial(request);
+      await _db.transaction(() async {
+        await _upsertMaterial(created, syncStatus: 'synced');
+        await _clearQueueFor(item.entityType, item.entityId);
+      });
+      return;
+    }
+
+    final updated = await _remote.updateMaterial(item.entityId, request);
+    await _db.transaction(() async {
+      await _upsertMaterial(updated, syncStatus: 'synced');
+      await _clearQueueFor(item.entityType, item.entityId);
+    });
+  }
+
+  Future<void> _markQueueProcessing(String entityType, String entityId) async {
+    await (_db.update(_db.syncQueueItems)
+          ..where((tbl) => tbl.entityType.equals(entityType) & tbl.entityId.equals(entityId)))
+        .write(
+      SyncQueueItemsCompanion(
+        status: const Value('processing'),
+        lastError: const Value(null),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+  }
+
+  Future<void> _markQueuePending(
+    String entityType,
+    String entityId, {
+    required String lastError,
+  }) async {
+    await (_db.update(_db.syncQueueItems)
+          ..where((tbl) => tbl.entityType.equals(entityType) & tbl.entityId.equals(entityId)))
+        .write(
+      SyncQueueItemsCompanion(
+        status: const Value('pending'),
+        lastError: Value(lastError),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+  }
+
+  Future<void> _markQueueFailed(
+    String entityType,
+    String entityId, {
+    required String lastError,
+  }) async {
+    await (_db.update(_db.syncQueueItems)
+          ..where((tbl) => tbl.entityType.equals(entityType) & tbl.entityId.equals(entityId)))
+        .write(
+      SyncQueueItemsCompanion(
+        status: const Value('failed'),
+        lastError: Value(lastError),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+  }
+
+  Future<void> _clearQueueFor(String entityType, String entityId) async {
+    await (_db.delete(_db.syncQueueItems)
+          ..where((tbl) => tbl.entityType.equals(entityType) & tbl.entityId.equals(entityId)))
+        .go();
+  }
+
+  Map<String, dynamic> _decodePayload(String raw) => jsonDecode(raw) as Map<String, dynamic>;
+
+  double _asDouble(Object? value) => (value as num).toDouble();
 }
