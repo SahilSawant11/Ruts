@@ -97,6 +97,11 @@ class _CustomerField extends StatelessWidget {
       data: (customers) {
         final matches = customers.where((c) => c.id == selectedId);
         final selected = matches.isEmpty ? null : matches.first;
+        if (selectedId != null && selected == null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ref.read(selectedCustomerIdProvider.notifier).state = null;
+          });
+        }
         return AppDropdown<CustomerDto>(
           label: 'CUSTOMER',
           items: customers,
