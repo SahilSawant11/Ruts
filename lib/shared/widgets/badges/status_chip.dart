@@ -28,7 +28,9 @@ class StatusChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 7),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.06) : AppColors.backgroundFor(context),
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.06)
+            : AppColors.backgroundFor(context),
         borderRadius: BorderRadius.circular(AppRadius.pill),
         border: Border.all(
           color: isDark ? AppColors.shellBorderFor(context) : AppColors.borderFor(context),
@@ -41,7 +43,9 @@ class StatusChip extends StatelessWidget {
             Icon(
               icon,
               size: 14,
-              color: isDark ? Colors.white70 : AppColors.textSecondaryFor(context),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.70)
+                  : AppColors.textSecondaryFor(context),
             ),
             const SizedBox(width: 6),
           ] else ...[
@@ -57,7 +61,9 @@ class StatusChip extends StatelessWidget {
             style: AppTypography.bodyMuted.copyWith(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: isDark ? Colors.white70 : AppColors.textSecondaryFor(context),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.70)
+                  : AppColors.textSecondaryFor(context),
             ),
           ),
         ],

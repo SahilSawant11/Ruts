@@ -25,15 +25,19 @@ class KeyboardShortcutBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
-        color: onLight ? AppColors.surfaceAlt : Colors.white.withOpacity(0.18),
+        color: onLight
+            ? AppColors.surfaceAltFor(context)
+            : Colors.white.withValues(
+                alpha: AppColors.isDark(context) ? 0.16 : 0.18,
+              ),
         borderRadius: BorderRadius.circular(AppRadius.sm - 2),
-        border: onLight ? Border.all(color: AppColors.border) : null,
+        border: onLight ? Border.all(color: AppColors.borderFor(context)) : null,
       ),
       child: Text(
         label,
         style: AppTypography.mono.copyWith(
           fontSize: 10.5,
-          color: onLight ? AppColors.textSecondary : Colors.white,
+          color: onLight ? AppColors.textSecondaryFor(context) : Colors.white,
         ),
       ),
     );

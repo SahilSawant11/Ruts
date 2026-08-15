@@ -41,14 +41,20 @@ class KpiCard extends StatelessWidget {
     }
   }
 
-  Color get _iconBg {
+  Color _iconBg(BuildContext context) {
     switch (tone) {
       case KpiTone.amber:
-        return AppColors.warningSoft;
+        return AppColors.isDark(context)
+            ? AppColors.warning.withValues(alpha: 0.16)
+            : AppColors.warningSoft;
       case KpiTone.red:
-        return AppColors.dangerSoft;
+        return AppColors.isDark(context)
+            ? AppColors.danger.withValues(alpha: 0.16)
+            : AppColors.dangerSoft;
       case KpiTone.normal:
-        return AppColors.primarySoft;
+        return AppColors.isDark(context)
+            ? AppColors.primary.withValues(alpha: 0.16)
+            : AppColors.primarySoft;
     }
   }
 
@@ -67,9 +73,15 @@ class KpiCard extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: _iconBg.withValues(alpha: 0.88),
+                    color: _iconBg(context).withValues(
+                      alpha: AppColors.isDark(context) ? 1 : 0.88,
+                    ),
                     borderRadius: BorderRadius.circular(AppRadius.md),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.55)),
+                    border: Border.all(
+                      color: AppColors.isDark(context)
+                          ? AppColors.borderFor(context)
+                          : Colors.white.withValues(alpha: 0.55),
+                    ),
                     boxShadow: AppColors.cardShadowFor(context)
                         .map((shadow) => BoxShadow(
                               color: shadow.color.withValues(alpha: shadow.color.a * 0.28),
@@ -94,7 +106,7 @@ class KpiCard extends StatelessWidget {
                   style: AppTypography.bodyMuted.copyWith(
                     fontWeight: FontWeight.w700,
                     color: trendUp == null
-                        ? AppColors.textSecondary
+                        ? AppColors.textSecondaryFor(context)
                         : (trendUp! ? AppColors.success : AppColors.danger),
                   ),
                 ),

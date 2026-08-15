@@ -16,7 +16,9 @@ class SearchField extends StatelessWidget {
     return SizedBox(
       width: width,
       child: TextField(
-        style: AppTypography.body,
+        style: AppTypography.body.copyWith(
+          color: AppColors.textPrimaryFor(context),
+        ),
         decoration: InputDecoration(
           isDense: true,
           prefixIcon: Icon(Icons.search, size: 19, color: muted),

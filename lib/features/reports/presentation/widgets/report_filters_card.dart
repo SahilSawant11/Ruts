@@ -97,15 +97,24 @@ class _ReportFiltersCardState extends ConsumerState<ReportFiltersCard> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: AppColors.surfaceFor(context),
               borderRadius: BorderRadius.circular(AppRadius.md),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: AppColors.borderFor(context)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.calendar_today_outlined, size: 15, color: AppColors.textMuted),
+                Icon(
+                  Icons.calendar_today_outlined,
+                  size: 15,
+                  color: AppColors.textMutedFor(context),
+                ),
                 const SizedBox(width: 8),
-                Text(_fmt(value), style: AppTypography.body),
+                Text(
+                  _fmt(value),
+                  style: AppTypography.body.copyWith(
+                    color: AppColors.textPrimaryFor(context),
+                  ),
+                ),
               ],
             ),
           ),

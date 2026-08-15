@@ -19,7 +19,7 @@ class AppTheme {
         error: AppColors.danger,
       ),
       dividerColor: AppColors.border,
-      cardColor: Colors.white.withValues(alpha: 0.86),
+      cardColor: AppColors.background,
       textTheme: TextTheme(
         headlineSmall: AppTypography.h1,
         titleMedium: AppTypography.h2,
@@ -29,19 +29,19 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.86),
+        fillColor: AppColors.surface,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: BorderSide(
-            color: Colors.white.withValues(alpha: 0.92),
+          borderSide: const BorderSide(
+            color: AppColors.border,
           ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: BorderSide(
-            color: Colors.white.withValues(alpha: 0.92),
+          borderSide: const BorderSide(
+            color: AppColors.border,
           ),
         ),
         focusedBorder: OutlineInputBorder(
@@ -73,7 +73,7 @@ class AppTheme {
         outline: AppColors.borderDark,
       ),
       dividerColor: AppColors.borderDark,
-      cardColor: Colors.white.withValues(alpha: 0.08),
+      cardColor: AppColors.surfaceDark,
       textTheme: TextTheme(
         headlineSmall: AppTypography.h1.copyWith(color: AppColors.textPrimaryDark),
         titleMedium: AppTypography.h2.copyWith(color: AppColors.textPrimaryDark),
@@ -83,19 +83,19 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.08),
+        fillColor: AppColors.surfaceDark,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: BorderSide(
-            color: Colors.white.withValues(alpha: 0.08),
+          borderSide: const BorderSide(
+            color: AppColors.borderDark,
           ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: BorderSide(
-            color: Colors.white.withValues(alpha: 0.08),
+          borderSide: const BorderSide(
+            color: AppColors.borderDark,
           ),
         ),
         focusedBorder: OutlineInputBorder(

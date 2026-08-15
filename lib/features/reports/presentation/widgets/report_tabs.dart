@@ -16,25 +16,25 @@ class ReportTabs extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.surfaceFor(context),
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppColors.borderFor(context)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _segment(ReportTab.dayWise, 'Day-wise', Icons.calendar_today_outlined),
-          _segment(ReportTab.monthly, 'Monthly', Icons.calendar_month_outlined),
-          _segment(ReportTab.custom, 'Custom', Icons.filter_list_rounded),
+          _segment(context, ReportTab.dayWise, 'Day-wise', Icons.calendar_today_outlined),
+          _segment(context, ReportTab.monthly, 'Monthly', Icons.calendar_month_outlined),
+          _segment(context, ReportTab.custom, 'Custom', Icons.filter_list_rounded),
         ],
       ),
     );
   }
 
-  Widget _segment(ReportTab tab, String label, IconData icon) {
+  Widget _segment(BuildContext context, ReportTab tab, String label, IconData icon) {
     final isSelected = tab == selected;
     return Material(
-      color: isSelected ? AppColors.background : Colors.transparent,
+      color: isSelected ? AppColors.backgroundFor(context) : Colors.transparent,
       borderRadius: BorderRadius.circular(AppRadius.sm),
       elevation: isSelected ? 1 : 0,
       child: InkWell(
@@ -45,13 +45,17 @@ class ReportTabs extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 15, color: isSelected ? AppColors.primary : AppColors.textMuted),
+              Icon(
+                icon,
+                size: 15,
+                color: isSelected ? AppColors.primary : AppColors.textMutedFor(context),
+              ),
               const SizedBox(width: 6),
               Text(
                 label,
                 style: AppTypography.body.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                  color: isSelected ? AppColors.primary : AppColors.textSecondaryFor(context),
                 ),
               ),
             ],

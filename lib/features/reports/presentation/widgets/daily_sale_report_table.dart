@@ -47,11 +47,12 @@ class DailySaleReportTable extends ConsumerWidget {
               }
               return Column(
                 children: [
-                  _headerRow(),
-                  const Divider(height: 1, color: AppColors.border),
-                  for (var i = 0; i < report.items.length; i++) _dataRow(i + 1, report.items[i]),
-                  const Divider(height: 1, color: AppColors.border),
-                  _totalsRow(report),
+                  _headerRow(context),
+                  Divider(height: 1, color: AppColors.borderFor(context)),
+                  for (var i = 0; i < report.items.length; i++)
+                    _dataRow(context, i + 1, report.items[i]),
+                  Divider(height: 1, color: AppColors.borderFor(context)),
+                  _totalsRow(context, report),
                 ],
               );
             },
@@ -66,55 +67,56 @@ class DailySaleReportTable extends ConsumerWidget {
     return '${d.day.toString().padLeft(2, '0')}-${months[d.month - 1]}-${d.year}';
   }
 
-  Widget _headerRow() {
+  Widget _headerRow(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
         children: [
-          _cell('SR', flex: 1, header: true),
-          _cell('LOCAL ITEM CODE', flex: 2, header: true),
-          _cell('BRAND NAME', flex: 4, header: true),
-          _cell('SIZE', flex: 2, header: true),
-          _cell('QTY (CASE)', flex: 1, header: true, alignEnd: true),
-          _cell('QTY (LOOSE BOTTLE)', flex: 2, header: true, alignEnd: true),
+          _cell(context, 'SR', flex: 1, header: true),
+          _cell(context, 'LOCAL ITEM CODE', flex: 2, header: true),
+          _cell(context, 'BRAND NAME', flex: 4, header: true),
+          _cell(context, 'SIZE', flex: 2, header: true),
+          _cell(context, 'QTY (CASE)', flex: 1, header: true, alignEnd: true),
+          _cell(context, 'QTY (LOOSE BOTTLE)', flex: 2, header: true, alignEnd: true),
         ],
       ),
     );
   }
 
-  Widget _dataRow(int sr, SalesReportItemDto item) {
+  Widget _dataRow(BuildContext context, int sr, SalesReportItemDto item) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 9),
       child: Row(
         children: [
-          _cell('$sr', flex: 1, muted: true),
-          _cell(item.materialId, flex: 2, mono: true),
-          _cell(item.materialName, flex: 4, bold: true),
-          _cell(item.packing ?? '—', flex: 2),
-          _cell('${item.qtyCase}', flex: 1, alignEnd: true),
-          _cell('${item.qtyLoose}', flex: 2, alignEnd: true),
+          _cell(context, '$sr', flex: 1, muted: true),
+          _cell(context, item.materialId, flex: 2, mono: true),
+          _cell(context, item.materialName, flex: 4, bold: true),
+          _cell(context, item.packing ?? '—', flex: 2),
+          _cell(context, '${item.qtyCase}', flex: 1, alignEnd: true),
+          _cell(context, '${item.qtyLoose}', flex: 2, alignEnd: true),
         ],
       ),
     );
   }
 
-  Widget _totalsRow(SalesReportDto report) {
+  Widget _totalsRow(BuildContext context, SalesReportDto report) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
         children: [
-          _cell('', flex: 1),
-          _cell('', flex: 2),
-          _cell('Total', flex: 4, bold: true),
-          _cell('', flex: 2),
-          _cell('${report.totalQtyCase}', flex: 1, alignEnd: true, bold: true),
-          _cell('${report.totalQtyLoose}', flex: 2, alignEnd: true, bold: true),
+          _cell(context, '', flex: 1),
+          _cell(context, '', flex: 2),
+          _cell(context, 'Total', flex: 4, bold: true),
+          _cell(context, '', flex: 2),
+          _cell(context, '${report.totalQtyCase}', flex: 1, alignEnd: true, bold: true),
+          _cell(context, '${report.totalQtyLoose}', flex: 2, alignEnd: true, bold: true),
         ],
       ),
     );
   }
 
   Widget _cell(
+    BuildContext context,
     String text, {
     required int flex,
     bool header = false,
@@ -125,13 +127,20 @@ class DailySaleReportTable extends ConsumerWidget {
   }) {
     TextStyle style;
     if (header) {
-      style = AppTypography.label;
+      style = AppTypography.label.copyWith(
+        color: AppColors.textMutedFor(context),
+      );
     } else if (mono) {
-      style = AppTypography.mono.copyWith(fontSize: 12, color: AppColors.textSecondary);
+      style = AppTypography.mono.copyWith(
+        fontSize: 12,
+        color: AppColors.textSecondaryFor(context),
+      );
     } else {
       style = AppTypography.body.copyWith(
         fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-        color: muted ? AppColors.textMuted : AppColors.textPrimary,
+        color: muted
+            ? AppColors.textMutedFor(context)
+            : AppColors.textPrimaryFor(context),
       );
     }
     return Expanded(

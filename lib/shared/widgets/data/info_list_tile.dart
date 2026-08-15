@@ -30,13 +30,23 @@ class InfoListTile extends StatelessWidget {
           Container(
             width: 36,
             height: 36,
-            decoration: BoxDecoration(color: AppColors.surfaceAlt, borderRadius: BorderRadius.circular(AppRadius.sm)),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceAltFor(context),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
             alignment: Alignment.center,
             child: icon != null
-                ? Icon(icon, size: 17, color: AppColors.textSecondary)
+                ? Icon(
+                    icon,
+                    size: 17,
+                    color: AppColors.textSecondaryFor(context),
+                  )
                 : Text(
                     avatarText ?? '',
-                    style: AppTypography.body.copyWith(fontWeight: FontWeight.w700, color: AppColors.textSecondary),
+                    style: AppTypography.body.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textSecondaryFor(context),
+                    ),
                   ),
           ),
           const SizedBox(width: AppSpacing.sm),
@@ -44,12 +54,30 @@ class InfoListTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: AppTypography.body.copyWith(fontWeight: FontWeight.w700)),
-                Text(subtitle, style: AppTypography.caption),
+                Text(
+                  title,
+                  style: AppTypography.body.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimaryFor(context),
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.textSecondaryFor(context),
+                  ),
+                ),
               ],
             ),
           ),
-          Text(trailing, style: AppTypography.mono.copyWith(fontSize: 13, fontWeight: FontWeight.w700)),
+          Text(
+            trailing,
+            style: AppTypography.mono.copyWith(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimaryFor(context),
+            ),
+          ),
         ],
       ),
     );

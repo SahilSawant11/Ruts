@@ -33,18 +33,32 @@ class AppDropdown<T> extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: AppColors.surfaceFor(context),
             borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: AppColors.borderFor(context)),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<T>(
               value: value,
               isExpanded: true,
               isDense: true,
-              hint: hint != null ? Text(hint!, style: AppTypography.bodyMuted) : null,
-              icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: AppColors.textMuted),
-              style: AppTypography.body,
+              dropdownColor: AppColors.surfaceFor(context),
+              hint: hint != null
+                  ? Text(
+                      hint!,
+                      style: AppTypography.bodyMuted.copyWith(
+                        color: AppColors.textMutedFor(context),
+                      ),
+                    )
+                  : null,
+              icon: Icon(
+                Icons.keyboard_arrow_down_rounded,
+                size: 18,
+                color: AppColors.textMutedFor(context),
+              ),
+              style: AppTypography.body.copyWith(
+                color: AppColors.textPrimaryFor(context),
+              ),
               items: items
                   .map((item) => DropdownMenuItem<T>(value: item, child: Text(itemLabel(item))))
                   .toList(),
