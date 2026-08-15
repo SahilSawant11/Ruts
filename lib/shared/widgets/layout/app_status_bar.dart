@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/auth/auth_controller.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -14,6 +15,7 @@ class AppStatusBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final currentUser = ref.watch(currentUserProvider);
     final muted = AppTypography.caption.copyWith(
       color: AppColors.shellTextMutedFor(context),
     );
@@ -26,7 +28,7 @@ class AppStatusBar extends ConsumerWidget {
         children: [
           _dot(),
           const SizedBox(width: 6),
-          Text(_syncStatusLabel(syncOverviewAsync), style: muted),
+          Text(_syncStatusLabel(syncOverviewAsync, currentUser?.username ?? 'guest'), style: muted),
           const SizedBox(width: AppSpacing.md),
           Text('Module: $moduleName', style: muted),
           const SizedBox(width: AppSpacing.md),
@@ -50,14 +52,14 @@ class AppStatusBar extends ConsumerWidget {
     );
   }
 
-  String _syncStatusLabel(AsyncValue syncOverviewAsync) {
+  String _syncStatusLabel(AsyncValue syncOverviewAsync, String username) {
     return syncOverviewAsync.when(
-      loading: () => 'admin · checking sync',
-      error: (_, __) => 'admin · sync unknown',
+      loading: () => '$username · checking sync',
+      error: (_, __) => '$username · sync unknown',
       data: (overview) {
-        if (overview.failed > 0) return 'admin · ${overview.failed} sync failed';
-        if (overview.total > 0) return 'admin · ${overview.total} queued';
-        return 'admin · sync clean';
+        if (overview.failed > 0) return '$username · ${overview.failed} sync failed';
+        if (overview.total > 0) return '$username · ${overview.total} queued';
+        return '$username · sync clean';
       },
     );
   }

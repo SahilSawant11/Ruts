@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/auth/auth_controller.dart';
 import '../core/local/app_bootstrap_provider.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/theme_mode_provider.dart';
+import '../features/auth/presentation/screens/login_screen.dart';
 import 'router.dart';
 
 class PosApp extends ConsumerWidget {
@@ -11,9 +13,10 @@ class PosApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bootstrapAsync = ref.watch(appBootstrapProvider);
+    final auth = ref.watch(authControllerProvider);
     final themeMode = ref.watch(appThemeModeProvider);
 
-    if (bootstrapAsync.isLoading) {
+    if (bootstrapAsync.isLoading || auth.isLoading) {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
@@ -43,6 +46,17 @@ class PosApp extends ConsumerWidget {
       );
     }
 
+    if (!auth.isAuthenticated) {
+      return MaterialApp(
+        title: 'Caskly - Liquor Store POS',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.light,
+        darkTheme: AppTheme.dark,
+        themeMode: themeMode,
+        home: const LoginScreen(),
+      );
+    }
+
     return MaterialApp.router(
       title: 'Caskly - Liquor Store POS',
       debugShowCheckedModeBanner: false,
@@ -66,7 +80,7 @@ class _BootstrapScreen extends StatelessWidget {
           children: [
             CircularProgressIndicator(strokeWidth: 2),
             SizedBox(height: 16),
-            Text('Preparing offline store data...'),
+            Text('Preparing Caskly...'),
           ],
         ),
       ),

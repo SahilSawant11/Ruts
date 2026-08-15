@@ -23,6 +23,7 @@ class AppTextField extends StatelessWidget {
     this.textInputAction,
     this.selectAllOnFocus = false,
     this.showPasteButton = false,
+    this.obscureText = false,
   });
 
   final String label;
@@ -38,6 +39,7 @@ class AppTextField extends StatelessWidget {
   final TextInputAction? textInputAction;
   final bool selectAllOnFocus;
   final bool showPasteButton;
+  final bool obscureText;
 
   @override
   Widget build(BuildContext context) {
@@ -57,6 +59,7 @@ class AppTextField extends StatelessWidget {
           onChanged: onChanged,
           onSubmitted: onSubmitted,
           textInputAction: textInputAction,
+          obscureText: obscureText,
           enableInteractiveSelection: true,
           onTap: selectAllOnFocus && controller != null
               ? () => controller!.selection = TextSelection(

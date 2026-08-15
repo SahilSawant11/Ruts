@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/auth/auth_controller.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/theme_mode_provider.dart';
@@ -26,6 +27,7 @@ class AppTopHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final syncOverviewAsync = ref.watch(syncOverviewProvider);
     final themeMode = ref.watch(appThemeModeProvider);
+    final currentUser = ref.watch(currentUserProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return LayoutBuilder(
@@ -123,8 +125,16 @@ class AppTopHeader extends ConsumerWidget {
               _iconButton(context, Icons.calculate_outlined),
               const SizedBox(width: 6),
               _iconButton(context, Icons.description_outlined),
+              const SizedBox(width: 6),
+              _logoutButton(context, ref),
               const SizedBox(width: AppSpacing.sm),
-              _profile(context, showLabel: showProfileLabel),
+              _profile(
+                context,
+                showLabel: showProfileLabel,
+                username: currentUser?.username ?? 'guest',
+                roleLabel: currentUser?.roleLabel ?? 'Offline User',
+                initials: currentUser?.initials ?? 'GU',
+              ),
             ],
           ),
         );
@@ -195,7 +205,13 @@ class AppTopHeader extends ConsumerWidget {
     );
   }
 
-  Widget _profile(BuildContext context, {required bool showLabel}) {
+  Widget _profile(
+    BuildContext context, {
+    required bool showLabel,
+    required String username,
+    required String roleLabel,
+    required String initials,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 6),
       decoration: BoxDecoration(
@@ -205,10 +221,10 @@ class AppTopHeader extends ConsumerWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const CircleAvatar(
+          CircleAvatar(
             radius: 14,
             backgroundColor: AppColors.primary,
-            child: Text('AD', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
+            child: Text(initials, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
           ),
           if (showLabel) ...[
             const SizedBox(width: 8),
@@ -219,7 +235,7 @@ class AppTopHeader extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'admin',
+                    username,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppTypography.body.copyWith(
@@ -228,7 +244,7 @@ class AppTopHeader extends ConsumerWidget {
                     ),
                   ),
                   Text(
-                    'Store Manager',
+                    roleLabel,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppTypography.caption.copyWith(
@@ -240,6 +256,26 @@ class AppTopHeader extends ConsumerWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _logoutButton(BuildContext context, WidgetRef ref) {
+    return InkWell(
+      onTap: () => ref.read(authControllerProvider.notifier).signOut(),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      child: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          border: Border.all(color: AppColors.borderFor(context)),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+        child: Icon(
+          Icons.logout_rounded,
+          size: 18,
+          color: AppColors.textSecondaryFor(context),
+        ),
       ),
     );
   }
