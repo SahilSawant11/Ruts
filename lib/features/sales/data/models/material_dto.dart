@@ -30,7 +30,7 @@ class MaterialDto {
       barcode: json['barcode'] as String,
       name: json['name'] as String,
       category: json['category'] as String,
-      packing: json['packing'] as String,
+      packing: (json['packing'] as String?) ?? '',
       saleRate: (json['saleRate'] as num).toDouble(),
       taxPercent: (json['taxPercent'] as num).toDouble(),
       stockQty: json['stockQty'] as int,

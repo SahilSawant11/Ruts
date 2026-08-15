@@ -47,7 +47,7 @@ class MaterialBrowserController extends StateNotifier<MaterialBrowserState> {
       state = state.copyWith(materials: materials, index: -1);
       return;
     }
-    final clampedIndex = state.index < 0 ? 0 : state.index.clamp(0, materials.length - 1);
+    final clampedIndex = state.index < 0 ? -1 : state.index.clamp(0, materials.length - 1);
     state = state.copyWith(materials: materials, index: clampedIndex);
   }
 

@@ -77,8 +77,16 @@ class _SuppliersTableState extends ConsumerState<SuppliersTable> {
                   ),
                 ),
               ),
-            ),
+          ),
             data: (suppliers) {
+              if ((browser.suppliers.isEmpty && suppliers.isNotEmpty) ||
+                  browser.suppliers.length != suppliers.length) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted) return;
+                  ref.read(supplierBrowserProvider.notifier).syncList(suppliers);
+                });
+              }
+
               final query = _search.text.trim().toLowerCase();
               final filtered = query.isEmpty
                   ? suppliers
@@ -142,20 +150,36 @@ class _SuppliersTableState extends ConsumerState<SuppliersTable> {
   }
 
   Widget _dataRow(SupplierDto supplier, {required bool isSelected}) {
+    final selectedBg = AppColors.isDark(context)
+        ? AppColors.primary.withValues(alpha: 0.16)
+        : AppColors.primarySoft;
+
     return InkWell(
       onTap: () => ref.read(supplierBrowserProvider.notifier).selectById(supplier.id),
       child: Container(
-        color: isSelected ? AppColors.primarySoft : null,
+        color: isSelected ? selectedBg : null,
         padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
         child: Row(
           children: [
-            _cell(supplier.name, flex: 4, bold: true),
-            _cell(supplier.contactNo ?? '—', flex: 2, mono: true, muted: supplier.contactNo == null),
-            _cell(supplier.email ?? '—', flex: 3, muted: supplier.email == null),
+            _cell(supplier.name, flex: 4, bold: true, selected: isSelected),
+            _cell(
+              supplier.contactNo ?? '—',
+              flex: 2,
+              mono: true,
+              muted: supplier.contactNo == null,
+              selected: isSelected,
+            ),
+            _cell(
+              supplier.email ?? '—',
+              flex: 3,
+              muted: supplier.email == null,
+              selected: isSelected,
+            ),
             _cell(
               supplier.disPercent == 0 ? '—' : supplier.disPercent.toStringAsFixed(0),
               flex: 1,
               alignEnd: true,
+              selected: isSelected,
             ),
             Expanded(
               flex: 2,
@@ -189,6 +213,7 @@ class _SuppliersTableState extends ConsumerState<SuppliersTable> {
     bool bold = false,
     bool mono = false,
     bool muted = false,
+    bool selected = false,
   }) {
     TextStyle style;
     if (header) {
@@ -198,16 +223,20 @@ class _SuppliersTableState extends ConsumerState<SuppliersTable> {
     } else if (mono) {
       style = AppTypography.mono.copyWith(
         fontSize: 12,
-        color: muted
-            ? AppColors.textMutedFor(context)
-            : AppColors.textSecondaryFor(context),
+        color: selected
+            ? AppColors.textPrimaryFor(context)
+            : muted
+                ? AppColors.textMutedFor(context)
+                : AppColors.textSecondaryFor(context),
       );
     } else {
       style = AppTypography.body.copyWith(
         fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-        color: muted
-            ? AppColors.textMutedFor(context)
-            : AppColors.textPrimaryFor(context),
+        color: selected
+            ? AppColors.textPrimaryFor(context)
+            : muted
+                ? AppColors.textMutedFor(context)
+                : AppColors.textPrimaryFor(context),
       );
     }
 

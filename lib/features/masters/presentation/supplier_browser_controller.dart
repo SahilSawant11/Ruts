@@ -51,7 +51,7 @@ class SupplierBrowserController extends StateNotifier<SupplierBrowserState> {
       state = state.copyWith(suppliers: suppliers, index: -1);
       return;
     }
-    final clampedIndex = state.index < 0 ? 0 : state.index.clamp(0, suppliers.length - 1);
+    final clampedIndex = state.index < 0 ? -1 : state.index.clamp(0, suppliers.length - 1);
     state = state.copyWith(suppliers: suppliers, index: clampedIndex);
   }
 

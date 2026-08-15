@@ -119,25 +119,40 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
   }
 
   Widget _dataRow(MaterialDto m, {required bool isSelected}) {
+    final selectedBg = AppColors.isDark(context)
+        ? AppColors.primary.withValues(alpha: 0.16)
+        : AppColors.primarySoft;
+
     return InkWell(
       onTap: () => ref.read(materialBrowserProvider.notifier).selectById(m.id),
       child: Container(
-        color: isSelected ? AppColors.primarySoft : null,
+        color: isSelected ? selectedBg : null,
         padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
         child: Row(
           children: [
-            _cell(m.id, flex: 2, mono: true),
-            _cell(m.name, flex: 4, bold: true),
+            _cell(m.id, flex: 2, mono: true, selected: isSelected),
+            _cell(m.name, flex: 4, bold: true, selected: isSelected),
             Expanded(flex: 1, child: TagPill(label: m.category, tone: TagPillTone.neutral)),
-            _cell(m.packing, flex: 2),
-            _cell(m.barcode, flex: 2, mono: true, muted: m.barcode == m.id),
+            _cell(m.packing, flex: 2, selected: isSelected),
+            _cell(
+              m.barcode,
+              flex: 2,
+              mono: true,
+              muted: m.barcode == m.id,
+              selected: isSelected,
+            ),
             Expanded(
               flex: 1,
               child: m.isPendingSync
                   ? const TagPill(label: 'Pending', tone: TagPillTone.amber)
                   : const SizedBox.shrink(),
             ),
-            _cell(m.saleRate == 0 ? '—' : '₹${m.saleRate.toStringAsFixed(0)}', flex: 1, alignEnd: true),
+            _cell(
+              m.saleRate == 0 ? '—' : '₹${m.saleRate.toStringAsFixed(0)}',
+              flex: 1,
+              alignEnd: true,
+              selected: isSelected,
+            ),
           ],
         ),
       ),
@@ -152,6 +167,7 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
     bool bold = false,
     bool mono = false,
     bool muted = false,
+    bool selected = false,
   }) {
     TextStyle style;
     if (header) {
@@ -161,9 +177,11 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
     } else if (mono) {
       style = AppTypography.mono.copyWith(
         fontSize: 12,
-        color: muted
-            ? AppColors.textMutedFor(context)
-            : AppColors.textSecondaryFor(context),
+        color: selected
+            ? AppColors.textPrimaryFor(context)
+            : muted
+                ? AppColors.textMutedFor(context)
+                : AppColors.textSecondaryFor(context),
       );
     } else {
       style = AppTypography.body.copyWith(

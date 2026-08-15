@@ -499,7 +499,7 @@ class LocalMastersRepository {
       barcode: payload['barcode'] as String?,
       name: payload['name'] as String,
       category: payload['category'] as String,
-      packing: payload['packing'] as String,
+      packing: (payload['packing'] as String?) ?? '',
       saleRate: _asDouble(payload['saleRate']),
       taxPercent: _asDouble(payload['taxPercent']),
     );
