@@ -10,7 +10,9 @@ import '../cart_controller.dart';
 /// total called out in a dark highlight band. All figures are derived
 /// live from the cart — nothing here is hardcoded.
 class BillSummaryCard extends ConsumerWidget {
-  const BillSummaryCard({super.key});
+  const BillSummaryCard({super.key, this.compact = false});
+
+  final bool compact;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -31,17 +33,20 @@ class BillSummaryCard extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
             child: Column(
               children: [
-                _SummaryRow(label: 'Total Qty', value: '${cart.totalQty}'),
-                _SummaryRow(label: 'Taxable Value', value: money(cart.taxableValue)),
-                _SummaryRow(label: 'Total Discount', value: money(cart.totalDiscount)),
-                _SummaryRow(label: 'Total Tax', value: money(cart.totalTax)),
+                _SummaryRow(label: 'Total Qty', value: '${cart.totalQty}', compact: compact),
+                _SummaryRow(label: 'Taxable Value', value: money(cart.taxableValue), compact: compact),
+                _SummaryRow(label: 'Total Discount', value: money(cart.totalDiscount), compact: compact),
+                _SummaryRow(label: 'Total Tax', value: money(cart.totalTax), compact: compact),
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
+          SizedBox(height: compact ? AppSpacing.xs : AppSpacing.sm),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+            padding: EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: compact ? AppSpacing.xs : AppSpacing.sm,
+            ),
             color: AppColors.totalSurfaceFor(context),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -53,7 +58,10 @@ class BillSummaryCard extends ConsumerWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+            padding: EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: compact ? AppSpacing.xs : AppSpacing.sm,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -75,15 +83,20 @@ class BillSummaryCard extends ConsumerWidget {
 }
 
 class _SummaryRow extends StatelessWidget {
-  const _SummaryRow({required this.label, required this.value});
+  const _SummaryRow({
+    required this.label,
+    required this.value,
+    this.compact = false,
+  });
 
   final String label;
   final String value;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: EdgeInsets.symmetric(vertical: compact ? 4 : 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

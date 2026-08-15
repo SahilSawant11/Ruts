@@ -20,35 +20,88 @@ class AppStatusBar extends ConsumerWidget {
       color: AppColors.shellTextMutedFor(context),
     );
     final syncOverviewAsync = ref.watch(syncOverviewProvider);
-    return Container(
-      height: 34,
-      color: AppColors.shellBackgroundFor(context),
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-      child: Row(
-        children: [
-          _dot(),
-          const SizedBox(width: 6),
-          Text(_syncStatusLabel(syncOverviewAsync, currentUser?.username ?? 'guest'), style: muted),
-          const SizedBox(width: AppSpacing.md),
-          Text('Module: $moduleName', style: muted),
-          const SizedBox(width: AppSpacing.md),
-          Icon(
-            Icons.calendar_today_outlined,
-            size: 12,
-            color: AppColors.shellTextMutedFor(context),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final showModule = width >= 1120;
+        final showDate = width >= 1260;
+        final showQueueHint = width >= 980;
+        final showSyncCenterHint = width >= 1380;
+        final showVersion = width >= 1500;
+
+        return Padding(
+          padding: EdgeInsets.zero,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(color: AppColors.borderFor(context)),
+              ),
+            ),
+            child: SizedBox(
+              height: 28,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                child: Row(
+                  children: [
+                    _dot(),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        _syncStatusLabel(syncOverviewAsync, currentUser?.username ?? 'guest'),
+                        style: muted,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (showModule) ...[
+                      const SizedBox(width: AppSpacing.md),
+                      Flexible(
+                        child: Text(
+                          'Module: $moduleName',
+                          style: muted,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                    if (showDate) ...[
+                      const SizedBox(width: AppSpacing.md),
+                      Icon(
+                        Icons.calendar_today_outlined,
+                        size: 12,
+                        color: AppColors.shellTextMutedFor(context),
+                      ),
+                      const SizedBox(width: 5),
+                      Text(_todayLabel(), style: muted),
+                    ],
+                    const Spacer(),
+                    if (showQueueHint)
+                      Flexible(
+                        child: Text(
+                          _queueHint(syncOverviewAsync),
+                          style: muted,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.end,
+                        ),
+                      ),
+                    if (showSyncCenterHint) ...[
+                      const SizedBox(width: AppSpacing.md),
+                      _dot(),
+                      const SizedBox(width: 6),
+                      Text('Sync Center available', style: muted),
+                    ],
+                    if (showVersion) ...[
+                      const SizedBox(width: AppSpacing.md),
+                      Text('Caskly v8.4', style: muted),
+                    ],
+                  ],
+                ),
+              ),
+            ),
           ),
-          const SizedBox(width: 5),
-          Text(_todayLabel(), style: muted),
-          const Spacer(),
-          Text(_queueHint(syncOverviewAsync), style: muted),
-          const SizedBox(width: AppSpacing.md),
-          _dot(),
-          const SizedBox(width: 6),
-          Text('Sync Center available', style: muted),
-          const SizedBox(width: AppSpacing.md),
-          Text('Caskly v8.4', style: muted),
-        ],
-      ),
+        );
+      },
     );
   }
 

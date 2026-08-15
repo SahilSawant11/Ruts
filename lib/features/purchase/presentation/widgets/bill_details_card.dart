@@ -13,7 +13,9 @@ import '../purchase_form_controller.dart';
 /// GET /api/suppliers; the rest write into [purchaseFormControllerProvider]
 /// so the Save button can read a consistent snapshot at save time.
 class BillDetailsCard extends ConsumerStatefulWidget {
-  const BillDetailsCard({super.key});
+  const BillDetailsCard({super.key, this.compact = false});
+
+  final bool compact;
 
   @override
   ConsumerState<BillDetailsCard> createState() => _BillDetailsCardState();
@@ -44,54 +46,198 @@ class _BillDetailsCardState extends ConsumerState<BillDetailsCard> {
   Widget build(BuildContext context) {
     final form = ref.read(purchaseFormControllerProvider.notifier);
 
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SectionHeader(title: 'Bill Details', subtitle: 'Inward / GRN entry'),
-          const SizedBox(height: AppSpacing.md),
-          Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compactWidth = constraints.maxWidth < 1100;
+        final gap = widget.compact ? AppSpacing.sm : AppSpacing.md;
+
+        return AppCard(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Expanded(flex: 2, child: AppTextField(label: 'BILL NO.', hint: 'Auto on save')),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(flex: 5, child: _SupplierField(form: form)),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(flex: 2, child: AppTextField(label: 'DATE', controller: TextEditingController(text: _today()), enabled: false)),
+              const SectionHeader(title: 'Bill Details', subtitle: 'Inward / GRN entry'),
+              SizedBox(height: widget.compact ? AppSpacing.sm : AppSpacing.md),
+              if (!compactWidth)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Expanded(
+                      flex: 2,
+                      child: AppTextField(label: 'BILL NO.', hint: 'Auto on save'),
+                    ),
+                    SizedBox(width: gap),
+                    Expanded(
+                      flex: 5,
+                      child: _SupplierField(form: form),
+                    ),
+                    SizedBox(width: gap),
+                    Expanded(
+                      flex: 2,
+                      child: AppTextField(
+                        label: 'DATE',
+                        controller: TextEditingController(text: _today()),
+                        enabled: false,
+                      ),
+                    ),
+                  ],
+                )
+              else
+                Wrap(
+                  spacing: gap,
+                  runSpacing: gap,
+                  children: [
+                    SizedBox(
+                      width: constraints.maxWidth,
+                      child: _SupplierField(form: form),
+                    ),
+                    SizedBox(
+                      width: (constraints.maxWidth - gap) / 2,
+                      child: const AppTextField(label: 'BILL NO.', hint: 'Auto on save'),
+                    ),
+                    SizedBox(
+                      width: (constraints.maxWidth - gap) / 2,
+                      child: AppTextField(
+                        label: 'DATE',
+                        controller: TextEditingController(text: _today()),
+                        enabled: false,
+                      ),
+                    ),
+                  ],
+                ),
+              SizedBox(height: gap),
+              if (!compactWidth)
+                Row(
+                  children: [
+                    Expanded(
+                      child: AppTextField(
+                        label: 'CHALLAN NO.',
+                        hint: 'CHL-88142',
+                        controller: _challanController,
+                        onChanged: form.setChallanNo,
+                      ),
+                    ),
+                    SizedBox(width: gap),
+                    Expanded(
+                      child: AppTextField(
+                        label: 'NOTE NO.',
+                        hint: '—',
+                        controller: _noteController,
+                        onChanged: form.setNoteNo,
+                      ),
+                    ),
+                    SizedBox(width: gap),
+                    Expanded(
+                      child: AppTextField(
+                        label: 'PAY MODE',
+                        hint: 'Credit',
+                        controller: _payModeController,
+                        onChanged: form.setPayMode,
+                      ),
+                    ),
+                  ],
+                )
+              else
+                Wrap(
+                  spacing: gap,
+                  runSpacing: gap,
+                  children: [
+                    SizedBox(
+                      width: (constraints.maxWidth - gap) / 2,
+                      child: AppTextField(
+                        label: 'CHALLAN NO.',
+                        hint: 'CHL-88142',
+                        controller: _challanController,
+                        onChanged: form.setChallanNo,
+                      ),
+                    ),
+                    SizedBox(
+                      width: (constraints.maxWidth - gap) / 2,
+                      child: AppTextField(
+                        label: 'NOTE NO.',
+                        hint: '—',
+                        controller: _noteController,
+                        onChanged: form.setNoteNo,
+                      ),
+                    ),
+                    SizedBox(
+                      width: constraints.maxWidth,
+                      child: AppTextField(
+                        label: 'PAY MODE',
+                        hint: 'Credit',
+                        controller: _payModeController,
+                        onChanged: form.setPayMode,
+                      ),
+                    ),
+                  ],
+                ),
+              SizedBox(height: gap),
+              if (!compactWidth)
+                Row(
+                  children: [
+                    Expanded(
+                      child: AppTextField(
+                        label: 'TP NO.',
+                        hint: 'TP-2026-0091',
+                        controller: _tpNoController,
+                        onChanged: form.setTpNo,
+                      ),
+                    ),
+                    SizedBox(width: gap),
+                    Expanded(
+                      child: AppTextField(
+                        label: 'TP DATE',
+                        controller: TextEditingController(text: _today()),
+                        enabled: false,
+                      ),
+                    ),
+                    SizedBox(width: gap),
+                    Expanded(
+                      child: AppTextField(
+                        label: 'ST NO.',
+                        hint: 'ST-MH07',
+                        controller: _stNoController,
+                        onChanged: form.setStNo,
+                      ),
+                    ),
+                  ],
+                )
+              else
+                Wrap(
+                  spacing: gap,
+                  runSpacing: gap,
+                  children: [
+                    SizedBox(
+                      width: (constraints.maxWidth - gap) / 2,
+                      child: AppTextField(
+                        label: 'TP NO.',
+                        hint: 'TP-2026-0091',
+                        controller: _tpNoController,
+                        onChanged: form.setTpNo,
+                      ),
+                    ),
+                    SizedBox(
+                      width: (constraints.maxWidth - gap) / 2,
+                      child: AppTextField(
+                        label: 'TP DATE',
+                        controller: TextEditingController(text: _today()),
+                        enabled: false,
+                      ),
+                    ),
+                    SizedBox(
+                      width: constraints.maxWidth,
+                      child: AppTextField(
+                        label: 'ST NO.',
+                        hint: 'ST-MH07',
+                        controller: _stNoController,
+                        onChanged: form.setStNo,
+                      ),
+                    ),
+                  ],
+                ),
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            children: [
-              Expanded(
-                child: AppTextField(label: 'CHALLAN NO.', hint: 'CHL-88142', controller: _challanController, onChanged: form.setChallanNo),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: AppTextField(label: 'NOTE NO.', hint: '—', controller: _noteController, onChanged: form.setNoteNo),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: AppTextField(label: 'PAY MODE', hint: 'Credit', controller: _payModeController, onChanged: form.setPayMode),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            children: [
-              Expanded(
-                child: AppTextField(label: 'TP NO.', hint: 'TP-2026-0091', controller: _tpNoController, onChanged: form.setTpNo),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(child: AppTextField(label: 'TP DATE', controller: TextEditingController(text: _today()), enabled: false)),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: AppTextField(label: 'ST NO.', hint: 'ST-MH07', controller: _stNoController, onChanged: form.setStNo),
-              ),
-            ],
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

@@ -15,7 +15,9 @@ import '../sales_providers.dart';
 /// dropdown fed by GET /api/customers. License fields stay static for
 /// now — they'll wire up once a StoreLicense endpoint exists.
 class InvoiceDetailsCard extends ConsumerWidget {
-  const InvoiceDetailsCard({super.key});
+  const InvoiceDetailsCard({super.key, this.compact = false});
+
+  final bool compact;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -30,7 +32,7 @@ class InvoiceDetailsCard extends ConsumerWidget {
             title: 'Invoice Details',
             subtitle: 'Auto-numbered counter sale',
           ),
-          const SizedBox(height: AppSpacing.md),
+          SizedBox(height: compact ? AppSpacing.sm : AppSpacing.md),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -41,29 +43,29 @@ class InvoiceDetailsCard extends ConsumerWidget {
                   enabled: false,
                 ),
               ),
-              const SizedBox(width: AppSpacing.md),
+              SizedBox(width: compact ? AppSpacing.sm : AppSpacing.md),
               Expanded(flex: 2, child: _CustomerField(ref: ref)),
-              const SizedBox(width: AppSpacing.md),
+              SizedBox(width: compact ? AppSpacing.sm : AppSpacing.md),
               const Expanded(child: AppTextField(label: 'TYPE', hint: 'CounterSale.Sale', enabled: false)),
-              const SizedBox(width: AppSpacing.md),
+              SizedBox(width: compact ? AppSpacing.sm : AppSpacing.md),
               Expanded(
                 child: AppTextField(label: 'DATE', controller: TextEditingController(text: today), enabled: false),
               ),
-              const SizedBox(width: AppSpacing.md),
+              SizedBox(width: compact ? AppSpacing.sm : AppSpacing.md),
               const Expanded(child: AppTextField(label: 'PAY MODE', hint: 'Set in Payment panel →', enabled: false)),
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
-          const Row(
+          SizedBox(height: compact ? AppSpacing.sm : AppSpacing.md),
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(child: AppTextField(label: 'LICENSE NO.', hint: 'Life Time')),
-              SizedBox(width: AppSpacing.md),
-              Expanded(child: AppTextField(label: 'LICENSE NAME', hint: 'J.R.TOLARAM')),
-              SizedBox(width: AppSpacing.md),
-              Expanded(child: AppTextField(label: 'VALIDITY', hint: '—')),
-              SizedBox(width: AppSpacing.md),
-              Expanded(child: AppTextField(label: 'BALANCE', hint: '0.00')),
+              const Expanded(child: AppTextField(label: 'LICENSE NO.', hint: 'Life Time')),
+              SizedBox(width: compact ? AppSpacing.sm : AppSpacing.md),
+              const Expanded(child: AppTextField(label: 'LICENSE NAME', hint: 'J.R.TOLARAM')),
+              SizedBox(width: compact ? AppSpacing.sm : AppSpacing.md),
+              const Expanded(child: AppTextField(label: 'VALIDITY', hint: '—')),
+              SizedBox(width: compact ? AppSpacing.sm : AppSpacing.md),
+              const Expanded(child: AppTextField(label: 'BALANCE', hint: '0.00')),
             ],
           ),
         ],

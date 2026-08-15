@@ -11,12 +11,27 @@ import '../cart_controller.dart';
 /// [cartControllerProvider]. Empty-state prompts the user toward the
 /// barcode field above instead of showing a bare table.
 class ItemDetailsTable extends ConsumerWidget {
-  const ItemDetailsTable({super.key});
+  const ItemDetailsTable({super.key, this.expand = false});
+
+  final bool expand;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cart = ref.watch(cartControllerProvider);
     final items = cart.items;
+
+    final tableBody = items.isEmpty
+        ? _emptyState()
+        : SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _headerRow(),
+                Divider(height: 1, color: AppColors.borderFor(context)),
+                for (var i = 0; i < items.length; i++) _dataRow(context, ref, i, items[i]),
+              ],
+            ),
+          );
 
     return AppCard(
       padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.sm),
@@ -28,13 +43,10 @@ class ItemDetailsTable extends ConsumerWidget {
             subtitle: items.isEmpty ? 'No items yet' : '${items.length} line · ${cart.totalQty} units',
           ),
           const SizedBox(height: AppSpacing.sm),
-          if (items.isEmpty)
-            _emptyState()
-          else ...[
-            _headerRow(),
-            Divider(height: 1, color: AppColors.borderFor(context)),
-            for (var i = 0; i < items.length; i++) _dataRow(context, ref, i, items[i]),
-          ],
+          if (expand)
+            Expanded(child: tableBody)
+          else
+            tableBody,
           const SizedBox(height: AppSpacing.xs),
           Text(
             'Scan a barcode above to add a line · click the trash icon to remove one',

@@ -33,45 +33,55 @@ class SalesBillingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const _ScreenHeader(),
-            const SizedBox(height: AppSpacing.md),
-            const BillingModeToggle(),
-            const SizedBox(height: AppSpacing.lg),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: Column(
-                    children: const [
-                      InvoiceDetailsCard(),
-                      SizedBox(height: AppSpacing.lg),
-                      ScanAddItemCard(),
-                      SizedBox(height: AppSpacing.lg),
-                      ItemDetailsTable(),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.lg),
-                Expanded(
-                  child: Column(
-                    children: const [
-                      BillSummaryCard(),
-                      SizedBox(height: AppSpacing.lg),
-                      PaymentCard(),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
+    return const Padding(
+      padding: EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _ScreenHeader(),
+          SizedBox(height: AppSpacing.sm),
+          BillingModeToggle(),
+          SizedBox(height: AppSpacing.md),
+          Expanded(child: _SalesWorkspace()),
+        ],
+      ),
+    );
+  }
+}
+
+class _SalesWorkspace extends StatelessWidget {
+  const _SalesWorkspace();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          flex: 5,
+          child: Column(
+            children: [
+              InvoiceDetailsCard(compact: true),
+              SizedBox(height: AppSpacing.sm),
+              ScanAddItemCard(compact: true),
+              SizedBox(height: AppSpacing.sm),
+              Expanded(child: ItemDetailsTable(expand: true)),
+            ],
+          ),
         ),
-      );
+        SizedBox(width: AppSpacing.md),
+        Expanded(
+          flex: 2,
+          child: Column(
+            children: [
+              BillSummaryCard(compact: true),
+              SizedBox(height: AppSpacing.sm),
+              PaymentCard(compact: true),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -108,11 +118,11 @@ class _ScreenHeader extends ConsumerWidget {
                 )
               : const SizedBox.shrink(),
         ),
-        SecondaryButton(label: 'Find / Edit Sale', icon: Icons.search_rounded, onPressed: () {}),
+        SecondaryButton(label: 'Find / Edit Sale', icon: Icons.search_rounded, dense: true, onPressed: () {}),
         const SizedBox(width: AppSpacing.sm),
-        SecondaryButton(label: 'Calc', icon: Icons.calculate_outlined, onPressed: () {}),
+        SecondaryButton(label: 'Calc', icon: Icons.calculate_outlined, dense: true, onPressed: () {}),
         const SizedBox(width: AppSpacing.sm),
-        SecondaryButton(label: 'Notepad', icon: Icons.sticky_note_2_outlined, onPressed: () {}),
+        SecondaryButton(label: 'Notepad', icon: Icons.sticky_note_2_outlined, dense: true, onPressed: () {}),
       ],
     );
   }

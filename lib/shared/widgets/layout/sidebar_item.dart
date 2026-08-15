@@ -25,22 +25,33 @@ class SidebarItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final muted = AppColors.shellTextMutedFor(context);
-        final iconOnly = collapsed || constraints.maxWidth < 150;
+        final muted = AppColors.textSecondaryFor(context);
+        final iconOnly = collapsed || constraints.maxWidth < 170;
+        final surface = active
+            ? AppColors.primarySoft.withValues(alpha: AppColors.isDark(context) ? 0.20 : 0.92)
+            : Colors.transparent;
+        const activeColor = AppColors.primary;
 
         final content = Material(
-          color: active ? AppColors.primary : Colors.transparent,
+          color: Colors.transparent,
           borderRadius: BorderRadius.circular(AppRadius.sm),
           child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(AppRadius.sm),
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: iconOnly ? 0 : 10, vertical: 10),
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: iconOnly ? 0 : 8,
+                vertical: 9,
+              ),
+              decoration: BoxDecoration(
+                color: surface,
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+              ),
               child: iconOnly
-                  ? Icon(icon, size: 18, color: active ? Colors.white : muted)
+                  ? Icon(icon, size: 18, color: active ? activeColor : muted)
                   : Row(
                       children: [
-                        Icon(icon, size: 17, color: active ? Colors.white : muted),
+                        Icon(icon, size: 17, color: active ? activeColor : muted),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
@@ -48,21 +59,11 @@ class SidebarItem extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: AppTypography.sidebarItem.copyWith(
-                              color: active ? Colors.white : muted,
+                              color: active ? activeColor : muted,
                               fontWeight: active ? FontWeight.w600 : FontWeight.w500,
                             ),
                           ),
                         ),
-                        if (shortcut != null) ...[
-                          const SizedBox(width: 8),
-                          Text(
-                            shortcut!,
-                            style: AppTypography.mono.copyWith(
-                              fontSize: 10.5,
-                              color: active ? Colors.white70 : muted,
-                            ),
-                          ),
-                        ],
                       ],
                     ),
             ),
@@ -70,7 +71,7 @@ class SidebarItem extends StatelessWidget {
         );
 
         return Padding(
-          padding: EdgeInsets.symmetric(horizontal: iconOnly ? 12 : AppSpacing.sm, vertical: 2),
+          padding: EdgeInsets.symmetric(horizontal: iconOnly ? 12 : AppSpacing.sm, vertical: 1),
           child: iconOnly
               ? Tooltip(
                   message: label,

@@ -95,4 +95,58 @@ class AppColors {
 
   static Color totalSurfaceFor(BuildContext context) =>
       isDark(context) ? backgroundDark : totalDark;
+
+  static Color workspaceCanvasFor(BuildContext context) => isDark(context)
+      ? const Color(0xFF11131A)
+      : const Color(0xFFF7F7FA);
+
+  static Color glassSurfaceFor(BuildContext context) => isDark(context)
+      ? const Color(0xFF212632).withValues(alpha: 0.52)
+      : Colors.white.withValues(alpha: 0.78);
+
+  static Color glassSurfaceStrongFor(BuildContext context) => isDark(context)
+      ? const Color(0xFF262B38).withValues(alpha: 0.72)
+      : Colors.white.withValues(alpha: 0.93);
+
+  static Color glassBorderFor(BuildContext context) => isDark(context)
+      ? Colors.white.withValues(alpha: 0.07)
+      : Colors.white.withValues(alpha: 0.98);
+
+  static List<BoxShadow> cardShadowFor(BuildContext context) => isDark(context)
+      ? [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.30),
+            blurRadius: 28,
+            offset: const Offset(0, 18),
+          ),
+        ]
+      : [
+          const BoxShadow(
+            color: Color(0x220F172A),
+            blurRadius: 24,
+            offset: Offset(0, 12),
+          ),
+          BoxShadow(
+            color: Colors.white.withValues(alpha: 0.50),
+            blurRadius: 6,
+            offset: const Offset(0, 1),
+          ),
+        ];
+
+  static List<BoxShadow> buttonShadowFor(BuildContext context, Color color) =>
+      isDark(context)
+          ? [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.22),
+                blurRadius: 18,
+                offset: const Offset(0, 10),
+              ),
+            ]
+          : [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.10),
+                blurRadius: 18,
+                offset: const Offset(0, 10),
+              ),
+            ];
 }

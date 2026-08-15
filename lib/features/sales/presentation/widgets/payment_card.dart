@@ -15,7 +15,9 @@ import '../sales_providers.dart';
 /// "Save & Print" is the one wired all the way to the API — it builds
 /// a CreateSaleRequest from the live cart and posts it.
 class PaymentCard extends ConsumerStatefulWidget {
-  const PaymentCard({super.key});
+  const PaymentCard({super.key, this.compact = false});
+
+  final bool compact;
 
   @override
   ConsumerState<PaymentCard> createState() => _PaymentCardState();
@@ -112,7 +114,7 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SectionHeader(title: 'Payment', icon: Icons.account_balance_wallet_outlined),
-          const SizedBox(height: AppSpacing.md),
+          SizedBox(height: widget.compact ? AppSpacing.sm : AppSpacing.md),
           Row(
             children: [
               Expanded(
@@ -143,10 +145,13 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
+          SizedBox(height: widget.compact ? AppSpacing.sm : AppSpacing.md),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 13),
+            padding: EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: widget.compact ? 11 : 13,
+            ),
             decoration: BoxDecoration(
               color: AppColors.surfaceFor(context),
               borderRadius: BorderRadius.circular(AppRadius.md),
@@ -158,7 +163,7 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
                   color: AppColors.textPrimaryFor(context),
                 )),
           ),
-          const SizedBox(height: AppSpacing.md),
+          SizedBox(height: widget.compact ? AppSpacing.sm : AppSpacing.md),
           SuccessButton(
             label: _isSaving ? 'Saving…' : 'Save & Print',
             shortcut: 'F8',
@@ -166,13 +171,14 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
             expand: true,
             onPressed: _isSaving ? null : _saveSale,
           ),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: AppSpacing.xs),
           Row(
             children: [
               Expanded(
                 child: SecondaryButton(
                   label: 'Print Preview',
                   icon: Icons.visibility_outlined,
+                  dense: widget.compact,
                   onPressed: () {},
                 ),
               ),
@@ -181,12 +187,13 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
                 child: SecondaryButton(
                   label: 'Hold',
                   icon: Icons.pause_circle_outline_rounded,
+                  dense: widget.compact,
                   onPressed: () {},
                 ),
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: AppSpacing.xs),
           DangerButton(
             label: 'Close / Clear',
             icon: Icons.close_rounded,
@@ -210,7 +217,7 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
       onTap: () => ref.read(paymentMethodProvider.notifier).state = method,
       borderRadius: BorderRadius.circular(AppRadius.md),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: EdgeInsets.symmetric(vertical: widget.compact ? 11 : 14),
         decoration: BoxDecoration(
           color: selected
               ? AppColors.primarySoft

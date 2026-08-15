@@ -64,16 +64,27 @@ class KpiCard extends StatelessWidget {
               Text(label.toUpperCase(), style: AppTypography.label),
               if (icon != null)
                 Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(color: _iconBg, borderRadius: BorderRadius.circular(AppRadius.sm)),
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: _iconBg.withValues(alpha: 0.88),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.55)),
+                    boxShadow: AppColors.cardShadowFor(context)
+                        .map((shadow) => BoxShadow(
+                              color: shadow.color.withValues(alpha: shadow.color.a * 0.28),
+                              blurRadius: shadow.blurRadius * 0.34,
+                              offset: shadow.offset * 0.18,
+                            ))
+                        .toList(),
+                  ),
                   alignment: Alignment.center,
-                  child: Icon(icon, size: 17, color: _iconColor),
+                  child: Icon(icon, size: 18, color: _iconColor),
                 ),
             ],
           ),
           const SizedBox(height: AppSpacing.xs),
-          Text(value, style: AppTypography.h1.copyWith(fontSize: 26)),
+          Text(value, style: AppTypography.h1.copyWith(fontSize: 29, height: 1.05)),
           if (trendText != null) ...[
             const SizedBox(height: 6),
             Row(
@@ -97,7 +108,7 @@ class KpiCard extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: progress!.clamp(0, 1),
                 minHeight: 6,
-                backgroundColor: AppColors.surfaceAlt,
+                backgroundColor: AppColors.surfaceAltFor(context),
                 valueColor: const AlwaysStoppedAnimation(AppColors.primary),
               ),
             ),

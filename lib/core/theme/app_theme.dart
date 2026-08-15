@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
+import 'app_spacing.dart';
 import 'app_typography.dart';
 
 class AppTheme {
@@ -18,6 +19,7 @@ class AppTheme {
         error: AppColors.danger,
       ),
       dividerColor: AppColors.border,
+      cardColor: Colors.white.withValues(alpha: 0.86),
       textTheme: TextTheme(
         headlineSmall: AppTypography.h1,
         titleMedium: AppTypography.h2,
@@ -27,19 +29,23 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surface,
+        fillColor: Colors.white.withValues(alpha: 0.86),
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderSide: BorderSide(
+            color: Colors.white.withValues(alpha: 0.92),
+          ),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderSide: BorderSide(
+            color: Colors.white.withValues(alpha: 0.92),
+          ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
       ),
@@ -67,7 +73,7 @@ class AppTheme {
         outline: AppColors.borderDark,
       ),
       dividerColor: AppColors.borderDark,
-      cardColor: AppColors.surfaceDark,
+      cardColor: Colors.white.withValues(alpha: 0.08),
       textTheme: TextTheme(
         headlineSmall: AppTypography.h1.copyWith(color: AppColors.textPrimaryDark),
         titleMedium: AppTypography.h2.copyWith(color: AppColors.textPrimaryDark),
@@ -77,19 +83,23 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surfaceAltDark,
+        fillColor: Colors.white.withValues(alpha: 0.08),
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.borderDark),
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderSide: BorderSide(
+            color: Colors.white.withValues(alpha: 0.08),
+          ),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.borderDark),
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderSide: BorderSide(
+            color: Colors.white.withValues(alpha: 0.08),
+          ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
       ),

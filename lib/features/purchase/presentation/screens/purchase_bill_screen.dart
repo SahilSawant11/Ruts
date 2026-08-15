@@ -24,23 +24,75 @@ class PurchaseBillScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            _ScreenHeader(),
-            SizedBox(height: AppSpacing.md),
-            BillingModeToggle(),
-            SizedBox(height: AppSpacing.lg),
-            BillDetailsCard(),
-            SizedBox(height: AppSpacing.lg),
-            PurchaseItemTable(),
-            SizedBox(height: AppSpacing.lg),
-            ExtraChargesTotalsCard(),
-          ],
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final desktop = constraints.maxWidth >= 1280;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const _ScreenHeader(),
+              const SizedBox(height: AppSpacing.sm),
+              const BillingModeToggle(),
+              const SizedBox(height: AppSpacing.md),
+              Expanded(
+                child: desktop
+                    ? const _DesktopPurchaseWorkspace()
+                    : const _StackedPurchaseWorkspace(),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _DesktopPurchaseWorkspace extends StatelessWidget {
+  const _DesktopPurchaseWorkspace();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          flex: 3,
+          child: Column(
+            children: [
+              BillDetailsCard(compact: true),
+              SizedBox(height: AppSpacing.sm),
+              ExtraChargesTotalsCard(compact: true),
+            ],
+          ),
         ),
-      );
+        SizedBox(width: AppSpacing.md),
+        Expanded(
+          flex: 2,
+          child: PurchaseItemTable(expand: true),
+        ),
+      ],
+    );
+  }
+}
+
+class _StackedPurchaseWorkspace extends StatelessWidget {
+  const _StackedPurchaseWorkspace();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        BillDetailsCard(compact: true),
+        SizedBox(height: AppSpacing.sm),
+        Expanded(child: PurchaseItemTable(expand: true)),
+        SizedBox(height: AppSpacing.sm),
+        ExtraChargesTotalsCard(compact: true),
+      ],
+    );
   }
 }
 
@@ -51,33 +103,38 @@ class _ScreenHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final pendingSyncAsync = ref.watch(pendingPurchaseSyncCountProvider);
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Purchase Bill', style: AppTypography.h1),
-              const SizedBox(height: 4),
-              Text('Supplier inward entry with tax & extra charges.', style: AppTypography.bodyMuted),
-            ],
-          ),
-        ),
-        pendingSyncAsync.when(
-          loading: () => const SizedBox.shrink(),
-          error: (_, __) => const SizedBox.shrink(),
-          data: (count) => count > 0
-              ? const Padding(
-                  padding: EdgeInsets.only(right: AppSpacing.sm),
-                  child: StatusChip(label: 'Queued offline', tone: StatusChipTone.neutral),
-                )
-              : const SizedBox.shrink(),
-        ),
-        SecondaryButton(label: 'Calc', icon: Icons.calculate_outlined, onPressed: () {}),
-        const SizedBox(width: AppSpacing.sm),
-        SecondaryButton(label: 'Notepad', icon: Icons.sticky_note_2_outlined, onPressed: () {}),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 900;
+
+        return Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            SizedBox(
+              width: compact ? constraints.maxWidth : constraints.maxWidth - 240,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Purchase Bill', style: AppTypography.h1),
+                  const SizedBox(height: 4),
+                  Text('Supplier inward entry with tax & extra charges.', style: AppTypography.bodyMuted),
+                ],
+              ),
+            ),
+            pendingSyncAsync.when(
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+              data: (count) => count > 0
+                  ? const StatusChip(label: 'Queued offline', tone: StatusChipTone.neutral)
+                  : const SizedBox.shrink(),
+            ),
+            SecondaryButton(label: 'Calc', icon: Icons.calculate_outlined, dense: true, onPressed: () {}),
+            SecondaryButton(label: 'Notepad', icon: Icons.sticky_note_2_outlined, dense: true, onPressed: () {}),
+          ],
+        );
+      },
     );
   }
 }

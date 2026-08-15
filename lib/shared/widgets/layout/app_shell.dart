@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/theme/app_colors.dart';
 import 'app_sidebar.dart';
 import 'app_status_bar.dart';
 import 'app_top_header.dart';
@@ -46,19 +47,24 @@ class AppShell extends StatelessWidget {
     final meta = _branchMeta[navigationShell.currentIndex];
 
     return Scaffold(
-      body: Row(
-        children: [
-          const AppSidebar(),
-          Expanded(
-            child: Column(
-              children: [
-                AppTopHeader(moduleTitle: meta.title, moduleShortcutLabel: meta.shortcut),
-                Expanded(child: navigationShell),
-                AppStatusBar(moduleName: meta.statusName),
-              ],
+      body: DecoratedBox(
+        decoration: BoxDecoration(
+          color: AppColors.workspaceCanvasFor(context),
+        ),
+        child: Row(
+          children: [
+            const AppSidebar(),
+            Expanded(
+              child: Column(
+                children: [
+                  AppTopHeader(moduleTitle: meta.title, moduleShortcutLabel: meta.shortcut),
+                  Expanded(child: navigationShell),
+                  AppStatusBar(moduleName: meta.statusName),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

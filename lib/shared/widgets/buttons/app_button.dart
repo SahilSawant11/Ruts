@@ -32,16 +32,24 @@ class AppButton extends StatelessWidget {
   _ButtonColors _colors(BuildContext context) {
     switch (variant) {
       case AppButtonVariant.primary:
-        return _ButtonColors(AppColors.primary, Colors.white, null);
+        return const _ButtonColors(
+          Color(0xFF6554E8),
+          Colors.white,
+          null,
+        );
       case AppButtonVariant.success:
-        return _ButtonColors(AppColors.success, Colors.white, null);
+        return const _ButtonColors(AppColors.success, Colors.white, null);
       case AppButtonVariant.danger:
-        return _ButtonColors(AppColors.danger, Colors.white, null);
+        return const _ButtonColors(AppColors.danger, Colors.white, null);
       case AppButtonVariant.dangerOutline:
-        return _ButtonColors(AppColors.backgroundFor(context), AppColors.danger, AppColors.dangerSoft);
+        return _ButtonColors(
+          AppColors.glassSurfaceStrongFor(context),
+          AppColors.danger,
+          AppColors.dangerSoft,
+        );
       case AppButtonVariant.secondary:
         return _ButtonColors(
-          AppColors.backgroundFor(context),
+          AppColors.glassSurfaceStrongFor(context),
           AppColors.textPrimaryFor(context),
           null,
         );
@@ -85,20 +93,21 @@ class AppButton extends StatelessWidget {
     );
 
     return Material(
-      color: colors.bg,
-      borderRadius: BorderRadius.circular(AppRadius.md),
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       child: InkWell(
         onTap: onPressed,
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: vPad),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.md),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            color: colors.bg,
             border: needsBorder
                 ? Border.all(
                     color: variant == AppButtonVariant.dangerOutline
-                        ? AppColors.danger.withOpacity(0.35)
-                        : AppColors.borderFor(context),
+                        ? AppColors.danger.withValues(alpha: 0.28)
+                        : AppColors.glassBorderFor(context),
                   )
                 : null,
           ),

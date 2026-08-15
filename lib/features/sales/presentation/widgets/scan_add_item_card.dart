@@ -12,9 +12,10 @@ import '../cart_controller.dart';
 /// Primary data-entry panel: scan/type a barcode, hit Add (or press
 /// Enter), and it's looked up via the API and appended to the cart.
 class ScanAddItemCard extends ConsumerStatefulWidget {
-  const ScanAddItemCard({super.key});
+  const ScanAddItemCard({super.key, this.compact = false});
 
   static const _categories = ['Whisky', 'Beer', 'Wine', 'Rum', 'Vodka', 'Soft Drink'];
+  final bool compact;
 
   @override
   ConsumerState<ScanAddItemCard> createState() => _ScanAddItemCardState();
@@ -61,8 +62,8 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
                 ? const StatusChip(label: 'Looking up…', tone: StatusChipTone.neutral)
                 : const StatusChip(label: 'Scanner Ready'),
           ),
-          const SizedBox(height: AppSpacing.md),
-          _scanRow(),
+          SizedBox(height: widget.compact ? AppSpacing.sm : AppSpacing.md),
+          _scanRow(widget.compact),
           if (cart.scanError != null) ...[
             const SizedBox(height: 6),
             Row(
@@ -75,29 +76,31 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
               ],
             ),
           ],
-          const SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: AppSpacing.xs,
-            runSpacing: AppSpacing.xs,
-            children: ScanAddItemCard._categories.map(_categoryChip).toList(),
-          ),
+          if (!widget.compact) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              spacing: AppSpacing.xs,
+              runSpacing: AppSpacing.xs,
+              children: ScanAddItemCard._categories.map(_categoryChip).toList(),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _scanRow() {
+  Widget _scanRow(bool compact) {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.md),
         color: AppColors.surfaceFor(context),
         border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
       ),
-      padding: const EdgeInsets.all(6),
+      padding: EdgeInsets.all(compact ? 4 : 6),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 12),
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: compact ? 10 : 12),
             decoration: BoxDecoration(
               color: AppColors.primary,
               borderRadius: BorderRadius.circular(AppRadius.sm),

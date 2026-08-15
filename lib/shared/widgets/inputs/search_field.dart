@@ -33,7 +33,21 @@ class SearchField extends StatelessWidget {
             ),
           ),
           suffixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+          filled: true,
+          fillColor: AppColors.glassSurfaceStrongFor(context),
+          contentPadding: const EdgeInsets.symmetric(vertical: 14),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            borderSide: BorderSide(color: AppColors.glassBorderFor(context)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            borderSide: BorderSide(color: AppColors.glassBorderFor(context)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            borderSide: const BorderSide(color: AppColors.primary, width: 1.3),
+          ),
         ),
       ),
     );

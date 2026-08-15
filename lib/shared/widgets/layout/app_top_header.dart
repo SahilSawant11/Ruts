@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:ui';
 import '../../../core/auth/auth_controller.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -33,109 +34,130 @@ class AppTopHeader extends ConsumerWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        final showSearch = width >= 1120;
-        final showLocalMode = width >= 980;
-        final showDate = width >= 900;
-        final showProfileLabel = width >= 760;
-        final compactTitle = width < 820;
+        final showSearch = width >= 1420;
+        final showLocalMode = width >= 1280;
+        final showDate = width >= 1160;
+        final showUtilityIcons = width >= 1040;
+        final showProfile = width >= 760;
+        final showProfileLabel = width >= 1180;
+        final showShortcutBadge = width >= 980;
+        final compactTitle = width < 1080;
+        final showSyncChip = width >= 940;
+        final titleFontSize = width < 860 ? 18.0 : 22.0;
 
         return Container(
-          height: 64,
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          decoration: BoxDecoration(
-            color: AppColors.backgroundFor(context),
-            border: Border(bottom: BorderSide(color: AppColors.borderFor(context))),
-          ),
-          child: Row(
-            children: [
-              InkWell(
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-                onTap: () => ref.read(sidebarCollapsedProvider.notifier).state =
-                    !ref.read(sidebarCollapsedProvider),
-                child: Padding(
-                  padding: const EdgeInsets.all(6),
-                  child: Icon(
-                    Icons.menu_rounded,
-                    color: AppColors.textSecondaryFor(context),
-                  ),
+          height: 76,
+          padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.sm),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: AppColors.glassSurfaceStrongFor(context),
+                  border: Border.all(color: AppColors.glassBorderFor(context)),
+                  borderRadius: BorderRadius.circular(AppRadius.xl),
+                  boxShadow: AppColors.cardShadowFor(context),
                 ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Flexible(
                 child: Row(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Flexible(
-                      child: Text(
-                        moduleTitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.h2,
+                    InkWell(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      onTap: () => ref.read(sidebarCollapsedProvider.notifier).state =
+                          !ref.read(sidebarCollapsedProvider),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Icon(
+                          Icons.menu_rounded,
+                          color: AppColors.textSecondaryFor(context),
+                        ),
                       ),
                     ),
-                    if (!compactTitle) ...[
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              moduleTitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.h2.copyWith(fontSize: titleFontSize),
+                            ),
+                          ),
+                          if (showShortcutBadge && !compactTitle) ...[
+                            const SizedBox(width: AppSpacing.xs),
+                            _pillBadge(moduleShortcutLabel),
+                          ],
+                        ],
+                      ),
+                    ),
+                    if (showSearch) ...[
+                      const SizedBox(width: AppSpacing.lg),
+                      const SizedBox(width: 240, child: SearchField()),
+                    ],
+                    const Spacer(),
+                    if (showSyncChip)
+                      syncOverviewAsync.when(
+                        loading: () => const StatusChip(label: 'Sync…', tone: StatusChipTone.neutral),
+                        error: (_, __) => const StatusChip(label: 'Sync unknown', tone: StatusChipTone.neutral),
+                        data: (overview) => StatusChip(
+                          label: overview.failed > 0
+                              ? '${overview.failed} failed'
+                              : overview.total > 0
+                                  ? '${overview.total} queued'
+                                  : 'Sync clean',
+                          tone: overview.failed > 0 ? StatusChipTone.dark : StatusChipTone.neutral,
+                        ),
+                      ),
+                    if (showLocalMode) ...[
                       const SizedBox(width: AppSpacing.xs),
-                      _pillBadge(moduleShortcutLabel),
+                      const StatusChip(
+                        label: 'Local-first mode',
+                        tone: StatusChipTone.neutral,
+                        icon: Icons.storage_rounded,
+                      ),
+                    ],
+                    if (showDate) ...[
+                      const SizedBox(width: AppSpacing.xs),
+                      StatusChip(
+                        label: _todayLabel(),
+                        tone: StatusChipTone.neutral,
+                        icon: Icons.calendar_today_outlined,
+                      ),
+                    ],
+                    const SizedBox(width: AppSpacing.sm),
+                    _themeButton(
+                      context: context,
+                      isDark: isDark,
+                      themeMode: themeMode,
+                      onTap: () => ref.read(appThemeModeProvider.notifier).state =
+                          isDark ? ThemeMode.light : ThemeMode.dark,
+                    ),
+                    if (showUtilityIcons) ...[
+                      const SizedBox(width: 6),
+                      _iconButton(context, Icons.calculate_outlined),
+                      const SizedBox(width: 6),
+                      _iconButton(context, Icons.description_outlined),
+                    ],
+                    if (showProfile) ...[
+                      const SizedBox(width: 6),
+                      _logoutButton(context, ref),
+                      const SizedBox(width: AppSpacing.sm),
+                      _profile(
+                        context,
+                        showLabel: showProfileLabel,
+                        username: currentUser?.username ?? 'guest',
+                        roleLabel: currentUser?.roleLabel ?? 'Offline User',
+                        initials: currentUser?.initials ?? 'GU',
+                      ),
                     ],
                   ],
                 ),
               ),
-              if (showSearch) ...[
-                const SizedBox(width: AppSpacing.lg),
-                const SizedBox(width: 240, child: SearchField()),
-              ],
-              const Spacer(),
-              syncOverviewAsync.when(
-                loading: () => const StatusChip(label: 'Sync…', tone: StatusChipTone.neutral),
-                error: (_, __) => const StatusChip(label: 'Sync unknown', tone: StatusChipTone.neutral),
-                data: (overview) => StatusChip(
-                  label: overview.failed > 0
-                      ? '${overview.failed} failed'
-                      : overview.total > 0
-                          ? '${overview.total} queued'
-                          : 'Sync clean',
-                  tone: overview.failed > 0 ? StatusChipTone.dark : StatusChipTone.neutral,
-                ),
-              ),
-              if (showLocalMode) ...[
-                const SizedBox(width: AppSpacing.xs),
-                const StatusChip(
-                  label: 'Local-first mode',
-                  tone: StatusChipTone.neutral,
-                  icon: Icons.storage_rounded,
-                ),
-              ],
-              if (showDate) ...[
-                const SizedBox(width: AppSpacing.xs),
-                StatusChip(
-                  label: _todayLabel(),
-                  tone: StatusChipTone.neutral,
-                  icon: Icons.calendar_today_outlined,
-                ),
-              ],
-              const SizedBox(width: AppSpacing.sm),
-              _themeButton(
-                context: context,
-                isDark: isDark,
-                themeMode: themeMode,
-                onTap: () => ref.read(appThemeModeProvider.notifier).state =
-                    isDark ? ThemeMode.light : ThemeMode.dark,
-              ),
-              const SizedBox(width: 6),
-              _iconButton(context, Icons.calculate_outlined),
-              const SizedBox(width: 6),
-              _iconButton(context, Icons.description_outlined),
-              const SizedBox(width: 6),
-              _logoutButton(context, ref),
-              const SizedBox(width: AppSpacing.sm),
-              _profile(
-                context,
-                showLabel: showProfileLabel,
-                username: currentUser?.username ?? 'guest',
-                roleLabel: currentUser?.roleLabel ?? 'Offline User',
-                initials: currentUser?.initials ?? 'GU',
-              ),
-            ],
+            ),
           ),
         );
       },
@@ -152,8 +174,9 @@ class AppTopHeader extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.primarySoft,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+        color: AppColors.primarySoft.withValues(alpha: 0.96),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.95)),
       ),
       child: Text(
         label,
@@ -167,9 +190,18 @@ class AppTopHeader extends ConsumerWidget {
       width: 38,
       height: 38,
       decoration: BoxDecoration(
-        color: Colors.transparent,
-        border: Border.all(color: AppColors.borderFor(context)),
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+        color: AppColors.glassSurfaceStrongFor(context),
+        border: Border.all(color: AppColors.glassBorderFor(context)),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: AppColors.isDark(context) ? 0.18 : 0.06,
+            ),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Icon(
         icon,
@@ -192,9 +224,18 @@ class AppTopHeader extends ConsumerWidget {
         width: 38,
         height: 38,
         decoration: BoxDecoration(
-          color: isDark ? AppColors.surfaceAltFor(context) : Colors.transparent,
-          border: Border.all(color: AppColors.borderFor(context)),
-          borderRadius: BorderRadius.circular(AppRadius.sm),
+          color: isDark ? AppColors.surfaceAltFor(context) : AppColors.glassSurfaceStrongFor(context),
+          border: Border.all(color: AppColors.glassBorderFor(context)),
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(
+                alpha: AppColors.isDark(context) ? 0.18 : 0.06,
+              ),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         child: Icon(
           themeMode == ThemeMode.dark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
@@ -215,8 +256,18 @@ class AppTopHeader extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 6),
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.borderFor(context)),
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+        color: AppColors.glassSurfaceStrongFor(context),
+        border: Border.all(color: AppColors.glassBorderFor(context)),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: AppColors.isDark(context) ? 0.18 : 0.06,
+            ),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -268,8 +319,18 @@ class AppTopHeader extends ConsumerWidget {
         width: 38,
         height: 38,
         decoration: BoxDecoration(
-          border: Border.all(color: AppColors.borderFor(context)),
-          borderRadius: BorderRadius.circular(AppRadius.sm),
+          color: AppColors.glassSurfaceStrongFor(context),
+          border: Border.all(color: AppColors.glassBorderFor(context)),
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(
+                alpha: AppColors.isDark(context) ? 0.18 : 0.06,
+              ),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         child: Icon(
           Icons.logout_rounded,
