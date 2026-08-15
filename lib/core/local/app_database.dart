@@ -144,8 +144,12 @@ class AppDatabase extends _$AppDatabase {
     final hasMaterials = await _tableHasRows('cached_materials');
     final hasSuppliers = await _tableHasRows('cached_suppliers');
     final hasInventory = await _tableHasRows('cached_inventory_stocks');
+    final hasSalesBills = await _tableHasRows('cached_sales_bills');
+    final hasSaleLines = await _tableHasRows('cached_sale_line_items');
 
-    if (hasMaterials && hasSuppliers && hasInventory) return;
+    if (hasMaterials && hasSuppliers && hasInventory && hasSalesBills && hasSaleLines) {
+      return;
+    }
 
     final now = DateTime.now().toUtc();
 
@@ -215,6 +219,59 @@ class AppDatabase extends _$AppDatabase {
                 updatedAt: Value(now),
               ),
               mode: InsertMode.insertOrIgnore,
+            );
+          }
+        });
+      }
+
+      if (!hasSalesBills || !hasSaleLines) {
+        final seed = _buildStarterSalesHistory(now);
+        await delete(cachedSaleLineItems).go();
+        await delete(cachedSalesBills).go();
+
+        await batch((batch) {
+          for (final bill in seed.bills) {
+            batch.insert(
+              cachedSalesBills,
+              CachedSalesBillsCompanion.insert(
+                id: bill.id,
+                billNo: bill.billNo,
+                customerId: Value(bill.customerId),
+                payMode: bill.payMode,
+                status: bill.status,
+                totalAmount: bill.totalAmount,
+                balanceDue: bill.balanceDue,
+                totalTax: bill.totalTax,
+                syncStatus: const Value('synced'),
+                billDate: bill.billDate,
+                createdAt: Value(bill.createdAt),
+                updatedAt: Value(bill.updatedAt),
+              ),
+            );
+          }
+
+          for (final line in seed.lines) {
+            batch.insert(
+              cachedSaleLineItems,
+              CachedSaleLineItemsCompanion.insert(
+                id: line.id,
+                salesBillId: line.salesBillId,
+                materialId: Value(line.materialId),
+                barcodeNo: line.barcodeNo,
+                materialType: line.materialType,
+                materialName: line.materialName,
+                batchNo: Value(line.batchNo),
+                packing: Value(line.packing),
+                quantity: line.quantity,
+                qtyCase: Value(line.qtyCase),
+                rate: line.rate,
+                discountPercent: line.discountPercent,
+                discountAmount: line.discountAmount,
+                taxPercent: line.taxPercent,
+                taxAmount: line.taxAmount,
+                amount: line.amount,
+                lineNumber: line.lineNumber,
+              ),
             );
           }
         });
@@ -294,6 +351,182 @@ class _StarterInventoryStock {
   final String category;
   final int qtyOnHand;
   final int reorderLevel;
+}
+
+class _StarterSeedBundle {
+  const _StarterSeedBundle({
+    required this.bills,
+    required this.lines,
+  });
+
+  final List<_StarterSalesBill> bills;
+  final List<_StarterSalesLine> lines;
+}
+
+class _StarterSalesBill {
+  const _StarterSalesBill({
+    required this.id,
+    required this.billNo,
+    required this.customerId,
+    required this.payMode,
+    required this.status,
+    required this.totalAmount,
+    required this.balanceDue,
+    required this.totalTax,
+    required this.billDate,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  final String id;
+  final String billNo;
+  final String? customerId;
+  final String payMode;
+  final String status;
+  final double totalAmount;
+  final double balanceDue;
+  final double totalTax;
+  final DateTime billDate;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+}
+
+class _StarterSalesLine {
+  const _StarterSalesLine({
+    required this.id,
+    required this.salesBillId,
+    required this.materialId,
+    required this.barcodeNo,
+    required this.materialType,
+    required this.materialName,
+    required this.batchNo,
+    required this.packing,
+    required this.quantity,
+    required this.qtyCase,
+    required this.rate,
+    required this.discountPercent,
+    required this.discountAmount,
+    required this.taxPercent,
+    required this.taxAmount,
+    required this.amount,
+    required this.lineNumber,
+  });
+
+  final String id;
+  final String salesBillId;
+  final String materialId;
+  final String barcodeNo;
+  final String materialType;
+  final String materialName;
+  final String? batchNo;
+  final String? packing;
+  final int quantity;
+  final int qtyCase;
+  final double rate;
+  final double discountPercent;
+  final double discountAmount;
+  final double taxPercent;
+  final double taxAmount;
+  final double amount;
+  final int lineNumber;
+}
+
+_StarterSeedBundle _buildStarterSalesHistory(DateTime now) {
+  final bills = <_StarterSalesBill>[];
+  final lines = <_StarterSalesLine>[];
+  final saleDate = DateTime.utc(now.year, now.month, now.day);
+  var billSequence = 1;
+
+  for (var dayIndex = 89; dayIndex >= 0; dayIndex--) {
+    final day = saleDate.subtract(Duration(days: dayIndex));
+    final weekendBonus = day.weekday == DateTime.friday || day.weekday == DateTime.saturday ? 1 : 0;
+    final billCount = 1 + ((89 - dayIndex) % 3) + weekendBonus;
+
+    for (var billOffset = 0; billOffset < billCount; billOffset++) {
+      final billId = 'seed-sale-${day.millisecondsSinceEpoch}-$billOffset';
+      final billNo =
+          'CSK${day.year}${day.month.toString().padLeft(2, '0')}${day.day.toString().padLeft(2, '0')}-${billSequence.toString().padLeft(4, '0')}';
+      final createdAt = DateTime.utc(
+        day.year,
+        day.month,
+        day.day,
+        11 + (billOffset % 7),
+        (billOffset * 13) % 60,
+      );
+      final payModes = ['Cash', 'UPI', 'Card', 'Credit'];
+      final payMode = payModes[(dayIndex + billOffset) % payModes.length];
+      final customerId = payMode == 'Credit' ? 'CUST-${((89 - dayIndex) % 6) + 1}' : null;
+      final status = payMode == 'Credit' ? 'partial' : 'paid';
+
+      final lineCount = 2 + ((dayIndex + billOffset) % 3);
+      var totalAmount = 0.0;
+      var totalTax = 0.0;
+
+      for (var lineIndex = 0; lineIndex < lineCount; lineIndex++) {
+        final material = _starterMaterials[((89 - dayIndex) * 3 + (billOffset * 5) + lineIndex) % _starterMaterials.length];
+        final isCaseHeavy = material.category == 'Beer' && ((dayIndex + lineIndex) % 4 == 0);
+        final qtyCase = isCaseHeavy ? 1 : 0;
+        final quantity = 1 + ((dayIndex + billOffset + lineIndex) % 5);
+        final grossUnits = quantity + (qtyCase * 12);
+        final gross = material.saleRate * grossUnits;
+        final discountPercent = ((dayIndex + lineIndex + billOffset) % 5 == 0) ? 5.0 : 0.0;
+        final discountAmount = gross * (discountPercent / 100);
+        final taxable = gross - discountAmount;
+        final taxAmount = taxable * (material.taxPercent / 100);
+        final amount = taxable + taxAmount;
+        totalAmount += amount;
+        totalTax += taxAmount;
+
+        lines.add(
+          _StarterSalesLine(
+            id: '$billId-line-${lineIndex + 1}',
+            salesBillId: billId,
+            materialId: material.id,
+            barcodeNo: material.barcode,
+            materialType: material.category,
+            materialName: material.name,
+            batchNo: 'B-${day.month.toString().padLeft(2, '0')}${lineIndex + 1}',
+            packing: material.packing,
+            quantity: quantity,
+            qtyCase: qtyCase,
+            rate: material.saleRate,
+            discountPercent: discountPercent,
+            discountAmount: double.parse(discountAmount.toStringAsFixed(2)),
+            taxPercent: material.taxPercent,
+            taxAmount: double.parse(taxAmount.toStringAsFixed(2)),
+            amount: double.parse(amount.toStringAsFixed(2)),
+            lineNumber: lineIndex + 1,
+          ),
+        );
+      }
+
+      final roundedTotal = double.parse(totalAmount.toStringAsFixed(2));
+      final roundedTax = double.parse(totalTax.toStringAsFixed(2));
+      final balanceDue = payMode == 'Credit'
+          ? double.parse((roundedTotal * 0.35).toStringAsFixed(2))
+          : 0.0;
+
+      bills.add(
+        _StarterSalesBill(
+          id: billId,
+          billNo: billNo,
+          customerId: customerId,
+          payMode: payMode,
+          status: status,
+          totalAmount: roundedTotal,
+          balanceDue: balanceDue,
+          totalTax: roundedTax,
+          billDate: day,
+          createdAt: createdAt,
+          updatedAt: createdAt,
+        ),
+      );
+
+      billSequence += 1;
+    }
+  }
+
+  return _StarterSeedBundle(bills: bills, lines: lines);
 }
 
 const _starterSuppliers = <_StarterSupplier>[
