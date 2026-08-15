@@ -39,7 +39,7 @@ class StockHealthCard extends ConsumerWidget {
                   Center(
                     child: DonutChart(
                       centerValue: '${items.length}',
-                      centerLabel: 'total SKUs',
+                      centerLabel: 'total items',
                       segments: [
                         DonutSegment(value: inStock.toDouble(), color: AppColors.success),
                         DonutSegment(value: lowStock.toDouble(), color: AppColors.warning),

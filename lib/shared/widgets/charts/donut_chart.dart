@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 
 class DonutSegment {
@@ -40,8 +41,19 @@ class DonutChart extends StatelessWidget {
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(centerValue, style: AppTypography.h1.copyWith(fontSize: 22)),
-              Text(centerLabel, style: AppTypography.caption),
+              Text(
+                centerValue,
+                style: AppTypography.h1.copyWith(
+                  fontSize: 22,
+                  color: AppColors.textPrimaryFor(context),
+                ),
+              ),
+              Text(
+                centerLabel,
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.textSecondaryFor(context),
+                ),
+              ),
             ],
           ),
         ],

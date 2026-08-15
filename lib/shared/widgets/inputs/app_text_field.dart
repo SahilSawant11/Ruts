@@ -47,7 +47,12 @@ class AppTextField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (label.isNotEmpty) ...[
-          Text(label, style: AppTypography.label),
+          Text(
+            label,
+            style: AppTypography.label.copyWith(
+              color: AppColors.textSecondaryFor(context),
+            ),
+          ),
           const SizedBox(height: 6),
         ],
         TextField(

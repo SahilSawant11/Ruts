@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/badges/status_chip.dart';
@@ -12,11 +13,11 @@ class MaterialMasterScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+    return const SingleChildScrollView(
+      padding: EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
+        children: [
           _ScreenHeader(),
           SizedBox(height: AppSpacing.lg),
           MaterialsTable(),
@@ -43,9 +44,19 @@ class _ScreenHeader extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Material Master', style: AppTypography.h1),
+              Text(
+                'Material Master',
+                style: AppTypography.h1.copyWith(
+                  color: AppColors.textPrimaryFor(context),
+                ),
+              ),
               const SizedBox(height: 4),
-              Text('Real catalog, keyed by Local Item Code.', style: AppTypography.bodyMuted),
+              Text(
+                'Real catalog, keyed by Local Item Code.',
+                style: AppTypography.bodyMuted.copyWith(
+                  color: AppColors.textSecondaryFor(context),
+                ),
+              ),
             ],
           ),
         ),

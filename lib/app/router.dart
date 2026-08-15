@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../features/inventory/presentation/screens/inventory_screen.dart';

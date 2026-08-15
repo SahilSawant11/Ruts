@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/data/info_list_tile.dart';
@@ -33,7 +34,14 @@ class TopCustomersCard extends ConsumerWidget {
             ),
             error: (_, __) => Padding(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-              child: Center(child: Text('Could not load customers.', style: AppTypography.bodyMuted)),
+              child: Center(
+                child: Text(
+                  'Could not load customers.',
+                  style: AppTypography.bodyMuted.copyWith(
+                    color: AppColors.textSecondaryFor(context),
+                  ),
+                ),
+              ),
             ),
             data: (summary) {
               if (summary.topCustomers.isEmpty) {
@@ -42,7 +50,9 @@ class TopCustomersCard extends ConsumerWidget {
                   child: Center(
                     child: Text(
                       'No named customers yet — most bills are Counter Sale.',
-                      style: AppTypography.bodyMuted,
+                      style: AppTypography.bodyMuted.copyWith(
+                        color: AppColors.textSecondaryFor(context),
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ),

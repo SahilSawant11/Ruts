@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../widgets/inventory_filters_card.dart';
@@ -14,32 +15,54 @@ class InventoryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Inventory', style: AppTypography.h1),
-            const SizedBox(height: 4),
-            Text('Stock levels, reorder points, and category breakdown.', style: AppTypography.bodyMuted),
-            const SizedBox(height: AppSpacing.lg),
-            const LiveStockTable(),
-            const SizedBox(height: AppSpacing.lg),
-            const InventoryKpiRow(),
-            const SizedBox(height: AppSpacing.lg),
-            const InventoryFiltersCard(),
-            const SizedBox(height: AppSpacing.lg),
-            const Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: StockHealthCard()),
-                SizedBox(width: AppSpacing.lg),
-                Expanded(flex: 2, child: SkuCategoryCard()),
-              ],
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Inventory',
+            style: AppTypography.h1.copyWith(
+              color: AppColors.textPrimaryFor(context),
             ),
-            const SizedBox(height: AppSpacing.lg),
-            const StockReorderCard(),
-          ],
-        ),
-      );
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Stock levels, reorder points, and category breakdown.',
+            style: AppTypography.bodyMuted.copyWith(
+              color: AppColors.textSecondaryFor(context),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          const InventoryKpiRow(),
+          const SizedBox(height: AppSpacing.lg),
+          const Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: StockHealthCard()),
+              SizedBox(width: AppSpacing.lg),
+                Expanded(
+                  flex: 2,
+                  child: LiveStockTable(
+                    title: 'Live Bottle & Can Snapshot',
+                    subtitle: 'Critical stock positions with a compact live view',
+                    maxTableHeight: 420,
+                  ),
+                ),
+              ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          const InventoryFiltersCard(),
+          const SizedBox(height: AppSpacing.lg),
+          const Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(flex: 2, child: SkuCategoryCard()),
+              SizedBox(width: AppSpacing.lg),
+              Expanded(child: StockReorderCard()),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }

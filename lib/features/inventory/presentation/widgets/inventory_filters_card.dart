@@ -23,7 +23,7 @@ class InventoryFiltersCard extends StatelessWidget {
               SizedBox(width: AppSpacing.md),
               Expanded(child: AppTextField(label: 'SUPPLIER', hint: 'All suppliers')),
               SizedBox(width: AppSpacing.md),
-              Expanded(child: AppTextField(label: 'SEARCH SKU', hint: 'Barcode or name')),
+              Expanded(child: AppTextField(label: 'SEARCH ITEM', hint: 'Bottle, can, barcode or name')),
             ],
           ),
           const SizedBox(height: AppSpacing.md),

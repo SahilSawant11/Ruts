@@ -216,7 +216,7 @@ class _SupplierFormCardState extends ConsumerState<SupplierFormCard> {
                 ],
               ),
               const SizedBox(height: AppSpacing.lg),
-              const Divider(height: 1, color: AppColors.border),
+              Divider(height: 1, color: AppColors.borderFor(context)),
               const SizedBox(height: AppSpacing.md),
               Wrap(
                 spacing: AppSpacing.sm,

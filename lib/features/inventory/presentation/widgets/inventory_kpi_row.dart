@@ -22,15 +22,19 @@ class InventoryKpiRow extends ConsumerWidget {
         return Row(
           children: [
             Expanded(
-              child: KpiCard(label: 'Total SKUs', value: '${items.length}', icon: Icons.inventory_2_outlined),
+              child: KpiCard(
+                label: 'Total Items',
+                value: '${items.length}',
+                icon: Icons.inventory_2_outlined,
+              ),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: KpiCard(
-                label: 'In Stock',
+                label: 'Ready to Sell',
                 value: '$inStock',
                 icon: Icons.check_circle_outline_rounded,
-                trendText: items.isEmpty ? null : '${(inStock / items.length * 100).round()}% of catalog',
+                trendText: items.isEmpty ? null : '${(inStock / items.length * 100).round()}% of items',
               ),
             ),
             const SizedBox(width: AppSpacing.md),
@@ -67,9 +71,9 @@ class _KpiSkeletonRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Row(
       children: [
-        Expanded(child: KpiCard(label: 'Total SKUs', value: '—')),
+        Expanded(child: KpiCard(label: 'Total Items', value: '—')),
         SizedBox(width: AppSpacing.md),
-        Expanded(child: KpiCard(label: 'In Stock', value: '—')),
+        Expanded(child: KpiCard(label: 'Ready to Sell', value: '—')),
         SizedBox(width: AppSpacing.md),
         Expanded(child: KpiCard(label: 'Low Stock', value: '—')),
         SizedBox(width: AppSpacing.md),

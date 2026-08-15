@@ -29,8 +29,19 @@ class LabeledProgressRow extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(label, style: AppTypography.body.copyWith(fontWeight: FontWeight.w700)),
-              Text(valueLabel, style: AppTypography.bodyMuted),
+              Text(
+                label,
+                style: AppTypography.body.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimaryFor(context),
+                ),
+              ),
+              Text(
+                valueLabel,
+                style: AppTypography.bodyMuted.copyWith(
+                  color: AppColors.textSecondaryFor(context),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 6),
@@ -39,7 +50,7 @@ class LabeledProgressRow extends StatelessWidget {
             child: LinearProgressIndicator(
               value: fraction.clamp(0, 1),
               minHeight: 8,
-              backgroundColor: AppColors.surfaceAlt,
+              backgroundColor: AppColors.surfaceAltFor(context),
               valueColor: AlwaysStoppedAnimation(color),
             ),
           ),

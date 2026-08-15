@@ -37,11 +37,11 @@ class DashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+    return const SingleChildScrollView(
+      padding: EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
+        children: [
           _DashboardHeader(),
           SizedBox(height: AppSpacing.md),
           DashboardKpiRow(),
@@ -79,7 +79,12 @@ class _DashboardHeader extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Dashboard', style: AppTypography.h1),
+              Text(
+                'Dashboard',
+                style: AppTypography.h1.copyWith(
+                  color: AppColors.textPrimaryFor(context),
+                ),
+              ),
               const SizedBox(height: 4),
               Text(
                 'Store performance at a glance — ${_formatToday()}.',

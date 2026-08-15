@@ -38,7 +38,7 @@ class ReorderBarChart extends StatelessWidget {
             bottom: 24 + (barAreaHeight * thresholdFraction),
             child: Row(
               children: [
-                Expanded(child: _DashedLine(color: AppColors.warning)),
+                const Expanded(child: _DashedLine(color: AppColors.warning)),
                 const SizedBox(width: 6),
                 Text(
                   'Reorder level',

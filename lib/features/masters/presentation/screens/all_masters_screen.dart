@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../data/masters_providers.dart';
@@ -27,9 +28,19 @@ class AllMastersScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('All Masters', style: AppTypography.h1),
+          Text(
+            'All Masters',
+            style: AppTypography.h1.copyWith(
+              color: AppColors.textPrimaryFor(context),
+            ),
+          ),
           const SizedBox(height: 4),
-          Text('Every master data module in one place.', style: AppTypography.bodyMuted),
+          Text(
+            'Every master data module in one place.',
+            style: AppTypography.bodyMuted.copyWith(
+              color: AppColors.textSecondaryFor(context),
+            ),
+          ),
           const SizedBox(height: AppSpacing.lg),
           GridView.count(
             shrinkWrap: true,

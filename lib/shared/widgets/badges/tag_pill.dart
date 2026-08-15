@@ -13,22 +13,40 @@ class TagPill extends StatelessWidget {
   final String label;
   final TagPillTone tone;
 
-  ({Color bg, Color fg}) get _colors {
+  ({Color bg, Color fg}) _colors(BuildContext context) {
     switch (tone) {
       case TagPillTone.success:
-        return (bg: AppColors.successSoft, fg: AppColors.success);
+        return (
+          bg: AppColors.isDark(context)
+              ? AppColors.success.withValues(alpha: 0.16)
+              : AppColors.successSoft,
+          fg: AppColors.success,
+        );
       case TagPillTone.amber:
-        return (bg: AppColors.warningSoft, fg: AppColors.warning);
+        return (
+          bg: AppColors.isDark(context)
+              ? AppColors.warning.withValues(alpha: 0.16)
+              : AppColors.warningSoft,
+          fg: AppColors.warning,
+        );
       case TagPillTone.danger:
-        return (bg: AppColors.dangerSoft, fg: AppColors.danger);
+        return (
+          bg: AppColors.isDark(context)
+              ? AppColors.danger.withValues(alpha: 0.16)
+              : AppColors.dangerSoft,
+          fg: AppColors.danger,
+        );
       case TagPillTone.neutral:
-        return (bg: AppColors.surfaceAlt, fg: AppColors.textSecondary);
+        return (
+          bg: AppColors.surfaceAltFor(context),
+          fg: AppColors.textSecondaryFor(context),
+        );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final c = _colors;
+    final c = _colors(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: 4),
       decoration: BoxDecoration(color: c.bg, borderRadius: BorderRadius.circular(AppRadius.sm)),

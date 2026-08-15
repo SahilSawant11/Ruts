@@ -42,14 +42,28 @@ class CategorySalesCard extends ConsumerWidget {
             ),
             error: (_, __) => Padding(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-              child: Center(child: Text('Could not load categories.', style: AppTypography.bodyMuted)),
+              child: Center(
+                child: Text(
+                  'Could not load categories.',
+                  style: AppTypography.bodyMuted.copyWith(
+                    color: AppColors.textSecondaryFor(context),
+                  ),
+                ),
+              ),
             ),
             data: (summary) {
               final breakdown = summary.categoryBreakdown;
               if (breakdown.isEmpty) {
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-                  child: Center(child: Text('No sales in the last 30 days.', style: AppTypography.bodyMuted)),
+                  child: Center(
+                    child: Text(
+                      'No sales in the last 30 days.',
+                      style: AppTypography.bodyMuted.copyWith(
+                        color: AppColors.textSecondaryFor(context),
+                      ),
+                    ),
+                  ),
                 );
               }
               final maxAmount = breakdown.map((c) => c.amount).reduce((a, b) => a > b ? a : b);

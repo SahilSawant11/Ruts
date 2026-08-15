@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/data/info_list_tile.dart';
@@ -26,13 +27,27 @@ class TopSellingItemsCard extends ConsumerWidget {
             ),
             error: (_, __) => Padding(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-              child: Center(child: Text('Could not load top items.', style: AppTypography.bodyMuted)),
+              child: Center(
+                child: Text(
+                  'Could not load top items.',
+                  style: AppTypography.bodyMuted.copyWith(
+                    color: AppColors.textSecondaryFor(context),
+                  ),
+                ),
+              ),
             ),
             data: (summary) {
               if (summary.topSellingItems.isEmpty) {
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-                  child: Center(child: Text('No sales in the last 30 days.', style: AppTypography.bodyMuted)),
+                  child: Center(
+                    child: Text(
+                      'No sales in the last 30 days.',
+                      style: AppTypography.bodyMuted.copyWith(
+                        color: AppColors.textSecondaryFor(context),
+                      ),
+                    ),
+                  ),
                 );
               }
               return Column(

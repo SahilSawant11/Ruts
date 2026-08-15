@@ -6,22 +6,18 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/badges/tag_pill.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
-import '../../../sales/data/models/material_dto.dart';
 import '../../data/masters_providers.dart';
-import '../material_browser_controller.dart';
+import '../../data/models/supplier_dto.dart';
+import '../supplier_browser_controller.dart';
 
-/// Full list of materials in a scrollable table. Tapping a row loads
-/// that material into MaterialFormCard below for viewing/editing —
-/// this is the "see everything at once" view; the form card is the
-/// "work on one record" view.
-class MaterialsTable extends ConsumerStatefulWidget {
-  const MaterialsTable({super.key});
+class SuppliersTable extends ConsumerStatefulWidget {
+  const SuppliersTable({super.key});
 
   @override
-  ConsumerState<MaterialsTable> createState() => _MaterialsTableState();
+  ConsumerState<SuppliersTable> createState() => _SuppliersTableState();
 }
 
-class _MaterialsTableState extends ConsumerState<MaterialsTable> {
+class _SuppliersTableState extends ConsumerState<SuppliersTable> {
   final _search = TextEditingController();
 
   @override
@@ -38,8 +34,8 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
 
   @override
   Widget build(BuildContext context) {
-    final materialsAsync = ref.watch(materialsListProvider);
-    final browser = ref.watch(materialBrowserProvider);
+    final suppliersAsync = ref.watch(suppliersListProvider);
+    final browser = ref.watch(supplierBrowserProvider);
 
     return AppCard(
       padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.sm),
@@ -49,36 +45,60 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
           Row(
             children: [
               const Expanded(
-                child: SectionHeader(title: 'All Materials', subtitle: 'Tap a row to load it below'),
+                child: SectionHeader(
+                  title: 'All Suppliers',
+                  subtitle: 'Tap a row to load it below',
+                ),
               ),
               SizedBox(
                 width: 240,
-                child: AppTextField(label: '', hint: 'Search name or code', controller: _search, suffix: const Icon(Icons.search_rounded, size: 18)),
+                child: AppTextField(
+                  label: '',
+                  hint: 'Search supplier or contact',
+                  controller: _search,
+                  suffix: const Icon(Icons.search_rounded, size: 18),
+                ),
               ),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          materialsAsync.when(
+          suppliersAsync.when(
             loading: () => const Padding(
               padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
               child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
             ),
             error: (error, _) => Padding(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-              child: Center(child: Text('Could not load materials: $error', style: AppTypography.bodyMuted)),
+              child: Center(
+                child: Text(
+                  'Could not load suppliers: $error',
+                  style: AppTypography.bodyMuted.copyWith(
+                    color: AppColors.textSecondaryFor(context),
+                  ),
+                ),
+              ),
             ),
-            data: (materials) {
+            data: (suppliers) {
               final query = _search.text.trim().toLowerCase();
               final filtered = query.isEmpty
-                  ? materials
-                  : materials
-                      .where((m) => m.name.toLowerCase().contains(query) || m.id.toLowerCase().contains(query))
-                      .toList();
+                  ? suppliers
+                  : suppliers.where((s) {
+                      return s.name.toLowerCase().contains(query) ||
+                          (s.contactNo ?? '').toLowerCase().contains(query) ||
+                          (s.email ?? '').toLowerCase().contains(query);
+                    }).toList();
 
               if (filtered.isEmpty) {
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-                  child: Center(child: Text('No materials match "$query".', style: AppTypography.bodyMuted)),
+                  child: Center(
+                    child: Text(
+                      'No suppliers match "$query".',
+                      style: AppTypography.bodyMuted.copyWith(
+                        color: AppColors.textSecondaryFor(context),
+                      ),
+                    ),
+                  ),
                 );
               }
 
@@ -89,7 +109,11 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
                     children: [
                       _headerRow(),
                       Divider(height: 1, color: AppColors.borderFor(context)),
-                      for (final m in filtered) _dataRow(m, isSelected: browser.current?.id == m.id),
+                      for (final supplier in filtered)
+                        _dataRow(
+                          supplier,
+                          isSelected: browser.current?.id == supplier.id,
+                        ),
                     ],
                   ),
                 ),
@@ -106,38 +130,51 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
         children: [
-          _cell('ITEM CODE', flex: 2, header: true),
           _cell('NAME', flex: 4, header: true),
-          _cell('CATEGORY', flex: 1, header: true),
-          _cell('PACKING', flex: 2, header: true),
-          _cell('BARCODE', flex: 2, header: true),
+          _cell('CONTACT', flex: 2, header: true),
+          _cell('EMAIL', flex: 3, header: true),
+          _cell('DISC %', flex: 1, header: true, alignEnd: true),
+          _cell('BALANCE', flex: 2, header: true, alignEnd: true),
           _cell('SYNC', flex: 1, header: true),
-          _cell('SALE RATE', flex: 1, header: true, alignEnd: true),
         ],
       ),
     );
   }
 
-  Widget _dataRow(MaterialDto m, {required bool isSelected}) {
+  Widget _dataRow(SupplierDto supplier, {required bool isSelected}) {
     return InkWell(
-      onTap: () => ref.read(materialBrowserProvider.notifier).selectById(m.id),
+      onTap: () => ref.read(supplierBrowserProvider.notifier).selectById(supplier.id),
       child: Container(
         color: isSelected ? AppColors.primarySoft : null,
         padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
         child: Row(
           children: [
-            _cell(m.id, flex: 2, mono: true),
-            _cell(m.name, flex: 4, bold: true),
-            Expanded(flex: 1, child: TagPill(label: m.category, tone: TagPillTone.neutral)),
-            _cell(m.packing, flex: 2),
-            _cell(m.barcode, flex: 2, mono: true, muted: m.barcode == m.id),
+            _cell(supplier.name, flex: 4, bold: true),
+            _cell(supplier.contactNo ?? '—', flex: 2, mono: true, muted: supplier.contactNo == null),
+            _cell(supplier.email ?? '—', flex: 3, muted: supplier.email == null),
+            _cell(
+              supplier.disPercent == 0 ? '—' : supplier.disPercent.toStringAsFixed(0),
+              flex: 1,
+              alignEnd: true,
+            ),
+            Expanded(
+              flex: 2,
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: TagPill(
+                  label: '${supplier.balanceType} ₹${supplier.openingBalance.toStringAsFixed(0)}',
+                  tone: supplier.balanceType == 'Debit'
+                      ? TagPillTone.amber
+                      : TagPillTone.neutral,
+                ),
+              ),
+            ),
             Expanded(
               flex: 1,
-              child: m.isPendingSync
+              child: supplier.isPendingSync
                   ? const TagPill(label: 'Pending', tone: TagPillTone.amber)
                   : const SizedBox.shrink(),
             ),
-            _cell(m.saleRate == 0 ? '—' : '₹${m.saleRate.toStringAsFixed(0)}', flex: 1, alignEnd: true),
           ],
         ),
       ),
@@ -168,12 +205,20 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
     } else {
       style = AppTypography.body.copyWith(
         fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-        color: AppColors.textPrimaryFor(context),
+        color: muted
+            ? AppColors.textMutedFor(context)
+            : AppColors.textPrimaryFor(context),
       );
     }
+
     return Expanded(
       flex: flex,
-      child: Text(text, textAlign: alignEnd ? TextAlign.end : TextAlign.start, overflow: TextOverflow.ellipsis, style: style),
+      child: Text(
+        text,
+        textAlign: alignEnd ? TextAlign.end : TextAlign.start,
+        overflow: TextOverflow.ellipsis,
+        style: style,
+      ),
     );
   }
 }

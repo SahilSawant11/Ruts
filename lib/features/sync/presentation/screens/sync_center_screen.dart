@@ -55,9 +55,19 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Sync Center', style: AppTypography.h1),
+                    Text(
+                      'Sync Center',
+                      style: AppTypography.h1.copyWith(
+                        color: AppColors.textPrimaryFor(context),
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text('Review queued offline work, failures, and replay sync on demand.', style: AppTypography.bodyMuted),
+                    Text(
+                      'Review queued offline work, failures, and replay sync on demand.',
+                      style: AppTypography.bodyMuted.copyWith(
+                        color: AppColors.textSecondaryFor(context),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -115,7 +125,9 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
                       const SizedBox(height: AppSpacing.md),
                       Text(
                         'Last queue activity: ${_fmtDateTime(overview.lastActivityAt!)}',
-                        style: AppTypography.caption,
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.textSecondaryFor(context),
+                        ),
                       ),
                     ],
                   ],
@@ -138,13 +150,27 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
                   ),
                   error: (error, _) => Padding(
                     padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-                    child: Center(child: Text('Could not load queue: $error', style: AppTypography.bodyMuted)),
+                    child: Center(
+                      child: Text(
+                        'Could not load queue: $error',
+                        style: AppTypography.bodyMuted.copyWith(
+                          color: AppColors.textSecondaryFor(context),
+                        ),
+                      ),
+                    ),
                   ),
                   data: (items) {
                     if (items.isEmpty) {
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-                        child: Center(child: Text('Queue is empty.', style: AppTypography.bodyMuted)),
+                        child: Center(
+                          child: Text(
+                            'Queue is empty.',
+                            style: AppTypography.bodyMuted.copyWith(
+                              color: AppColors.textSecondaryFor(context),
+                            ),
+                          ),
+                        ),
                       );
                     }
 
@@ -168,7 +194,12 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: AppTypography.bodyMuted),
+          Text(
+            label,
+            style: AppTypography.bodyMuted.copyWith(
+              color: AppColors.textSecondaryFor(context),
+            ),
+          ),
           const SizedBox(height: 8),
           Text(value, style: AppTypography.h1.copyWith(color: accent)),
         ],
@@ -179,19 +210,33 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
   Widget _queueRow(SyncQueueItem item) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppColors.border)),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: AppColors.borderFor(context)),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             flex: 2,
-            child: Text('${item.entityType} · ${item.operation}', style: AppTypography.body.copyWith(fontWeight: FontWeight.w700)),
+            child: Text(
+              '${item.entityType} · ${item.operation}',
+              style: AppTypography.body.copyWith(
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimaryFor(context),
+              ),
+            ),
           ),
           Expanded(
             flex: 2,
-            child: Text(item.entityId, style: AppTypography.mono.copyWith(fontSize: 12)),
+            child: Text(
+              item.entityId,
+              style: AppTypography.mono.copyWith(
+                fontSize: 12,
+                color: AppColors.textPrimaryFor(context),
+              ),
+            ),
           ),
           Expanded(
             flex: 1,
@@ -199,11 +244,22 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
           ),
           Expanded(
             flex: 3,
-            child: Text(item.lastError ?? 'No error', style: AppTypography.caption),
+            child: Text(
+              item.lastError ?? 'No error',
+              style: AppTypography.caption.copyWith(
+                color: AppColors.textSecondaryFor(context),
+              ),
+            ),
           ),
           Expanded(
             flex: 2,
-            child: Text(_fmtDateTime(item.updatedAt), textAlign: TextAlign.end, style: AppTypography.caption),
+            child: Text(
+              _fmtDateTime(item.updatedAt),
+              textAlign: TextAlign.end,
+              style: AppTypography.caption.copyWith(
+                color: AppColors.textSecondaryFor(context),
+              ),
+            ),
           ),
         ],
       ),

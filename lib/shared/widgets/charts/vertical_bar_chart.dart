@@ -35,7 +35,13 @@ class VerticalBarChart extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(bar.valueLabel, style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700)),
+                    Text(
+                      bar.valueLabel,
+                      style: AppTypography.caption.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textSecondaryFor(context),
+                      ),
+                    ),
                     const SizedBox(height: 6),
                     Container(
                       height: (maxBarHeight * bar.fraction).clamp(4, maxBarHeight),
@@ -45,7 +51,12 @@ class VerticalBarChart extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xs),
-                    Text(bar.label, style: AppTypography.caption),
+                    Text(
+                      bar.label,
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.textSecondaryFor(context),
+                      ),
+                    ),
                   ],
                 ),
               ),

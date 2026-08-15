@@ -40,6 +40,7 @@ class LocalInventoryRepository {
         barcode: m.barcode,
         name: m.name,
         category: m.category,
+        packing: m.packing,
         qtyOnHand: s?.qtyOnHand ?? 0,
         reorderLevel: s?.reorderLevel ?? 10,
       );
@@ -97,12 +98,14 @@ class LocalInventoryRepository {
       final barcode = material?.barcode ?? materialId;
       final name = material?.name ?? materialId;
       final category = material?.category ?? 'Unknown';
+      final packing = material?.packing ?? '';
 
       return InventoryItemDto(
         materialId: materialId,
         barcode: barcode,
         name: name,
         category: category,
+        packing: packing,
         qtyOnHand: qtyByMaterial[materialId] ?? 0,
         reorderLevel: reorderByMaterial[materialId] ?? 10,
       );

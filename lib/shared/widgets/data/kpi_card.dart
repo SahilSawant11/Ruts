@@ -67,7 +67,12 @@ class KpiCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(label.toUpperCase(), style: AppTypography.label),
+              Text(
+                label.toUpperCase(),
+                style: AppTypography.label.copyWith(
+                  color: AppColors.textSecondaryFor(context),
+                ),
+              ),
               if (icon != null)
                 Container(
                   width: 40,
@@ -96,7 +101,14 @@ class KpiCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.xs),
-          Text(value, style: AppTypography.h1.copyWith(fontSize: 29, height: 1.05)),
+          Text(
+            value,
+            style: AppTypography.h1.copyWith(
+              fontSize: 29,
+              height: 1.05,
+              color: AppColors.textPrimaryFor(context),
+            ),
+          ),
           if (trendText != null) ...[
             const SizedBox(height: 6),
             Row(
@@ -126,7 +138,12 @@ class KpiCard extends StatelessWidget {
             ),
             if (progressCaption != null) ...[
               const SizedBox(height: 6),
-              Text(progressCaption!, style: AppTypography.caption),
+              Text(
+                progressCaption!,
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.textSecondaryFor(context),
+                ),
+              ),
             ],
           ],
         ],

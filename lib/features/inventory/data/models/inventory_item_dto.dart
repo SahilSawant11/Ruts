@@ -6,6 +6,7 @@ class InventoryItemDto {
     required this.barcode,
     required this.name,
     required this.category,
+    required this.packing,
     required this.qtyOnHand,
     required this.reorderLevel,
   });
@@ -14,6 +15,7 @@ class InventoryItemDto {
   final String barcode;
   final String name;
   final String category;
+  final String packing;
   final int qtyOnHand;
   final int reorderLevel;
 
@@ -26,6 +28,7 @@ class InventoryItemDto {
       barcode: json['barcode'] as String,
       name: json['name'] as String,
       category: json['category'] as String,
+      packing: (json['packing'] as String?) ?? '',
       qtyOnHand: json['qtyOnHand'] as int,
       reorderLevel: json['reorderLevel'] as int,
     );

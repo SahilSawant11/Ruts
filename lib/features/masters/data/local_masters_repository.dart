@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:collection';
 
 import 'package:drift/drift.dart' hide Column;
 
@@ -239,7 +238,7 @@ class LocalMastersRepository {
 
     if (rows.isEmpty) return;
 
-    final latestByEntity = LinkedHashMap<String, SyncQueueItem>();
+    final latestByEntity = <String, SyncQueueItem>{};
     for (final row in rows) {
       latestByEntity['${row.entityType}:${row.entityId}'] = row;
     }

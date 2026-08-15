@@ -13,7 +13,7 @@ import 'add_material_line_dialog.dart';
 /// table, so it scrolls horizontally with fixed column widths instead
 /// of flexing — keeps every figure aligned and readable.
 class PurchaseItemTable extends ConsumerWidget {
-  const PurchaseItemTable({super.key, this.expand = false});
+  const PurchaseItemTable({super.key});
 
   static const _columns = <(String, double, bool)>[
     ('#', 32, false),
@@ -29,70 +29,51 @@ class PurchaseItemTable extends ConsumerWidget {
     ('AMOUNT', 75, true),
     ('ACTIONS', 90, false),
   ];
-  final bool expand;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cart = ref.watch(purchaseCartControllerProvider);
     final items = cart.items;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final compressed = expand && constraints.maxHeight < 220;
-        final tableBody = items.isEmpty
-            ? Padding(
-                padding: EdgeInsets.symmetric(
-                  vertical: compressed ? AppSpacing.sm : AppSpacing.lg,
-                ),
-                child: Center(
-                  child: Text(
-                    'Add a material line to start this purchase bill',
-                    style: AppTypography.bodyMuted,
-                  ),
-                ),
-              )
-            : SingleChildScrollView(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _headerRow(),
-                      Divider(height: 1, color: AppColors.borderFor(context)),
-                      for (var i = 0; i < items.length; i++) _dataRow(context, ref, i, items[i]),
-                    ],
-                  ),
-                ),
-              );
-
-        return AppCard(
-          padding: EdgeInsets.fromLTRB(
-            AppSpacing.md,
-            compressed ? AppSpacing.sm : AppSpacing.md,
-            AppSpacing.md,
-            compressed ? AppSpacing.xs : AppSpacing.sm,
+    return AppCard(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.sm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SectionHeader(
+            title: 'Item Details',
+            subtitle: items.isEmpty ? 'No lines yet' : '${items.length} line(s) · batch units per line',
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SectionHeader(
-                title: 'Item Details',
-                subtitle: compressed
-                    ? null
-                    : items.isEmpty
-                        ? 'No lines yet'
-                        : '${items.length} line(s) · batch units per line',
-                trailing: compressed ? _addLineButton(context, compact: true) : null,
+          const SizedBox(height: AppSpacing.sm),
+          if (items.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+              child: Center(
+                child: Text(
+                  'Add a material line to start this purchase bill',
+                  style: AppTypography.bodyMuted,
+                ),
               ),
-              SizedBox(height: compressed ? AppSpacing.xs : AppSpacing.sm),
-              if (expand) Expanded(child: tableBody) else tableBody,
-              if (!compressed) ...[
-                const SizedBox(height: AppSpacing.xs),
-                _addLineButton(context),
-              ],
-            ],
-          ),
-        );
-      },
+            )
+          else
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _headerRow(),
+                  Divider(height: 1, color: AppColors.borderFor(context)),
+                  for (var i = 0; i < items.length; i++) _dataRow(context, ref, i, items[i]),
+                ],
+              ),
+            ),
+          const SizedBox(height: AppSpacing.xs),
+          _addLineButton(context),
+        ],
+      ),
     );
   }
 
@@ -166,13 +147,13 @@ class PurchaseItemTable extends ConsumerWidget {
     );
   }
 
-  Widget _addLineButton(BuildContext context, {bool compact = false}) {
+  Widget _addLineButton(BuildContext context) {
     return InkWell(
       onTap: () => showAddMaterialLineDialog(context),
       borderRadius: BorderRadius.circular(AppRadius.sm),
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: compact ? 2 : 8),
-        child: const Row(
+      child: const Padding(
+        padding: EdgeInsets.symmetric(vertical: 8),
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.add_circle_outline_rounded, size: 16, color: AppColors.primary),

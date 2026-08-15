@@ -27,7 +27,7 @@ class SkuCategoryCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionHeader(title: 'SKUs by Category'),
+          const SectionHeader(title: 'Items by Category'),
           const SizedBox(height: 4),
           overviewAsync.when(
             loading: () => const Padding(

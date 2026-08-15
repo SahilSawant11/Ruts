@@ -21,7 +21,7 @@ class ItemDetailsTable extends ConsumerWidget {
     final items = cart.items;
 
     final tableBody = items.isEmpty
-        ? _emptyState()
+        ? _emptyState(context)
         : SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,13 +57,17 @@ class ItemDetailsTable extends ConsumerWidget {
     );
   }
 
-  Widget _emptyState() {
+  Widget _emptyState(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
       child: Center(
         child: Column(
           children: [
-            const Icon(Icons.qr_code_scanner_rounded, size: 28, color: AppColors.textMuted),
+            Icon(
+              Icons.qr_code_scanner_rounded,
+              size: 28,
+              color: AppColors.textMutedFor(context),
+            ),
             const SizedBox(height: AppSpacing.xs),
             Text('Scan or type a barcode to start this bill', style: AppTypography.bodyMuted),
           ],

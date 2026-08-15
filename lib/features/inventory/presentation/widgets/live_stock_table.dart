@@ -13,7 +13,16 @@ import '../../data/models/inventory_item_dto.dart';
 /// Purchase (+stock) and Sales (-stock) activity. The KPI row and
 /// charts above this table are still illustrative placeholders.
 class LiveStockTable extends ConsumerWidget {
-  const LiveStockTable({super.key});
+  const LiveStockTable({
+    super.key,
+    this.title = 'Live Bottles & Cans',
+    this.subtitle = 'Real quantities from Purchase + Sales activity',
+    this.maxTableHeight,
+  });
+
+  final String title;
+  final String subtitle;
+  final double? maxTableHeight;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -26,16 +35,20 @@ class LiveStockTable extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: SectionHeader(
-                  title: 'Live Stock',
-                  subtitle: 'Real quantities from Purchase + Sales activity',
+                  title: title,
+                  subtitle: subtitle,
                 ),
               ),
               IconButton(
                 tooltip: 'Refresh',
                 onPressed: () => ref.invalidate(inventoryListProvider),
-                icon: const Icon(Icons.refresh_rounded, size: 18, color: AppColors.textSecondary),
+                icon: Icon(
+                  Icons.refresh_rounded,
+                  size: 18,
+                  color: AppColors.textSecondaryFor(context),
+                ),
               ),
             ],
           ),
@@ -60,11 +73,50 @@ class LiveStockTable extends ConsumerWidget {
                   ),
                 );
               }
+              final sortedItems = [...items]
+                ..sort((a, b) {
+                  final aRank = a.isOutOfStock ? 0 : (a.isLowStock ? 1 : 2);
+                  final bRank = b.isOutOfStock ? 0 : (b.isLowStock ? 1 : 2);
+                  final rankCompare = aRank.compareTo(bRank);
+                  if (rankCompare != 0) return rankCompare;
+                  return a.qtyOnHand.compareTo(b.qtyOnHand);
+                });
+
+              final table = Column(
+                children: [
+                  _headerRow(context),
+                  Divider(height: 1, color: AppColors.borderFor(context)),
+                  for (final item in sortedItems) _dataRow(context, item),
+                ],
+              );
+
               return Column(
                 children: [
-                  _headerRow(),
-                  const Divider(height: 1, color: AppColors.border),
-                  for (final item in items) _dataRow(item),
+                  if (maxTableHeight != null)
+                    ConstrainedBox(
+                      constraints: BoxConstraints(maxHeight: maxTableHeight!),
+                      child: SingleChildScrollView(child: table),
+                    )
+                  else
+                    table,
+                  const SizedBox(height: AppSpacing.sm),
+                  Row(
+                    children: [
+                      Text(
+                        '${items.length} item${items.length == 1 ? '' : 's'} tracked live',
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.textSecondaryFor(context),
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        'Low + out of stock float to the top',
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.textMutedFor(context),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               );
             },
@@ -74,35 +126,91 @@ class LiveStockTable extends ConsumerWidget {
     );
   }
 
-  Widget _headerRow() {
+  Widget _headerRow(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
         children: [
-          _cell('BARCODE', flex: 2, header: true),
-          _cell('MATERIAL', flex: 4, header: true),
-          _cell('CATEGORY', flex: 2, header: true),
-          _cell('QTY ON HAND', flex: 2, header: true, alignEnd: true),
-          _cell('REORDER AT', flex: 2, header: true, alignEnd: true),
-          _cell('STATUS', flex: 2, header: true),
+          _iconHeaderCell(context),
+          _cell(context, 'BARCODE', flex: 2, header: true),
+          _cell(context, 'MATERIAL', flex: 4, header: true),
+          _cell(context, 'CATEGORY', flex: 2, header: true),
+          _cell(context, 'QTY ON HAND', flex: 2, header: true, alignEnd: true),
+          _cell(context, 'REORDER AT', flex: 2, header: true, alignEnd: true),
+          _cell(context, 'STATUS', flex: 2, header: true),
         ],
       ),
     );
   }
 
-  Widget _dataRow(InventoryItemDto item) {
+  Widget _dataRow(BuildContext context, InventoryItemDto item) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
         children: [
-          _cell(item.barcode, flex: 2, mono: true),
-          _cell(item.name, flex: 4, bold: true),
-          _cell(item.category, flex: 2),
-          _cell('${item.qtyOnHand}', flex: 2, alignEnd: true, bold: true),
-          _cell('${item.reorderLevel}', flex: 2, alignEnd: true),
+          _iconCell(context, item.packing),
+          _cell(context, item.barcode, flex: 2, mono: true),
+          _cell(context, item.name, flex: 4, bold: true),
+          _cell(context, item.category, flex: 2),
+          _cell(context, '${item.qtyOnHand}', flex: 2, alignEnd: true, bold: true),
+          _cell(context, '${item.reorderLevel}', flex: 2, alignEnd: true),
           Expanded(flex: 2, child: _statusPill(item)),
         ],
       ),
+    );
+  }
+
+  Widget _iconHeaderCell(BuildContext context) {
+    return SizedBox(
+      width: 40,
+      child: Text(
+        'TYPE',
+        style: AppTypography.label.copyWith(
+          color: AppColors.textMutedFor(context),
+        ),
+      ),
+    );
+  }
+
+  Widget _iconCell(BuildContext context, String packing) {
+    final config = _packingIconFor(packing);
+    return SizedBox(
+      width: 40,
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: config.background,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(
+              color: AppColors.borderFor(context),
+            ),
+          ),
+          child: Icon(
+            config.icon,
+            size: 16,
+            color: config.foreground,
+          ),
+        ),
+      ),
+    );
+  }
+
+  _PackingIconConfig _packingIconFor(String packing) {
+    final normalized = packing.toLowerCase();
+    if (normalized.contains('can')) {
+      return _PackingIconConfig(
+        icon: Icons.local_drink_outlined,
+        foreground: AppColors.chartBlue,
+        background: AppColors.chartBlue.withValues(alpha: 0.14),
+      );
+    }
+    return const _PackingIconConfig(
+      icon: Icons.wine_bar_outlined,
+      foreground: AppColors.primary,
+      background: AppColors.primarySoft,
     );
   }
 
@@ -113,6 +221,7 @@ class LiveStockTable extends ConsumerWidget {
   }
 
   Widget _cell(
+    BuildContext context,
     String text, {
     required int flex,
     bool header = false,
@@ -121,14 +230,34 @@ class LiveStockTable extends ConsumerWidget {
     bool mono = false,
   }) {
     final style = header
-        ? AppTypography.label
+        ? AppTypography.label.copyWith(
+            color: AppColors.textMutedFor(context),
+          )
         : mono
-            ? AppTypography.mono.copyWith(fontSize: 12, color: AppColors.textSecondary)
-            : AppTypography.body.copyWith(fontWeight: bold ? FontWeight.w700 : FontWeight.w500);
+            ? AppTypography.mono.copyWith(
+                fontSize: 12,
+                color: AppColors.textSecondaryFor(context),
+              )
+            : AppTypography.body.copyWith(
+                fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+                color: AppColors.textPrimaryFor(context),
+              );
 
     return Expanded(
       flex: flex,
       child: Text(text, textAlign: alignEnd ? TextAlign.end : TextAlign.start, overflow: TextOverflow.ellipsis, style: style),
     );
   }
+}
+
+class _PackingIconConfig {
+  const _PackingIconConfig({
+    required this.icon,
+    required this.foreground,
+    required this.background,
+  });
+
+  final IconData icon;
+  final Color foreground;
+  final Color background;
 }

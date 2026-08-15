@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/charts/vertical_bar_chart.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
@@ -32,7 +31,14 @@ class SalesTrendCard extends ConsumerWidget {
             loading: () => const SizedBox(height: 220, child: Center(child: CircularProgressIndicator(strokeWidth: 2))),
             error: (_, __) => SizedBox(
               height: 220,
-              child: Center(child: Text('Could not load trend.', style: AppTypography.bodyMuted)),
+              child: Center(
+                child: Text(
+                  'Could not load trend.',
+                  style: AppTypography.bodyMuted.copyWith(
+                    color: AppColors.textSecondaryFor(context),
+                  ),
+                ),
+              ),
             ),
             data: (summary) {
               final points = summary.last7Days;

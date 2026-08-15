@@ -10,6 +10,7 @@ class InventoryOverviewItem {
     required this.barcode,
     required this.name,
     required this.category,
+    required this.packing,
     required this.qtyOnHand,
     required this.reorderLevel,
   });
@@ -18,6 +19,7 @@ class InventoryOverviewItem {
   final String barcode;
   final String name;
   final String category;
+  final String packing;
   final int qtyOnHand;
   final int reorderLevel;
 

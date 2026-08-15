@@ -29,7 +29,13 @@ class CategoryBarRow extends StatelessWidget {
         children: [
           SizedBox(
             width: labelWidth,
-            child: Text(label, style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+            child: Text(
+              label,
+              style: AppTypography.body.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimaryFor(context),
+              ),
+            ),
           ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
@@ -38,7 +44,7 @@ class CategoryBarRow extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: fraction.clamp(0, 1),
                 minHeight: 10,
-                backgroundColor: AppColors.surfaceAlt,
+                backgroundColor: AppColors.surfaceAltFor(context),
                 valueColor: AlwaysStoppedAnimation(color),
               ),
             ),
@@ -49,7 +55,10 @@ class CategoryBarRow extends StatelessWidget {
             child: Text(
               valueLabel,
               textAlign: TextAlign.right,
-              style: AppTypography.mono.copyWith(fontSize: 12, color: AppColors.textSecondary),
+              style: AppTypography.mono.copyWith(
+                fontSize: 12,
+                color: AppColors.textSecondaryFor(context),
+              ),
             ),
           ),
         ],

@@ -42,13 +42,27 @@ class PaymentMixCard extends ConsumerWidget {
             ),
             error: (_, __) => Padding(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-              child: Center(child: Text('Could not load payment mix.', style: AppTypography.bodyMuted)),
+              child: Center(
+                child: Text(
+                  'Could not load payment mix.',
+                  style: AppTypography.bodyMuted.copyWith(
+                    color: AppColors.textSecondaryFor(context),
+                  ),
+                ),
+              ),
             ),
             data: (summary) {
               if (summary.paymentMix.isEmpty) {
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-                  child: Center(child: Text('No payments in the last 30 days.', style: AppTypography.bodyMuted)),
+                  child: Center(
+                    child: Text(
+                      'No payments in the last 30 days.',
+                      style: AppTypography.bodyMuted.copyWith(
+                        color: AppColors.textSecondaryFor(context),
+                      ),
+                    ),
+                  ),
                 );
               }
               return Column(

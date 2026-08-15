@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/badges/status_chip.dart';
@@ -99,11 +100,18 @@ class _ScreenHeader extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Sale / Billing', style: AppTypography.h1),
+              Text(
+                'Sale / Billing',
+                style: AppTypography.h1.copyWith(
+                  color: AppColors.textPrimaryFor(context),
+                ),
+              ),
               const SizedBox(height: 4),
               Text(
                 'Counter sale — barcode-first entry for fast checkout.',
-                style: AppTypography.bodyMuted,
+                style: AppTypography.bodyMuted.copyWith(
+                  color: AppColors.textSecondaryFor(context),
+                ),
               ),
             ],
           ),

@@ -58,7 +58,12 @@ class SectionHeader extends StatelessWidget {
         Expanded(
           child: Row(
             children: [
-              Text(title, style: AppTypography.sectionTitle),
+              Text(
+                title,
+                style: AppTypography.sectionTitle.copyWith(
+                  color: AppColors.textPrimaryFor(context),
+                ),
+              ),
               if (subtitle != null) ...[
                 const SizedBox(width: AppSpacing.xs),
                 Expanded(

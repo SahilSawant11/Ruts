@@ -84,7 +84,10 @@ class AppTopHeader extends ConsumerWidget {
                               moduleTitle,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: AppTypography.h2.copyWith(fontSize: titleFontSize),
+                              style: AppTypography.h2.copyWith(
+                                fontSize: titleFontSize,
+                                color: AppColors.textPrimaryFor(context),
+                              ),
                             ),
                           ),
                           if (showShortcutBadge && !compactTitle) ...[

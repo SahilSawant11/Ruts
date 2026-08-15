@@ -28,7 +28,12 @@ class AppDropdown<T> extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AppTypography.label),
+        Text(
+          label,
+          style: AppTypography.label.copyWith(
+            color: AppColors.textSecondaryFor(context),
+          ),
+        ),
         const SizedBox(height: 6),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12),

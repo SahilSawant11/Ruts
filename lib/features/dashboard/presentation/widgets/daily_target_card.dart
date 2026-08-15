@@ -23,7 +23,14 @@ class DailyTargetCard extends ConsumerWidget {
             loading: () => const SizedBox(height: 80, child: Center(child: CircularProgressIndicator(strokeWidth: 2))),
             error: (_, __) => SizedBox(
               height: 80,
-              child: Center(child: Text('Could not load target.', style: AppTypography.bodyMuted)),
+              child: Center(
+                child: Text(
+                  'Could not load target.',
+                  style: AppTypography.bodyMuted.copyWith(
+                    color: AppColors.textSecondaryFor(context),
+                  ),
+                ),
+              ),
             ),
             data: (summary) {
               final progress = summary.dailyTarget > 0 ? (summary.todaySales / summary.dailyTarget).clamp(0.0, 1.0) : 0.0;
@@ -36,9 +43,19 @@ class DailyTargetCard extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.baseline,
                     textBaseline: TextBaseline.alphabetic,
                     children: [
-                      Text('₹${summary.todaySales.toStringAsFixed(0)}', style: AppTypography.h1),
+                      Text(
+                        '₹${summary.todaySales.toStringAsFixed(0)}',
+                        style: AppTypography.h1.copyWith(
+                          color: AppColors.textPrimaryFor(context),
+                        ),
+                      ),
                       const SizedBox(width: 6),
-                      Text('/ ₹${summary.dailyTarget.toStringAsFixed(0)}', style: AppTypography.bodyMuted),
+                      Text(
+                        '/ ₹${summary.dailyTarget.toStringAsFixed(0)}',
+                        style: AppTypography.bodyMuted.copyWith(
+                          color: AppColors.textSecondaryFor(context),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: AppSpacing.sm),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/badges/tag_pill.dart';
@@ -30,7 +31,14 @@ class StockAlertsCard extends ConsumerWidget {
             ),
             error: (_, __) => Padding(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-              child: Center(child: Text('Could not load stock.', style: AppTypography.bodyMuted)),
+              child: Center(
+                child: Text(
+                  'Could not load stock.',
+                  style: AppTypography.bodyMuted.copyWith(
+                    color: AppColors.textSecondaryFor(context),
+                  ),
+                ),
+              ),
             ),
             data: (items) {
               final atRisk = items.where((i) => i.isLowStock || i.isOutOfStock).toList()
@@ -39,11 +47,18 @@ class StockAlertsCard extends ConsumerWidget {
               if (atRisk.isEmpty) {
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-                  child: Center(child: Text('Everything is well-stocked.', style: AppTypography.bodyMuted)),
+                  child: Center(
+                    child: Text(
+                      'Everything is well-stocked.',
+                      style: AppTypography.bodyMuted.copyWith(
+                        color: AppColors.textSecondaryFor(context),
+                      ),
+                    ),
+                  ),
                 );
               }
               return Column(
-                children: [for (final item in atRisk.take(6)) _row(item)],
+                children: [for (final item in atRisk.take(6)) _row(context, item)],
               );
             },
           ),
@@ -52,7 +67,7 @@ class StockAlertsCard extends ConsumerWidget {
     );
   }
 
-  Widget _row(InventoryOverviewItem item) {
+  Widget _row(BuildContext context, InventoryOverviewItem item) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
@@ -61,8 +76,19 @@ class StockAlertsCard extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item.name, style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
-                Text('${item.qtyOnHand} left · reorder at ${item.reorderLevel}', style: AppTypography.caption),
+                Text(
+                  item.name,
+                  style: AppTypography.body.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimaryFor(context),
+                  ),
+                ),
+                Text(
+                  '${item.qtyOnHand} left · reorder at ${item.reorderLevel}',
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.textSecondaryFor(context),
+                  ),
+                ),
               ],
             ),
           ),
