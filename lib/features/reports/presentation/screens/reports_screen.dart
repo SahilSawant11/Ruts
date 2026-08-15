@@ -30,6 +30,7 @@ class ReportsScreen extends ConsumerStatefulWidget {
 
 class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   ReportTab _tab = ReportTab.dayWise;
+  bool _isExporting = false;
 
   void _onTabChanged(ReportTab tab) {
     setState(() => _tab = tab);
@@ -48,6 +49,35 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         // for the person to pick their own via the filter card.
         break;
     }
+  }
+
+  Future<void> _exportExcel() async {
+    setState(() => _isExporting = true);
+    try {
+      final report = await ref.read(salesReportProvider.future);
+      if (report.items.isEmpty) {
+        _showSnack('No rows available to export for this date range.', isError: true);
+        return;
+      }
+
+      final file = await ref.read(reportExcelExporterProvider).exportDailySalesReport(report);
+      if (!mounted) return;
+      _showSnack('Excel report saved to ${file.path}');
+    } catch (e) {
+      if (!mounted) return;
+      _showSnack('Could not export Excel: $e', isError: true);
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
+  void _showSnack(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red.shade700 : Colors.green.shade700,
+      ),
+    );
   }
 
   @override
@@ -82,7 +112,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       )
                     : const SizedBox.shrink(),
               ),
-              SecondaryButton(label: 'Export Excel', icon: Icons.download_rounded, onPressed: () {}),
+              SecondaryButton(
+                label: _isExporting ? 'Exporting…' : 'Export Excel',
+                icon: Icons.download_rounded,
+                onPressed: _isExporting ? null : _exportExcel,
+              ),
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
