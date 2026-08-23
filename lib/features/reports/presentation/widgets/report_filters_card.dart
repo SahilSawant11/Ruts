@@ -26,6 +26,8 @@ class _ReportFiltersCardState extends ConsumerState<ReportFiltersCard> {
   DateTimeRange? _lastSyncedRange;
   String? _category;
   String? _lastSyncedCategory;
+  String? _manufacturer;
+  String? _lastSyncedManufacturer;
 
   String _fmt(DateTime d) {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -56,13 +58,16 @@ class _ReportFiltersCardState extends ConsumerState<ReportFiltersCard> {
     final to = _from!.isAfter(_to!) ? _from! : _to!;
     ref.read(reportDateRangeProvider.notifier).state = DateTimeRange(start: from, end: to);
     ref.read(reportCategoryFilterProvider.notifier).state = _category;
+    ref.read(reportManufacturerFilterProvider.notifier).state = _manufacturer;
   }
 
   @override
   Widget build(BuildContext context) {
     final range = ref.watch(reportDateRangeProvider);
     final categoriesAsync = ref.watch(categoriesListProvider);
+    final manufacturersAsync = ref.watch(manufacturersListProvider);
     final activeCategory = ref.watch(reportCategoryFilterProvider);
+    final activeManufacturer = ref.watch(reportManufacturerFilterProvider);
     // Resync local pending fields whenever the range changed from
     // outside this card (e.g. a tab switch set a new default range).
     if (_lastSyncedRange != range) {
@@ -73,6 +78,10 @@ class _ReportFiltersCardState extends ConsumerState<ReportFiltersCard> {
     if (_lastSyncedCategory != activeCategory) {
       _lastSyncedCategory = activeCategory;
       _category = activeCategory;
+    }
+    if (_lastSyncedManufacturer != activeManufacturer) {
+      _lastSyncedManufacturer = activeManufacturer;
+      _manufacturer = activeManufacturer;
     }
 
     return AppCard(
@@ -99,6 +108,21 @@ class _ReportFiltersCardState extends ConsumerState<ReportFiltersCard> {
                     value: _category,
                     hint: 'All categories',
                     onChanged: (value) => setState(() => _category = value),
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: manufacturersAsync.when(
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                  data: (manufacturers) => AppDropdown<String>(
+                    label: 'MANUFACTURER',
+                    items: manufacturers.map((manufacturer) => manufacturer.name).toList(),
+                    itemLabel: (value) => value,
+                    value: _manufacturer,
+                    hint: 'All manufacturers',
+                    onChanged: (value) => setState(() => _manufacturer = value),
                   ),
                 ),
               ),

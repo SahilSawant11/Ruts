@@ -15,6 +15,7 @@ class AllMastersScreen extends ConsumerWidget {
     final suppliersAsync = ref.watch(suppliersListProvider);
     final materialsAsync = ref.watch(materialsListProvider);
     final categoriesAsync = ref.watch(categoriesListProvider);
+    final manufacturersAsync = ref.watch(manufacturersListProvider);
 
     String countLabel(AsyncValue<List<dynamic>> async, String noun) {
       final plural = noun.endsWith('y') ? '${noun.substring(0, noun.length - 1)}ies' : '${noun}s';
@@ -69,6 +70,12 @@ class AllMastersScreen extends ConsumerWidget {
                 title: 'Category Master',
                 subtitle: countLabel(categoriesAsync, 'category'),
                 onTap: () => context.go('/category'),
+              ),
+              MasterTile(
+                icon: Icons.business_outlined,
+                title: 'Manufacturer Master',
+                subtitle: countLabel(manufacturersAsync, 'manufacturer'),
+                onTap: () => context.go('/manufacturer'),
               ),
               const MasterTile(
                 icon: Icons.people_outline_rounded,

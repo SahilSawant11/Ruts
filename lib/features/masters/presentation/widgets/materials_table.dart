@@ -72,7 +72,10 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
               final filtered = query.isEmpty
                   ? materials
                   : materials
-                      .where((m) => m.name.toLowerCase().contains(query) || m.id.toLowerCase().contains(query))
+                      .where((m) =>
+                          m.name.toLowerCase().contains(query) ||
+                          m.id.toLowerCase().contains(query) ||
+                          m.manufacturer.toLowerCase().contains(query))
                       .toList();
 
               if (filtered.isEmpty) {
@@ -108,6 +111,7 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
         children: [
           _cell('ITEM CODE', flex: 2, header: true),
           _cell('NAME', flex: 4, header: true),
+          _cell('MANUFACTURER', flex: 2, header: true),
           _cell('CATEGORY', flex: 1, header: true),
           _cell('PACKING', flex: 2, header: true),
           _cell('BARCODE', flex: 2, header: true),
@@ -132,6 +136,7 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
           children: [
             _cell(m.id, flex: 2, mono: true, selected: isSelected),
             _cell(m.name, flex: 4, bold: true, selected: isSelected),
+            _cell(m.manufacturer, flex: 2, selected: isSelected),
             Expanded(flex: 1, child: TagPill(label: m.category, tone: TagPillTone.neutral)),
             _cell(m.packing, flex: 2, selected: isSelected),
             _cell(

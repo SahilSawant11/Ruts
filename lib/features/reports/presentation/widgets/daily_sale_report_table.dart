@@ -74,6 +74,7 @@ class DailySaleReportTable extends ConsumerWidget {
         children: [
           _cell(context, 'SR', flex: 1, header: true),
           _cell(context, 'LOCAL ITEM CODE', flex: 2, header: true),
+          _cell(context, 'MANUFACTURER', flex: 2, header: true),
           _cell(context, 'BRAND NAME', flex: 4, header: true),
           _cell(context, 'SIZE', flex: 2, header: true),
           _cell(context, 'QTY (CASE)', flex: 1, header: true, alignEnd: true),
@@ -90,6 +91,7 @@ class DailySaleReportTable extends ConsumerWidget {
         children: [
           _cell(context, '$sr', flex: 1, muted: true),
           _cell(context, item.materialId, flex: 2, mono: true),
+          _cell(context, item.manufacturer.isEmpty ? '—' : item.manufacturer, flex: 2),
           _cell(context, item.materialName, flex: 4, bold: true),
           _cell(context, item.packing ?? '—', flex: 2),
           _cell(context, '${item.qtyCase}', flex: 1, alignEnd: true),
@@ -105,6 +107,7 @@ class DailySaleReportTable extends ConsumerWidget {
       child: Row(
         children: [
           _cell(context, '', flex: 1),
+          _cell(context, '', flex: 2),
           _cell(context, '', flex: 2),
           _cell(context, 'Total', flex: 4, bold: true),
           _cell(context, '', flex: 2),

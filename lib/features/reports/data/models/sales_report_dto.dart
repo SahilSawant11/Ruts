@@ -5,6 +5,7 @@ class SalesReportItemDto {
   const SalesReportItemDto({
     required this.materialId,
     required this.materialName,
+    required this.manufacturer,
     required this.packing,
     required this.qtyCase,
     required this.qtyLoose,
@@ -13,6 +14,7 @@ class SalesReportItemDto {
 
   final String materialId;
   final String materialName;
+  final String manufacturer;
   final String? packing;
   final int qtyCase;
   final int qtyLoose;
@@ -22,6 +24,7 @@ class SalesReportItemDto {
     return SalesReportItemDto(
       materialId: json['materialId'] as String,
       materialName: json['materialName'] as String,
+      manufacturer: (json['manufacturer'] as String?) ?? '',
       packing: json['packing'] as String?,
       qtyCase: json['qtyCase'] as int,
       qtyLoose: json['qtyLoose'] as int,

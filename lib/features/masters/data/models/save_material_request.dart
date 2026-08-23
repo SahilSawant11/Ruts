@@ -6,6 +6,7 @@ class SaveMaterialRequest {
     required this.id,
     this.barcode,
     required this.name,
+    required this.manufacturer,
     required this.category,
     required this.packing,
     required this.saleRate,
@@ -19,6 +20,7 @@ class SaveMaterialRequest {
   /// back to using the item code as the barcode too.
   final String? barcode;
   final String name;
+  final String manufacturer;
   final String category;
   final String packing;
   final double saleRate;
@@ -28,6 +30,7 @@ class SaveMaterialRequest {
         'id': id,
         'barcode': barcode,
         'name': name,
+        'manufacturer': manufacturer,
         'category': category,
         'packing': packing,
         'saleRate': saleRate,

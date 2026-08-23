@@ -80,6 +80,7 @@ class MasterImportService {
     final codeIndex = _requiredIndex(headerMap, const ['localitemcode', 'itemcode', 'id', 'materialcode']);
     final nameIndex = _requiredIndex(headerMap, const ['name', 'materialname', 'brandname', 'itemname']);
     final barcodeIndex = _findIndex(headerMap, const ['barcode', 'scancode']);
+    final manufacturerIndex = _findIndex(headerMap, const ['manufacturer', 'brand', 'maker', 'company']);
     final categoryIndex = _findIndex(headerMap, const ['category', 'type']);
     final packingIndex = _findIndex(headerMap, const ['packing', 'size']);
     final saleRateIndex = _findIndex(headerMap, const ['salerate', 'rate', 'mrp']);
@@ -118,6 +119,7 @@ class MasterImportService {
             id: code,
             barcode: _nullable(_valueAt(row, barcodeIndex)) ?? code,
             name: name,
+            manufacturer: _nullable(_valueAt(row, manufacturerIndex)) ?? name.split(' ').first,
             category: _nullable(_valueAt(row, categoryIndex)) ?? 'Beer',
             packing: _valueAt(row, packingIndex),
             saleRate: _parseDouble(_valueAt(row, saleRateIndex)),

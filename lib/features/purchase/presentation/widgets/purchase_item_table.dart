@@ -17,6 +17,7 @@ class PurchaseItemTable extends ConsumerWidget {
 
   static const _columns = <(String, double, bool)>[
     ('#', 32, false),
+    ('MAKE', 110, false),
     ('MATERIAL', 220, false),
     ('BATCH NO.', 90, false),
     ('PACKING', 90, false),
@@ -103,6 +104,7 @@ class PurchaseItemTable extends ConsumerWidget {
   Widget _dataRow(BuildContext context, WidgetRef ref, int index, PurchaseLineItem item) {
     final values = <String>[
       '${item.index}',
+      item.manufacturer,
       item.material,
       item.batch,
       item.packing,

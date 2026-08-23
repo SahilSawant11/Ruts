@@ -7,6 +7,8 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
+import '../../../inventory/data/inventory_providers.dart';
+import '../../../masters/data/masters_providers.dart';
 import '../../data/models/create_purchase_request.dart';
 import '../../data/purchase_providers.dart';
 import '../purchase_cart_controller.dart';
@@ -94,6 +96,12 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
       );
 
       final result = await ref.read(purchaseRepositoryProvider).createPurchase(request);
+      ref.invalidate(materialsListProvider);
+      ref.invalidate(manufacturersListProvider);
+      ref.invalidate(inventoryListProvider);
+      ref.invalidate(inventoryOverviewProvider);
+      ref.invalidate(inventoryManufacturerOptionsProvider);
+      ref.invalidate(filteredInventoryOverviewProvider);
 
       ref.read(purchaseCartControllerProvider.notifier).clear();
       ref.read(purchaseFormControllerProvider.notifier).reset();

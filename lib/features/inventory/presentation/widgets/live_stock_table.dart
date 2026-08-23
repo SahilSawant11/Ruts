@@ -7,6 +7,7 @@ import '../../../../shared/widgets/badges/tag_pill.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
 import '../../data/inventory_providers.dart';
 import '../../data/models/inventory_overview_item.dart';
+import 'inventory_item_profile.dart';
 
 /// Real stock table backed by the merged inventory overview so it
 /// respects category/status/search filters while still reflecting
@@ -42,7 +43,7 @@ class LiveStockTable extends ConsumerWidget {
               ),
               IconButton(
                 tooltip: 'Refresh',
-                onPressed: () => ref.invalidate(inventoryListProvider),
+                onPressed: () => ref.invalidate(inventoryOverviewProvider),
                 icon: Icon(
                   Icons.refresh_rounded,
                   size: 18,
@@ -130,12 +131,10 @@ class LiveStockTable extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
         children: [
-          _iconHeaderCell(context),
-          _cell(context, 'BARCODE', flex: 2, header: true),
-          _cell(context, 'MATERIAL', flex: 4, header: true),
-          _cell(context, 'CATEGORY', flex: 2, header: true),
-          _cell(context, 'QTY ON HAND', flex: 2, header: true, alignEnd: true),
-          _cell(context, 'REORDER AT', flex: 2, header: true, alignEnd: true),
+          _profileHeaderCell(context),
+          _cell(context, 'ITEM', flex: 4, header: true),
+          _cell(context, 'ON HAND', flex: 2, header: true, alignEnd: true),
+          _cell(context, 'REORDER', flex: 2, header: true, alignEnd: true),
           _cell(context, 'STATUS', flex: 2, header: true),
         ],
       ),
@@ -147,10 +146,8 @@ class LiveStockTable extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
         children: [
-          _iconCell(context, item.packing),
-          _cell(context, item.barcode, flex: 2, mono: true),
-          _cell(context, item.name, flex: 4, bold: true),
-          _cell(context, item.category, flex: 2),
+          _profileCell(context, item),
+          _itemCell(context, item),
           _cell(context, '${item.qtyOnHand}', flex: 2, alignEnd: true, bold: true),
           _cell(context, '${item.reorderLevel}', flex: 2, alignEnd: true),
           Expanded(flex: 2, child: _statusPill(item)),
@@ -159,11 +156,11 @@ class LiveStockTable extends ConsumerWidget {
     );
   }
 
-  Widget _iconHeaderCell(BuildContext context) {
+  Widget _profileHeaderCell(BuildContext context) {
     return SizedBox(
-      width: 40,
+      width: 126,
       child: Text(
-        'TYPE',
+        'PROFILE',
         style: AppTypography.label.copyWith(
           color: AppColors.textMutedFor(context),
         ),
@@ -171,45 +168,72 @@ class LiveStockTable extends ConsumerWidget {
     );
   }
 
-  Widget _iconCell(BuildContext context, String packing) {
-    final config = _packingIconFor(packing);
+  Widget _profileCell(BuildContext context, InventoryOverviewItem item) {
     return SizedBox(
-      width: 40,
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(
-            color: config.background,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(
-              color: AppColors.borderFor(context),
+      width: 126,
+      child: Row(
+        children: [
+          InventoryItemProfile(
+            item: item,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.manufacturer,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.caption.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimaryFor(context),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${item.category} · ${item.packing}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.textSecondaryFor(context),
+                  ),
+                ),
+              ],
             ),
           ),
-          child: Icon(
-            config.icon,
-            size: 16,
-            color: config.foreground,
-          ),
-        ),
+        ],
       ),
     );
   }
 
-  _PackingIconConfig _packingIconFor(String packing) {
-    final normalized = packing.toLowerCase();
-    if (normalized.contains('can')) {
-      return _PackingIconConfig(
-        icon: Icons.local_drink_outlined,
-        foreground: AppColors.chartBlue,
-        background: AppColors.chartBlue.withValues(alpha: 0.14),
-      );
-    }
-    return const _PackingIconConfig(
-      icon: Icons.wine_bar_outlined,
-      foreground: AppColors.primary,
-      background: AppColors.primarySoft,
+  Widget _itemCell(BuildContext context, InventoryOverviewItem item) {
+    return Expanded(
+      flex: 4,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            item.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.body.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimaryFor(context),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '${item.materialId} · ${item.barcode}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.mono.copyWith(
+              fontSize: 11,
+              color: AppColors.textMutedFor(context),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -247,16 +271,4 @@ class LiveStockTable extends ConsumerWidget {
       child: Text(text, textAlign: alignEnd ? TextAlign.end : TextAlign.start, overflow: TextOverflow.ellipsis, style: style),
     );
   }
-}
-
-class _PackingIconConfig {
-  const _PackingIconConfig({
-    required this.icon,
-    required this.foreground,
-    required this.background,
-  });
-
-  final IconData icon;
-  final Color foreground;
-  final Color background;
 }

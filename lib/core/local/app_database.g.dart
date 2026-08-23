@@ -25,6 +25,14 @@ class $CachedMaterialsTable extends CachedMaterials
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
       'name', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _manufacturerMeta =
+      const VerificationMeta('manufacturer');
+  @override
+  late final GeneratedColumn<String> manufacturer = GeneratedColumn<String>(
+      'manufacturer', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(''));
   static const VerificationMeta _categoryMeta =
       const VerificationMeta('category');
   @override
@@ -92,6 +100,7 @@ class $CachedMaterialsTable extends CachedMaterials
         id,
         barcode,
         name,
+        manufacturer,
         category,
         packing,
         saleRate,
@@ -128,6 +137,12 @@ class $CachedMaterialsTable extends CachedMaterials
           _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
     } else if (isInserting) {
       context.missing(_nameMeta);
+    }
+    if (data.containsKey('manufacturer')) {
+      context.handle(
+          _manufacturerMeta,
+          manufacturer.isAcceptableOrUnknown(
+              data['manufacturer']!, _manufacturerMeta));
     }
     if (data.containsKey('category')) {
       context.handle(_categoryMeta,
@@ -194,6 +209,8 @@ class $CachedMaterialsTable extends CachedMaterials
           .read(DriftSqlType.string, data['${effectivePrefix}barcode'])!,
       name: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      manufacturer: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}manufacturer'])!,
       category: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}category'])!,
       packing: attachedDatabase.typeMapping
@@ -225,6 +242,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
   final String id;
   final String barcode;
   final String name;
+  final String manufacturer;
   final String category;
   final String packing;
   final double saleRate;
@@ -238,6 +256,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
       {required this.id,
       required this.barcode,
       required this.name,
+      required this.manufacturer,
       required this.category,
       required this.packing,
       required this.saleRate,
@@ -253,6 +272,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
     map['id'] = Variable<String>(id);
     map['barcode'] = Variable<String>(barcode);
     map['name'] = Variable<String>(name);
+    map['manufacturer'] = Variable<String>(manufacturer);
     map['category'] = Variable<String>(category);
     map['packing'] = Variable<String>(packing);
     map['sale_rate'] = Variable<double>(saleRate);
@@ -272,6 +292,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
       id: Value(id),
       barcode: Value(barcode),
       name: Value(name),
+      manufacturer: Value(manufacturer),
       category: Value(category),
       packing: Value(packing),
       saleRate: Value(saleRate),
@@ -293,6 +314,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
       id: serializer.fromJson<String>(json['id']),
       barcode: serializer.fromJson<String>(json['barcode']),
       name: serializer.fromJson<String>(json['name']),
+      manufacturer: serializer.fromJson<String>(json['manufacturer']),
       category: serializer.fromJson<String>(json['category']),
       packing: serializer.fromJson<String>(json['packing']),
       saleRate: serializer.fromJson<double>(json['saleRate']),
@@ -311,6 +333,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
       'id': serializer.toJson<String>(id),
       'barcode': serializer.toJson<String>(barcode),
       'name': serializer.toJson<String>(name),
+      'manufacturer': serializer.toJson<String>(manufacturer),
       'category': serializer.toJson<String>(category),
       'packing': serializer.toJson<String>(packing),
       'saleRate': serializer.toJson<double>(saleRate),
@@ -327,6 +350,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
           {String? id,
           String? barcode,
           String? name,
+          String? manufacturer,
           String? category,
           String? packing,
           double? saleRate,
@@ -340,6 +364,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
         id: id ?? this.id,
         barcode: barcode ?? this.barcode,
         name: name ?? this.name,
+        manufacturer: manufacturer ?? this.manufacturer,
         category: category ?? this.category,
         packing: packing ?? this.packing,
         saleRate: saleRate ?? this.saleRate,
@@ -356,6 +381,9 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
       id: data.id.present ? data.id.value : this.id,
       barcode: data.barcode.present ? data.barcode.value : this.barcode,
       name: data.name.present ? data.name.value : this.name,
+      manufacturer: data.manufacturer.present
+          ? data.manufacturer.value
+          : this.manufacturer,
       category: data.category.present ? data.category.value : this.category,
       packing: data.packing.present ? data.packing.value : this.packing,
       saleRate: data.saleRate.present ? data.saleRate.value : this.saleRate,
@@ -378,6 +406,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
           ..write('id: $id, ')
           ..write('barcode: $barcode, ')
           ..write('name: $name, ')
+          ..write('manufacturer: $manufacturer, ')
           ..write('category: $category, ')
           ..write('packing: $packing, ')
           ..write('saleRate: $saleRate, ')
@@ -396,6 +425,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
       id,
       barcode,
       name,
+      manufacturer,
       category,
       packing,
       saleRate,
@@ -412,6 +442,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
           other.id == this.id &&
           other.barcode == this.barcode &&
           other.name == this.name &&
+          other.manufacturer == this.manufacturer &&
           other.category == this.category &&
           other.packing == this.packing &&
           other.saleRate == this.saleRate &&
@@ -427,6 +458,7 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
   final Value<String> id;
   final Value<String> barcode;
   final Value<String> name;
+  final Value<String> manufacturer;
   final Value<String> category;
   final Value<String> packing;
   final Value<double> saleRate;
@@ -441,6 +473,7 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
     this.id = const Value.absent(),
     this.barcode = const Value.absent(),
     this.name = const Value.absent(),
+    this.manufacturer = const Value.absent(),
     this.category = const Value.absent(),
     this.packing = const Value.absent(),
     this.saleRate = const Value.absent(),
@@ -456,6 +489,7 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
     required String id,
     required String barcode,
     required String name,
+    this.manufacturer = const Value.absent(),
     required String category,
     required String packing,
     required double saleRate,
@@ -477,6 +511,7 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
     Expression<String>? id,
     Expression<String>? barcode,
     Expression<String>? name,
+    Expression<String>? manufacturer,
     Expression<String>? category,
     Expression<String>? packing,
     Expression<double>? saleRate,
@@ -492,6 +527,7 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
       if (id != null) 'id': id,
       if (barcode != null) 'barcode': barcode,
       if (name != null) 'name': name,
+      if (manufacturer != null) 'manufacturer': manufacturer,
       if (category != null) 'category': category,
       if (packing != null) 'packing': packing,
       if (saleRate != null) 'sale_rate': saleRate,
@@ -509,6 +545,7 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
       {Value<String>? id,
       Value<String>? barcode,
       Value<String>? name,
+      Value<String>? manufacturer,
       Value<String>? category,
       Value<String>? packing,
       Value<double>? saleRate,
@@ -523,6 +560,7 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
       id: id ?? this.id,
       barcode: barcode ?? this.barcode,
       name: name ?? this.name,
+      manufacturer: manufacturer ?? this.manufacturer,
       category: category ?? this.category,
       packing: packing ?? this.packing,
       saleRate: saleRate ?? this.saleRate,
@@ -547,6 +585,9 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
+    }
+    if (manufacturer.present) {
+      map['manufacturer'] = Variable<String>(manufacturer.value);
     }
     if (category.present) {
       map['category'] = Variable<String>(category.value);
@@ -587,6 +628,7 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
           ..write('id: $id, ')
           ..write('barcode: $barcode, ')
           ..write('name: $name, ')
+          ..write('manufacturer: $manufacturer, ')
           ..write('category: $category, ')
           ..write('packing: $packing, ')
           ..write('saleRate: $saleRate, ')
@@ -1282,6 +1324,282 @@ class CachedSuppliersCompanion extends UpdateCompanion<CachedSupplier> {
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('lastSyncedAt: $lastSyncedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CachedManufacturersTable extends CachedManufacturers
+    with TableInfo<$CachedManufacturersTable, CachedManufacturer> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CachedManufacturersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _descriptionMeta =
+      const VerificationMeta('description');
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+      'description', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [name, description, createdAt, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'cached_manufacturers';
+  @override
+  VerificationContext validateIntegrity(Insertable<CachedManufacturer> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+          _descriptionMeta,
+          description.isAcceptableOrUnknown(
+              data['description']!, _descriptionMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {name};
+  @override
+  CachedManufacturer map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CachedManufacturer(
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      description: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}description']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $CachedManufacturersTable createAlias(String alias) {
+    return $CachedManufacturersTable(attachedDatabase, alias);
+  }
+}
+
+class CachedManufacturer extends DataClass
+    implements Insertable<CachedManufacturer> {
+  final String name;
+  final String? description;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const CachedManufacturer(
+      {required this.name,
+      this.description,
+      required this.createdAt,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  CachedManufacturersCompanion toCompanion(bool nullToAbsent) {
+    return CachedManufacturersCompanion(
+      name: Value(name),
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory CachedManufacturer.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CachedManufacturer(
+      name: serializer.fromJson<String>(json['name']),
+      description: serializer.fromJson<String?>(json['description']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'name': serializer.toJson<String>(name),
+      'description': serializer.toJson<String?>(description),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  CachedManufacturer copyWith(
+          {String? name,
+          Value<String?> description = const Value.absent(),
+          DateTime? createdAt,
+          DateTime? updatedAt}) =>
+      CachedManufacturer(
+        name: name ?? this.name,
+        description: description.present ? description.value : this.description,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  CachedManufacturer copyWithCompanion(CachedManufacturersCompanion data) {
+    return CachedManufacturer(
+      name: data.name.present ? data.name.value : this.name,
+      description:
+          data.description.present ? data.description.value : this.description,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CachedManufacturer(')
+          ..write('name: $name, ')
+          ..write('description: $description, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(name, description, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CachedManufacturer &&
+          other.name == this.name &&
+          other.description == this.description &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class CachedManufacturersCompanion extends UpdateCompanion<CachedManufacturer> {
+  final Value<String> name;
+  final Value<String?> description;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const CachedManufacturersCompanion({
+    this.name = const Value.absent(),
+    this.description = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CachedManufacturersCompanion.insert({
+    required String name,
+    this.description = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : name = Value(name);
+  static Insertable<CachedManufacturer> custom({
+    Expression<String>? name,
+    Expression<String>? description,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (name != null) 'name': name,
+      if (description != null) 'description': description,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CachedManufacturersCompanion copyWith(
+      {Value<String>? name,
+      Value<String?>? description,
+      Value<DateTime>? createdAt,
+      Value<DateTime>? updatedAt,
+      Value<int>? rowid}) {
+    return CachedManufacturersCompanion(
+      name: name ?? this.name,
+      description: description ?? this.description,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CachedManufacturersCompanion(')
+          ..write('name: $name, ')
+          ..write('description: $description, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -3838,6 +4156,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $CachedMaterialsTable(this);
   late final $CachedSuppliersTable cachedSuppliers =
       $CachedSuppliersTable(this);
+  late final $CachedManufacturersTable cachedManufacturers =
+      $CachedManufacturersTable(this);
   late final $CachedCategoriesTable cachedCategories =
       $CachedCategoriesTable(this);
   late final $SyncQueueItemsTable syncQueueItems = $SyncQueueItemsTable(this);
@@ -3854,6 +4174,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [
         cachedMaterials,
         cachedSuppliers,
+        cachedManufacturers,
         cachedCategories,
         syncQueueItems,
         cachedInventoryStocks,
@@ -3867,6 +4188,7 @@ typedef $$CachedMaterialsTableCreateCompanionBuilder = CachedMaterialsCompanion
   required String id,
   required String barcode,
   required String name,
+  Value<String> manufacturer,
   required String category,
   required String packing,
   required double saleRate,
@@ -3883,6 +4205,7 @@ typedef $$CachedMaterialsTableUpdateCompanionBuilder = CachedMaterialsCompanion
   Value<String> id,
   Value<String> barcode,
   Value<String> name,
+  Value<String> manufacturer,
   Value<String> category,
   Value<String> packing,
   Value<double> saleRate,
@@ -3912,6 +4235,9 @@ class $$CachedMaterialsTableFilterComposer
 
   ColumnFilters<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get manufacturer => $composableBuilder(
+      column: $table.manufacturer, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get category => $composableBuilder(
       column: $table.category, builder: (column) => ColumnFilters(column));
@@ -3959,6 +4285,10 @@ class $$CachedMaterialsTableOrderingComposer
   ColumnOrderings<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get manufacturer => $composableBuilder(
+      column: $table.manufacturer,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get category => $composableBuilder(
       column: $table.category, builder: (column) => ColumnOrderings(column));
 
@@ -4005,6 +4335,9 @@ class $$CachedMaterialsTableAnnotationComposer
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get manufacturer => $composableBuilder(
+      column: $table.manufacturer, builder: (column) => column);
 
   GeneratedColumn<String> get category =>
       $composableBuilder(column: $table.category, builder: (column) => column);
@@ -4064,6 +4397,7 @@ class $$CachedMaterialsTableTableManager extends RootTableManager<
             Value<String> id = const Value.absent(),
             Value<String> barcode = const Value.absent(),
             Value<String> name = const Value.absent(),
+            Value<String> manufacturer = const Value.absent(),
             Value<String> category = const Value.absent(),
             Value<String> packing = const Value.absent(),
             Value<double> saleRate = const Value.absent(),
@@ -4079,6 +4413,7 @@ class $$CachedMaterialsTableTableManager extends RootTableManager<
             id: id,
             barcode: barcode,
             name: name,
+            manufacturer: manufacturer,
             category: category,
             packing: packing,
             saleRate: saleRate,
@@ -4094,6 +4429,7 @@ class $$CachedMaterialsTableTableManager extends RootTableManager<
             required String id,
             required String barcode,
             required String name,
+            Value<String> manufacturer = const Value.absent(),
             required String category,
             required String packing,
             required double saleRate,
@@ -4109,6 +4445,7 @@ class $$CachedMaterialsTableTableManager extends RootTableManager<
             id: id,
             barcode: barcode,
             name: name,
+            manufacturer: manufacturer,
             category: category,
             packing: packing,
             saleRate: saleRate,
@@ -4453,6 +4790,169 @@ typedef $$CachedSuppliersTableProcessedTableManager = ProcessedTableManager<
       BaseReferences<_$AppDatabase, $CachedSuppliersTable, CachedSupplier>
     ),
     CachedSupplier,
+    PrefetchHooks Function()>;
+typedef $$CachedManufacturersTableCreateCompanionBuilder
+    = CachedManufacturersCompanion Function({
+  required String name,
+  Value<String?> description,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+typedef $$CachedManufacturersTableUpdateCompanionBuilder
+    = CachedManufacturersCompanion Function({
+  Value<String> name,
+  Value<String?> description,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+
+class $$CachedManufacturersTableFilterComposer
+    extends Composer<_$AppDatabase, $CachedManufacturersTable> {
+  $$CachedManufacturersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$CachedManufacturersTableOrderingComposer
+    extends Composer<_$AppDatabase, $CachedManufacturersTable> {
+  $$CachedManufacturersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$CachedManufacturersTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CachedManufacturersTable> {
+  $$CachedManufacturersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$CachedManufacturersTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $CachedManufacturersTable,
+    CachedManufacturer,
+    $$CachedManufacturersTableFilterComposer,
+    $$CachedManufacturersTableOrderingComposer,
+    $$CachedManufacturersTableAnnotationComposer,
+    $$CachedManufacturersTableCreateCompanionBuilder,
+    $$CachedManufacturersTableUpdateCompanionBuilder,
+    (
+      CachedManufacturer,
+      BaseReferences<_$AppDatabase, $CachedManufacturersTable,
+          CachedManufacturer>
+    ),
+    CachedManufacturer,
+    PrefetchHooks Function()> {
+  $$CachedManufacturersTableTableManager(
+      _$AppDatabase db, $CachedManufacturersTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CachedManufacturersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CachedManufacturersTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CachedManufacturersTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> name = const Value.absent(),
+            Value<String?> description = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              CachedManufacturersCompanion(
+            name: name,
+            description: description,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String name,
+            Value<String?> description = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              CachedManufacturersCompanion.insert(
+            name: name,
+            description: description,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$CachedManufacturersTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $CachedManufacturersTable,
+    CachedManufacturer,
+    $$CachedManufacturersTableFilterComposer,
+    $$CachedManufacturersTableOrderingComposer,
+    $$CachedManufacturersTableAnnotationComposer,
+    $$CachedManufacturersTableCreateCompanionBuilder,
+    $$CachedManufacturersTableUpdateCompanionBuilder,
+    (
+      CachedManufacturer,
+      BaseReferences<_$AppDatabase, $CachedManufacturersTable,
+          CachedManufacturer>
+    ),
+    CachedManufacturer,
     PrefetchHooks Function()>;
 typedef $$CachedCategoriesTableCreateCompanionBuilder
     = CachedCategoriesCompanion Function({
@@ -5703,6 +6203,8 @@ class $AppDatabaseManager {
       $$CachedMaterialsTableTableManager(_db, _db.cachedMaterials);
   $$CachedSuppliersTableTableManager get cachedSuppliers =>
       $$CachedSuppliersTableTableManager(_db, _db.cachedSuppliers);
+  $$CachedManufacturersTableTableManager get cachedManufacturers =>
+      $$CachedManufacturersTableTableManager(_db, _db.cachedManufacturers);
   $$CachedCategoriesTableTableManager get cachedCategories =>
       $$CachedCategoriesTableTableManager(_db, _db.cachedCategories);
   $$SyncQueueItemsTableTableManager get syncQueueItems =>

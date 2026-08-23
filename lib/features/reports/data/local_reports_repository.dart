@@ -17,6 +17,7 @@ class LocalReportsRepository {
     required DateTime from,
     required DateTime to,
     String? category,
+    String? manufacturer,
   }) async {
     try {
       await _sales.syncPendingSales();
@@ -24,8 +25,16 @@ class LocalReportsRepository {
       // Fall through to local data below.
     }
 
-    final local = await _buildLocalSalesReport(from: from, to: to, category: category);
+    final local = await _buildLocalSalesReport(
+      from: from,
+      to: to,
+      category: category,
+      manufacturer: manufacturer,
+    );
     if (local.totalBills > 0) return local;
+    if ((category?.trim().isNotEmpty ?? false) || (manufacturer?.trim().isNotEmpty ?? false)) {
+      return local;
+    }
 
     try {
       return await _remote.getSalesReport(from: from, to: to);
@@ -38,10 +47,12 @@ class LocalReportsRepository {
     required DateTime from,
     required DateTime to,
     String? category,
+    String? manufacturer,
   }) async {
     final start = DateTime(from.year, from.month, from.day);
     final endExclusive = DateTime(to.year, to.month, to.day).add(const Duration(days: 1));
     final normalizedCategory = category?.trim();
+    final normalizedManufacturer = manufacturer?.trim();
 
     final bills = await (_db.select(_db.cachedSalesBills)
           ..where((tbl) => tbl.billDate.isBiggerOrEqualValue(start) & tbl.billDate.isSmallerThanValue(endExclusive)))
@@ -65,18 +76,34 @@ class LocalReportsRepository {
     final lines = await (_db.select(_db.cachedSaleLineItems)
           ..where((tbl) => tbl.salesBillId.isIn(billIds)))
         .get();
+    final materials = await _db.select(_db.cachedMaterials).get();
+    final manufacturerByMaterialId = {
+      for (final material in materials) material.id: material.manufacturer,
+    };
+    final manufacturerByBarcode = {
+      for (final material in materials) material.barcode: material.manufacturer,
+    };
 
     final grouped = <String, _Agg>{};
     for (final line in lines) {
       if (normalizedCategory != null && normalizedCategory.isNotEmpty && line.materialType != normalizedCategory) {
         continue;
       }
-      final key = '${line.barcodeNo}|${line.materialName}|${line.packing ?? ''}';
+      final manufacturerName = manufacturerByMaterialId[line.materialId ?? ''] ??
+          manufacturerByBarcode[line.barcodeNo] ??
+          '';
+      if (normalizedManufacturer != null &&
+          normalizedManufacturer.isNotEmpty &&
+          manufacturerName != normalizedManufacturer) {
+        continue;
+      }
+      final key = '${line.barcodeNo}|${line.materialName}|$manufacturerName|${line.packing ?? ''}';
       final agg = grouped.putIfAbsent(
         key,
         () => _Agg(
           materialId: line.barcodeNo,
           materialName: line.materialName,
+          manufacturer: manufacturerName,
           packing: line.packing,
         ),
       );
@@ -90,6 +117,7 @@ class LocalReportsRepository {
           (agg) => SalesReportItemDto(
             materialId: agg.materialId,
             materialName: agg.materialName,
+            manufacturer: agg.manufacturer,
             packing: agg.packing,
             qtyCase: agg.qtyCase,
             qtyLoose: agg.qtyLoose,
@@ -117,11 +145,13 @@ class _Agg {
   _Agg({
     required this.materialId,
     required this.materialName,
+    required this.manufacturer,
     required this.packing,
   });
 
   final String materialId;
   final String materialName;
+  final String manufacturer;
   final String? packing;
   int qtyCase = 0;
   int qtyLoose = 0;

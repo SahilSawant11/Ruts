@@ -29,11 +29,17 @@ class _InventoryFiltersCardState extends ConsumerState<InventoryFiltersCard> {
   @override
   Widget build(BuildContext context) {
     final categoriesAsync = ref.watch(categoriesListProvider);
+    final manufacturersAsync = ref.watch(inventoryManufacturerOptionsProvider);
     final selectedCategory = ref.watch(inventoryCategoryFilterProvider);
+    final selectedManufacturer = ref.watch(inventoryManufacturerFilterProvider);
     final selectedStatus = ref.watch(inventoryStatusFilterProvider);
 
     final categoryItems = categoriesAsync.maybeWhen(
       data: (items) => items.map((item) => item.name).toList(),
+      orElse: () => const <String>[],
+    );
+    final manufacturerItems = manufacturersAsync.maybeWhen(
+      data: (items) => items,
       orElse: () => const <String>[],
     );
 
@@ -54,6 +60,17 @@ class _InventoryFiltersCardState extends ConsumerState<InventoryFiltersCard> {
                   value: categoryItems.contains(selectedCategory) ? selectedCategory : null,
                   hint: categoryItems.isEmpty ? 'No categories yet' : 'All categories',
                   onChanged: (value) => ref.read(inventoryCategoryFilterProvider.notifier).state = value,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: AppDropdown<String>(
+                  label: 'MANUFACTURER',
+                  items: manufacturerItems,
+                  itemLabel: (value) => value,
+                  value: manufacturerItems.contains(selectedManufacturer) ? selectedManufacturer : null,
+                  hint: manufacturerItems.isEmpty ? 'No manufacturers yet' : 'All manufacturers',
+                  onChanged: (value) => ref.read(inventoryManufacturerFilterProvider.notifier).state = value,
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
@@ -88,6 +105,7 @@ class _InventoryFiltersCardState extends ConsumerState<InventoryFiltersCard> {
                 onPressed: () {
                   _searchController.clear();
                   ref.read(inventoryCategoryFilterProvider.notifier).state = null;
+                  ref.read(inventoryManufacturerFilterProvider.notifier).state = null;
                   ref.read(inventoryStatusFilterProvider.notifier).state = null;
                   ref.read(inventorySearchFilterProvider.notifier).state = '';
                 },

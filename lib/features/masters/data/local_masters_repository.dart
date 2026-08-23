@@ -7,7 +7,9 @@ import '../../../core/network/api_exception.dart';
 import '../../sales/data/models/material_dto.dart';
 import 'masters_api_repository.dart';
 import 'models/category_dto.dart';
+import 'models/manufacturer_dto.dart';
 import 'models/save_category_request.dart';
+import 'models/save_manufacturer_request.dart';
 import 'models/save_material_request.dart';
 import 'models/save_supplier_request.dart';
 import 'models/supplier_dto.dart';
@@ -31,6 +33,88 @@ class LocalMastersRepository {
       if (cached.isNotEmpty && e.statusCode == 404) return cached;
       rethrow;
     }
+  }
+
+  Future<List<ManufacturerDto>> getManufacturers() async {
+    final rows = await (_db.select(_db.cachedManufacturers)
+          ..orderBy([(tbl) => OrderingTerm.asc(tbl.name)]))
+        .get();
+    return rows
+        .map((row) => ManufacturerDto(name: row.name, description: row.description))
+        .toList();
+  }
+
+  Future<ManufacturerDto> createManufacturer(SaveManufacturerRequest request) async {
+    final name = request.name.trim();
+    if (name.isEmpty) {
+      throw const ApiException('Manufacturer name is required.');
+    }
+
+    final existing = await (_db.select(_db.cachedManufacturers)
+          ..where((tbl) => tbl.name.lower().equals(name.toLowerCase())))
+        .getSingleOrNull();
+    if (existing != null) {
+      throw const ApiException('Manufacturer already exists.');
+    }
+
+    final manufacturer = ManufacturerDto(
+      name: name,
+      description: request.description?.trim().isEmpty ?? true ? null : request.description?.trim(),
+    );
+    final now = DateTime.now().toUtc();
+    await _db.into(_db.cachedManufacturers).insert(
+          CachedManufacturersCompanion.insert(
+            name: manufacturer.name,
+            description: Value(manufacturer.description),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
+    return manufacturer;
+  }
+
+  Future<ManufacturerDto> updateManufacturer(String previousName, SaveManufacturerRequest request) async {
+    final nextName = request.name.trim();
+    if (nextName.isEmpty) {
+      throw const ApiException('Manufacturer name is required.');
+    }
+
+    final duplicate = await (_db.select(_db.cachedManufacturers)
+          ..where((tbl) => tbl.name.lower().equals(nextName.toLowerCase())))
+        .getSingleOrNull();
+    if (duplicate != null && duplicate.name.toLowerCase() != previousName.toLowerCase()) {
+      throw const ApiException('Another manufacturer already uses that name.');
+    }
+
+    final existing = await (_db.select(_db.cachedManufacturers)..where((tbl) => tbl.name.equals(previousName))).getSingleOrNull();
+    final now = DateTime.now().toUtc();
+
+    await _db.transaction(() async {
+      if (previousName != nextName) {
+        await (_db.delete(_db.cachedManufacturers)..where((tbl) => tbl.name.equals(previousName))).go();
+        await (_db.update(_db.cachedMaterials)..where((tbl) => tbl.manufacturer.equals(previousName))).write(
+          CachedMaterialsCompanion(
+            manufacturer: Value(nextName),
+            updatedAt: Value(now),
+          ),
+        );
+      }
+      await _db.into(_db.cachedManufacturers).insert(
+            CachedManufacturersCompanion.insert(
+              name: nextName,
+              description: Value(request.description?.trim().isEmpty ?? true ? null : request.description?.trim()),
+              createdAt: Value(existing?.createdAt ?? now),
+              updatedAt: Value(now),
+            ),
+            mode: InsertMode.insertOrReplace,
+          );
+    });
+
+    return ManufacturerDto(
+      name: nextName,
+      description: request.description?.trim().isEmpty ?? true ? null : request.description?.trim(),
+    );
   }
 
   Future<List<CategoryDto>> _getCachedCategories() async {
@@ -235,9 +319,10 @@ class LocalMastersRepository {
   }
 
   Future<MaterialDto> createMaterial(SaveMaterialRequest request) async {
+    await ensureManufacturerExists(request.manufacturer);
     await ensureCategoryExists(request.category);
     try {
-      final created = await _remote.createMaterial(request);
+      final created = (await _remote.createMaterial(request)).copyWith(manufacturer: request.manufacturer);
       await _upsertMaterial(created, syncStatus: 'synced');
       return created;
     } on ApiException catch (e) {
@@ -252,6 +337,7 @@ class LocalMastersRepository {
         id: request.id,
         barcode: request.barcode ?? request.id,
         name: request.name,
+        manufacturer: request.manufacturer,
         category: request.category,
         packing: request.packing,
         saleRate: request.saleRate,
@@ -272,9 +358,10 @@ class LocalMastersRepository {
   }
 
   Future<MaterialDto> updateMaterial(String id, SaveMaterialRequest request) async {
+    await ensureManufacturerExists(request.manufacturer);
     await ensureCategoryExists(request.category);
     try {
-      final updated = await _remote.updateMaterial(id, request);
+      final updated = (await _remote.updateMaterial(id, request)).copyWith(manufacturer: request.manufacturer);
       await _upsertMaterial(updated, syncStatus: 'synced');
       return updated;
     } on ApiException catch (e) {
@@ -285,6 +372,7 @@ class LocalMastersRepository {
         id: id,
         barcode: request.barcode ?? cached?.barcode ?? id,
         name: request.name,
+        manufacturer: request.manufacturer,
         category: request.category,
         packing: request.packing,
         saleRate: request.saleRate,
@@ -323,6 +411,7 @@ class LocalMastersRepository {
       id: row.id,
       barcode: row.barcode,
       name: row.name,
+      manufacturer: row.manufacturer,
       category: row.category,
       packing: row.packing,
       saleRate: row.saleRate,
@@ -433,6 +522,7 @@ class LocalMastersRepository {
             id: row.id,
             barcode: row.barcode,
             name: row.name,
+            manufacturer: row.manufacturer,
             category: row.category,
             packing: row.packing,
             saleRate: row.saleRate,
@@ -476,10 +566,19 @@ class LocalMastersRepository {
 
   Future<void> _cacheMaterials(List<MaterialDto> materials) async {
     final pendingIds = await _pendingMaterialIds();
+    final existingRows = await (_db.select(_db.cachedMaterials)).get();
+    final existingManufacturerById = {
+      for (final row in existingRows) row.id: row.manufacturer,
+    };
 
     await _db.batch((batch) {
       for (final material in materials) {
         if (pendingIds.contains(material.id)) continue;
+        final manufacturer = material.manufacturer.isNotEmpty
+            ? material.manufacturer
+            : (existingManufacturerById[material.id]?.isNotEmpty ?? false)
+                ? existingManufacturerById[material.id]!
+                : _deriveManufacturerName(material.name);
 
         batch.insert(
           _db.cachedMaterials,
@@ -487,6 +586,7 @@ class LocalMastersRepository {
             id: material.id,
             barcode: material.barcode,
             name: material.name,
+            manufacturer: Value(manufacturer),
             category: material.category,
             packing: material.packing,
             saleRate: material.saleRate,
@@ -501,6 +601,9 @@ class LocalMastersRepository {
       }
     });
     for (final material in materials) {
+      await ensureManufacturerExists(
+        material.manufacturer.isNotEmpty ? material.manufacturer : _deriveManufacturerName(material.name),
+      );
       await ensureCategoryExists(material.category);
     }
   }
@@ -585,6 +688,7 @@ class LocalMastersRepository {
             id: material.id,
             barcode: material.barcode,
             name: material.name,
+            manufacturer: Value(material.manufacturer),
             category: material.category,
             packing: material.packing,
             saleRate: material.saleRate,
@@ -612,6 +716,46 @@ class LocalMastersRepository {
       operation: 'create',
       payload: SaveCategoryRequest(name: name).toJson(),
     );
+  }
+
+  Future<void> ensureManufacturerExists(String rawName) async {
+    final name = rawName.trim();
+    if (name.isEmpty) return;
+    final existing = await (_db.select(_db.cachedManufacturers)..where((tbl) => tbl.name.lower().equals(name.toLowerCase()))).getSingleOrNull();
+    if (existing != null) return;
+    final now = DateTime.now().toUtc();
+    await _db.into(_db.cachedManufacturers).insert(
+          CachedManufacturersCompanion.insert(
+            name: name,
+            createdAt: Value(now),
+            updatedAt: Value(now),
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
+  }
+
+  String _deriveManufacturerName(String itemName) {
+    final normalized = itemName.trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (normalized.isEmpty) return 'Unknown';
+    final words = normalized.split(' ');
+    if (words.length == 1) return words.first;
+    const compounds = {
+      'royal stag',
+      'blenders pride',
+      'magic moments',
+      'old monk',
+      'royal challenge',
+      '100 pipers',
+      'teacher\'s highland',
+      'johnnie walker',
+      'coca-cola',
+      'coca-cola can',
+    };
+    final firstTwo = '${words[0]} ${words[1]}'.toLowerCase();
+    if (compounds.contains(firstTwo)) {
+      return '${words[0]} ${words[1]}';
+    }
+    return words.first;
   }
 
   Future<void> _upsertCategoryRecord(
@@ -693,6 +837,7 @@ class LocalMastersRepository {
       id: payload['id'] as String,
       barcode: payload['barcode'] as String?,
       name: payload['name'] as String,
+      manufacturer: (payload['manufacturer'] as String?) ?? '',
       category: payload['category'] as String,
       packing: (payload['packing'] as String?) ?? '',
       saleRate: _asDouble(payload['saleRate']),
@@ -702,7 +847,7 @@ class LocalMastersRepository {
     if (item.operation == 'create') {
       final created = await _remote.createMaterial(request);
       await _db.transaction(() async {
-        await _upsertMaterial(created, syncStatus: 'synced');
+        await _upsertMaterial(created.copyWith(manufacturer: request.manufacturer), syncStatus: 'synced');
         await _clearQueueFor(item.entityType, item.entityId);
       });
       return;
@@ -710,7 +855,7 @@ class LocalMastersRepository {
 
     final updated = await _remote.updateMaterial(item.entityId, request);
     await _db.transaction(() async {
-      await _upsertMaterial(updated, syncStatus: 'synced');
+      await _upsertMaterial(updated.copyWith(manufacturer: request.manufacturer), syncStatus: 'synced');
       await _clearQueueFor(item.entityType, item.entityId);
     });
   }

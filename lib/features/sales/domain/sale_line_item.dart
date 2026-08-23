@@ -9,6 +9,7 @@ class SaleLineItem {
     required this.materialId,
     required this.barcode,
     required this.type,
+    required this.manufacturer,
     required this.material,
     required this.batch,
     required this.pack,
@@ -22,6 +23,7 @@ class SaleLineItem {
   final String materialId;
   final String barcode;
   final String type;
+  final String manufacturer;
   final String material;
   final String batch;
   final String pack;
@@ -51,6 +53,7 @@ class SaleLineItem {
       materialId: material.id,
       barcode: material.barcode,
       type: material.category,
+      manufacturer: material.manufacturer,
       material: material.name,
       batch: batch,
       pack: material.packing,
@@ -67,6 +70,7 @@ class SaleLineItem {
       materialId: materialId,
       barcode: barcode,
       type: type,
+      manufacturer: manufacturer,
       material: material,
       batch: batch,
       pack: pack,

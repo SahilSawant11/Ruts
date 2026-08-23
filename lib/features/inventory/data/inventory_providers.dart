@@ -63,17 +63,27 @@ final inventoryOverviewProvider = FutureProvider<List<InventoryOverviewItem>>((r
 });
 
 final inventoryCategoryFilterProvider = StateProvider<String?>((ref) => null);
+final inventoryManufacturerFilterProvider = StateProvider<String?>((ref) => null);
 final inventoryStatusFilterProvider = StateProvider<String?>((ref) => null);
 final inventorySearchFilterProvider = StateProvider<String>((ref) => '');
+
+final inventoryManufacturerOptionsProvider = FutureProvider<List<String>>((ref) async {
+  final items = await ref.watch(manufacturersListProvider.future);
+  return items.map((item) => item.name).toList()..sort();
+});
 
 final filteredInventoryOverviewProvider = FutureProvider<List<InventoryOverviewItem>>((ref) async {
   final items = await ref.watch(inventoryOverviewProvider.future);
   final category = ref.watch(inventoryCategoryFilterProvider);
+  final manufacturer = ref.watch(inventoryManufacturerFilterProvider);
   final status = ref.watch(inventoryStatusFilterProvider);
   final search = ref.watch(inventorySearchFilterProvider).trim().toLowerCase();
 
   return items.where((item) {
     final categoryMatch = category == null || category.isEmpty || item.category == category;
+    final manufacturerMatch = manufacturer == null ||
+        manufacturer.isEmpty ||
+        item.manufacturer == manufacturer;
     final statusMatch = switch (status) {
       null || '' => true,
       'In Stock' => item.qtyOnHand > item.reorderLevel,
@@ -86,6 +96,6 @@ final filteredInventoryOverviewProvider = FutureProvider<List<InventoryOverviewI
         item.barcode.toLowerCase().contains(search) ||
         item.materialId.toLowerCase().contains(search) ||
         item.packing.toLowerCase().contains(search);
-    return categoryMatch && statusMatch && searchMatch;
+    return categoryMatch && manufacturerMatch && statusMatch && searchMatch;
   }).toList();
 });

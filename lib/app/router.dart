@@ -3,6 +3,7 @@ import '../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../features/inventory/presentation/screens/inventory_screen.dart';
 import '../features/masters/presentation/screens/all_masters_screen.dart';
 import '../features/masters/presentation/screens/category_master_screen.dart';
+import '../features/masters/presentation/screens/manufacturer_master_screen.dart';
 import '../features/masters/presentation/screens/material_master_screen.dart';
 import '../features/masters/presentation/screens/supplier_master_screen.dart';
 import '../features/purchase/presentation/screens/purchase_bill_screen.dart';
@@ -41,6 +42,9 @@ final appRouter = GoRouter(
         ]),
         StatefulShellBranch(routes: [
           GoRoute(path: '/category', builder: (context, state) => const CategoryMasterScreen()),
+        ]),
+        StatefulShellBranch(routes: [
+          GoRoute(path: '/manufacturer', builder: (context, state) => const ManufacturerMasterScreen()),
         ]),
         StatefulShellBranch(routes: [
           GoRoute(path: '/masters', builder: (context, state) => const AllMastersScreen()),

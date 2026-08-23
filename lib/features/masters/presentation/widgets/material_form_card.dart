@@ -32,6 +32,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
   final _packing = TextEditingController();
   final _saleRate = TextEditingController();
   final _taxPercent = TextEditingController();
+  String _manufacturer = '';
   String _category = '';
 
   int? _lastIndex;
@@ -55,6 +56,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
     _packing.text = material?.packing ?? '';
     _saleRate.text = material != null ? material.saleRate.toString() : '0';
     _taxPercent.text = material != null ? material.taxPercent.toString() : '5';
+    _manufacturer = material?.manufacturer ?? '';
     _category = material?.category ?? '';
   }
 
@@ -76,6 +78,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
         id: _id.text.trim(),
         barcode: _barcode.text.trim().isEmpty ? null : _barcode.text.trim(),
         name: _name.text.trim(),
+        manufacturer: _manufacturer,
         category: _category,
         packing: _packing.text.trim(),
         saleRate: double.tryParse(_saleRate.text) ?? 0,
@@ -109,6 +112,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
   @override
   Widget build(BuildContext context) {
     final materialsAsync = ref.watch(materialsListProvider);
+    final manufacturersAsync = ref.watch(manufacturersListProvider);
     final categoriesAsync = ref.watch(categoriesListProvider);
 
     ref.listen(materialsListProvider, (previous, next) {
@@ -125,10 +129,22 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
 
     final editable = browser.isEditing || browser.isNew;
     final idEditable = browser.isNew; // code can only be set at creation
+    final manufacturers = manufacturersAsync.maybeWhen(
+      data: (items) => items.map((item) => item.name).toList(),
+      orElse: () => const <String>[],
+    );
     final categories = categoriesAsync.maybeWhen(
       data: (items) => items.map((item) => item.name).toList(),
       orElse: () => const <String>[],
     );
+    final manufacturerValue = _manufacturer.isNotEmpty
+        ? _manufacturer
+        : manufacturers.isNotEmpty
+            ? manufacturers.first
+            : '';
+    if (_manufacturer != manufacturerValue) {
+      _manufacturer = manufacturerValue;
+    }
     final categoryValue = _category.isNotEmpty
         ? _category
         : categories.isNotEmpty
@@ -209,6 +225,20 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Expanded(
+                    flex: 3,
+                    child: editable
+                        ? AppDropdown<String>(
+                            label: 'MANUFACTURER',
+                            items: manufacturers,
+                            itemLabel: (v) => v,
+                            value: manufacturers.contains(_manufacturer) ? _manufacturer : null,
+                            hint: manufacturers.isEmpty ? 'Create manufacturers in Manufacturer Master' : null,
+                            onChanged: manufacturers.isEmpty ? null : (v) => setState(() => _manufacturer = v ?? _manufacturer),
+                          )
+                        : AppTextField(label: 'MANUFACTURER', hint: _manufacturer, enabled: false),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     flex: 3,
                     child: editable

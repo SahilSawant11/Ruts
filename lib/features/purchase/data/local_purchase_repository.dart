@@ -60,6 +60,7 @@ class LocalPurchaseRepository {
         final request = _decodeRequest(row.payload);
         final syncedRequest = await _resolveDependencies(request);
         await _remote.createPurchase(syncedRequest);
+        await _applyPurchaseToLocalInventory(syncedRequest, persistOnlyMissing: true);
 
         await (_db.delete(_db.syncQueueItems)..where((tbl) => tbl.id.equals(row.id))).go();
       } on ApiException catch (e) {
@@ -80,7 +81,9 @@ class LocalPurchaseRepository {
     try {
       await syncPendingPurchases();
       final syncedRequest = await _resolveDependencies(request);
-      return await _remote.createPurchase(syncedRequest);
+      final result = await _remote.createPurchase(syncedRequest);
+      await _applyPurchaseToLocalInventory(syncedRequest);
+      return result;
     } on ApiException catch (e) {
       if (e.statusCode != null) rethrow;
 
@@ -95,6 +98,7 @@ class LocalPurchaseRepository {
               updatedAt: Value(DateTime.now().toUtc()),
             ),
           );
+      await _applyPurchaseToLocalInventory(request);
 
       return CreatePurchaseResult(
         id: localId,
@@ -200,5 +204,32 @@ class LocalPurchaseRepository {
       totalAmount: (json['totalAmount'] as num).toDouble(),
       lineItems: items,
     );
+  }
+
+  Future<void> _applyPurchaseToLocalInventory(
+    CreatePurchaseRequest request, {
+    bool persistOnlyMissing = false,
+  }) async {
+    final now = DateTime.now().toUtc();
+
+    for (final item in request.lineItems) {
+      final material = await (_db.select(_db.cachedMaterials)..where((tbl) => tbl.id.equals(item.materialId))).getSingleOrNull();
+      final existing = await (_db.select(_db.cachedInventoryStocks)..where((tbl) => tbl.materialId.equals(item.materialId))).getSingleOrNull();
+
+      if (persistOnlyMissing && existing != null) continue;
+
+      await _db.into(_db.cachedInventoryStocks).insert(
+            CachedInventoryStocksCompanion.insert(
+              materialId: item.materialId,
+              barcode: material?.barcode ?? item.materialId,
+              name: material?.name ?? item.materialId,
+              category: material?.category ?? 'Unknown',
+              qtyOnHand: (existing?.qtyOnHand ?? 0) + item.qty,
+              reorderLevel: Value(existing?.reorderLevel ?? 10),
+              updatedAt: Value(now),
+            ),
+            mode: InsertMode.insertOrReplace,
+          );
+    }
   }
 }

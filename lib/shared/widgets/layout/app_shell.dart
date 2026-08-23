@@ -23,6 +23,7 @@ const _branchMeta = [
   _BranchMeta('Supplier', 'Master · Supplier', 'Supplier'),
   _BranchMeta('Material', 'Master · Material', 'Material'),
   _BranchMeta('Category', 'Master · Category', 'Category'),
+  _BranchMeta('Manufacturer', 'Master · Manufacturer', 'Manufacturer'),
   _BranchMeta('Masters', 'All Masters', 'Masters'),
   _BranchMeta('Inventory', 'Stock overview', 'Inventory'),
   _BranchMeta('Reports', 'Analysis', 'Reports'),

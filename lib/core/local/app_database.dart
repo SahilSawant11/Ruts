@@ -7,6 +7,7 @@ class CachedMaterials extends Table {
   TextColumn get id => text()();
   TextColumn get barcode => text()();
   TextColumn get name => text()();
+  TextColumn get manufacturer => text().withDefault(const Constant(''))();
   TextColumn get category => text()();
   TextColumn get packing => text()();
   RealColumn get saleRate => real()();
@@ -39,6 +40,16 @@ class CachedSuppliers extends Table {
 
   @override
   Set<Column<Object>> get primaryKey => {id};
+}
+
+class CachedManufacturers extends Table {
+  TextColumn get name => text()();
+  TextColumn get description => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column<Object>> get primaryKey => {name};
 }
 
 class CachedCategories extends Table {
@@ -120,6 +131,7 @@ class CachedSaleLineItems extends Table {
 @DriftDatabase(tables: [
   CachedMaterials,
   CachedSuppliers,
+  CachedManufacturers,
   CachedCategories,
   SyncQueueItems,
   CachedInventoryStocks,
@@ -132,7 +144,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.defaults() : super(driftDatabase(name: 'pos_app.sqlite'));
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -151,18 +163,24 @@ class AppDatabase extends _$AppDatabase {
           if (from < 5) {
             await m.createTable(cachedCategories);
           }
+          if (from < 6) {
+            await m.createTable(cachedManufacturers);
+            await m.addColumn(cachedMaterials, cachedMaterials.manufacturer);
+            await _backfillManufacturers();
+          }
         },
       );
 
   Future<void> ensureStarterData() async {
     final hasMaterials = await _tableHasRows('cached_materials');
     final hasSuppliers = await _tableHasRows('cached_suppliers');
+    final hasManufacturers = await _tableHasRows('cached_manufacturers');
     final hasCategories = await _tableHasRows('cached_categories');
     final hasInventory = await _tableHasRows('cached_inventory_stocks');
     final hasSalesBills = await _tableHasRows('cached_sales_bills');
     final hasSaleLines = await _tableHasRows('cached_sale_line_items');
 
-    if (hasMaterials && hasSuppliers && hasCategories && hasInventory && hasSalesBills && hasSaleLines) {
+    if (hasMaterials && hasSuppliers && hasManufacturers && hasCategories && hasInventory && hasSalesBills && hasSaleLines) {
       return;
     }
 
@@ -188,6 +206,22 @@ class AppDatabase extends _$AppDatabase {
                 createdAt: Value(now),
                 updatedAt: Value(now),
                 lastSyncedAt: Value(now),
+              ),
+              mode: InsertMode.insertOrIgnore,
+            );
+          }
+        });
+      }
+
+      if (!hasManufacturers) {
+        await batch((batch) {
+          for (final manufacturer in _starterManufacturers) {
+            batch.insert(
+              cachedManufacturers,
+              CachedManufacturersCompanion.insert(
+                name: manufacturer.name,
+                createdAt: Value(now),
+                updatedAt: Value(now),
               ),
               mode: InsertMode.insertOrIgnore,
             );
@@ -221,6 +255,7 @@ class AppDatabase extends _$AppDatabase {
                 id: material.id,
                 barcode: material.barcode,
                 name: material.name,
+                manufacturer: Value(material.manufacturer),
                 category: material.category,
                 packing: material.packing,
                 saleRate: material.saleRate,
@@ -317,6 +352,62 @@ class AppDatabase extends _$AppDatabase {
     ).getSingle();
     return result.read<int>('present') == 1;
   }
+
+  Future<void> _backfillManufacturers() async {
+    final rows = await select(cachedMaterials).get();
+    if (rows.isEmpty) return;
+
+    final now = DateTime.now().toUtc();
+    final manufacturers = <String>{};
+    for (final row in rows) {
+      final manufacturerName = _deriveManufacturer(row.name);
+      manufacturers.add(manufacturerName);
+      await (update(cachedMaterials)..where((tbl) => tbl.id.equals(row.id))).write(
+        CachedMaterialsCompanion(
+          manufacturer: Value(manufacturerName),
+          updatedAt: Value(now),
+        ),
+      );
+    }
+
+    await batch((batch) {
+      for (final name in manufacturers) {
+        batch.insert(
+          cachedManufacturers,
+          CachedManufacturersCompanion.insert(
+            name: name,
+            createdAt: Value(now),
+            updatedAt: Value(now),
+          ),
+          mode: InsertMode.insertOrIgnore,
+        );
+      }
+    });
+  }
+
+  String _deriveManufacturer(String itemName) {
+    final normalized = itemName.trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (normalized.isEmpty) return 'Unknown';
+    final words = normalized.split(' ');
+    if (words.length == 1) return words.first;
+    const compoundManufacturers = {
+      'royal stag',
+      'blenders pride',
+      'magic moments',
+      'old monk',
+      'royal challenge',
+      '100 pipers',
+      'teacher\'s highland',
+      'johnnie walker',
+      'coca-cola',
+      'coca-cola can',
+    };
+    final firstTwo = '${words[0]} ${words[1]}'.toLowerCase();
+    if (compoundManufacturers.contains(firstTwo)) {
+      return '${words[0]} ${words[1]}';
+    }
+    return words.first;
+  }
 }
 
 class _StarterSupplier {
@@ -350,6 +441,7 @@ class _StarterMaterial {
     required this.id,
     required this.barcode,
     required this.name,
+    required this.manufacturer,
     required this.category,
     required this.packing,
     required this.saleRate,
@@ -360,11 +452,20 @@ class _StarterMaterial {
   final String id;
   final String barcode;
   final String name;
+  final String manufacturer;
   final String category;
   final String packing;
   final double saleRate;
   final double taxPercent;
   final int stockQty;
+}
+
+class _StarterManufacturer {
+  const _StarterManufacturer({
+    required this.name,
+  });
+
+  final String name;
 }
 
 class _StarterCategory {
@@ -615,6 +716,7 @@ const _starterMaterials = <_StarterMaterial>[
     id: 'SKU-1001',
     barcode: '8901001000011',
     name: 'Royal Stag Whisky',
+    manufacturer: 'Royal Stag',
     category: 'Whisky',
     packing: '750 ML',
     saleRate: 980,
@@ -625,6 +727,7 @@ const _starterMaterials = <_StarterMaterial>[
     id: 'SKU-1002',
     barcode: '8901001000028',
     name: 'Blenders Pride Whisky',
+    manufacturer: 'Blenders Pride',
     category: 'Whisky',
     packing: '750 ML',
     saleRate: 1290,
@@ -635,6 +738,7 @@ const _starterMaterials = <_StarterMaterial>[
     id: 'SKU-1003',
     barcode: '8901001000035',
     name: 'Kingfisher Premium',
+    manufacturer: 'Kingfisher',
     category: 'Beer',
     packing: '650 ML',
     saleRate: 160,
@@ -645,6 +749,7 @@ const _starterMaterials = <_StarterMaterial>[
     id: 'SKU-1004',
     barcode: '8901001000042',
     name: 'Bira White',
+    manufacturer: 'Bira',
     category: 'Beer',
     packing: '330 ML',
     saleRate: 140,
@@ -655,6 +760,7 @@ const _starterMaterials = <_StarterMaterial>[
     id: 'SKU-1005',
     barcode: '8901001000059',
     name: 'Sula Red Wine',
+    manufacturer: 'Sula',
     category: 'Wine',
     packing: '750 ML',
     saleRate: 1100,
@@ -665,6 +771,7 @@ const _starterMaterials = <_StarterMaterial>[
     id: 'SKU-1006',
     barcode: '8901001000066',
     name: 'Bacardi White Rum',
+    manufacturer: 'Bacardi',
     category: 'Rum',
     packing: '750 ML',
     saleRate: 1180,
@@ -675,6 +782,7 @@ const _starterMaterials = <_StarterMaterial>[
     id: 'SKU-1007',
     barcode: '8901001000073',
     name: 'Magic Moments Vodka',
+    manufacturer: 'Magic Moments',
     category: 'Vodka',
     packing: '750 ML',
     saleRate: 950,
@@ -685,12 +793,24 @@ const _starterMaterials = <_StarterMaterial>[
     id: 'SKU-1008',
     barcode: '8901001000080',
     name: 'Coca-Cola Can',
+    manufacturer: 'Coca-Cola',
     category: 'Soft Drink',
     packing: '300 ML',
     saleRate: 40,
     taxPercent: 5,
     stockQty: 60,
   ),
+];
+
+const _starterManufacturers = <_StarterManufacturer>[
+  _StarterManufacturer(name: 'Royal Stag'),
+  _StarterManufacturer(name: 'Blenders Pride'),
+  _StarterManufacturer(name: 'Kingfisher'),
+  _StarterManufacturer(name: 'Bira'),
+  _StarterManufacturer(name: 'Sula'),
+  _StarterManufacturer(name: 'Bacardi'),
+  _StarterManufacturer(name: 'Magic Moments'),
+  _StarterManufacturer(name: 'Coca-Cola'),
 ];
 
 const _starterCategories = <_StarterCategory>[

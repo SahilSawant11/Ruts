@@ -107,6 +107,13 @@ class AppSidebar extends ConsumerWidget {
                     onTap: () => context.go('/category'),
                   ),
                   SidebarItem(
+                    icon: Icons.business_outlined,
+                    label: 'Manufacturer Master',
+                    collapsed: collapsed,
+                    active: location == '/manufacturer',
+                    onTap: () => context.go('/manufacturer'),
+                  ),
+                  SidebarItem(
                     icon: Icons.dashboard_customize_outlined,
                     label: 'All Masters',
                     collapsed: collapsed,

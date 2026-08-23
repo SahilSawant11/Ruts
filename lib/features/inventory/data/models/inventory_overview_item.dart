@@ -9,6 +9,7 @@ class InventoryOverviewItem {
     required this.materialId,
     required this.barcode,
     required this.name,
+    required this.manufacturer,
     required this.category,
     required this.packing,
     required this.qtyOnHand,
@@ -18,6 +19,7 @@ class InventoryOverviewItem {
   final String materialId;
   final String barcode;
   final String name;
+  final String manufacturer;
   final String category;
   final String packing;
   final int qtyOnHand;

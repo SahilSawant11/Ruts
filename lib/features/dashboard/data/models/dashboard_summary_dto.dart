@@ -34,14 +34,22 @@ class PaymentMixItemDto {
 }
 
 class TopSellingItemDto {
-  const TopSellingItemDto({required this.materialName, this.packing, required this.qty, required this.amount});
+  const TopSellingItemDto({
+    required this.materialName,
+    required this.manufacturer,
+    this.packing,
+    required this.qty,
+    required this.amount,
+  });
   final String materialName;
+  final String manufacturer;
   final String? packing;
   final int qty;
   final double amount;
 
   factory TopSellingItemDto.fromJson(Map<String, dynamic> json) => TopSellingItemDto(
         materialName: json['materialName'] as String,
+        manufacturer: (json['manufacturer'] as String?) ?? '',
         packing: json['packing'] as String?,
         qty: json['qty'] as int,
         amount: (json['amount'] as num).toDouble(),

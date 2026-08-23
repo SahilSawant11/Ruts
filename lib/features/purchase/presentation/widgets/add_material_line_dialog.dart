@@ -50,6 +50,7 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
   bool _showQuickCreate = false;
   int _highlightedSuggestionIndex = 0;
   String? _error;
+  String _manufacturer = '';
   String _category = '';
 
   void _selectMaterial(MaterialDto material) {
@@ -185,6 +186,7 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
               id: itemCode,
               barcode: _barcodeController.text.trim().isEmpty ? null : _barcodeController.text.trim(),
               name: itemName,
+              manufacturer: _manufacturer,
               category: _category,
               packing: _packingController.text.trim(),
               saleRate: rate,
@@ -221,6 +223,7 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
     final line = PurchaseLineItem(
       index: 0,
       materialId: material.id,
+      manufacturer: material.manufacturer,
       material: material.name,
       batch: batch,
       packing: material.packing,
@@ -249,6 +252,7 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
   @override
   Widget build(BuildContext context) {
     final materialsAsync = ref.watch(materialsListProvider);
+    final manufacturersAsync = ref.watch(manufacturersListProvider);
     final categoriesAsync = ref.watch(categoriesListProvider);
     final lookupQuery = _lookupController.text.trim().toLowerCase();
     final suggestions = materialsAsync.maybeWhen(
@@ -267,10 +271,17 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
     final safeHighlightedIndex = hasSuggestions
         ? _highlightedSuggestionIndex.clamp(0, suggestions.length - 1)
         : 0;
+    final manufacturers = manufacturersAsync.maybeWhen(
+      data: (items) => items.map((item) => item.name).toList(),
+      orElse: () => const <String>[],
+    );
     final categories = categoriesAsync.maybeWhen(
       data: (items) => items.map((item) => item.name).toList(),
       orElse: () => const <String>[],
     );
+    if (_manufacturer.isEmpty) {
+      _manufacturer = manufacturers.isNotEmpty ? manufacturers.first : '';
+    }
     if (_category.isEmpty) {
       _category = categories.isNotEmpty ? categories.first : 'Beer';
     }
@@ -434,6 +445,18 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Expanded(
+                    flex: 3,
+                    child: AppDropdown<String>(
+                      label: 'MANUFACTURER',
+                      items: manufacturers,
+                      itemLabel: (value) => value,
+                      value: manufacturers.contains(_manufacturer) ? _manufacturer : null,
+                      hint: manufacturers.isEmpty ? 'Create manufacturers in Manufacturer Master' : null,
+                      onChanged: manufacturers.isEmpty ? null : (value) => setState(() => _manufacturer = value ?? _manufacturer),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     flex: 5,
                     child: AppTextField(

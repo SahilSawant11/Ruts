@@ -56,7 +56,11 @@ class TopSellingItemsCard extends ConsumerWidget {
                     InfoListTile(
                       icon: Icons.local_bar_outlined,
                       title: item.materialName,
-                      subtitle: item.packing ?? '${item.qty} units sold',
+                      subtitle: [
+                        if (item.manufacturer.isNotEmpty) item.manufacturer,
+                        if ((item.packing ?? '').isNotEmpty) item.packing!,
+                        '${item.qty} units sold',
+                      ].join(' · '),
                       trailing: '₹${item.amount.toStringAsFixed(0)}',
                     ),
                 ],

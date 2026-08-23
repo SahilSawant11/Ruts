@@ -52,6 +52,13 @@ class LocalDashboardRepository {
     final lines = billIds.isEmpty
         ? <CachedSaleLineItem>[]
         : await (_db.select(_db.cachedSaleLineItems)..where((tbl) => tbl.salesBillId.isIn(billIds))).get();
+    final materials = await _db.select(_db.cachedMaterials).get();
+    final manufacturerByMaterialId = {
+      for (final material in materials) material.id: material.manufacturer,
+    };
+    final manufacturerByBarcode = {
+      for (final material in materials) material.barcode: material.manufacturer,
+    };
     final linesByBill = <String, List<CachedSaleLineItem>>{};
     for (final line in lines) {
       linesByBill.putIfAbsent(line.salesBillId, () => []).add(line);
@@ -111,11 +118,18 @@ class LocalDashboardRepository {
       final billLines = linesByBill[bill.id] ?? const [];
       for (final line in billLines) {
         categoryMap[line.materialType] = (categoryMap[line.materialType] ?? 0) + line.amount;
+        final manufacturerName = manufacturerByMaterialId[line.materialId ?? ''] ??
+            manufacturerByBarcode[line.barcodeNo] ??
+            '';
 
-        final key = '${line.materialName}|${line.packing ?? ''}';
+        final key = '${line.materialName}|$manufacturerName|${line.packing ?? ''}';
         final topAgg = topSellingMap.putIfAbsent(
           key,
-          () => _TopAgg(materialName: line.materialName, packing: line.packing),
+          () => _TopAgg(
+            materialName: line.materialName,
+            manufacturer: manufacturerName,
+            packing: line.packing,
+          ),
         );
         topAgg.qty += line.quantity;
         topAgg.amount += line.amount;
@@ -139,7 +153,15 @@ class LocalDashboardRepository {
       ..sort((a, b) => b.amount.compareTo(a.amount));
 
     final topSellingItems = topSellingMap.values
-        .map((e) => TopSellingItemDto(materialName: e.materialName, packing: e.packing, qty: e.qty, amount: e.amount))
+        .map(
+          (e) => TopSellingItemDto(
+            materialName: e.materialName,
+            manufacturer: e.manufacturer,
+            packing: e.packing,
+            qty: e.qty,
+            amount: e.amount,
+          ),
+        )
         .toList()
       ..sort((a, b) => b.qty.compareTo(a.qty));
 
@@ -168,9 +190,14 @@ class LocalDashboardRepository {
 }
 
 class _TopAgg {
-  _TopAgg({required this.materialName, required this.packing});
+  _TopAgg({
+    required this.materialName,
+    required this.manufacturer,
+    required this.packing,
+  });
 
   final String materialName;
+  final String manufacturer;
   final String? packing;
   int qty = 0;
   double amount = 0;

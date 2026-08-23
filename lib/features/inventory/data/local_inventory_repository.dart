@@ -39,6 +39,7 @@ class LocalInventoryRepository {
         materialId: m.id,
         barcode: m.barcode,
         name: m.name,
+        manufacturer: m.manufacturer,
         category: m.category,
         packing: m.packing,
         qtyOnHand: s?.qtyOnHand ?? 0,

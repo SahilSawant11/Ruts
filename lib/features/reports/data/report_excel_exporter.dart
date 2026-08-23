@@ -46,7 +46,7 @@ class ReportExcelExporter {
       ..writeln('<Worksheet ss:Name="DailySaleReport">')
       ..writeln('<Table>');
 
-    const columnWidths = [90, 130, 250, 90, 95, 130];
+    const columnWidths = [90, 130, 150, 250, 90, 95, 130];
     for (final width in columnWidths) {
       buffer.writeln('<Column ss:Width="$width"/>');
     }
@@ -59,11 +59,12 @@ class ReportExcelExporter {
 
     buffer
       ..writeln('<Row ss:Height="22">')
-      ..writeln('<Cell ss:MergeAcross="5" ss:StyleID="title"><Data ss:Type="String">${_xml(title)}</Data></Cell>')
+      ..writeln('<Cell ss:MergeAcross="6" ss:StyleID="title"><Data ss:Type="String">${_xml(title)}</Data></Cell>')
       ..writeln('</Row>')
       ..writeln('<Row ss:Height="20">')
       ..writeln('<Cell ss:StyleID="header"><Data ss:Type="String">Sale Date</Data></Cell>')
       ..writeln('<Cell ss:StyleID="header"><Data ss:Type="String">Local Item Code</Data></Cell>')
+      ..writeln('<Cell ss:StyleID="header"><Data ss:Type="String">Manufacturer</Data></Cell>')
       ..writeln('<Cell ss:StyleID="header"><Data ss:Type="String">Brand Name</Data></Cell>')
       ..writeln('<Cell ss:StyleID="header"><Data ss:Type="String">Size</Data></Cell>')
       ..writeln('<Cell ss:StyleID="header"><Data ss:Type="String">Quantity(Case)</Data></Cell>')
@@ -79,6 +80,7 @@ class ReportExcelExporter {
         ..writeln('<Row>')
         ..writeln('<Cell ss:StyleID="text"><Data ss:Type="String">${_xml(saleDateLabel)}</Data></Cell>')
         ..writeln('<Cell ss:StyleID="text"><Data ss:Type="String">${_xml(item.materialId)}</Data></Cell>')
+        ..writeln('<Cell ss:StyleID="text"><Data ss:Type="String">${_xml(item.manufacturer)}</Data></Cell>')
         ..writeln('<Cell ss:StyleID="text"><Data ss:Type="String">${_xml(item.materialName)}</Data></Cell>')
         ..writeln('<Cell ss:StyleID="text"><Data ss:Type="String">${_xml(item.packing ?? '')}</Data></Cell>')
         ..writeln('<Cell ss:StyleID="number"><Data ss:Type="Number">${item.qtyCase}</Data></Cell>')
@@ -88,6 +90,7 @@ class ReportExcelExporter {
 
     buffer
       ..writeln('<Row>')
+      ..writeln('<Cell ss:StyleID="total"><Data ss:Type="String"></Data></Cell>')
       ..writeln('<Cell ss:StyleID="total"><Data ss:Type="String"></Data></Cell>')
       ..writeln('<Cell ss:StyleID="total"><Data ss:Type="String"></Data></Cell>')
       ..writeln('<Cell ss:StyleID="total"><Data ss:Type="String">Total</Data></Cell>')

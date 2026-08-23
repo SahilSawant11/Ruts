@@ -6,6 +6,7 @@ class PurchaseLineItem {
   const PurchaseLineItem({
     required this.index,
     required this.materialId,
+    required this.manufacturer,
     required this.material,
     required this.batch,
     required this.packing,
@@ -17,6 +18,7 @@ class PurchaseLineItem {
 
   final int index;
   final String materialId;
+  final String manufacturer;
   final String material;
   final String batch;
   final String packing;
@@ -35,6 +37,7 @@ class PurchaseLineItem {
     return PurchaseLineItem(
       index: index ?? this.index,
       materialId: materialId,
+      manufacturer: manufacturer,
       material: material,
       batch: batch,
       packing: packing,
