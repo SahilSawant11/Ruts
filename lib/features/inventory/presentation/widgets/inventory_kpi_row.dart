@@ -9,7 +9,7 @@ class InventoryKpiRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final overviewAsync = ref.watch(inventoryOverviewProvider);
+    final overviewAsync = ref.watch(filteredInventoryOverviewProvider);
 
     return overviewAsync.when(
       loading: () => const _KpiSkeletonRow(),

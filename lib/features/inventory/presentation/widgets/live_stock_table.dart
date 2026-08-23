@@ -6,12 +6,11 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/badges/tag_pill.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
 import '../../data/inventory_providers.dart';
-import '../../data/models/inventory_item_dto.dart';
+import '../../data/models/inventory_overview_item.dart';
 
-/// The one genuinely live piece of the Inventory screen right now —
-/// reads straight from GET /api/inventory, which reflects real
-/// Purchase (+stock) and Sales (-stock) activity. The KPI row and
-/// charts above this table are still illustrative placeholders.
+/// Real stock table backed by the merged inventory overview so it
+/// respects category/status/search filters while still reflecting
+/// purchase and sales activity offline.
 class LiveStockTable extends ConsumerWidget {
   const LiveStockTable({
     super.key,
@@ -26,7 +25,7 @@ class LiveStockTable extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final inventoryAsync = ref.watch(inventoryListProvider);
+    final inventoryAsync = ref.watch(filteredInventoryOverviewProvider);
 
     return AppCard(
       padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.sm),
@@ -69,7 +68,7 @@ class LiveStockTable extends ConsumerWidget {
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
                   child: Center(
-                    child: Text('No stock yet — save a Purchase Bill to see it here.', style: AppTypography.bodyMuted),
+                    child: Text('No inventory items match the current filters.', style: AppTypography.bodyMuted),
                   ),
                 );
               }
@@ -103,7 +102,7 @@ class LiveStockTable extends ConsumerWidget {
                   Row(
                     children: [
                       Text(
-                        '${items.length} item${items.length == 1 ? '' : 's'} tracked live',
+                        '${items.length} item${items.length == 1 ? '' : 's'} shown',
                         style: AppTypography.caption.copyWith(
                           color: AppColors.textSecondaryFor(context),
                         ),
@@ -143,7 +142,7 @@ class LiveStockTable extends ConsumerWidget {
     );
   }
 
-  Widget _dataRow(BuildContext context, InventoryItemDto item) {
+  Widget _dataRow(BuildContext context, InventoryOverviewItem item) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
@@ -214,7 +213,7 @@ class LiveStockTable extends ConsumerWidget {
     );
   }
 
-  Widget _statusPill(InventoryItemDto item) {
+  Widget _statusPill(InventoryOverviewItem item) {
     if (item.isOutOfStock) return const TagPill(label: 'OUT OF STOCK', tone: TagPillTone.danger);
     if (item.isLowStock) return const TagPill(label: 'LOW STOCK', tone: TagPillTone.amber);
     return const TagPill(label: 'IN STOCK', tone: TagPillTone.success);

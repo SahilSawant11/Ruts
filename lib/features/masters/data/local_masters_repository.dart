@@ -19,11 +19,33 @@ class LocalMastersRepository {
   final MastersApiRepository _remote;
 
   Future<List<CategoryDto>> getCategories() async {
+    final cached = await _getCachedCategories();
+
+    try {
+      await syncPendingMasters();
+      final remote = await _remote.getCategories();
+      await _cacheCategories(remote);
+      return await _getCachedCategories();
+    } on ApiException catch (e) {
+      if (cached.isNotEmpty && e.statusCode == null) return cached;
+      if (cached.isNotEmpty && e.statusCode == 404) return cached;
+      rethrow;
+    }
+  }
+
+  Future<List<CategoryDto>> _getCachedCategories() async {
+    final pendingNames = await _pendingCategoryNames();
     final rows = await (_db.select(_db.cachedCategories)
           ..orderBy([(tbl) => OrderingTerm.asc(tbl.name)]))
         .get();
     return rows
-        .map((row) => CategoryDto(name: row.name, description: row.description))
+        .map(
+          (row) => CategoryDto(
+            name: row.name,
+            description: row.description,
+            isPendingSync: pendingNames.contains(row.name.toLowerCase()),
+          ),
+        )
         .toList();
   }
 
@@ -40,9 +62,32 @@ class LocalMastersRepository {
       throw const ApiException('Category already exists.');
     }
 
-    final category = CategoryDto(name: name, description: request.description?.trim().isEmpty ?? true ? null : request.description?.trim());
-    await _upsertCategory(category);
-    return category;
+    try {
+      final created = await _remote.createCategory(
+        SaveCategoryRequest(
+          name: name,
+          description: request.description?.trim().isEmpty ?? true ? null : request.description?.trim(),
+        ),
+      );
+      await _upsertCategoryRecord(created, syncStatus: 'synced');
+      return created;
+    } on ApiException catch (e) {
+      if (e.statusCode != null && e.statusCode != 404) rethrow;
+
+      final category = CategoryDto(
+        name: name,
+        description: request.description?.trim().isEmpty ?? true ? null : request.description?.trim(),
+        isPendingSync: true,
+      );
+      await _upsertCategoryRecord(category, syncStatus: 'pending_create');
+      await _enqueueSync(
+        entityType: 'category',
+        entityId: category.name,
+        operation: 'create',
+        payload: SaveCategoryRequest(name: category.name, description: category.description).toJson(),
+      );
+      return category;
+    }
   }
 
   Future<CategoryDto> updateCategory(String previousName, SaveCategoryRequest request) async {
@@ -58,31 +103,38 @@ class LocalMastersRepository {
       throw const ApiException('Another category already uses that name.');
     }
 
-    final updated = CategoryDto(
-      name: nextName,
-      description: request.description?.trim().isEmpty ?? true ? null : request.description?.trim(),
-    );
+    final trimmedDescription = request.description?.trim().isEmpty ?? true ? null : request.description?.trim();
+    try {
+      final saved = await _remote.updateCategory(previousName, SaveCategoryRequest(name: nextName, description: trimmedDescription));
+      await _db.transaction(() async {
+        await _renameCategoryReferences(previousName: previousName, nextName: saved.name);
+        await _upsertCategoryRecord(saved, syncStatus: 'synced');
+      });
+      return saved;
+    } on ApiException catch (e) {
+      if (e.statusCode != null && e.statusCode != 404) rethrow;
 
-    await _db.transaction(() async {
-      if (previousName.toLowerCase() != nextName.toLowerCase()) {
-        await (_db.delete(_db.cachedCategories)..where((tbl) => tbl.name.equals(previousName))).go();
-        await (_db.update(_db.cachedMaterials)..where((tbl) => tbl.category.equals(previousName))).write(
-          CachedMaterialsCompanion(
-            category: Value(nextName),
-            updatedAt: Value(DateTime.now().toUtc()),
-          ),
-        );
-        await (_db.update(_db.cachedInventoryStocks)..where((tbl) => tbl.category.equals(previousName))).write(
-          CachedInventoryStocksCompanion(
-            category: Value(nextName),
-            updatedAt: Value(DateTime.now().toUtc()),
-          ),
-        );
-      }
-      await _upsertCategory(updated);
-    });
+      final cached = await (_db.select(_db.cachedCategories)..where((tbl) => tbl.name.equals(previousName))).getSingleOrNull();
+      final syncStatus = cached == null ? 'pending_create' : 'pending_update';
+      final pending = CategoryDto(name: nextName, description: trimmedDescription, isPendingSync: true);
 
-    return updated;
+      await _db.transaction(() async {
+        await _renameCategoryReferences(previousName: previousName, nextName: nextName);
+        await _upsertCategoryRecord(
+          pending,
+          syncStatus: syncStatus,
+          preserveCreatedAt: cached?.createdAt,
+        );
+        await _enqueueSync(
+          entityType: 'category',
+          entityId: nextName,
+          operation: syncStatus == 'pending_create' ? 'create' : 'update',
+          payload: SaveCategoryRequest(name: nextName, description: trimmedDescription).toJson(),
+          previousEntityId: previousName == nextName ? null : previousName,
+        );
+      });
+      return pending;
+    }
   }
 
   Future<List<SupplierDto>> getSuppliers() async {
@@ -319,6 +371,9 @@ class LocalMastersRepository {
         await _markQueueProcessing(item.entityType, item.entityId);
 
         switch (item.entityType) {
+          case 'category':
+            await _syncCategory(item);
+            break;
           case 'supplier':
             await _syncSupplier(item);
             break;
@@ -450,6 +505,27 @@ class LocalMastersRepository {
     }
   }
 
+  Future<void> _cacheCategories(List<CategoryDto> categories) async {
+    final pendingNames = await _pendingCategoryNames();
+    final now = DateTime.now().toUtc();
+
+    await _db.batch((batch) {
+      for (final category in categories) {
+        if (pendingNames.contains(category.name.toLowerCase())) continue;
+        batch.insert(
+          _db.cachedCategories,
+          CachedCategoriesCompanion.insert(
+            name: category.name,
+            description: Value(category.description),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
+      }
+    });
+  }
+
   Future<Set<String>> _pendingSupplierIds() async {
     final rows = await (_db.select(_db.cachedSuppliers)
           ..where((tbl) => tbl.syncStatus.isNotValue('synced')))
@@ -462,6 +538,13 @@ class LocalMastersRepository {
           ..where((tbl) => tbl.syncStatus.isNotValue('synced')))
         .get();
     return rows.map((row) => row.id).toSet();
+  }
+
+  Future<Set<String>> _pendingCategoryNames() async {
+    final queue = await (_db.select(_db.syncQueueItems)
+          ..where((tbl) => tbl.entityType.equals('category') & tbl.status.isNotValue('failed')))
+        .get();
+    return queue.map((row) => row.entityId.toLowerCase()).toSet();
   }
 
   Future<void> _upsertSupplier(
@@ -521,16 +604,27 @@ class LocalMastersRepository {
     if (name.isEmpty) return;
     final existing = await (_db.select(_db.cachedCategories)..where((tbl) => tbl.name.lower().equals(name.toLowerCase()))).getSingleOrNull();
     if (existing != null) return;
-    await _upsertCategory(CategoryDto(name: name));
+    final category = CategoryDto(name: name, isPendingSync: true);
+    await _upsertCategoryRecord(category, syncStatus: 'pending_create');
+    await _enqueueSync(
+      entityType: 'category',
+      entityId: name,
+      operation: 'create',
+      payload: SaveCategoryRequest(name: name).toJson(),
+    );
   }
 
-  Future<void> _upsertCategory(CategoryDto category) async {
+  Future<void> _upsertCategoryRecord(
+    CategoryDto category, {
+    required String syncStatus,
+    DateTime? preserveCreatedAt,
+  }) async {
     final now = DateTime.now().toUtc();
     await _db.into(_db.cachedCategories).insert(
           CachedCategoriesCompanion.insert(
             name: category.name,
             description: Value(category.description),
-            createdAt: Value(now),
+            createdAt: Value(preserveCreatedAt ?? now),
             updatedAt: Value(now),
           ),
           mode: InsertMode.insertOrReplace,
@@ -542,7 +636,13 @@ class LocalMastersRepository {
     required String entityId,
     required String operation,
     required Map<String, dynamic> payload,
+    String? previousEntityId,
   }) async {
+    if (previousEntityId != null) {
+      await (_db.delete(_db.syncQueueItems)
+            ..where((tbl) => tbl.entityType.equals(entityType) & tbl.entityId.equals(previousEntityId)))
+          .go();
+    }
     await _db.into(_db.syncQueueItems).insert(
           SyncQueueItemsCompanion.insert(
             entityType: entityType,
@@ -613,6 +713,45 @@ class LocalMastersRepository {
       await _upsertMaterial(updated, syncStatus: 'synced');
       await _clearQueueFor(item.entityType, item.entityId);
     });
+  }
+
+  Future<void> _syncCategory(SyncQueueItem item) async {
+    final payload = _decodePayload(item.payload);
+    final request = SaveCategoryRequest(
+      name: payload['name'] as String,
+      description: payload['description'] as String?,
+    );
+
+    try {
+      if (item.operation == 'create') {
+        final created = await _remote.createCategory(request);
+        await _db.transaction(() async {
+          if (item.entityId != created.name) {
+            await _renameCategoryReferences(previousName: item.entityId, nextName: created.name);
+            await (_db.delete(_db.cachedCategories)..where((tbl) => tbl.name.equals(item.entityId))).go();
+          }
+          await _upsertCategoryRecord(created, syncStatus: 'synced');
+          await _clearQueueFor(item.entityType, item.entityId);
+        });
+        return;
+      }
+
+      final updated = await _remote.updateCategory(item.entityId, request);
+      await _db.transaction(() async {
+        if (item.entityId != updated.name) {
+          await _renameCategoryReferences(previousName: item.entityId, nextName: updated.name);
+          await (_db.delete(_db.cachedCategories)..where((tbl) => tbl.name.equals(item.entityId))).go();
+        }
+        await _upsertCategoryRecord(updated, syncStatus: 'synced');
+        await _clearQueueFor(item.entityType, item.entityId);
+      });
+    } on ApiException catch (e) {
+      if (e.statusCode == 404) {
+        await _clearQueueFor(item.entityType, item.entityId);
+        return;
+      }
+      rethrow;
+    }
   }
 
   Future<void> _markQueueProcessing(String entityType, String entityId) async {
@@ -690,4 +829,25 @@ class LocalMastersRepository {
   Map<String, dynamic> _decodePayload(String raw) => jsonDecode(raw) as Map<String, dynamic>;
 
   double _asDouble(Object? value) => (value as num).toDouble();
+
+  Future<void> _renameCategoryReferences({
+    required String previousName,
+    required String nextName,
+  }) async {
+    if (previousName == nextName) return;
+
+    await (_db.delete(_db.cachedCategories)..where((tbl) => tbl.name.equals(previousName))).go();
+    await (_db.update(_db.cachedMaterials)..where((tbl) => tbl.category.equals(previousName))).write(
+      CachedMaterialsCompanion(
+        category: Value(nextName),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+    await (_db.update(_db.cachedInventoryStocks)..where((tbl) => tbl.category.equals(previousName))).write(
+      CachedInventoryStocksCompanion(
+        category: Value(nextName),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+  }
 }

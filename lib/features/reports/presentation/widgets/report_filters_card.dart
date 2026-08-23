@@ -4,7 +4,9 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
+import '../../../../shared/widgets/inputs/app_dropdown.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
+import '../../../masters/data/masters_providers.dart';
 import '../../data/reports_providers.dart';
 
 /// From/To date range picker + Generate button. Picking dates only
@@ -22,6 +24,8 @@ class _ReportFiltersCardState extends ConsumerState<ReportFiltersCard> {
   DateTime? _from;
   DateTime? _to;
   DateTimeRange? _lastSyncedRange;
+  String? _category;
+  String? _lastSyncedCategory;
 
   String _fmt(DateTime d) {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -51,17 +55,24 @@ class _ReportFiltersCardState extends ConsumerState<ReportFiltersCard> {
     final from = _from!.isAfter(_to!) ? _to! : _from!;
     final to = _from!.isAfter(_to!) ? _from! : _to!;
     ref.read(reportDateRangeProvider.notifier).state = DateTimeRange(start: from, end: to);
+    ref.read(reportCategoryFilterProvider.notifier).state = _category;
   }
 
   @override
   Widget build(BuildContext context) {
     final range = ref.watch(reportDateRangeProvider);
+    final categoriesAsync = ref.watch(categoriesListProvider);
+    final activeCategory = ref.watch(reportCategoryFilterProvider);
     // Resync local pending fields whenever the range changed from
     // outside this card (e.g. a tab switch set a new default range).
     if (_lastSyncedRange != range) {
       _lastSyncedRange = range;
       _from = range.start;
       _to = range.end;
+    }
+    if (_lastSyncedCategory != activeCategory) {
+      _lastSyncedCategory = activeCategory;
+      _category = activeCategory;
     }
 
     return AppCard(
@@ -76,6 +87,21 @@ class _ReportFiltersCardState extends ConsumerState<ReportFiltersCard> {
               Expanded(child: _dateField('FROM', _from ?? range.start, () => _pickDate(isFrom: true))),
               const SizedBox(width: AppSpacing.md),
               Expanded(child: _dateField('TO', _to ?? range.end, () => _pickDate(isFrom: false))),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: categoriesAsync.when(
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                  data: (categories) => AppDropdown<String>(
+                    label: 'CATEGORY',
+                    items: categories.map((category) => category.name).toList(),
+                    itemLabel: (value) => value,
+                    value: _category,
+                    hint: 'All categories',
+                    onChanged: (value) => setState(() => _category = value),
+                  ),
+                ),
+              ),
               const SizedBox(width: AppSpacing.md),
               PrimaryButton(label: 'Generate', icon: Icons.search_rounded, onPressed: _generate),
             ],

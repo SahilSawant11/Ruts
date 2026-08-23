@@ -5,7 +5,10 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/charts/category_bar_row.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
+import '../../../masters/data/masters_providers.dart';
+import '../../../masters/data/models/category_dto.dart';
 import '../../data/dashboard_providers.dart';
+import '../../data/models/dashboard_summary_dto.dart';
 
 class CategorySalesCard extends ConsumerWidget {
   const CategorySalesCard({super.key});
@@ -28,6 +31,7 @@ class CategorySalesCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final summaryAsync = ref.watch(dashboardSummaryProvider);
+    final categoriesAsync = ref.watch(categoriesListProvider);
 
     return AppCard(
       child: Column(
@@ -52,7 +56,10 @@ class CategorySalesCard extends ConsumerWidget {
               ),
             ),
             data: (summary) {
-              final breakdown = summary.categoryBreakdown;
+              final breakdown = categoriesAsync.maybeWhen(
+                data: (categories) => _mergeBreakdown(summary.categoryBreakdown, categories),
+                orElse: () => _toCategoryAmounts(summary.categoryBreakdown),
+              );
               if (breakdown.isEmpty) {
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
@@ -84,4 +91,38 @@ class CategorySalesCard extends ConsumerWidget {
       ),
     );
   }
+
+  List<_CategoryAmount> _mergeBreakdown(
+    List<CategoryBreakdownItemDto> breakdown,
+    List<CategoryDto> categories,
+  ) {
+    final amounts = <String, double>{
+      for (final category in categories) category.name: 0,
+    };
+    for (final item in breakdown) {
+      amounts[item.category] = (amounts[item.category] ?? 0) + item.amount;
+    }
+
+    final rows = amounts.entries
+        .map((entry) => _CategoryAmount(category: entry.key, amount: entry.value))
+        .toList()
+      ..sort((a, b) => b.amount.compareTo(a.amount));
+    return rows.where((row) => row.amount > 0).toList();
+  }
+
+  List<_CategoryAmount> _toCategoryAmounts(List<CategoryBreakdownItemDto> breakdown) {
+    return breakdown
+        .map((item) => _CategoryAmount(category: item.category, amount: item.amount))
+        .toList();
+  }
+}
+
+class _CategoryAmount {
+  const _CategoryAmount({
+    required this.category,
+    required this.amount,
+  });
+
+  final String category;
+  final double amount;
 }

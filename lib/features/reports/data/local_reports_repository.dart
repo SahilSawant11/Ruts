@@ -16,6 +16,7 @@ class LocalReportsRepository {
   Future<SalesReportDto> getSalesReport({
     required DateTime from,
     required DateTime to,
+    String? category,
   }) async {
     try {
       await _sales.syncPendingSales();
@@ -23,7 +24,7 @@ class LocalReportsRepository {
       // Fall through to local data below.
     }
 
-    final local = await _buildLocalSalesReport(from: from, to: to);
+    final local = await _buildLocalSalesReport(from: from, to: to, category: category);
     if (local.totalBills > 0) return local;
 
     try {
@@ -36,9 +37,11 @@ class LocalReportsRepository {
   Future<SalesReportDto> _buildLocalSalesReport({
     required DateTime from,
     required DateTime to,
+    String? category,
   }) async {
     final start = DateTime(from.year, from.month, from.day);
     final endExclusive = DateTime(to.year, to.month, to.day).add(const Duration(days: 1));
+    final normalizedCategory = category?.trim();
 
     final bills = await (_db.select(_db.cachedSalesBills)
           ..where((tbl) => tbl.billDate.isBiggerOrEqualValue(start) & tbl.billDate.isSmallerThanValue(endExclusive)))
@@ -65,6 +68,9 @@ class LocalReportsRepository {
 
     final grouped = <String, _Agg>{};
     for (final line in lines) {
+      if (normalizedCategory != null && normalizedCategory.isNotEmpty && line.materialType != normalizedCategory) {
+        continue;
+      }
       final key = '${line.barcodeNo}|${line.materialName}|${line.packing ?? ''}';
       final agg = grouped.putIfAbsent(
         key,
@@ -96,7 +102,7 @@ class LocalReportsRepository {
     return SalesReportDto(
       fromDate: start,
       toDate: DateTime(to.year, to.month, to.day),
-      totalBills: bills.length,
+      totalBills: grouped.isEmpty ? 0 : bills.length,
       distinctBrands: items.length,
       totalQtyCase: items.fold(0, (sum, item) => sum + item.qtyCase),
       totalQtyLoose: items.fold(0, (sum, item) => sum + item.qtyLoose),

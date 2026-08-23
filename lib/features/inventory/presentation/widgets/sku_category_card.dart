@@ -21,7 +21,7 @@ class SkuCategoryCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final overviewAsync = ref.watch(inventoryOverviewProvider);
+    final overviewAsync = ref.watch(filteredInventoryOverviewProvider);
 
     return AppCard(
       child: Column(

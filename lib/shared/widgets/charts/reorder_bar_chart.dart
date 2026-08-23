@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 
 class ReorderBarData {
@@ -26,7 +25,12 @@ class ReorderBarChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final maxValue = data.map((d) => d.value).fold<int>(1, (a, b) => a > b ? a : b);
-    final barAreaHeight = height - 24;
+    const valueTextHeight = 18.0;
+    const valueGapHeight = 4.0;
+    const labelGapHeight = 6.0;
+    const labelHeight = 18.0;
+    const bottomReserved = valueTextHeight + valueGapHeight + labelGapHeight + labelHeight;
+    final barAreaHeight = (height - bottomReserved).clamp(72.0, double.infinity);
 
     return SizedBox(
       height: height,
@@ -55,11 +59,22 @@ class ReorderBarChart extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 5),
                     child: Column(
-                      mainAxisSize: MainAxisSize.min,
+                      mainAxisSize: MainAxisSize.max,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text('${bar.value}', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700)),
-                        const SizedBox(height: 4),
+                        SizedBox(
+                          height: valueTextHeight,
+                          child: Align(
+                            alignment: Alignment.bottomCenter,
+                            child: Text(
+                              '${bar.value}',
+                              style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: valueGapHeight),
                         Container(
                           height: (barAreaHeight * (bar.value / maxValue)).clamp(3, barAreaHeight),
                           decoration: BoxDecoration(
@@ -67,11 +82,17 @@ class ReorderBarChart extends StatelessWidget {
                             borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
                           ),
                         ),
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(
-                          bar.label,
-                          style: AppTypography.caption,
-                          overflow: TextOverflow.ellipsis,
+                        const SizedBox(height: labelGapHeight),
+                        SizedBox(
+                          height: labelHeight,
+                          child: Center(
+                            child: Text(
+                              bar.label,
+                              style: AppTypography.caption,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ),
                         ),
                       ],
                     ),

@@ -3,6 +3,8 @@ import 'package:http/http.dart' as http;
 import '../../../core/network/api_config.dart';
 import '../../../core/network/api_exception.dart';
 import '../../sales/data/models/material_dto.dart';
+import 'models/category_dto.dart';
+import 'models/save_category_request.dart';
 import 'models/save_material_request.dart';
 import 'models/save_supplier_request.dart';
 import 'models/supplier_dto.dart';
@@ -44,6 +46,36 @@ class MastersApiRepository {
   Future<MaterialDto> updateMaterial(String id, SaveMaterialRequest request) async {
     final response = await _put('/api/materials/$id', request.toJson());
     return MaterialDto.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+  }
+
+  Future<List<CategoryDto>> getCategories() async {
+    final response = await _get('/api/categories');
+    final list = jsonDecode(response.body) as List<dynamic>;
+    return list.map((e) {
+      final json = e as Map<String, dynamic>;
+      return CategoryDto(
+        name: json['name'] as String,
+        description: json['description'] as String?,
+      );
+    }).toList();
+  }
+
+  Future<CategoryDto> createCategory(SaveCategoryRequest request) async {
+    final response = await _post('/api/categories', request.toJson());
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    return CategoryDto(
+      name: json['name'] as String,
+      description: json['description'] as String?,
+    );
+  }
+
+  Future<CategoryDto> updateCategory(String name, SaveCategoryRequest request) async {
+    final response = await _put('/api/categories/$name', request.toJson());
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    return CategoryDto(
+      name: json['name'] as String,
+      description: json['description'] as String?,
+    );
   }
 
   Future<http.Response> _get(String path) async {

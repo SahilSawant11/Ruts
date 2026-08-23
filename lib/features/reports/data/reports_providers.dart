@@ -37,8 +37,15 @@ final reportDateRangeProvider = StateProvider<DateTimeRange>((ref) {
   return DateTimeRange(start: today, end: today);
 });
 
+final reportCategoryFilterProvider = StateProvider<String?>((ref) => null);
+
 /// Re-fetches automatically whenever reportDateRangeProvider changes.
 final salesReportProvider = FutureProvider<SalesReportDto>((ref) {
   final range = ref.watch(reportDateRangeProvider);
-  return ref.watch(reportsRepositoryProvider).getSalesReport(from: range.start, to: range.end);
+  final category = ref.watch(reportCategoryFilterProvider);
+  return ref.watch(reportsRepositoryProvider).getSalesReport(
+        from: range.start,
+        to: range.end,
+        category: category,
+      );
 });
