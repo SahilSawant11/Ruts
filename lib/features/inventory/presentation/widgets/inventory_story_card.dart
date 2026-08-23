@@ -113,9 +113,27 @@ class InventoryStoryCard extends ConsumerWidget {
                   Expanded(
                     child: Column(
                       children: [
-                        _miniMetric(context, 'Bottles', '$bottleCount', Icons.local_bar_rounded),
+                        _miniMetric(
+                          context,
+                          'Bottles',
+                          '$bottleCount',
+                          Icons.local_bar_rounded,
+                          fg: AppColors.warning,
+                          bg: AppColors.isDark(context)
+                              ? AppColors.warning.withValues(alpha: 0.16)
+                              : AppColors.warningSoft,
+                        ),
                         const SizedBox(height: AppSpacing.md),
-                        _miniMetric(context, 'Cans', '$canCount', Icons.local_drink_rounded),
+                        _miniMetric(
+                          context,
+                          'Cans',
+                          '$canCount',
+                          Icons.local_drink_rounded,
+                          fg: AppColors.chartBlue,
+                          bg: AppColors.isDark(context)
+                              ? AppColors.chartBlue.withValues(alpha: 0.16)
+                              : const Color(0xFFEAF6FE),
+                        ),
                       ],
                     ),
                   ),
@@ -189,7 +207,14 @@ class InventoryStoryCard extends ConsumerWidget {
     );
   }
 
-  Widget _miniMetric(BuildContext context, String label, String value, IconData icon) {
+  Widget _miniMetric(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon, {
+    required Color fg,
+    required Color bg,
+  }) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -203,10 +228,18 @@ class InventoryStoryCard extends ConsumerWidget {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: AppColors.primarySoft,
+              color: bg,
               borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: AppColors.isDark(context)
+                    ? AppColors.borderFor(context)
+                    : Colors.transparent,
+              ),
             ),
-            child: Icon(icon, color: AppColors.primary),
+            child: Icon(
+              icon,
+              color: AppColors.isDark(context) ? Colors.white : fg,
+            ),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
@@ -283,11 +316,20 @@ class InventoryStoryCard extends ConsumerWidget {
   }
 
   Widget _toneChip(BuildContext context, String label, String value, Color fg, Color bg) {
+    final chipBg = AppColors.isDark(context)
+        ? fg.withValues(alpha: 0.18)
+        : bg;
+    final chipText = AppColors.isDark(context) ? fg : AppColors.textPrimaryFor(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: bg,
+        color: chipBg,
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: AppColors.isDark(context)
+              ? fg.withValues(alpha: 0.30)
+              : Colors.transparent,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -304,7 +346,7 @@ class InventoryStoryCard extends ConsumerWidget {
           Text(
             '$label $value',
             style: AppTypography.caption.copyWith(
-              color: AppColors.textPrimaryFor(context),
+              color: chipText,
               fontWeight: FontWeight.w700,
             ),
           ),

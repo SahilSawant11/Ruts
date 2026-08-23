@@ -9,6 +9,25 @@ class DailyTrendPointDto {
       );
 }
 
+class TransactionActivityDayDto {
+  const TransactionActivityDayDto({
+    required this.date,
+    required this.billCount,
+    required this.amount,
+  });
+
+  final DateTime date;
+  final int billCount;
+  final double amount;
+
+  factory TransactionActivityDayDto.fromJson(Map<String, dynamic> json) =>
+      TransactionActivityDayDto(
+        date: DateTime.parse(json['date'] as String),
+        billCount: (json['billCount'] as num?)?.toInt() ?? 0,
+        amount: (json['amount'] as num?)?.toDouble() ?? 0,
+      );
+}
+
 class CategoryBreakdownItemDto {
   const CategoryBreakdownItemDto({required this.category, required this.amount});
   final String category;
@@ -42,7 +61,7 @@ class TopSellingItemDto {
     required this.amount,
   });
   final String materialName;
-  final String manufacturer;
+  final String? manufacturer;
   final String? packing;
   final int qty;
   final double amount;
@@ -111,6 +130,7 @@ class DashboardSummaryDto {
     required this.topSellingItems,
     required this.recentTransactions,
     required this.topCustomers,
+    required this.transactionActivity,
   });
 
   final double todaySales;
@@ -125,6 +145,7 @@ class DashboardSummaryDto {
   final List<TopSellingItemDto> topSellingItems;
   final List<RecentTransactionDto> recentTransactions;
   final List<TopCustomerDto> topCustomers;
+  final List<TransactionActivityDayDto> transactionActivity;
 
   factory DashboardSummaryDto.fromJson(Map<String, dynamic> json) {
     List<T> parseList<T>(String key, T Function(Map<String, dynamic>) fromJson) {
@@ -145,6 +166,7 @@ class DashboardSummaryDto {
       topSellingItems: parseList('topSellingItems', TopSellingItemDto.fromJson),
       recentTransactions: parseList('recentTransactions', RecentTransactionDto.fromJson),
       topCustomers: parseList('topCustomers', TopCustomerDto.fromJson),
+      transactionActivity: parseList('transactionActivity', TransactionActivityDayDto.fromJson),
     );
   }
 }

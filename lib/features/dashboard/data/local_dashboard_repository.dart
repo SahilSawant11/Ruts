@@ -34,17 +34,19 @@ class LocalDashboardRepository {
     return summary.todayBillCount > 0 ||
         summary.last7Days.any((p) => p.amount > 0) ||
         summary.recentTransactions.isNotEmpty ||
-        summary.topSellingItems.isNotEmpty;
+        summary.topSellingItems.isNotEmpty ||
+        summary.transactionActivity.any((p) => p.billCount > 0 || p.amount > 0);
   }
 
   Future<DashboardSummaryDto> _buildLocalSummary() async {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
+    final last365Start = today.subtract(const Duration(days: 364));
     final last30Start = today.subtract(const Duration(days: 29));
 
     final bills = await (_db.select(_db.cachedSalesBills)
-          ..where((tbl) => tbl.billDate.isBiggerOrEqualValue(last30Start))
+          ..where((tbl) => tbl.billDate.isBiggerOrEqualValue(last365Start))
           ..orderBy([(tbl) => OrderingTerm.desc(tbl.createdAt)]))
         .get();
 
@@ -87,6 +89,19 @@ class LocalDashboardRepository {
       last7Days.add(DailyTrendPointDto(date: d, amount: amount));
     }
 
+    final transactionActivity = <TransactionActivityDayDto>[];
+    for (var i = 364; i >= 0; i--) {
+      final d = today.subtract(Duration(days: i));
+      final dayBills = bills.where((b) => isSameDay(b.billDate, d)).toList();
+      transactionActivity.add(
+        TransactionActivityDayDto(
+          date: d,
+          billCount: dayBills.length,
+          amount: dayBills.fold<double>(0, (sum, bill) => sum + bill.totalAmount),
+        ),
+      );
+    }
+
     final categoryMap = <String, double>{};
     final paymentMap = <String, double>{};
     final topSellingMap = <String, _TopAgg>{};
@@ -96,6 +111,9 @@ class LocalDashboardRepository {
     final totalForMix = bills.fold<double>(0, (sum, b) => sum + b.totalAmount);
 
     for (final bill in bills) {
+      if (bill.billDate.isBefore(last30Start)) {
+        continue;
+      }
       paymentMap[bill.payMode] = (paymentMap[bill.payMode] ?? 0) + bill.totalAmount;
 
       recentTransactions.add(
@@ -185,6 +203,7 @@ class LocalDashboardRepository {
       topSellingItems: topSellingItems.take(5).toList(),
       recentTransactions: recentTransactions.take(8).toList(),
       topCustomers: topCustomers.take(5).toList(),
+      transactionActivity: transactionActivity,
     );
   }
 }

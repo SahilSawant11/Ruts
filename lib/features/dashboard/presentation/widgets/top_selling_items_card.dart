@@ -57,7 +57,7 @@ class TopSellingItemsCard extends ConsumerWidget {
                       icon: Icons.local_bar_outlined,
                       title: item.materialName,
                       subtitle: [
-                        if (item.manufacturer.isNotEmpty) item.manufacturer,
+                        if ((item.manufacturer ?? '').isNotEmpty) item.manufacturer!,
                         if ((item.packing ?? '').isNotEmpty) item.packing!,
                         '${item.qty} units sold',
                       ].join(' · '),

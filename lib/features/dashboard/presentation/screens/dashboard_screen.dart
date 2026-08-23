@@ -15,6 +15,7 @@ import '../widgets/payment_mix_card.dart';
 import '../widgets/recent_transactions_card.dart';
 import '../widgets/sales_trend_card.dart';
 import '../widgets/stock_alerts_card.dart';
+import '../widgets/transaction_activity_heatmap_card.dart';
 import '../widgets/top_customers_card.dart';
 import '../widgets/top_selling_items_card.dart';
 
@@ -29,6 +30,7 @@ import '../widgets/top_selling_items_card.dart';
 ///               ├── Row: TopSellingItemsCard | RecentTransactionsCard
 ///               ├── TopCustomersCard
 ///               └── StockAlertsCard
+///               └── TransactionActivityHeatmapCard
 ///
 /// All widgets read from dashboardSummaryProvider (one API call) or
 /// inventoryOverviewProvider (shared with the Inventory screen).
@@ -52,6 +54,8 @@ class DashboardScreen extends StatelessWidget {
           TopCustomersCard(),
           SizedBox(height: AppSpacing.lg),
           StockAlertsCard(),
+          SizedBox(height: AppSpacing.lg),
+          TransactionActivityHeatmapCard(),
         ],
       ),
     );

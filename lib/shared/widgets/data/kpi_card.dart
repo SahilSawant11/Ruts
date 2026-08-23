@@ -41,6 +41,13 @@ class KpiCard extends StatelessWidget {
     }
   }
 
+  Color _iconFg(BuildContext context) {
+    if (AppColors.isDark(context)) {
+      return Colors.white;
+    }
+    return _iconColor;
+  }
+
   Color _iconBg(BuildContext context) {
     switch (tone) {
       case KpiTone.amber:
@@ -96,7 +103,7 @@ class KpiCard extends StatelessWidget {
                         .toList(),
                   ),
                   alignment: Alignment.center,
-                  child: Icon(icon, size: 18, color: _iconColor),
+                  child: Icon(icon, size: 18, color: _iconFg(context)),
                 ),
             ],
           ),
