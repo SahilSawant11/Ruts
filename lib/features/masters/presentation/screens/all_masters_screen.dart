@@ -14,10 +14,12 @@ class AllMastersScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final suppliersAsync = ref.watch(suppliersListProvider);
     final materialsAsync = ref.watch(materialsListProvider);
+    final categoriesAsync = ref.watch(categoriesListProvider);
 
     String countLabel(AsyncValue<List<dynamic>> async, String noun) {
+      final plural = noun.endsWith('y') ? '${noun.substring(0, noun.length - 1)}ies' : '${noun}s';
       return async.when(
-        data: (list) => '${list.length} $noun${list.length == 1 ? '' : 's'}',
+        data: (list) => '${list.length} ${list.length == 1 ? noun : plural}',
         loading: () => 'Loading…',
         error: (_, __) => 'Could not load',
       );
@@ -62,16 +64,16 @@ class AllMastersScreen extends ConsumerWidget {
                 subtitle: countLabel(materialsAsync, 'material'),
                 onTap: () => context.go('/material'),
               ),
+              MasterTile(
+                icon: Icons.category_outlined,
+                title: 'Category Master',
+                subtitle: countLabel(categoriesAsync, 'category'),
+                onTap: () => context.go('/category'),
+              ),
               const MasterTile(
                 icon: Icons.people_outline_rounded,
                 title: 'Customer Master',
                 subtitle: 'Credit accounts & balances',
-                comingSoon: true,
-              ),
-              const MasterTile(
-                icon: Icons.category_outlined,
-                title: 'Category Master',
-                subtitle: 'Whisky, Beer, Wine, Rum...',
                 comingSoon: true,
               ),
               const MasterTile(

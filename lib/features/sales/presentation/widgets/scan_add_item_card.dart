@@ -7,6 +7,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/badges/status_chip.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
+import '../../../masters/data/masters_providers.dart';
 import '../cart_controller.dart';
 
 /// Primary data-entry panel: scan/type a barcode, hit Add (or press
@@ -14,7 +15,6 @@ import '../cart_controller.dart';
 class ScanAddItemCard extends ConsumerStatefulWidget {
   const ScanAddItemCard({super.key, this.compact = false});
 
-  static const _categories = ['Whisky', 'Beer', 'Wine', 'Rum', 'Vodka', 'Soft Drink'];
   final bool compact;
 
   @override
@@ -50,6 +50,11 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
   @override
   Widget build(BuildContext context) {
     final cart = ref.watch(cartControllerProvider);
+    final categoriesAsync = ref.watch(categoriesListProvider);
+    final categories = categoriesAsync.maybeWhen(
+      data: (items) => items.map((item) => item.name).take(6).toList(),
+      orElse: () => const <String>[],
+    );
 
     return AppCard(
       child: Column(
@@ -81,7 +86,7 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
             Wrap(
               spacing: AppSpacing.xs,
               runSpacing: AppSpacing.xs,
-              children: ScanAddItemCard._categories.map(_categoryChip).toList(),
+              children: categories.map(_categoryChip).toList(),
             ),
           ],
         ],

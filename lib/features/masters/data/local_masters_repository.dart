@@ -6,6 +6,8 @@ import '../../../core/local/app_database.dart';
 import '../../../core/network/api_exception.dart';
 import '../../sales/data/models/material_dto.dart';
 import 'masters_api_repository.dart';
+import 'models/category_dto.dart';
+import 'models/save_category_request.dart';
 import 'models/save_material_request.dart';
 import 'models/save_supplier_request.dart';
 import 'models/supplier_dto.dart';
@@ -15,6 +17,73 @@ class LocalMastersRepository {
 
   final AppDatabase _db;
   final MastersApiRepository _remote;
+
+  Future<List<CategoryDto>> getCategories() async {
+    final rows = await (_db.select(_db.cachedCategories)
+          ..orderBy([(tbl) => OrderingTerm.asc(tbl.name)]))
+        .get();
+    return rows
+        .map((row) => CategoryDto(name: row.name, description: row.description))
+        .toList();
+  }
+
+  Future<CategoryDto> createCategory(SaveCategoryRequest request) async {
+    final name = request.name.trim();
+    if (name.isEmpty) {
+      throw const ApiException('Category name is required.');
+    }
+
+    final existing = await (_db.select(_db.cachedCategories)
+          ..where((tbl) => tbl.name.lower().equals(name.toLowerCase())))
+        .getSingleOrNull();
+    if (existing != null) {
+      throw const ApiException('Category already exists.');
+    }
+
+    final category = CategoryDto(name: name, description: request.description?.trim().isEmpty ?? true ? null : request.description?.trim());
+    await _upsertCategory(category);
+    return category;
+  }
+
+  Future<CategoryDto> updateCategory(String previousName, SaveCategoryRequest request) async {
+    final nextName = request.name.trim();
+    if (nextName.isEmpty) {
+      throw const ApiException('Category name is required.');
+    }
+
+    final duplicate = await (_db.select(_db.cachedCategories)
+          ..where((tbl) => tbl.name.lower().equals(nextName.toLowerCase())))
+        .getSingleOrNull();
+    if (duplicate != null && duplicate.name.toLowerCase() != previousName.toLowerCase()) {
+      throw const ApiException('Another category already uses that name.');
+    }
+
+    final updated = CategoryDto(
+      name: nextName,
+      description: request.description?.trim().isEmpty ?? true ? null : request.description?.trim(),
+    );
+
+    await _db.transaction(() async {
+      if (previousName.toLowerCase() != nextName.toLowerCase()) {
+        await (_db.delete(_db.cachedCategories)..where((tbl) => tbl.name.equals(previousName))).go();
+        await (_db.update(_db.cachedMaterials)..where((tbl) => tbl.category.equals(previousName))).write(
+          CachedMaterialsCompanion(
+            category: Value(nextName),
+            updatedAt: Value(DateTime.now().toUtc()),
+          ),
+        );
+        await (_db.update(_db.cachedInventoryStocks)..where((tbl) => tbl.category.equals(previousName))).write(
+          CachedInventoryStocksCompanion(
+            category: Value(nextName),
+            updatedAt: Value(DateTime.now().toUtc()),
+          ),
+        );
+      }
+      await _upsertCategory(updated);
+    });
+
+    return updated;
+  }
 
   Future<List<SupplierDto>> getSuppliers() async {
     final cached = await _getCachedSuppliers();
@@ -114,6 +183,7 @@ class LocalMastersRepository {
   }
 
   Future<MaterialDto> createMaterial(SaveMaterialRequest request) async {
+    await ensureCategoryExists(request.category);
     try {
       final created = await _remote.createMaterial(request);
       await _upsertMaterial(created, syncStatus: 'synced');
@@ -150,6 +220,7 @@ class LocalMastersRepository {
   }
 
   Future<MaterialDto> updateMaterial(String id, SaveMaterialRequest request) async {
+    await ensureCategoryExists(request.category);
     try {
       final updated = await _remote.updateMaterial(id, request);
       await _upsertMaterial(updated, syncStatus: 'synced');
@@ -374,6 +445,9 @@ class LocalMastersRepository {
         );
       }
     });
+    for (final material in materials) {
+      await ensureCategoryExists(material.category);
+    }
   }
 
   Future<Set<String>> _pendingSupplierIds() async {
@@ -437,6 +511,27 @@ class LocalMastersRepository {
             createdAt: Value(preserveCreatedAt ?? now),
             updatedAt: Value(now),
             lastSyncedAt: syncStatus == 'synced' ? Value(now) : const Value.absent(),
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
+  }
+
+  Future<void> ensureCategoryExists(String rawName) async {
+    final name = rawName.trim();
+    if (name.isEmpty) return;
+    final existing = await (_db.select(_db.cachedCategories)..where((tbl) => tbl.name.lower().equals(name.toLowerCase()))).getSingleOrNull();
+    if (existing != null) return;
+    await _upsertCategory(CategoryDto(name: name));
+  }
+
+  Future<void> _upsertCategory(CategoryDto category) async {
+    final now = DateTime.now().toUtc();
+    await _db.into(_db.cachedCategories).insert(
+          CachedCategoriesCompanion.insert(
+            name: category.name,
+            description: Value(category.description),
+            createdAt: Value(now),
+            updatedAt: Value(now),
           ),
           mode: InsertMode.insertOrReplace,
         );

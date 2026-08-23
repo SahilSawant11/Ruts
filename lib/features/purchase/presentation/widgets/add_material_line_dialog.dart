@@ -16,8 +16,6 @@ import '../../data/purchase_providers.dart';
 import '../../domain/purchase_line_item.dart';
 import '../purchase_cart_controller.dart';
 
-const _categories = ['Beer', 'Wine', 'Whisky', 'Rum', 'Vodka', 'Soft Drink'];
-
 Future<void> showAddMaterialLineDialog(BuildContext context) {
   return showDialog(
     context: context,
@@ -52,7 +50,7 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
   bool _showQuickCreate = false;
   int _highlightedSuggestionIndex = 0;
   String? _error;
-  String _category = 'Beer';
+  String _category = '';
 
   void _selectMaterial(MaterialDto material) {
     setState(() {
@@ -251,6 +249,7 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
   @override
   Widget build(BuildContext context) {
     final materialsAsync = ref.watch(materialsListProvider);
+    final categoriesAsync = ref.watch(categoriesListProvider);
     final lookupQuery = _lookupController.text.trim().toLowerCase();
     final suggestions = materialsAsync.maybeWhen(
       data: (materials) {
@@ -268,6 +267,13 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
     final safeHighlightedIndex = hasSuggestions
         ? _highlightedSuggestionIndex.clamp(0, suggestions.length - 1)
         : 0;
+    final categories = categoriesAsync.maybeWhen(
+      data: (items) => items.map((item) => item.name).toList(),
+      orElse: () => const <String>[],
+    );
+    if (_category.isEmpty) {
+      _category = categories.isNotEmpty ? categories.first : 'Beer';
+    }
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
@@ -440,10 +446,11 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
                     flex: 3,
                     child: AppDropdown<String>(
                       label: 'CATEGORY',
-                      items: _categories,
+                      items: categories,
                       itemLabel: (value) => value,
-                      value: _category,
-                      onChanged: (value) => setState(() => _category = value ?? 'Beer'),
+                      value: categories.contains(_category) ? _category : null,
+                      hint: categories.isEmpty ? 'Create categories in Category Master' : null,
+                      onChanged: categories.isEmpty ? null : (value) => setState(() => _category = value ?? _category),
                     ),
                   ),
                 ],

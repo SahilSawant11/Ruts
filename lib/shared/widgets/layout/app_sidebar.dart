@@ -100,6 +100,13 @@ class AppSidebar extends ConsumerWidget {
                     onTap: () => context.go('/material'),
                   ),
                   SidebarItem(
+                    icon: Icons.category_outlined,
+                    label: 'Category Master',
+                    collapsed: collapsed,
+                    active: location == '/category',
+                    onTap: () => context.go('/category'),
+                  ),
+                  SidebarItem(
                     icon: Icons.dashboard_customize_outlined,
                     label: 'All Masters',
                     collapsed: collapsed,

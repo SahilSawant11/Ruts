@@ -41,6 +41,16 @@ class CachedSuppliers extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
+class CachedCategories extends Table {
+  TextColumn get name => text()();
+  TextColumn get description => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column<Object>> get primaryKey => {name};
+}
+
 class SyncQueueItems extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get entityType => text()();
@@ -110,6 +120,7 @@ class CachedSaleLineItems extends Table {
 @DriftDatabase(tables: [
   CachedMaterials,
   CachedSuppliers,
+  CachedCategories,
   SyncQueueItems,
   CachedInventoryStocks,
   CachedSalesBills,
@@ -121,7 +132,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.defaults() : super(driftDatabase(name: 'pos_app.sqlite'));
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -137,17 +148,21 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(cachedSalesBills);
             await m.createTable(cachedSaleLineItems);
           }
+          if (from < 5) {
+            await m.createTable(cachedCategories);
+          }
         },
       );
 
   Future<void> ensureStarterData() async {
     final hasMaterials = await _tableHasRows('cached_materials');
     final hasSuppliers = await _tableHasRows('cached_suppliers');
+    final hasCategories = await _tableHasRows('cached_categories');
     final hasInventory = await _tableHasRows('cached_inventory_stocks');
     final hasSalesBills = await _tableHasRows('cached_sales_bills');
     final hasSaleLines = await _tableHasRows('cached_sale_line_items');
 
-    if (hasMaterials && hasSuppliers && hasInventory && hasSalesBills && hasSaleLines) {
+    if (hasMaterials && hasSuppliers && hasCategories && hasInventory && hasSalesBills && hasSaleLines) {
       return;
     }
 
@@ -173,6 +188,23 @@ class AppDatabase extends _$AppDatabase {
                 createdAt: Value(now),
                 updatedAt: Value(now),
                 lastSyncedAt: Value(now),
+              ),
+              mode: InsertMode.insertOrIgnore,
+            );
+          }
+        });
+      }
+
+      if (!hasCategories) {
+        await batch((batch) {
+          for (final category in _starterCategories) {
+            batch.insert(
+              cachedCategories,
+              CachedCategoriesCompanion.insert(
+                name: category.name,
+                description: Value(category.description),
+                createdAt: Value(now),
+                updatedAt: Value(now),
               ),
               mode: InsertMode.insertOrIgnore,
             );
@@ -333,6 +365,16 @@ class _StarterMaterial {
   final double saleRate;
   final double taxPercent;
   final int stockQty;
+}
+
+class _StarterCategory {
+  const _StarterCategory({
+    required this.name,
+    this.description,
+  });
+
+  final String name;
+  final String? description;
 }
 
 class _StarterInventoryStock {
@@ -649,6 +691,15 @@ const _starterMaterials = <_StarterMaterial>[
     taxPercent: 5,
     stockQty: 60,
   ),
+];
+
+const _starterCategories = <_StarterCategory>[
+  _StarterCategory(name: 'Beer', description: 'Lager, strong beer, cans and bottles'),
+  _StarterCategory(name: 'Wine', description: 'Red, white, rose, sparkling'),
+  _StarterCategory(name: 'Whisky', description: 'Indian and imported whisky'),
+  _StarterCategory(name: 'Rum', description: 'White and dark rum'),
+  _StarterCategory(name: 'Vodka', description: 'Plain and flavored vodka'),
+  _StarterCategory(name: 'Soft Drink', description: 'Mixers, soda and soft beverages'),
 ];
 
 const _starterInventory = <_StarterInventoryStock>[

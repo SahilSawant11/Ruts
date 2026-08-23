@@ -12,8 +12,6 @@ import '../../data/masters_providers.dart';
 import '../../data/models/save_material_request.dart';
 import '../material_browser_controller.dart';
 
-const _categories = ['Beer', 'Wine', 'Whisky', 'Rum', 'Vodka', 'Soft Drink'];
-
 /// Single-record material form: Prev/Next browses the real material
 /// list, Modify unlocks editing, Save creates a new record (when
 /// browsing "New") or updates the current one.
@@ -34,7 +32,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
   final _packing = TextEditingController();
   final _saleRate = TextEditingController();
   final _taxPercent = TextEditingController();
-  String _category = 'Beer';
+  String _category = '';
 
   int? _lastIndex;
   bool? _lastIsNew;
@@ -57,7 +55,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
     _packing.text = material?.packing ?? '';
     _saleRate.text = material != null ? material.saleRate.toString() : '0';
     _taxPercent.text = material != null ? material.taxPercent.toString() : '5';
-    _category = material?.category ?? 'Beer';
+    _category = material?.category ?? '';
   }
 
   Future<void> _save() async {
@@ -111,6 +109,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
   @override
   Widget build(BuildContext context) {
     final materialsAsync = ref.watch(materialsListProvider);
+    final categoriesAsync = ref.watch(categoriesListProvider);
 
     ref.listen(materialsListProvider, (previous, next) {
       next.whenData((materials) => ref.read(materialBrowserProvider.notifier).syncList(materials));
@@ -126,6 +125,18 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
 
     final editable = browser.isEditing || browser.isNew;
     final idEditable = browser.isNew; // code can only be set at creation
+    final categories = categoriesAsync.maybeWhen(
+      data: (items) => items.map((item) => item.name).toList(),
+      orElse: () => const <String>[],
+    );
+    final categoryValue = _category.isNotEmpty
+        ? _category
+        : categories.isNotEmpty
+            ? categories.first
+            : 'Beer';
+    if (_category != categoryValue) {
+      _category = categoryValue;
+    }
 
     return materialsAsync.when(
       loading: () => const AppCard(child: Padding(
@@ -203,10 +214,11 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
                     child: editable
                         ? AppDropdown<String>(
                             label: 'CATEGORY',
-                            items: _categories,
+                            items: categories,
                             itemLabel: (v) => v,
-                            value: _categories.contains(_category) ? _category : null,
-                            onChanged: (v) => setState(() => _category = v ?? 'Beer'),
+                            value: categories.contains(_category) ? _category : null,
+                            hint: categories.isEmpty ? 'Create categories in Category Master' : null,
+                            onChanged: categories.isEmpty ? null : (v) => setState(() => _category = v ?? _category),
                           )
                         : AppTextField(label: 'CATEGORY', hint: _category, enabled: false),
                   ),
