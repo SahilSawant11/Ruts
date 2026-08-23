@@ -105,6 +105,51 @@ class CachedSalesBills extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
+class CachedPurchaseBills extends Table {
+  TextColumn get id => text()();
+  TextColumn get supplierId => text()();
+  TextColumn get billNo => text().nullable()();
+  TextColumn get challanNo => text().nullable()();
+  TextColumn get noteNo => text().nullable()();
+  TextColumn get payMode => text()();
+  TextColumn get tpNo => text().nullable()();
+  TextColumn get tpDate => text().nullable()();
+  TextColumn get stNo => text().nullable()();
+  RealColumn get discount => real()();
+  RealColumn get vat => real()();
+  RealColumn get stamp => real()();
+  RealColumn get tcs => real()();
+  RealColumn get loadingFreight => real()();
+  RealColumn get netAmount => real()();
+  RealColumn get totalAmount => real()();
+  TextColumn get syncStatus => text().withDefault(const Constant('synced'))();
+  DateTimeColumn get billDate => dateTime()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+class CachedPurchaseLineItems extends Table {
+  TextColumn get id => text()();
+  TextColumn get purchaseBillId => text()();
+  TextColumn get materialId => text()();
+  TextColumn get batchNo => text()();
+  TextColumn get packing => text().nullable()();
+  IntColumn get qty => integer()();
+  RealColumn get rate => real()();
+  RealColumn get disPercent => real()();
+  RealColumn get disAmount => real()();
+  RealColumn get taxPercent => real()();
+  RealColumn get taxAmount => real()();
+  RealColumn get amount => real()();
+  IntColumn get lineNumber => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
 class CachedSaleLineItems extends Table {
   TextColumn get id => text()();
   TextColumn get salesBillId => text()();
@@ -136,6 +181,8 @@ class CachedSaleLineItems extends Table {
   SyncQueueItems,
   CachedInventoryStocks,
   CachedSalesBills,
+  CachedPurchaseBills,
+  CachedPurchaseLineItems,
   CachedSaleLineItems,
 ])
 class AppDatabase extends _$AppDatabase {
@@ -180,7 +227,13 @@ class AppDatabase extends _$AppDatabase {
     final hasSalesBills = await _tableHasRows('cached_sales_bills');
     final hasSaleLines = await _tableHasRows('cached_sale_line_items');
 
-    if (hasMaterials && hasSuppliers && hasManufacturers && hasCategories && hasInventory && hasSalesBills && hasSaleLines) {
+    if (hasMaterials &&
+        hasSuppliers &&
+        hasManufacturers &&
+        hasCategories &&
+        hasInventory &&
+        hasSalesBills &&
+        hasSaleLines) {
       return;
     }
 
@@ -671,6 +724,7 @@ _StarterSeedBundle _buildStarterSalesHistory(DateTime now) {
 
   return _StarterSeedBundle(bills: bills, lines: lines);
 }
+
 
 const _starterSuppliers = <_StarterSupplier>[
   _StarterSupplier(

@@ -20,22 +20,11 @@ class LocalDashboardRepository {
       // Fall through to local summary below.
     }
 
-    final local = await _buildLocalSummary();
-    if (_hasLocalActivity(local)) return local;
-
     try {
       return await _remote.getSummary();
     } on ApiException {
-      return local;
+      return _buildLocalSummary();
     }
-  }
-
-  bool _hasLocalActivity(DashboardSummaryDto summary) {
-    return summary.todayBillCount > 0 ||
-        summary.last7Days.any((p) => p.amount > 0) ||
-        summary.recentTransactions.isNotEmpty ||
-        summary.topSellingItems.isNotEmpty ||
-        summary.transactionActivity.any((p) => p.billCount > 0 || p.amount > 0);
   }
 
   Future<DashboardSummaryDto> _buildLocalSummary() async {
