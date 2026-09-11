@@ -279,11 +279,19 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
       data: (items) => items.map((item) => item.name).toList(),
       orElse: () => const <String>[],
     );
+    final packingsAsync = ref.watch(packingsListProvider);
+    final packings = packingsAsync.maybeWhen(
+      data: (items) => items.map((item) => item.name).toList(),
+      orElse: () => const <String>[],
+    );
     if (_manufacturer.isEmpty) {
       _manufacturer = manufacturers.isNotEmpty ? manufacturers.first : '';
     }
     if (_category.isEmpty) {
       _category = categories.isNotEmpty ? categories.first : 'Beer';
+    }
+    if (_packingController.text.isEmpty && packings.isNotEmpty) {
+      _packingController.text = packings.first;
     }
 
     return Dialog(
@@ -479,10 +487,17 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
                 ],
               ),
               const SizedBox(height: AppSpacing.md),
-              AppTextField(
+              AppDropdown<String>(
                 label: 'PACKING',
-                controller: _packingController,
-                hint: 'e.g. 750 ML or 500 ML (CAN)',
+                items: packings.contains(_packingController.text) || _packingController.text.isEmpty
+                    ? packings
+                    : [_packingController.text, ...packings],
+                itemLabel: (value) => value,
+                value: _packingController.text.isNotEmpty ? _packingController.text : null,
+                hint: packings.isEmpty ? 'Create packaging in Packaging Master' : null,
+                onChanged: packings.isEmpty
+                    ? null
+                    : (value) => setState(() => _packingController.text = value ?? ''),
               ),
             ],
             if (_material != null) ...[

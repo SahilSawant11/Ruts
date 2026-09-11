@@ -8,9 +8,11 @@ import '../../sales/data/models/material_dto.dart';
 import 'masters_api_repository.dart';
 import 'models/category_dto.dart';
 import 'models/manufacturer_dto.dart';
+import 'models/packaging_dto.dart';
 import 'models/save_category_request.dart';
 import 'models/save_manufacturer_request.dart';
 import 'models/save_material_request.dart';
+import 'models/save_packaging_request.dart';
 import 'models/save_supplier_request.dart';
 import 'models/supplier_dto.dart';
 
@@ -112,6 +114,88 @@ class LocalMastersRepository {
     });
 
     return ManufacturerDto(
+      name: nextName,
+      description: request.description?.trim().isEmpty ?? true ? null : request.description?.trim(),
+    );
+  }
+
+  Future<List<PackagingDto>> getPackings() async {
+    final rows = await (_db.select(_db.cachedPackings)
+          ..orderBy([(tbl) => OrderingTerm.asc(tbl.name)]))
+        .get();
+    return rows
+        .map((row) => PackagingDto(name: row.name, description: row.description))
+        .toList();
+  }
+
+  Future<PackagingDto> createPacking(SavePackagingRequest request) async {
+    final name = request.name.trim();
+    if (name.isEmpty) {
+      throw const ApiException('Packaging name is required.');
+    }
+
+    final existing = await (_db.select(_db.cachedPackings)
+          ..where((tbl) => tbl.name.lower().equals(name.toLowerCase())))
+        .getSingleOrNull();
+    if (existing != null) {
+      throw const ApiException('Packaging already exists.');
+    }
+
+    final packing = PackagingDto(
+      name: name,
+      description: request.description?.trim().isEmpty ?? true ? null : request.description?.trim(),
+    );
+    final now = DateTime.now().toUtc();
+    await _db.into(_db.cachedPackings).insert(
+          CachedPackingsCompanion.insert(
+            name: packing.name,
+            description: Value(packing.description),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
+    return packing;
+  }
+
+  Future<PackagingDto> updatePacking(String previousName, SavePackagingRequest request) async {
+    final nextName = request.name.trim();
+    if (nextName.isEmpty) {
+      throw const ApiException('Packaging name is required.');
+    }
+
+    final duplicate = await (_db.select(_db.cachedPackings)
+          ..where((tbl) => tbl.name.lower().equals(nextName.toLowerCase())))
+        .getSingleOrNull();
+    if (duplicate != null && duplicate.name.toLowerCase() != previousName.toLowerCase()) {
+      throw const ApiException('Another packaging already uses that name.');
+    }
+
+    final existing = await (_db.select(_db.cachedPackings)..where((tbl) => tbl.name.equals(previousName))).getSingleOrNull();
+    final now = DateTime.now().toUtc();
+
+    await _db.transaction(() async {
+      if (previousName != nextName) {
+        await (_db.delete(_db.cachedPackings)..where((tbl) => tbl.name.equals(previousName))).go();
+        await (_db.update(_db.cachedMaterials)..where((tbl) => tbl.packing.equals(previousName))).write(
+          CachedMaterialsCompanion(
+            packing: Value(nextName),
+            updatedAt: Value(now),
+          ),
+        );
+      }
+      await _db.into(_db.cachedPackings).insert(
+            CachedPackingsCompanion.insert(
+              name: nextName,
+              description: Value(request.description?.trim().isEmpty ?? true ? null : request.description?.trim()),
+              createdAt: Value(existing?.createdAt ?? now),
+              updatedAt: Value(now),
+            ),
+            mode: InsertMode.insertOrReplace,
+          );
+    });
+
+    return PackagingDto(
       name: nextName,
       description: request.description?.trim().isEmpty ?? true ? null : request.description?.trim(),
     );

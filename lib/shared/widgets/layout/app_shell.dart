@@ -32,6 +32,7 @@ const _branchMeta = [
   _BranchMeta('Sync Center', 'F12 · Sync Center', 'Sync'),
   _BranchMeta('Sales Return', 'F8 · Sales Return', 'Sales Return'),
   _BranchMeta('Purchase Return', 'Purchase · Return', 'Purchase Return'),
+  _BranchMeta('Packaging', 'Master · Packaging', 'Packaging'),
 ];
 
 /// The persistent app chrome: fixed left sidebar, fixed top header,

@@ -29,11 +29,11 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
   final _id = TextEditingController();
   final _barcode = TextEditingController();
   final _name = TextEditingController();
-  final _packing = TextEditingController();
   final _saleRate = TextEditingController();
   final _taxPercent = TextEditingController();
   String _manufacturer = '';
   String _category = '';
+  String _packing = '';
 
   int? _lastIndex;
   bool? _lastIsNew;
@@ -43,7 +43,6 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
     _id.dispose();
     _barcode.dispose();
     _name.dispose();
-    _packing.dispose();
     _saleRate.dispose();
     _taxPercent.dispose();
     super.dispose();
@@ -53,7 +52,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
     _id.text = material?.id ?? '';
     _barcode.text = material?.barcode ?? '';
     _name.text = material?.name ?? '';
-    _packing.text = material?.packing ?? '';
+    _packing = material?.packing ?? '';
     _saleRate.text = material != null ? material.saleRate.toString() : '0';
     _taxPercent.text = material != null ? material.taxPercent.toString() : '5';
     _manufacturer = material?.manufacturer ?? '';
@@ -80,7 +79,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
         name: _name.text.trim(),
         manufacturer: _manufacturer,
         category: _category,
-        packing: _packing.text.trim(),
+        packing: _packing.trim(),
         saleRate: double.tryParse(_saleRate.text) ?? 0,
         taxPercent: double.tryParse(_taxPercent.text) ?? 0,
       );
@@ -114,6 +113,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
     final materialsAsync = ref.watch(materialsListProvider);
     final manufacturersAsync = ref.watch(manufacturersListProvider);
     final categoriesAsync = ref.watch(categoriesListProvider);
+    final packingsAsync = ref.watch(packingsListProvider);
 
     ref.listen(materialsListProvider, (previous, next) {
       next.whenData((materials) => ref.read(materialBrowserProvider.notifier).syncList(materials));
@@ -137,6 +137,10 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
       data: (items) => items.map((item) => item.name).toList(),
       orElse: () => const <String>[],
     );
+    final packings = packingsAsync.maybeWhen(
+      data: (items) => items.map((item) => item.name).toList(),
+      orElse: () => const <String>[],
+    );
     final manufacturerValue = _manufacturer.isNotEmpty
         ? _manufacturer
         : manufacturers.isNotEmpty
@@ -153,6 +157,17 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
     if (_category != categoryValue) {
       _category = categoryValue;
     }
+    final packingValue = _packing.isNotEmpty
+        ? _packing
+        : packings.isNotEmpty
+            ? packings.first
+            : '750 ML';
+    if (_packing != packingValue) {
+      _packing = packingValue;
+    }
+    final dropdownPackings = (_packing.isNotEmpty && !packings.contains(_packing))
+        ? [_packing, ...packings]
+        : packings;
 
     return materialsAsync.when(
       loading: () => const AppCard(child: Padding(
@@ -253,7 +268,19 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
                         : AppTextField(label: 'CATEGORY', hint: _category, enabled: false),
                   ),
                   const SizedBox(width: AppSpacing.md),
-                  Expanded(flex: 3, child: AppTextField(label: 'PACKING', controller: _packing, enabled: editable)),
+                  Expanded(
+                    flex: 3,
+                    child: editable
+                        ? AppDropdown<String>(
+                            label: 'PACKING',
+                            items: dropdownPackings,
+                            itemLabel: (v) => v,
+                            value: dropdownPackings.contains(_packing) ? _packing : null,
+                            hint: dropdownPackings.isEmpty ? 'Create packaging in Packaging Master' : null,
+                            onChanged: dropdownPackings.isEmpty ? null : (v) => setState(() => _packing = v ?? _packing),
+                          )
+                        : AppTextField(label: 'PACKING', hint: _packing, enabled: false),
+                  ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(flex: 2, child: AppTextField(label: 'SALE RATE (₹)', controller: _saleRate, enabled: editable)),
                   const SizedBox(width: AppSpacing.md),

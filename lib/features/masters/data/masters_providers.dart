@@ -7,6 +7,7 @@ import 'local_masters_repository.dart';
 import 'masters_api_repository.dart';
 import 'models/category_dto.dart';
 import 'models/manufacturer_dto.dart';
+import 'models/packaging_dto.dart';
 import 'models/supplier_dto.dart';
 
 final appDatabaseProvider = Provider<AppDatabase>((ref) {
@@ -44,6 +45,10 @@ final categoriesListProvider = FutureProvider<List<CategoryDto>>((ref) {
 
 final manufacturersListProvider = FutureProvider<List<ManufacturerDto>>((ref) {
   return ref.watch(mastersRepositoryProvider).getManufacturers();
+});
+
+final packingsListProvider = FutureProvider<List<PackagingDto>>((ref) {
+  return ref.watch(mastersRepositoryProvider).getPackings();
 });
 
 final pendingMastersSyncCountProvider = StreamProvider<int>((ref) {

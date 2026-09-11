@@ -5,6 +5,7 @@ import '../features/masters/presentation/screens/all_masters_screen.dart';
 import '../features/masters/presentation/screens/category_master_screen.dart';
 import '../features/masters/presentation/screens/manufacturer_master_screen.dart';
 import '../features/masters/presentation/screens/material_master_screen.dart';
+import '../features/masters/presentation/screens/packaging_master_screen.dart';
 import '../features/masters/presentation/screens/supplier_master_screen.dart';
 import '../features/purchase/presentation/screens/purchase_bill_screen.dart';
 import '../features/purchase/presentation/screens/purchase_return_screen.dart';
@@ -69,6 +70,9 @@ final appRouter = GoRouter(
         ]),
         StatefulShellBranch(routes: [
           GoRoute(path: '/purchase-return', builder: (context, state) => const PurchaseReturnScreen()),
+        ]),
+        StatefulShellBranch(routes: [
+          GoRoute(path: '/packaging', builder: (context, state) => const PackagingMasterScreen()),
         ]),
       ],
     ),

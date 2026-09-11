@@ -133,6 +133,13 @@ class AppSidebar extends ConsumerWidget {
                     onTap: () => context.go('/manufacturer'),
                   ),
                   SidebarItem(
+                    icon: Icons.all_inbox_rounded,
+                    label: 'Packaging Master',
+                    collapsed: collapsed,
+                    active: location == '/packaging',
+                    onTap: () => context.go('/packaging'),
+                  ),
+                  SidebarItem(
                     icon: Icons.dashboard_customize_outlined,
                     label: 'All Masters',
                     shortcut: 'F9',

@@ -62,6 +62,16 @@ class CachedCategories extends Table {
   Set<Column<Object>> get primaryKey => {name};
 }
 
+class CachedPackings extends Table {
+  TextColumn get name => text()();
+  TextColumn get description => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column<Object>> get primaryKey => {name};
+}
+
 class SyncQueueItems extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get entityType => text()();
@@ -178,6 +188,7 @@ class CachedSaleLineItems extends Table {
   CachedSuppliers,
   CachedManufacturers,
   CachedCategories,
+  CachedPackings,
   SyncQueueItems,
   CachedInventoryStocks,
   CachedSalesBills,
@@ -191,7 +202,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.defaults() : super(driftDatabase(name: 'pos_app.sqlite'));
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -219,6 +230,10 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(cachedPurchaseBills);
             await m.createTable(cachedPurchaseLineItems);
           }
+          if (from < 8) {
+            await m.createTable(cachedPackings);
+            await _backfillPackings();
+          }
         },
       );
 
@@ -227,6 +242,7 @@ class AppDatabase extends _$AppDatabase {
     final hasSuppliers = await _tableHasRows('cached_suppliers');
     final hasManufacturers = await _tableHasRows('cached_manufacturers');
     final hasCategories = await _tableHasRows('cached_categories');
+    final hasPackings = await _tableHasRows('cached_packings');
     final hasInventory = await _tableHasRows('cached_inventory_stocks');
     final hasSalesBills = await _tableHasRows('cached_sales_bills');
     final hasSaleLines = await _tableHasRows('cached_sale_line_items');
@@ -235,6 +251,7 @@ class AppDatabase extends _$AppDatabase {
         hasSuppliers &&
         hasManufacturers &&
         hasCategories &&
+        hasPackings &&
         hasInventory &&
         hasSalesBills &&
         hasSaleLines) {
@@ -294,6 +311,23 @@ class AppDatabase extends _$AppDatabase {
               CachedCategoriesCompanion.insert(
                 name: category.name,
                 description: Value(category.description),
+                createdAt: Value(now),
+                updatedAt: Value(now),
+              ),
+              mode: InsertMode.insertOrIgnore,
+            );
+          }
+        });
+      }
+
+      if (!hasPackings) {
+        await batch((batch) {
+          for (final packing in _starterPackings) {
+            batch.insert(
+              cachedPackings,
+              CachedPackingsCompanion.insert(
+                name: packing.name,
+                description: Value(packing.description),
                 createdAt: Value(now),
                 updatedAt: Value(now),
               ),
@@ -408,6 +442,41 @@ class AppDatabase extends _$AppDatabase {
       'SELECT EXISTS(SELECT 1 FROM $tableName LIMIT 1) AS present',
     ).getSingle();
     return result.read<int>('present') == 1;
+  }
+
+  Future<void> _backfillPackings() async {
+    final rows = await select(cachedMaterials).get();
+    final now = DateTime.now().toUtc();
+    final packings = <String>{};
+
+    for (final row in rows) {
+      final p = row.packing.trim();
+      if (p.isNotEmpty) {
+        packings.add(p);
+      }
+    }
+
+    for (final starter in _starterPackings) {
+      packings.add(starter.name);
+    }
+
+    await batch((batch) {
+      for (final name in packings) {
+        final starter = _starterPackings
+            .where((s) => s.name.toLowerCase() == name.toLowerCase())
+            .firstOrNull;
+        batch.insert(
+          cachedPackings,
+          CachedPackingsCompanion.insert(
+            name: name,
+            description: Value(starter?.description),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+          ),
+          mode: InsertMode.insertOrIgnore,
+        );
+      }
+    });
   }
 
   Future<void> _backfillManufacturers() async {
@@ -527,6 +596,16 @@ class _StarterManufacturer {
 
 class _StarterCategory {
   const _StarterCategory({
+    required this.name,
+    this.description,
+  });
+
+  final String name;
+  final String? description;
+}
+
+class _StarterPacking {
+  const _StarterPacking({
     required this.name,
     this.description,
   });
@@ -878,6 +957,17 @@ const _starterCategories = <_StarterCategory>[
   _StarterCategory(name: 'Rum', description: 'White and dark rum'),
   _StarterCategory(name: 'Vodka', description: 'Plain and flavored vodka'),
   _StarterCategory(name: 'Soft Drink', description: 'Mixers, soda and soft beverages'),
+];
+
+const _starterPackings = <_StarterPacking>[
+  _StarterPacking(name: '750 ML', description: 'Standard bottle (spirits / wine)'),
+  _StarterPacking(name: '650 ML', description: 'Standard beer bottle'),
+  _StarterPacking(name: '500 ML (CAN)', description: 'Beer can / large beverage'),
+  _StarterPacking(name: '375 ML', description: 'Half bottle (spirits / wine)'),
+  _StarterPacking(name: '330 ML', description: 'Pint bottle / craft beer'),
+  _StarterPacking(name: '330 ML (CAN)', description: 'Can (beer / craft)'),
+  _StarterPacking(name: '300 ML', description: 'Can (soft drink / mixer)'),
+  _StarterPacking(name: '180 ML', description: 'Quarter bottle (spirits / nip)'),
 ];
 
 const _starterInventory = <_StarterInventoryStock>[
