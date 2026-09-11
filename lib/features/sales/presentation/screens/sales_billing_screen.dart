@@ -1,136 +1,81 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../../../../core/theme/app_typography.dart';
-import '../../../../shared/widgets/badges/status_chip.dart';
-import '../../../../shared/widgets/buttons/named_buttons.dart';
-import '../../data/sales_providers.dart';
 import '../widgets/bill_summary_card.dart';
-import '../widgets/billing_mode_toggle.dart';
 import '../widgets/invoice_details_card.dart';
 import '../widgets/item_details_table.dart';
 import '../widgets/payment_card.dart';
 import '../widgets/scan_add_item_card.dart';
 
-/// Screen widget tree (per project convention, documented before the code):
-///
-/// AppShell
-///   └── SalesBillingScreen (this file's body)
-///         └── SingleChildScrollView
-///               └── Column
-///                     ├── _ScreenHeader (title + Find/Calc/Notepad actions)
-///                     ├── BillingModeToggle (F2/F3 segmented control)
-///                     └── Row  (main 2-column workspace)
-///                           ├── Expanded (flex 2, left column)
-///                           │     ├── InvoiceDetailsCard
-///                           │     ├── ScanAddItemCard
-///                           │     └── ItemDetailsTable
-///                           └── SizedBox(width) + SizedBox (flex 1, right column)
-///                                 ├── BillSummaryCard
-///                                 └── PaymentCard
+/// Redesigned POS Counter Billing Screen:
+/// - Connects directly below AppTopHeader with no duplicate utility bar,
+///   allowing the workbench and line items table to start at the very top.
+/// - Preserves the application's signature pebble-like rounded aesthetic,
+///   brand purple accents (#6C5CE7), and soft ambient shadows.
+/// - Left Workbench: Pebble container with 1-row metadata strip, inline scan bar,
+///   and full-height line items table.
+/// - Right Sidebar: Pebble summary & payment cards.
 class SalesBillingScreen extends StatelessWidget {
   const SalesBillingScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return const Padding(
-      padding: EdgeInsets.all(AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _ScreenHeader(),
-          SizedBox(height: AppSpacing.sm),
-          BillingModeToggle(),
-          SizedBox(height: AppSpacing.md),
-          Expanded(child: _SalesWorkspace()),
-        ],
-      ),
+      padding: EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.xs, AppSpacing.md, AppSpacing.md),
+      child: _SalesSplitWorkspace(),
     );
   }
 }
 
-class _SalesWorkspace extends StatelessWidget {
-  const _SalesWorkspace();
+class _SalesSplitWorkspace extends StatelessWidget {
+  const _SalesSplitWorkspace();
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          flex: 5,
-          child: Column(
-            children: [
-              InvoiceDetailsCard(compact: true),
-              SizedBox(height: AppSpacing.sm),
-              ScanAddItemCard(compact: true),
-              SizedBox(height: AppSpacing.sm),
-              Expanded(child: ItemDetailsTable(expand: true)),
-            ],
-          ),
-        ),
-        SizedBox(width: AppSpacing.md),
-        Expanded(
-          flex: 2,
-          child: Column(
-            children: [
-              BillSummaryCard(compact: true),
-              SizedBox(height: AppSpacing.sm),
-              PaymentCard(compact: true),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ScreenHeader extends ConsumerWidget {
-  const _ScreenHeader();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final pendingSyncAsync = ref.watch(pendingSalesSyncCountProvider);
-
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // Left Panel (Pebble Records Workbench)
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Sale / Billing',
-                style: AppTypography.h1.copyWith(
-                  color: AppColors.textPrimaryFor(context),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Counter sale — barcode-first entry for fast checkout.',
-                style: AppTypography.bodyMuted.copyWith(
-                  color: AppColors.textSecondaryFor(context),
-                ),
-              ),
-            ],
+          flex: 7,
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.backgroundFor(context),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(color: AppColors.borderFor(context)),
+              boxShadow: AppColors.cardShadowFor(context),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: const Column(
+              children: [
+                // Compact 1-row metadata strip
+                InvoiceDetailsCard(compact: true),
+
+                // Inline barcode scan row directly touching the table
+                ScanAddItemCard(compact: true),
+
+                // High-density records table: starts immediately at the top
+                Expanded(child: ItemDetailsTable(expand: true)),
+              ],
+            ),
           ),
         ),
-        pendingSyncAsync.when(
-          loading: () => const SizedBox.shrink(),
-          error: (_, __) => const SizedBox.shrink(),
-          data: (count) => count > 0
-              ? const Padding(
-                  padding: EdgeInsets.only(right: AppSpacing.sm),
-                  child: StatusChip(label: 'Queued offline', tone: StatusChipTone.neutral),
-                )
-              : const SizedBox.shrink(),
+
+        const SizedBox(width: AppSpacing.sm),
+
+        // Right Sidebar (Pebble Settlement & Totals)
+        const SizedBox(
+          width: 300,
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                BillSummaryCard(compact: true),
+                SizedBox(height: AppSpacing.sm),
+                PaymentCard(compact: true),
+              ],
+            ),
+          ),
         ),
-        SecondaryButton(label: 'Find / Edit Sale', icon: Icons.search_rounded, dense: true, onPressed: () {}),
-        const SizedBox(width: AppSpacing.sm),
-        SecondaryButton(label: 'Calc', icon: Icons.calculate_outlined, dense: true, onPressed: () {}),
-        const SizedBox(width: AppSpacing.sm),
-        SecondaryButton(label: 'Notepad', icon: Icons.sticky_note_2_outlined, dense: true, onPressed: () {}),
       ],
     );
   }

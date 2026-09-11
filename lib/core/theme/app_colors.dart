@@ -9,6 +9,7 @@ class AppColors {
   static const Color primary = Color(0xFF6C5CE7);
   static const Color primaryDark = Color(0xFF5A46D6);
   static const Color primarySoft = Color(0xFFEFECFE);
+  static const Color primarySoftDark = Color(0xFF28233C);
 
   // Status
   static const Color success = Color(0xFF12A150);
@@ -59,6 +60,9 @@ class AppColors {
 
   static bool isDark(BuildContext context) =>
       Theme.of(context).brightness == Brightness.dark;
+
+  static Color primarySoftFor(BuildContext context) =>
+      isDark(context) ? primarySoftDark : primarySoft;
 
   static Color backgroundFor(BuildContext context) =>
       isDark(context) ? backgroundDark : background;

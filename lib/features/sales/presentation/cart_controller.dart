@@ -40,9 +40,10 @@ class CartController extends StateNotifier<CartState> {
 
   final LocalSalesRepository _repo;
 
-  Future<void> addByBarcode(String rawBarcode) async {
+  Future<void> addByBarcode(String rawBarcode, {int qty = 1}) async {
     final barcode = rawBarcode.trim();
     if (barcode.isEmpty) return;
+    final addQty = qty <= 0 ? 1 : qty;
 
     state = state.copyWith(isScanning: true, clearError: true);
     try {
@@ -57,16 +58,27 @@ class CartController extends StateNotifier<CartState> {
       final existingIndex = state.items.indexWhere((i) => i.barcode == material.barcode);
       if (existingIndex != -1) {
         final updated = [...state.items];
-        updated[existingIndex] = updated[existingIndex].copyWith(qty: updated[existingIndex].qty + 1);
+        updated[existingIndex] = updated[existingIndex].copyWith(qty: updated[existingIndex].qty + addQty);
         state = state.copyWith(items: updated, isScanning: false);
         return;
       }
 
-      final newItem = SaleLineItem.fromMaterial(material, index: state.items.length + 1);
+      final newItem = SaleLineItem.fromMaterial(material, index: state.items.length + 1, qty: addQty);
       state = state.copyWith(items: [...state.items, newItem], isScanning: false);
     } on ApiException catch (e) {
       state = state.copyWith(isScanning: false, scanError: e.message);
     }
+  }
+
+  void updateQty(int index, int newQty) {
+    if (index < 0 || index >= state.items.length) return;
+    if (newQty <= 0) {
+      removeAt(index);
+      return;
+    }
+    final updated = [...state.items];
+    updated[index] = updated[index].copyWith(qty: newQty);
+    state = state.copyWith(items: updated);
   }
 
   void removeAt(int index) {

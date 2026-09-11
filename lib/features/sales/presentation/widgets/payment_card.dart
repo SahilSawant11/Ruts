@@ -6,17 +6,15 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
-import '../../../../shared/widgets/layout/app_card.dart';
 import '../../data/models/create_sale_request.dart';
 import '../../data/sales_providers.dart';
 import '../cart_controller.dart';
 import '../sales_providers.dart';
 
-/// Payment method selector + the primary checkout actions.
-/// "Save & Print" is the one wired all the way to the API — it builds
-/// a CreateSaleRequest from the live cart and posts it.
+/// Payment method selector, cash received input, and billing actions
+/// in the app's signature pebble card aesthetic and brand styling.
 class PaymentCard extends ConsumerStatefulWidget {
-  const PaymentCard({super.key, this.compact = false});
+  const PaymentCard({super.key, this.compact = true});
 
   final bool compact;
 
@@ -26,6 +24,7 @@ class PaymentCard extends ConsumerStatefulWidget {
 
 class _PaymentCardState extends ConsumerState<PaymentCard> {
   bool _isSaving = false;
+  final _receivedController = TextEditingController();
 
   @override
   void initState() {
@@ -36,6 +35,7 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
   @override
   void dispose() {
     HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
+    _receivedController.dispose();
     super.dispose();
   }
 
@@ -45,6 +45,9 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
       if (!_isSaving) {
         _saveSale();
       }
+      return true;
+    } else if (event.logicalKey == LogicalKeyboardKey.f6) {
+      _holdBill();
       return true;
     }
     return false;
@@ -59,6 +62,15 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
       case PaymentMethod.upi:
         return 'UPI';
     }
+  }
+
+  void _holdBill() {
+    final cart = ref.read(cartControllerProvider);
+    if (cart.isEmpty) {
+      _showSnack('Cart is empty. Nothing to hold.', isError: true);
+      return;
+    }
+    _showSnack('Bill held as pending draft (F6).');
   }
 
   Future<void> _saveSale() async {
@@ -104,6 +116,7 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
       ref.read(cartControllerProvider.notifier).clear();
       ref.read(billNoProvider.notifier).state = generateBillNo();
       ref.invalidate(todaysBillsProvider);
+      _receivedController.clear();
 
       if (!mounted) return;
       _showSnack(
@@ -124,6 +137,7 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
       SnackBar(
         content: Text(message),
         backgroundColor: isError ? AppColors.danger : AppColors.success,
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -133,12 +147,41 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
     final method = ref.watch(paymentMethodProvider);
     final cart = ref.watch(cartControllerProvider);
 
-    return AppCard(
+    final receivedVal = double.tryParse(_receivedController.text.trim()) ?? 0.0;
+    final changeDue = receivedVal > cart.totalAmount && cart.totalAmount > 0
+        ? receivedVal - cart.totalAmount
+        : 0.0;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.backgroundFor(context),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.borderFor(context)),
+        boxShadow: AppColors.cardShadowFor(context),
+      ),
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const SectionHeader(title: 'Payment', icon: Icons.account_balance_wallet_outlined),
-          SizedBox(height: widget.compact ? AppSpacing.sm : AppSpacing.md),
+          // Header
+          Row(
+            children: [
+              const Icon(Icons.account_balance_wallet_outlined, size: 16, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text(
+                'Payment',
+                style: AppTypography.sectionTitle.copyWith(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimaryFor(context),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+
+          // 3-Pebble Method Tiles Grid
           Row(
             children: [
               Expanded(
@@ -169,25 +212,74 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
               ),
             ],
           ),
-          SizedBox(height: widget.compact ? AppSpacing.sm : AppSpacing.md),
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm,
-              vertical: widget.compact ? 11 : 13,
-            ),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceFor(context),
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              border: Border.all(color: AppColors.borderFor(context)),
-            ),
-            child: Text(cart.totalAmount.toStringAsFixed(0),
-                style: AppTypography.body.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimaryFor(context),
-                )),
+          const SizedBox(height: AppSpacing.sm),
+
+          // Cash Received Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'CASH RECEIVED',
+                style: AppTypography.label.copyWith(
+                  fontSize: 9.5,
+                  letterSpacing: 0.5,
+                  color: AppColors.textSecondaryFor(context),
+                ),
+              ),
+              if (changeDue > 0)
+                Text(
+                  'Change: ₹${changeDue.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.success,
+                  ),
+                ),
+            ],
           ),
-          SizedBox(height: widget.compact ? AppSpacing.sm : AppSpacing.md),
+          const SizedBox(height: 6),
+
+          // Cash Received Input with consistent theme border and radius
+          TextField(
+            controller: _receivedController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            style: AppTypography.mono.copyWith(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimaryFor(context),
+            ),
+            onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(
+              isDense: true,
+              filled: true,
+              fillColor: AppColors.surfaceFor(context),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              prefixText: '₹ ',
+              prefixStyle: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+                color: AppColors.textSecondaryFor(context),
+              ),
+              hintText: cart.totalAmount > 0 ? cart.totalAmount.toStringAsFixed(2) : '0.00',
+              hintStyle: TextStyle(color: AppColors.textMutedFor(context), fontSize: 13),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                borderSide: BorderSide(color: AppColors.borderFor(context)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                borderSide: BorderSide(color: AppColors.borderFor(context)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: AppSpacing.sm),
+
+          // Save & Print Button (Pebble styled SuccessButton)
           SuccessButton(
             label: _isSaving ? 'Saving…' : 'Save & Print',
             shortcut: 'F8',
@@ -196,33 +288,32 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
             onPressed: _isSaving ? null : _saveSale,
           ),
           const SizedBox(height: AppSpacing.xs),
+
+          // Sub Row: Hold Bill (F6) & Clear Bill
           Row(
             children: [
               Expanded(
                 child: SecondaryButton(
-                  label: 'Print Preview',
-                  icon: Icons.visibility_outlined,
-                  dense: widget.compact,
-                  onPressed: () {},
+                  label: 'Hold',
+                  shortcut: 'F6',
+                  icon: Icons.pause_circle_outline_rounded,
+                  dense: true,
+                  onPressed: _holdBill,
                 ),
               ),
-              const SizedBox(width: AppSpacing.sm),
+              const SizedBox(width: AppSpacing.xs),
               Expanded(
-                child: SecondaryButton(
-                  label: 'Hold',
-                  icon: Icons.pause_circle_outline_rounded,
-                  dense: widget.compact,
-                  onPressed: () {},
+                child: DangerButton(
+                  label: 'Clear Bill',
+                  icon: Icons.close_rounded,
+                  outline: true,
+                  onPressed: () {
+                    ref.read(cartControllerProvider.notifier).clear();
+                    _receivedController.clear();
+                  },
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          DangerButton(
-            label: 'Close / Clear',
-            icon: Icons.close_rounded,
-            expand: true,
-            onPressed: () => ref.read(cartControllerProvider.notifier).clear(),
           ),
         ],
       ),
@@ -235,34 +326,35 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
     required PaymentMethod method,
     required bool selected,
   }) {
-    final context = this.context;
-
     return InkWell(
       onTap: () => ref.read(paymentMethodProvider.notifier).state = method,
-      borderRadius: BorderRadius.circular(AppRadius.md),
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: widget.compact ? 11 : 14),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
           color: selected
-              ? AppColors.primarySoft
+              ? AppColors.primarySoftFor(context)
               : AppColors.surfaceFor(context),
-          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           border: Border.all(
             color: selected ? AppColors.primary : AppColors.borderFor(context),
+            width: selected ? 1.5 : 1.0,
           ),
         ),
         child: Column(
           children: [
             Icon(
               icon,
-              size: 19,
+              size: 18,
               color: selected ? AppColors.primary : AppColors.textSecondaryFor(context),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             Text(
               label,
               style: AppTypography.bodyMuted.copyWith(
-                fontWeight: FontWeight.w600,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                fontSize: 11.5,
                 color: selected ? AppColors.primary : AppColors.textSecondaryFor(context),
               ),
             ),

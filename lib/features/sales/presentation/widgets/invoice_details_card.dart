@@ -1,85 +1,195 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../../../../shared/widgets/inputs/app_dropdown.dart';
-import '../../../../shared/widgets/inputs/app_text_field.dart';
-import '../../../../shared/widgets/layout/app_card.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../data/models/customer_dto.dart';
 import '../../data/sales_providers.dart';
+import '../cart_controller.dart';
 import '../sales_providers.dart';
 
-/// "Invoice Details" panel: bill number, customer, type, date, pay
-/// mode, license fields and running balance.
-///
-/// Bill No / Date are auto-generated (read-only), Customer is a live
-/// dropdown fed by GET /api/customers. License fields stay static for
-/// now — they'll wire up once a StoreLicense endpoint exists.
+/// Compact 1-row metadata strip at the top of the sales workbench.
+/// Embraces the app's pebble aesthetic: soft pill tags, rounded chips,
+/// purple accents, and high-density 42px height.
 class InvoiceDetailsCard extends ConsumerWidget {
-  const InvoiceDetailsCard({super.key, this.compact = false});
+  const InvoiceDetailsCard({super.key, this.compact = true});
 
   final bool compact;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final billNo = ref.watch(billNoProvider);
-    final today = _formatToday();
+    final payMode = ref.watch(paymentMethodProvider);
+    final cart = ref.watch(cartControllerProvider);
 
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    final payModeText = switch (payMode) {
+      PaymentMethod.cash => 'CASH',
+      PaymentMethod.card => 'CARD',
+      PaymentMethod.upi => 'UPI',
+    };
+
+    final isDark = AppColors.isDark(context);
+    final stripBg = isDark ? AppColors.surfaceFor(context) : AppColors.surfaceAltFor(context);
+    final borderColor = AppColors.borderFor(context);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 7),
+      decoration: BoxDecoration(
+        color: stripBg,
+        border: Border(bottom: BorderSide(color: borderColor)),
+      ),
+      child: Row(
         children: [
-          const SectionHeader(
-            title: 'Invoice Details',
-            subtitle: 'Auto-numbered counter sale',
+          // Bill No
+          _MetaField(
+            label: 'BILL NO',
+            child: Text(
+              billNo,
+              style: AppTypography.mono.copyWith(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimaryFor(context),
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-          SizedBox(height: compact ? AppSpacing.sm : AppSpacing.md),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: AppTextField(
-                  label: 'BILL NO.',
-                  controller: TextEditingController(text: billNo),
-                  enabled: false,
+          _divider(borderColor),
+
+          // Customer (interactive pebble dropdown)
+          Expanded(
+            flex: 3,
+            child: _CustomerField(ref: ref),
+          ),
+          _divider(borderColor),
+
+          // License
+          const Expanded(
+            flex: 3,
+            child: _MetaField(
+              label: 'LICENSE',
+              value: '223115 · J.R. TOLARAM',
+            ),
+          ),
+          _divider(borderColor),
+
+          // Type
+          const Expanded(
+            flex: 2,
+            child: _MetaField(
+              label: 'TYPE',
+              value: 'Life Time',
+            ),
+          ),
+          _divider(borderColor),
+
+          // Pay Mode
+          Expanded(
+            flex: 2,
+            child: _MetaField(
+              label: 'PAY MODE',
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.primarySoftFor(context),
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                ),
+                child: Text(
+                  payModeText,
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 10.5,
+                    fontFamily: AppTypography.mono.fontFamily,
+                  ),
                 ),
               ),
-              SizedBox(width: compact ? AppSpacing.sm : AppSpacing.md),
-              Expanded(flex: 2, child: _CustomerField(ref: ref)),
-              SizedBox(width: compact ? AppSpacing.sm : AppSpacing.md),
-              const Expanded(child: AppTextField(label: 'TYPE', hint: 'CounterSale.Sale', enabled: false)),
-              SizedBox(width: compact ? AppSpacing.sm : AppSpacing.md),
-              Expanded(
-                child: AppTextField(label: 'DATE', controller: TextEditingController(text: today), enabled: false),
-              ),
-              SizedBox(width: compact ? AppSpacing.sm : AppSpacing.md),
-              const Expanded(child: AppTextField(label: 'PAY MODE', hint: 'Set in Payment panel →', enabled: false)),
-            ],
+            ),
           ),
-          SizedBox(height: compact ? AppSpacing.sm : AppSpacing.md),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Expanded(child: AppTextField(label: 'LICENSE NO.', hint: 'Life Time')),
-              SizedBox(width: compact ? AppSpacing.sm : AppSpacing.md),
-              const Expanded(child: AppTextField(label: 'LICENSE NAME', hint: 'J.R.TOLARAM')),
-              SizedBox(width: compact ? AppSpacing.sm : AppSpacing.md),
-              const Expanded(child: AppTextField(label: 'VALIDITY', hint: '—')),
-              SizedBox(width: compact ? AppSpacing.sm : AppSpacing.md),
-              const Expanded(child: AppTextField(label: 'BALANCE', hint: '0.00')),
-            ],
+          _divider(borderColor),
+
+          // Balance Due
+          Expanded(
+            flex: 2,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'BALANCE DUE',
+                  style: AppTypography.label.copyWith(
+                    fontSize: 9.5,
+                    letterSpacing: 0.5,
+                    color: AppColors.textSecondaryFor(context),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '₹${cart.totalAmount.toStringAsFixed(2)}',
+                  style: AppTypography.mono.copyWith(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: cart.totalAmount > 0 ? AppColors.danger : AppColors.success,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  String _formatToday() {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-    ];
-    final now = DateTime.now();
-    return '${now.day.toString().padLeft(2, '0')}-${months[now.month - 1]}-${now.year}';
+  Widget _divider(Color color) {
+    return Container(
+      width: 1,
+      height: 22,
+      margin: const EdgeInsets.symmetric(horizontal: 10),
+      color: color,
+    );
+  }
+}
+
+class _MetaField extends StatelessWidget {
+  const _MetaField({
+    required this.label,
+    this.value,
+    this.child,
+  });
+
+  final String label;
+  final String? value;
+  final Widget? child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: AppTypography.label.copyWith(
+            fontSize: 9.5,
+            letterSpacing: 0.5,
+            color: AppColors.textSecondaryFor(context),
+          ),
+        ),
+        const SizedBox(height: 2),
+        if (child != null)
+          child!
+        else
+          Text(
+            value ?? '—',
+            style: AppTypography.body.copyWith(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimaryFor(context),
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+      ],
+    );
   }
 }
 
@@ -94,25 +204,83 @@ class _CustomerField extends StatelessWidget {
     final selectedId = ref.watch(selectedCustomerIdProvider);
 
     return customersAsync.when(
-      loading: () => const AppTextField(label: 'CUSTOMER', hint: 'Loading…', enabled: false),
-      error: (_, __) => const AppTextField(label: 'CUSTOMER', hint: 'Could not load customers', enabled: false),
+      loading: () => const _MetaField(label: 'CUSTOMER', value: 'Loading…'),
+      error: (_, __) => const _MetaField(label: 'CUSTOMER', value: 'Counter Sale (Walk-in)'),
       data: (customers) {
         final matches = customers.where((c) => c.id == selectedId);
         final selected = matches.isEmpty ? null : matches.first;
-        if (selectedId != null && selected == null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            ref.read(selectedCustomerIdProvider.notifier).state = null;
-          });
-        }
-        return AppDropdown<CustomerDto>(
-          label: 'CUSTOMER',
-          items: customers,
-          itemLabel: (c) => c.name,
-          value: selected,
-          hint: 'Counter Sale',
-          onChanged: (customer) {
-            ref.read(selectedCustomerIdProvider.notifier).state = customer?.id;
-          },
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'CUSTOMER',
+              style: AppTypography.label.copyWith(
+                fontSize: 9.5,
+                letterSpacing: 0.5,
+                color: AppColors.textSecondaryFor(context),
+              ),
+            ),
+            const SizedBox(height: 2),
+            PopupMenuButton<CustomerDto?>(
+              tooltip: 'Select Customer',
+              initialValue: selected,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                side: BorderSide(color: AppColors.borderFor(context)),
+              ),
+              color: AppColors.backgroundFor(context),
+              onSelected: (customer) {
+                ref.read(selectedCustomerIdProvider.notifier).state = customer?.id;
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem<CustomerDto?>(
+                  value: null,
+                  child: Text(
+                    'Counter Sale (Walk-in)',
+                    style: AppTypography.body.copyWith(fontWeight: FontWeight.w700, fontSize: 12),
+                  ),
+                ),
+                ...customers.map(
+                  (c) => PopupMenuItem<CustomerDto?>(
+                    value: c,
+                    child: Text(c.name, style: AppTypography.body.copyWith(fontSize: 12)),
+                  ),
+                ),
+              ],
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.backgroundFor(context),
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  border: Border.all(color: AppColors.borderFor(context)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        selected?.name ?? 'Counter Sale (Walk-in)',
+                        style: AppTypography.body.copyWith(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimaryFor(context),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.arrow_drop_down_rounded,
+                      size: 16,
+                      color: AppColors.primary,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         );
       },
     );
