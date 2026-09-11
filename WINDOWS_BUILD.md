@@ -1,125 +1,112 @@
-# Caskly Windows Build Guide
+# Caskly Windows Build & Distribution Guide
 
-This project cannot be built into a Windows `.exe` from macOS.
-The Windows release build must be created on a Windows machine.
+This guide explains how to build a **100% portable, zero-install Windows ZIP** that runs on any Windows machine without requiring the client to install Visual Studio or C++ runtimes, and how taskbar pinning works.
 
-## 1. Install prerequisites on Windows
+---
 
-Install these first:
+## Why Did the Client Need to Install Visual Studio / C++ Before?
 
-- Flutter SDK
-- VS Code
-- Visual Studio 2022
+Flutter Windows applications are compiled with Microsoft Visual C++ (MSVC). By default:
+- The compiled executable (`pos_app.exe`) dynamically links to the **Microsoft Visual C++ Redistributable runtime DLLs** (`vcruntime140.dll`, `msvcp140.dll`, etc.).
+- If a client's computer doesn't already have the Visual C++ Redistributable installed, Windows blocks the app with:
+  > *"The code execution cannot proceed because VCRUNTIME140.dll was not found."*
 
-Inside Visual Studio Installer, enable:
+### How We Fixed It:
+Windows searches the local folder of the executable **first** before checking system folders.
+Our build system and packager now bundle the required Microsoft C++ runtime DLLs (`vcruntime140.dll`, `vcruntime140_1.dll`, `msvcp140.dll`, etc.) **directly beside `pos_app.exe`**.
+When your client unzips the folder and runs the app, Windows loads the bundled DLLs locally. **The client does not need to install anything!**
 
-- `Desktop development with C++`
+---
 
-VS Code is fine for editing and running commands, but VS Code alone is not enough.
-For Windows desktop builds, Visual Studio 2022 with the C++ desktop workload is still required.
+## 1. Prerequisites (On Windows Build Machine Only)
 
-### Flutter setup steps
+To build the project, you need a Windows machine with:
+- **Flutter SDK**
+- **Visual Studio 2022** with the **"Desktop development with C++"** workload checked
 
-1. Download Flutter SDK for Windows
-2. Extract it somewhere like:
-
-```bash
-C:\src\flutter
-```
-
-3. Add Flutter to `Path`
-
-Example path to add:
-
-```bash
-C:\src\flutter\bin
-```
-
-4. Open a new terminal and verify:
-
-```bash
-flutter --version
-```
-
-5. Then run:
-
-```bash
+Verify with:
+```powershell
 flutter doctor
 ```
+Ensure Windows desktop development is marked as ready.
 
-If Flutter asks to accept Android or desktop-related components, finish those steps first.
+---
 
-Then verify setup:
+## 2. One-Command Build & Package (Recommended)
 
-```bash
-flutter doctor
+Open PowerShell as Administrator or regular user, navigate to the `Ruts` directory, and run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\package_windows.ps1
 ```
 
-Make sure Flutter reports Windows desktop support as available.
-If it does not, Visual Studio desktop tooling is usually the missing piece.
+### What this script does automatically:
+1. Runs `flutter build windows --release`.
+2. Verifies and bundles all Microsoft Visual C++ Runtime DLLs (`msvcp140.dll`, `vcruntime140.dll`, etc.) directly into the release folder.
+3. Adds a helper `Create_Desktop_Shortcut.bat` inside the release.
+4. Packages everything into a ready-to-share portable ZIP:
+   ```text
+   build\dist\Caskly_POS_v0.1.0_Windows_Portable.zip
+   ```
+5. If [Inno Setup](https://jrsoftware.org/isdl.php) is installed, it also automatically creates a single-file setup installer:
+   ```text
+   build\windows\installer\Caskly_POS_Setup_v0.1.0.exe
+   ```
 
-## 2. Open the project
+---
 
-Open a terminal in the project root:
+## 3. How to Share with the Client
 
-```bash
-Ruts
+Simply send the generated ZIP:
+```text
+build\dist\Caskly_POS_v0.1.0_Windows_Portable.zip
 ```
 
-## 3. Get packages
+### Instructions for the Client:
+1. **Extract** the ZIP to any folder (e.g. `C:\Caskly POS` or Desktop).
+2. Double-click **`pos_app.exe`** to run the app immediately.
+   *(Or double-click `Create_Desktop_Shortcut.bat` to place a shortcut on their desktop).*
+3. **Pin to Taskbar**:
+   - While the app is running, **right-click the Caskly app icon on the Windows taskbar** at the bottom of the screen.
+   - Click **"Pin to taskbar"**.
+   - The icon is now permanently pinned to the taskbar and will always launch Caskly POS directly with the custom icon!
 
-```bash
-flutter pub get
-```
+---
 
-## 4. Enable Windows desktop
+## 4. Manual Build (If not using the script)
 
-```bash
-flutter config --enable-windows-desktop
-```
+If you prefer to build manually:
 
-## 5. Build release app
+1. Enable Windows desktop:
+   ```powershell
+   flutter config --enable-windows-desktop
+   ```
+2. Get packages:
+   ```powershell
+   flutter pub get
+   ```
+3. Build release:
+   ```powershell
+   flutter build windows --release
+   ```
+4. Copy the MSVC CRT DLLs (`vcruntime140.dll`, `vcruntime140_1.dll`, `msvcp140.dll`, `msvcp140_1.dll`, `msvcp140_2.dll`) from:
+   `C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Redist\MSVC\<version>\x64\Microsoft.VC143.CRT\`
+   into:
+   `build\windows\x64\runner\Release\`
+5. Zip the entire `Release` folder.
 
-```bash
-flutter build windows --release
-```
+---
 
-## 6. Find the build output
+## 5. Offline Testing Notes
 
-The Windows app will be created here:
-
-```bash
-build\windows\x64\runner\Release\
-```
-
-Important:
-
-- Do not send only the `.exe`
-- Send the full `Release` folder
-- The `.exe` depends on the DLLs and files beside it
-
-## 7. Run the app
-
-Inside the `Release` folder, launch:
-
-```bash
-pos_app.exe
-```
-
-If the app name is updated later in Windows runner settings, the `.exe` name may change.
-
-## 8. Offline testing notes
-
-This app now seeds starter offline data on first run:
-
+This app seeds starter offline data on first run:
 - starter suppliers
 - starter materials
 - starter inventory stock
 
 So on first launch, the app should not open empty even without internet.
 
-## 9. Recommended test flow
-
+### Recommended test flow:
 1. Launch the app fully offline.
 2. Confirm Material Master has starter records.
 3. Confirm Supplier Master has starter records.
