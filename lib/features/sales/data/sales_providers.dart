@@ -3,6 +3,7 @@ import '../../../core/network/http_client_provider.dart';
 import '../../masters/data/masters_providers.dart';
 import 'models/customer_dto.dart';
 import 'models/sales_bill_dto.dart';
+import 'models/sales_return_models.dart';
 import 'local_sales_repository.dart';
 import 'sales_api_repository.dart';
 
@@ -35,3 +36,28 @@ final todaysBillsProvider = FutureProvider<List<SalesBillDto>>((ref) {
 final pendingSalesSyncCountProvider = StreamProvider<int>((ref) {
   return ref.watch(salesRepositoryProvider).watchPendingSalesSyncCount();
 });
+
+class SalesReturnFilter {
+  const SalesReturnFilter({this.search, this.date});
+  final String? search;
+  final DateTime? date;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SalesReturnFilter &&
+          runtimeType == other.runtimeType &&
+          search == other.search &&
+          date?.year == other.date?.year &&
+          date?.month == other.date?.month &&
+          date?.day == other.date?.day;
+
+  @override
+  int get hashCode => Object.hash(search, date?.year, date?.month, date?.day);
+}
+
+final salesBillsListProvider = FutureProvider.family<List<SalesBillDetailDto>, SalesReturnFilter>((ref, filter) {
+  return ref.watch(salesRepositoryProvider).getSalesBills(search: filter.search, date: filter.date);
+});
+
+final selectedSalesBillProvider = StateProvider<SalesBillDetailDto?>((ref) => null);

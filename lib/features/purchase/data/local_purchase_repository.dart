@@ -8,6 +8,7 @@ import '../../masters/data/local_masters_repository.dart';
 import '../../masters/data/models/supplier_dto.dart';
 import '../../sales/data/models/material_dto.dart';
 import 'models/create_purchase_request.dart';
+import 'models/purchase_return_models.dart';
 import 'purchase_api_repository.dart';
 
 class LocalPurchaseRepository {
@@ -57,9 +58,21 @@ class LocalPurchaseRepository {
           ),
         );
 
+        if (row.operation == 'return') {
+          await _remote.returnPurchaseBill(row.entityId);
+          await (_db.delete(_db.syncQueueItems)..where((tbl) => tbl.id.equals(row.id))).go();
+          continue;
+        }
+
         final request = _decodeRequest(row.payload);
         final syncedRequest = await _resolveDependencies(request);
-        await _remote.createPurchase(syncedRequest);
+        final result = await _remote.createPurchase(syncedRequest);
+        await _persistPurchase(
+          purchaseId: result.id,
+          request: syncedRequest,
+          syncStatus: 'synced',
+          billNo: result.billNo,
+        );
         await _applyPurchaseToLocalInventory(syncedRequest, persistOnlyMissing: true);
 
         await (_db.delete(_db.syncQueueItems)..where((tbl) => tbl.id.equals(row.id))).go();
@@ -77,17 +90,159 @@ class LocalPurchaseRepository {
     }
   }
 
+  Future<List<PurchaseBillDetailDto>> getPurchaseBills({String? search, DateTime? date}) async {
+    try {
+      await syncPendingPurchases();
+      return await _remote.getPurchaseBills(search: search, date: date);
+    } on ApiException {
+      final query = _db.select(_db.cachedPurchaseBills)
+        ..orderBy([(tbl) => OrderingTerm.desc(tbl.createdAt)]);
+      if (date != null) {
+        final start = DateTime(date.year, date.month, date.day);
+        final end = start.add(const Duration(days: 1));
+        query.where((tbl) => tbl.billDate.isBiggerOrEqualValue(start) & tbl.billDate.isSmallerThanValue(end));
+      }
+      if (search != null && search.trim().isNotEmpty) {
+        final s = search.trim().toLowerCase();
+        query.where((tbl) =>
+            (tbl.billNo.isNotNull() & tbl.billNo.lower().contains(s)) |
+            (tbl.challanNo.isNotNull() & tbl.challanNo.lower().contains(s)));
+      }
+      final billRows = await query.get();
+      final result = <PurchaseBillDetailDto>[];
+
+      for (final bill in billRows) {
+        final supplier = await (_db.select(_db.cachedSuppliers)..where((tbl) => tbl.id.equals(bill.supplierId))).getSingleOrNull();
+        final lineRows = await (_db.select(_db.cachedPurchaseLineItems)
+              ..where((tbl) => tbl.purchaseBillId.equals(bill.id))
+              ..orderBy([(tbl) => OrderingTerm.asc(tbl.lineNumber)]))
+            .get();
+
+        final lineDtos = <PurchaseLineItemDetailDto>[];
+        for (final li in lineRows) {
+          final material = await (_db.select(_db.cachedMaterials)..where((tbl) => tbl.id.equals(li.materialId))).getSingleOrNull();
+          lineDtos.add(PurchaseLineItemDetailDto(
+            id: li.id,
+            purchaseBillId: li.purchaseBillId,
+            materialId: li.materialId,
+            materialName: material?.name ?? li.materialId,
+            batchNo: li.batchNo,
+            packing: li.packing,
+            qty: li.qty,
+            rate: li.rate,
+            disPercent: li.disPercent,
+            disAmount: li.disAmount,
+            taxPercent: li.taxPercent,
+            taxAmount: li.taxAmount,
+            amount: li.amount,
+            lineNumber: li.lineNumber,
+          ));
+        }
+
+        result.add(PurchaseBillDetailDto(
+          id: bill.id,
+          billNo: bill.billNo,
+          supplierId: bill.supplierId,
+          supplierName: supplier?.name ?? 'Supplier',
+          challanNo: bill.challanNo,
+          noteNo: bill.noteNo,
+          payMode: bill.payMode,
+          tpNo: bill.tpNo,
+          tpDate: bill.tpDate,
+          stNo: bill.stNo,
+          discount: bill.discount,
+          vat: bill.vat,
+          stamp: bill.stamp,
+          tcs: bill.tcs,
+          loadingFreight: bill.loadingFreight,
+          netAmount: bill.netAmount,
+          totalAmount: bill.totalAmount,
+          billDate: bill.billDate.toIso8601String(),
+          status: 'saved',
+          createdAt: bill.createdAt.toIso8601String(),
+          lineItems: lineDtos,
+        ));
+      }
+
+      return result;
+    }
+  }
+
+  Future<void> returnPurchaseBill(String billId) async {
+    var remoteSucceeded = false;
+    try {
+      await _remote.returnPurchaseBill(billId);
+      remoteSucceeded = true;
+    } on ApiException catch (e) {
+      if (e.statusCode != null && e.statusCode != 404) {
+        rethrow;
+      }
+    }
+
+    await _db.transaction(() async {
+      final lineItems = await (_db.select(_db.cachedPurchaseLineItems)
+            ..where((tbl) => tbl.purchaseBillId.equals(billId)))
+          .get();
+
+      for (final item in lineItems) {
+        final stock = await (_db.select(_db.cachedInventoryStocks)
+              ..where((tbl) => tbl.materialId.equals(item.materialId)))
+            .getSingleOrNull();
+
+        if (stock != null) {
+          await (_db.update(_db.cachedInventoryStocks)
+                ..where((tbl) => tbl.materialId.equals(item.materialId)))
+              .write(
+            CachedInventoryStocksCompanion(
+              qtyOnHand: Value((stock.qtyOnHand - item.qty).clamp(0, 999999)),
+              updatedAt: Value(DateTime.now().toUtc()),
+            ),
+          );
+        }
+      }
+
+      await (_db.delete(_db.cachedPurchaseLineItems)..where((tbl) => tbl.purchaseBillId.equals(billId))).go();
+      await (_db.delete(_db.cachedPurchaseBills)..where((tbl) => tbl.id.equals(billId))).go();
+      await (_db.delete(_db.syncQueueItems)..where((tbl) => tbl.entityId.equals(billId))).go();
+
+      if (!remoteSucceeded && !billId.startsWith('local-')) {
+        await _db.into(_db.syncQueueItems).insert(
+              SyncQueueItemsCompanion.insert(
+                entityType: 'purchase',
+                entityId: billId,
+                operation: 'return',
+                payload: jsonEncode({'id': billId}),
+                status: const Value('pending'),
+                updatedAt: Value(DateTime.now().toUtc()),
+              ),
+            );
+      }
+    });
+  }
+
   Future<CreatePurchaseResult> createPurchase(CreatePurchaseRequest request) async {
     try {
       await syncPendingPurchases();
       final syncedRequest = await _resolveDependencies(request);
       final result = await _remote.createPurchase(syncedRequest);
+      await _persistPurchase(
+        purchaseId: result.id,
+        request: syncedRequest,
+        syncStatus: 'synced',
+        billNo: result.billNo,
+      );
       await _applyPurchaseToLocalInventory(syncedRequest);
       return result;
     } on ApiException catch (e) {
       if (e.statusCode != null) rethrow;
 
       final localId = 'local-purchase-${DateTime.now().microsecondsSinceEpoch}';
+      await _persistPurchase(
+        purchaseId: localId,
+        request: request,
+        syncStatus: 'pending_create',
+        billNo: request.billNo,
+      );
       await _db.into(_db.syncQueueItems).insert(
             SyncQueueItemsCompanion.insert(
               entityType: 'purchase',
@@ -107,6 +262,68 @@ class LocalPurchaseRepository {
         isPendingSync: true,
       );
     }
+  }
+
+  Future<void> _persistPurchase({
+    required String purchaseId,
+    required CreatePurchaseRequest request,
+    required String syncStatus,
+    String? billNo,
+  }) async {
+    final now = DateTime.now().toUtc();
+    final billDate = DateTime(now.year, now.month, now.day);
+
+    await _db.transaction(() async {
+      await (_db.delete(_db.cachedPurchaseLineItems)..where((tbl) => tbl.purchaseBillId.equals(purchaseId))).go();
+
+      await _db.into(_db.cachedPurchaseBills).insert(
+            CachedPurchaseBillsCompanion.insert(
+              id: purchaseId,
+              supplierId: request.supplierId,
+              billNo: Value(billNo ?? request.billNo),
+              challanNo: Value(request.challanNo),
+              noteNo: Value(request.noteNo),
+              payMode: request.payMode,
+              tpNo: Value(request.tpNo),
+              tpDate: Value(request.tpDate),
+              stNo: Value(request.stNo),
+              discount: request.discount,
+              vat: request.vat,
+              stamp: request.stamp,
+              tcs: request.tcs,
+              loadingFreight: request.loadingFreight,
+              netAmount: request.netAmount,
+              totalAmount: request.totalAmount,
+              syncStatus: Value(syncStatus),
+              billDate: billDate,
+              createdAt: Value(now),
+              updatedAt: Value(now),
+            ),
+            mode: InsertMode.insertOrReplace,
+          );
+
+      for (var i = 0; i < request.lineItems.length; i++) {
+        final item = request.lineItems[i];
+        await _db.into(_db.cachedPurchaseLineItems).insert(
+              CachedPurchaseLineItemsCompanion.insert(
+                id: '$purchaseId-line-${i + 1}',
+                purchaseBillId: purchaseId,
+                materialId: item.materialId,
+                batchNo: item.batchNo,
+                packing: Value(item.packing),
+                qty: item.qty,
+                rate: item.rate,
+                disPercent: item.disPercent,
+                disAmount: item.disAmount,
+                taxPercent: item.taxPercent,
+                taxAmount: item.taxAmount,
+                amount: item.amount,
+                lineNumber: i + 1,
+              ),
+              mode: InsertMode.insertOrReplace,
+            );
+      }
+    });
   }
 
   Future<CreatePurchaseRequest> _resolveDependencies(CreatePurchaseRequest request) async {

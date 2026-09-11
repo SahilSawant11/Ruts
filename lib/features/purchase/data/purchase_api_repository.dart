@@ -5,6 +5,7 @@ import '../../../core/network/api_exception.dart';
 import '../../masters/data/models/supplier_dto.dart';
 import '../../sales/data/models/material_dto.dart';
 import 'models/create_purchase_request.dart';
+import 'models/purchase_return_models.dart';
 
 /// The only place in the app that talks HTTP for the Purchase module.
 /// Material lookup reuses the same GET /api/materials/{barcode}
@@ -24,6 +25,24 @@ class PurchaseApiRepository {
     return list.map((e) => SupplierDto.fromJson(e as Map<String, dynamic>)).toList();
   }
 
+  Future<List<PurchaseBillDetailDto>> getPurchaseBills({String? search, DateTime? date}) async {
+    final query = <String, String>{};
+    if (search != null && search.trim().isNotEmpty) {
+      query['search'] = search.trim();
+    }
+    if (date != null) {
+      query['date'] =
+          '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    }
+    final response = await _get('/api/purchases', query: query.isEmpty ? null : query);
+    final list = jsonDecode(response.body) as List<dynamic>;
+    return list.map((e) => PurchaseBillDetailDto.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<void> returnPurchaseBill(String billId) async {
+    await _delete('/api/purchases/$billId');
+  }
+
   /// Returns null if no material matches (404) — that's a normal,
   /// expected outcome of a barcode search, not an error.
   Future<MaterialDto?> getMaterialByBarcode(String barcode) async {
@@ -41,9 +60,9 @@ class PurchaseApiRepository {
     return CreatePurchaseResult.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
   }
 
-  Future<http.Response> _get(String path) async {
+  Future<http.Response> _get(String path, {Map<String, String>? query}) async {
     try {
-      final response = await _client.get(ApiConfig.uri(path), headers: _headers).timeout(_timeout);
+      final response = await _client.get(ApiConfig.uri(path, query), headers: _headers).timeout(_timeout);
       return _unwrap(response);
     } on ApiException {
       rethrow;
@@ -57,6 +76,17 @@ class PurchaseApiRepository {
       final response = await _client
           .post(ApiConfig.uri(path), headers: _headers, body: jsonEncode(body))
           .timeout(_timeout);
+      return _unwrap(response);
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      throw ApiException.network();
+    }
+  }
+
+  Future<http.Response> _delete(String path) async {
+    try {
+      final response = await _client.delete(ApiConfig.uri(path), headers: _headers).timeout(_timeout);
       return _unwrap(response);
     } on ApiException {
       rethrow;

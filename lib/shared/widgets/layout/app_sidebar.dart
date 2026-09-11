@@ -64,6 +64,7 @@ class AppSidebar extends ConsumerWidget {
                   SidebarItem(
                     icon: Icons.grid_view_rounded,
                     label: 'Dashboard',
+                    shortcut: 'F1',
                     collapsed: collapsed,
                     active: location == '/dashboard',
                     onTap: () => context.go('/dashboard'),
@@ -77,6 +78,14 @@ class AppSidebar extends ConsumerWidget {
                     onTap: () => context.go('/sales'),
                   ),
                   SidebarItem(
+                    icon: Icons.assignment_return_outlined,
+                    label: 'Sales Return',
+                    shortcut: 'F8',
+                    collapsed: collapsed,
+                    active: location == '/sales-return',
+                    onTap: () => context.go('/sales-return'),
+                  ),
+                  SidebarItem(
                     icon: Icons.receipt_long_rounded,
                     label: 'Purchase Bill',
                     shortcut: 'F2',
@@ -84,10 +93,18 @@ class AppSidebar extends ConsumerWidget {
                     active: location == '/purchase',
                     onTap: () => context.go('/purchase'),
                   ),
+                  SidebarItem(
+                    icon: Icons.keyboard_return_rounded,
+                    label: 'Purchase Return',
+                    collapsed: collapsed,
+                    active: location == '/purchase-return',
+                    onTap: () => context.go('/purchase-return'),
+                  ),
                   _sectionLabel(context, 'MASTERS', collapsed),
                   SidebarItem(
                     icon: Icons.local_shipping_outlined,
                     label: 'Supplier Master',
+                    shortcut: 'F7',
                     collapsed: collapsed,
                     active: location == '/supplier',
                     onTap: () => context.go('/supplier'),
@@ -95,6 +112,7 @@ class AppSidebar extends ConsumerWidget {
                   SidebarItem(
                     icon: Icons.inventory_2_outlined,
                     label: 'Material Master',
+                    shortcut: 'F4',
                     collapsed: collapsed,
                     active: location == '/material',
                     onTap: () => context.go('/material'),
@@ -102,6 +120,7 @@ class AppSidebar extends ConsumerWidget {
                   SidebarItem(
                     icon: Icons.category_outlined,
                     label: 'Category Master',
+                    shortcut: 'F11',
                     collapsed: collapsed,
                     active: location == '/category',
                     onTap: () => context.go('/category'),
@@ -116,6 +135,7 @@ class AppSidebar extends ConsumerWidget {
                   SidebarItem(
                     icon: Icons.dashboard_customize_outlined,
                     label: 'All Masters',
+                    shortcut: 'F9',
                     collapsed: collapsed,
                     active: location == '/masters',
                     onTap: () => context.go('/masters'),
@@ -124,6 +144,7 @@ class AppSidebar extends ConsumerWidget {
                   SidebarItem(
                     icon: Icons.widgets_outlined,
                     label: 'Inventory',
+                    shortcut: 'F5',
                     collapsed: collapsed,
                     active: location == '/inventory',
                     onTap: () => context.go('/inventory'),
@@ -132,6 +153,7 @@ class AppSidebar extends ConsumerWidget {
                   SidebarItem(
                     icon: Icons.assessment_outlined,
                     label: 'Reports',
+                    shortcut: 'F6',
                     collapsed: collapsed,
                     active: location == '/reports',
                     onTap: () => context.go('/reports'),
@@ -139,6 +161,7 @@ class AppSidebar extends ConsumerWidget {
                   SidebarItem(
                     icon: Icons.liquor_outlined,
                     label: 'Brandwise Report',
+                    shortcut: 'F10',
                     collapsed: collapsed,
                     active: location == '/brandwise-report',
                     onTap: () => context.go('/brandwise-report'),
@@ -147,6 +170,7 @@ class AppSidebar extends ConsumerWidget {
                   SidebarItem(
                     icon: Icons.sync_alt_rounded,
                     label: 'Sync Center',
+                    shortcut: 'F12',
                     collapsed: collapsed,
                     active: location == '/sync',
                     onTap: () => context.go('/sync'),

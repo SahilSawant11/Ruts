@@ -6,6 +6,7 @@ import 'models/create_sale_request.dart';
 import 'models/customer_dto.dart';
 import 'models/material_dto.dart';
 import 'models/sales_bill_dto.dart';
+import 'models/sales_return_models.dart';
 
 /// The only place in the app that talks HTTP for the Sales module.
 /// Screens/providers call these methods and get back typed models or a
@@ -23,6 +24,24 @@ class SalesApiRepository {
     final response = await _get('/api/sales/today');
     final list = jsonDecode(response.body) as List<dynamic>;
     return list.map((e) => SalesBillDto.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<List<SalesBillDetailDto>> getSalesBills({String? search, DateTime? date}) async {
+    final query = <String, String>{};
+    if (search != null && search.trim().isNotEmpty) {
+      query['search'] = search.trim();
+    }
+    if (date != null) {
+      query['date'] =
+          '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    }
+    final response = await _get('/api/sales', query: query.isEmpty ? null : query);
+    final list = jsonDecode(response.body) as List<dynamic>;
+    return list.map((e) => SalesBillDetailDto.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<void> returnSalesBill(String billId) async {
+    await _delete('/api/sales/$billId');
   }
 
   /// Returns null if no material matches that barcode (404), rather than
@@ -48,9 +67,9 @@ class SalesApiRepository {
     return CreateSaleResult.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
   }
 
-  Future<http.Response> _get(String path) async {
+  Future<http.Response> _get(String path, {Map<String, String>? query}) async {
     try {
-      final response = await _client.get(ApiConfig.uri(path), headers: _headers).timeout(_timeout);
+      final response = await _client.get(ApiConfig.uri(path, query), headers: _headers).timeout(_timeout);
       return _unwrap(response);
     } on ApiException {
       rethrow;
@@ -64,6 +83,17 @@ class SalesApiRepository {
       final response = await _client
           .post(ApiConfig.uri(path), headers: _headers, body: jsonEncode(body))
           .timeout(_timeout);
+      return _unwrap(response);
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      throw ApiException.network();
+    }
+  }
+
+  Future<http.Response> _delete(String path) async {
+    try {
+      final response = await _client.delete(ApiConfig.uri(path), headers: _headers).timeout(_timeout);
       return _unwrap(response);
     } on ApiException {
       rethrow;

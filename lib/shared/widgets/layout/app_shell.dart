@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import 'app_sidebar.dart';
@@ -17,37 +18,99 @@ class _BranchMeta {
 }
 
 const _branchMeta = [
-  _BranchMeta('Dashboard', 'Home', 'Dashboard'),
+  _BranchMeta('Dashboard', 'F1 · Dashboard', 'Dashboard'),
   _BranchMeta('Sale', 'F3 · Sales Bill', 'Sale'),
   _BranchMeta('Purchase', 'F2 · Purchase Bill', 'Purchase'),
-  _BranchMeta('Supplier', 'Master · Supplier', 'Supplier'),
-  _BranchMeta('Material', 'Master · Material', 'Material'),
-  _BranchMeta('Category', 'Master · Category', 'Category'),
+  _BranchMeta('Supplier', 'F7 · Supplier Master', 'Supplier'),
+  _BranchMeta('Material', 'F4 · Material Master', 'Material'),
+  _BranchMeta('Category', 'F11 · Category Master', 'Category'),
   _BranchMeta('Manufacturer', 'Master · Manufacturer', 'Manufacturer'),
-  _BranchMeta('Masters', 'All Masters', 'Masters'),
-  _BranchMeta('Inventory', 'Stock overview', 'Inventory'),
-  _BranchMeta('Reports', 'Analysis', 'Reports'),
-  _BranchMeta('Brandwise Report', 'Excise Register', 'Brandwise'),
-  _BranchMeta('Sync Center', 'Operations · Sync', 'Sync'),
+  _BranchMeta('Masters', 'F9 · All Masters', 'Masters'),
+  _BranchMeta('Inventory', 'F5 · Inventory', 'Inventory'),
+  _BranchMeta('Reports', 'F6 · Reports', 'Reports'),
+  _BranchMeta('Brandwise Report', 'F10 · Brandwise', 'Brandwise'),
+  _BranchMeta('Sync Center', 'F12 · Sync Center', 'Sync'),
+  _BranchMeta('Sales Return', 'F8 · Sales Return', 'Sales Return'),
+  _BranchMeta('Purchase Return', 'Purchase · Return', 'Purchase Return'),
 ];
 
 /// The persistent app chrome: fixed left sidebar, fixed top header,
 /// a swappable content area (the active branch's navigator), and a
 /// fixed bottom status bar.
 ///
-/// This widget is built ONCE by the StatefulShellRoute in router.dart
-/// and stays alive across navigation — only [navigationShell]'s inner
-/// content swaps, which is what stops the whole screen (sidebar
-/// included) from rebuilding on every nav, and lets each tab keep its
-/// own state (e.g. the Sales cart) when you switch away and back.
-class AppShell extends StatelessWidget {
+/// Listens to global hardware function keys (F1 - F12) to immediately switch
+/// between screens from anywhere in the application, even when input fields
+/// are focused.
+class AppShell extends StatefulWidget {
   const AppShell({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
   @override
+  State<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends State<AppShell> {
+  @override
+  void initState() {
+    super.initState();
+    HardwareKeyboard.instance.addHandler(_handleGlobalKey);
+  }
+
+  @override
+  void dispose() {
+    HardwareKeyboard.instance.removeHandler(_handleGlobalKey);
+    super.dispose();
+  }
+
+  bool _handleGlobalKey(KeyEvent event) {
+    if (event is! KeyDownEvent) return false;
+
+    final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.f1) {
+      widget.navigationShell.goBranch(0);
+      return true;
+    } else if (key == LogicalKeyboardKey.f2) {
+      widget.navigationShell.goBranch(2);
+      return true;
+    } else if (key == LogicalKeyboardKey.f3) {
+      widget.navigationShell.goBranch(1);
+      return true;
+    } else if (key == LogicalKeyboardKey.f4) {
+      widget.navigationShell.goBranch(4);
+      return true;
+    } else if (key == LogicalKeyboardKey.f5) {
+      widget.navigationShell.goBranch(8);
+      return true;
+    } else if (key == LogicalKeyboardKey.f6) {
+      widget.navigationShell.goBranch(9);
+      return true;
+    } else if (key == LogicalKeyboardKey.f7) {
+      widget.navigationShell.goBranch(3);
+      return true;
+    } else if (key == LogicalKeyboardKey.f8) {
+      widget.navigationShell.goBranch(12);
+      return true;
+    } else if (key == LogicalKeyboardKey.f9) {
+      widget.navigationShell.goBranch(7);
+      return true;
+    } else if (key == LogicalKeyboardKey.f10) {
+      widget.navigationShell.goBranch(10);
+      return true;
+    } else if (key == LogicalKeyboardKey.f11) {
+      widget.navigationShell.goBranch(5);
+      return true;
+    } else if (key == LogicalKeyboardKey.f12) {
+      widget.navigationShell.goBranch(11);
+      return true;
+    }
+
+    return false;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final meta = _branchMeta[navigationShell.currentIndex];
+    final meta = _branchMeta[widget.navigationShell.currentIndex];
 
     return Scaffold(
       body: DecoratedBox(
@@ -61,7 +124,7 @@ class AppShell extends StatelessWidget {
               child: Column(
                 children: [
                   AppTopHeader(moduleTitle: meta.title, moduleShortcutLabel: meta.shortcut),
-                  Expanded(child: navigationShell),
+                  Expanded(child: widget.navigationShell),
                   AppStatusBar(moduleName: meta.statusName),
                 ],
               ),

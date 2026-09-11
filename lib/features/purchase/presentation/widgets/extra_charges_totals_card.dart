@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -31,11 +32,29 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
   bool _isSaving = false;
 
   @override
+  void initState() {
+    super.initState();
+    HardwareKeyboard.instance.addHandler(_handleKeyEvent);
+  }
+
+  @override
   void dispose() {
+    HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
     for (final c in [_discountController, _vatController, _stampController, _tcsController, _loadingFreightController]) {
       c.dispose();
     }
     super.dispose();
+  }
+
+  bool _handleKeyEvent(KeyEvent event) {
+    if (event is! KeyDownEvent) return false;
+    if (event.logicalKey == LogicalKeyboardKey.f8) {
+      if (!_isSaving) {
+        _save();
+      }
+      return true;
+    }
+    return false;
   }
 
   double _parse(String v) => double.tryParse(v) ?? 0;
@@ -250,6 +269,7 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
                 SecondaryButton(label: 'Payments', icon: Icons.account_balance_wallet_outlined, onPressed: () {}),
                 PrimaryButton(
                   label: _isSaving ? 'Saving…' : 'Save',
+                  shortcut: 'F8',
                   icon: Icons.save_outlined,
                   onPressed: _isSaving ? null : _save,
                 ),

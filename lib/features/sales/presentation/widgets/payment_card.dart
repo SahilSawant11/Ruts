@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -25,6 +26,29 @@ class PaymentCard extends ConsumerStatefulWidget {
 
 class _PaymentCardState extends ConsumerState<PaymentCard> {
   bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    HardwareKeyboard.instance.addHandler(_handleKeyEvent);
+  }
+
+  @override
+  void dispose() {
+    HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
+    super.dispose();
+  }
+
+  bool _handleKeyEvent(KeyEvent event) {
+    if (event is! KeyDownEvent) return false;
+    if (event.logicalKey == LogicalKeyboardKey.f8) {
+      if (!_isSaving) {
+        _saveSale();
+      }
+      return true;
+    }
+    return false;
+  }
 
   String _payModeLabel(PaymentMethod method) {
     switch (method) {

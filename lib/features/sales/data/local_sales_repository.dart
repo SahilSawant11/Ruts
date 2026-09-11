@@ -9,6 +9,7 @@ import 'models/create_sale_request.dart';
 import 'models/customer_dto.dart';
 import 'models/material_dto.dart';
 import 'models/sales_bill_dto.dart';
+import 'models/sales_return_models.dart';
 import 'sales_api_repository.dart';
 
 class LocalSalesRepository {
@@ -46,6 +47,128 @@ class LocalSalesRepository {
         lineItemCount: 0,
       );
     }).toList();
+  }
+
+  Future<List<SalesBillDetailDto>> getSalesBills({String? search, DateTime? date}) async {
+    try {
+      await syncPendingSales();
+      return await _remote.getSalesBills(search: search, date: date);
+    } on ApiException {
+      final billsQuery = _db.select(_db.cachedSalesBills)
+        ..orderBy([(tbl) => OrderingTerm.desc(tbl.createdAt)]);
+      if (date != null) {
+        final start = DateTime(date.year, date.month, date.day);
+        final end = start.add(const Duration(days: 1));
+        billsQuery.where((tbl) => tbl.billDate.isBiggerOrEqualValue(start) & tbl.billDate.isSmallerThanValue(end));
+      }
+      if (search != null && search.trim().isNotEmpty) {
+        final s = search.trim().toLowerCase();
+        billsQuery.where((tbl) => tbl.billNo.lower().contains(s));
+      }
+      final billRows = await billsQuery.get();
+      final result = <SalesBillDetailDto>[];
+
+      for (final bill in billRows) {
+        final lineRows = await (_db.select(_db.cachedSaleLineItems)
+              ..where((tbl) => tbl.salesBillId.equals(bill.id))
+              ..orderBy([(tbl) => OrderingTerm.asc(tbl.lineNumber)]))
+            .get();
+
+        result.add(
+          SalesBillDetailDto(
+            id: bill.id,
+            billNo: bill.billNo,
+            customerId: bill.customerId,
+            billType: 'CounterSale.Sale',
+            billDate: bill.billDate.toIso8601String(),
+            payMode: bill.payMode,
+            taxableValue: bill.totalAmount - bill.totalTax,
+            totalDiscount: 0,
+            totalTax: bill.totalTax,
+            totalAmount: bill.totalAmount,
+            balanceDue: bill.balanceDue,
+            status: bill.status,
+            createdAt: bill.createdAt.toIso8601String(),
+            lineItems: lineRows
+                .map((li) => SaleLineItemDetailDto(
+                      id: li.id,
+                      salesBillId: li.salesBillId,
+                      barcodeNo: li.barcodeNo,
+                      materialId: li.materialId,
+                      materialType: li.materialType,
+                      materialName: li.materialName,
+                      batchNo: li.batchNo,
+                      packing: li.packing,
+                      quantity: li.quantity,
+                      qtyCase: li.qtyCase,
+                      rate: li.rate,
+                      discountPercent: li.discountPercent,
+                      discountAmount: li.discountAmount,
+                      taxPercent: li.taxPercent,
+                      taxAmount: li.taxAmount,
+                      amount: li.amount,
+                      lineNumber: li.lineNumber,
+                    ))
+                .toList(),
+          ),
+        );
+      }
+      return result;
+    }
+  }
+
+  Future<void> returnSalesBill(String billId) async {
+    var remoteSucceeded = false;
+    try {
+      await _remote.returnSalesBill(billId);
+      remoteSucceeded = true;
+    } on ApiException catch (e) {
+      if (e.statusCode != null && e.statusCode != 404) {
+        rethrow;
+      }
+    }
+
+    await _db.transaction(() async {
+      final lineItems = await (_db.select(_db.cachedSaleLineItems)
+            ..where((tbl) => tbl.salesBillId.equals(billId)))
+          .get();
+
+      for (final item in lineItems) {
+        if (item.materialId != null) {
+          final stock = await (_db.select(_db.cachedInventoryStocks)
+                ..where((tbl) => tbl.materialId.equals(item.materialId!)))
+              .getSingleOrNull();
+
+          if (stock != null) {
+            await (_db.update(_db.cachedInventoryStocks)
+                  ..where((tbl) => tbl.materialId.equals(item.materialId!)))
+                .write(
+              CachedInventoryStocksCompanion(
+                qtyOnHand: Value(stock.qtyOnHand + item.quantity),
+                updatedAt: Value(DateTime.now().toUtc()),
+              ),
+            );
+          }
+        }
+      }
+
+      await (_db.delete(_db.cachedSaleLineItems)..where((tbl) => tbl.salesBillId.equals(billId))).go();
+      await (_db.delete(_db.cachedSalesBills)..where((tbl) => tbl.id.equals(billId))).go();
+      await (_db.delete(_db.syncQueueItems)..where((tbl) => tbl.entityId.equals(billId))).go();
+
+      if (!remoteSucceeded && !billId.startsWith('local-')) {
+        await _db.into(_db.syncQueueItems).insert(
+              SyncQueueItemsCompanion.insert(
+                entityType: 'sale',
+                entityId: billId,
+                operation: 'return',
+                payload: jsonEncode({'id': billId}),
+                status: const Value('pending'),
+                updatedAt: Value(DateTime.now().toUtc()),
+              ),
+            );
+      }
+    });
   }
 
   Future<MaterialDto?> getMaterialByBarcode(String barcode) async {
@@ -86,6 +209,12 @@ class LocalSalesRepository {
             updatedAt: Value(DateTime.now().toUtc()),
           ),
         );
+
+        if (row.operation == 'return') {
+          await _remote.returnSalesBill(row.entityId);
+          await (_db.delete(_db.syncQueueItems)..where((tbl) => tbl.id.equals(row.id))).go();
+          continue;
+        }
 
         final request = _decodeRequest(row.payload);
         final syncedRequest = await _resolveDependencies(request);

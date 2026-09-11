@@ -7,9 +7,11 @@ import '../features/masters/presentation/screens/manufacturer_master_screen.dart
 import '../features/masters/presentation/screens/material_master_screen.dart';
 import '../features/masters/presentation/screens/supplier_master_screen.dart';
 import '../features/purchase/presentation/screens/purchase_bill_screen.dart';
+import '../features/purchase/presentation/screens/purchase_return_screen.dart';
 import '../features/reports/presentation/screens/brandwise_report_screen.dart';
 import '../features/reports/presentation/screens/reports_screen.dart';
 import '../features/sales/presentation/screens/sales_billing_screen.dart';
+import '../features/sales/presentation/screens/sales_return_screen.dart';
 import '../features/sync/presentation/screens/sync_center_screen.dart';
 import '../shared/widgets/layout/app_shell.dart';
 
@@ -61,6 +63,12 @@ final appRouter = GoRouter(
         ]),
         StatefulShellBranch(routes: [
           GoRoute(path: '/sync', builder: (context, state) => const SyncCenterScreen()),
+        ]),
+        StatefulShellBranch(routes: [
+          GoRoute(path: '/sales-return', builder: (context, state) => const SalesReturnScreen()),
+        ]),
+        StatefulShellBranch(routes: [
+          GoRoute(path: '/purchase-return', builder: (context, state) => const PurchaseReturnScreen()),
         ]),
       ],
     ),
