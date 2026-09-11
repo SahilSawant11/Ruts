@@ -3333,6 +3333,1561 @@ class CachedSalesBillsCompanion extends UpdateCompanion<CachedSalesBill> {
   }
 }
 
+class $CachedPurchaseBillsTable extends CachedPurchaseBills
+    with TableInfo<$CachedPurchaseBillsTable, CachedPurchaseBill> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CachedPurchaseBillsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _supplierIdMeta =
+      const VerificationMeta('supplierId');
+  @override
+  late final GeneratedColumn<String> supplierId = GeneratedColumn<String>(
+      'supplier_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _billNoMeta = const VerificationMeta('billNo');
+  @override
+  late final GeneratedColumn<String> billNo = GeneratedColumn<String>(
+      'bill_no', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _challanNoMeta =
+      const VerificationMeta('challanNo');
+  @override
+  late final GeneratedColumn<String> challanNo = GeneratedColumn<String>(
+      'challan_no', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _noteNoMeta = const VerificationMeta('noteNo');
+  @override
+  late final GeneratedColumn<String> noteNo = GeneratedColumn<String>(
+      'note_no', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _payModeMeta =
+      const VerificationMeta('payMode');
+  @override
+  late final GeneratedColumn<String> payMode = GeneratedColumn<String>(
+      'pay_mode', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _tpNoMeta = const VerificationMeta('tpNo');
+  @override
+  late final GeneratedColumn<String> tpNo = GeneratedColumn<String>(
+      'tp_no', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _tpDateMeta = const VerificationMeta('tpDate');
+  @override
+  late final GeneratedColumn<String> tpDate = GeneratedColumn<String>(
+      'tp_date', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _stNoMeta = const VerificationMeta('stNo');
+  @override
+  late final GeneratedColumn<String> stNo = GeneratedColumn<String>(
+      'st_no', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _discountMeta =
+      const VerificationMeta('discount');
+  @override
+  late final GeneratedColumn<double> discount = GeneratedColumn<double>(
+      'discount', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _vatMeta = const VerificationMeta('vat');
+  @override
+  late final GeneratedColumn<double> vat = GeneratedColumn<double>(
+      'vat', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _stampMeta = const VerificationMeta('stamp');
+  @override
+  late final GeneratedColumn<double> stamp = GeneratedColumn<double>(
+      'stamp', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _tcsMeta = const VerificationMeta('tcs');
+  @override
+  late final GeneratedColumn<double> tcs = GeneratedColumn<double>(
+      'tcs', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _loadingFreightMeta =
+      const VerificationMeta('loadingFreight');
+  @override
+  late final GeneratedColumn<double> loadingFreight = GeneratedColumn<double>(
+      'loading_freight', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _netAmountMeta =
+      const VerificationMeta('netAmount');
+  @override
+  late final GeneratedColumn<double> netAmount = GeneratedColumn<double>(
+      'net_amount', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _totalAmountMeta =
+      const VerificationMeta('totalAmount');
+  @override
+  late final GeneratedColumn<double> totalAmount = GeneratedColumn<double>(
+      'total_amount', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _syncStatusMeta =
+      const VerificationMeta('syncStatus');
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+      'sync_status', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('synced'));
+  static const VerificationMeta _billDateMeta =
+      const VerificationMeta('billDate');
+  @override
+  late final GeneratedColumn<DateTime> billDate = GeneratedColumn<DateTime>(
+      'bill_date', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        supplierId,
+        billNo,
+        challanNo,
+        noteNo,
+        payMode,
+        tpNo,
+        tpDate,
+        stNo,
+        discount,
+        vat,
+        stamp,
+        tcs,
+        loadingFreight,
+        netAmount,
+        totalAmount,
+        syncStatus,
+        billDate,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'cached_purchase_bills';
+  @override
+  VerificationContext validateIntegrity(Insertable<CachedPurchaseBill> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('supplier_id')) {
+      context.handle(
+          _supplierIdMeta,
+          supplierId.isAcceptableOrUnknown(
+              data['supplier_id']!, _supplierIdMeta));
+    } else if (isInserting) {
+      context.missing(_supplierIdMeta);
+    }
+    if (data.containsKey('bill_no')) {
+      context.handle(_billNoMeta,
+          billNo.isAcceptableOrUnknown(data['bill_no']!, _billNoMeta));
+    }
+    if (data.containsKey('challan_no')) {
+      context.handle(_challanNoMeta,
+          challanNo.isAcceptableOrUnknown(data['challan_no']!, _challanNoMeta));
+    }
+    if (data.containsKey('note_no')) {
+      context.handle(_noteNoMeta,
+          noteNo.isAcceptableOrUnknown(data['note_no']!, _noteNoMeta));
+    }
+    if (data.containsKey('pay_mode')) {
+      context.handle(_payModeMeta,
+          payMode.isAcceptableOrUnknown(data['pay_mode']!, _payModeMeta));
+    } else if (isInserting) {
+      context.missing(_payModeMeta);
+    }
+    if (data.containsKey('tp_no')) {
+      context.handle(
+          _tpNoMeta, tpNo.isAcceptableOrUnknown(data['tp_no']!, _tpNoMeta));
+    }
+    if (data.containsKey('tp_date')) {
+      context.handle(_tpDateMeta,
+          tpDate.isAcceptableOrUnknown(data['tp_date']!, _tpDateMeta));
+    }
+    if (data.containsKey('st_no')) {
+      context.handle(
+          _stNoMeta, stNo.isAcceptableOrUnknown(data['st_no']!, _stNoMeta));
+    }
+    if (data.containsKey('discount')) {
+      context.handle(_discountMeta,
+          discount.isAcceptableOrUnknown(data['discount']!, _discountMeta));
+    } else if (isInserting) {
+      context.missing(_discountMeta);
+    }
+    if (data.containsKey('vat')) {
+      context.handle(
+          _vatMeta, vat.isAcceptableOrUnknown(data['vat']!, _vatMeta));
+    } else if (isInserting) {
+      context.missing(_vatMeta);
+    }
+    if (data.containsKey('stamp')) {
+      context.handle(
+          _stampMeta, stamp.isAcceptableOrUnknown(data['stamp']!, _stampMeta));
+    } else if (isInserting) {
+      context.missing(_stampMeta);
+    }
+    if (data.containsKey('tcs')) {
+      context.handle(
+          _tcsMeta, tcs.isAcceptableOrUnknown(data['tcs']!, _tcsMeta));
+    } else if (isInserting) {
+      context.missing(_tcsMeta);
+    }
+    if (data.containsKey('loading_freight')) {
+      context.handle(
+          _loadingFreightMeta,
+          loadingFreight.isAcceptableOrUnknown(
+              data['loading_freight']!, _loadingFreightMeta));
+    } else if (isInserting) {
+      context.missing(_loadingFreightMeta);
+    }
+    if (data.containsKey('net_amount')) {
+      context.handle(_netAmountMeta,
+          netAmount.isAcceptableOrUnknown(data['net_amount']!, _netAmountMeta));
+    } else if (isInserting) {
+      context.missing(_netAmountMeta);
+    }
+    if (data.containsKey('total_amount')) {
+      context.handle(
+          _totalAmountMeta,
+          totalAmount.isAcceptableOrUnknown(
+              data['total_amount']!, _totalAmountMeta));
+    } else if (isInserting) {
+      context.missing(_totalAmountMeta);
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+          _syncStatusMeta,
+          syncStatus.isAcceptableOrUnknown(
+              data['sync_status']!, _syncStatusMeta));
+    }
+    if (data.containsKey('bill_date')) {
+      context.handle(_billDateMeta,
+          billDate.isAcceptableOrUnknown(data['bill_date']!, _billDateMeta));
+    } else if (isInserting) {
+      context.missing(_billDateMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CachedPurchaseBill map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CachedPurchaseBill(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      supplierId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}supplier_id'])!,
+      billNo: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}bill_no']),
+      challanNo: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}challan_no']),
+      noteNo: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}note_no']),
+      payMode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}pay_mode'])!,
+      tpNo: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}tp_no']),
+      tpDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}tp_date']),
+      stNo: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}st_no']),
+      discount: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}discount'])!,
+      vat: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}vat'])!,
+      stamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}stamp'])!,
+      tcs: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}tcs'])!,
+      loadingFreight: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}loading_freight'])!,
+      netAmount: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}net_amount'])!,
+      totalAmount: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}total_amount'])!,
+      syncStatus: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sync_status'])!,
+      billDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}bill_date'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $CachedPurchaseBillsTable createAlias(String alias) {
+    return $CachedPurchaseBillsTable(attachedDatabase, alias);
+  }
+}
+
+class CachedPurchaseBill extends DataClass
+    implements Insertable<CachedPurchaseBill> {
+  final String id;
+  final String supplierId;
+  final String? billNo;
+  final String? challanNo;
+  final String? noteNo;
+  final String payMode;
+  final String? tpNo;
+  final String? tpDate;
+  final String? stNo;
+  final double discount;
+  final double vat;
+  final double stamp;
+  final double tcs;
+  final double loadingFreight;
+  final double netAmount;
+  final double totalAmount;
+  final String syncStatus;
+  final DateTime billDate;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const CachedPurchaseBill(
+      {required this.id,
+      required this.supplierId,
+      this.billNo,
+      this.challanNo,
+      this.noteNo,
+      required this.payMode,
+      this.tpNo,
+      this.tpDate,
+      this.stNo,
+      required this.discount,
+      required this.vat,
+      required this.stamp,
+      required this.tcs,
+      required this.loadingFreight,
+      required this.netAmount,
+      required this.totalAmount,
+      required this.syncStatus,
+      required this.billDate,
+      required this.createdAt,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['supplier_id'] = Variable<String>(supplierId);
+    if (!nullToAbsent || billNo != null) {
+      map['bill_no'] = Variable<String>(billNo);
+    }
+    if (!nullToAbsent || challanNo != null) {
+      map['challan_no'] = Variable<String>(challanNo);
+    }
+    if (!nullToAbsent || noteNo != null) {
+      map['note_no'] = Variable<String>(noteNo);
+    }
+    map['pay_mode'] = Variable<String>(payMode);
+    if (!nullToAbsent || tpNo != null) {
+      map['tp_no'] = Variable<String>(tpNo);
+    }
+    if (!nullToAbsent || tpDate != null) {
+      map['tp_date'] = Variable<String>(tpDate);
+    }
+    if (!nullToAbsent || stNo != null) {
+      map['st_no'] = Variable<String>(stNo);
+    }
+    map['discount'] = Variable<double>(discount);
+    map['vat'] = Variable<double>(vat);
+    map['stamp'] = Variable<double>(stamp);
+    map['tcs'] = Variable<double>(tcs);
+    map['loading_freight'] = Variable<double>(loadingFreight);
+    map['net_amount'] = Variable<double>(netAmount);
+    map['total_amount'] = Variable<double>(totalAmount);
+    map['sync_status'] = Variable<String>(syncStatus);
+    map['bill_date'] = Variable<DateTime>(billDate);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  CachedPurchaseBillsCompanion toCompanion(bool nullToAbsent) {
+    return CachedPurchaseBillsCompanion(
+      id: Value(id),
+      supplierId: Value(supplierId),
+      billNo:
+          billNo == null && nullToAbsent ? const Value.absent() : Value(billNo),
+      challanNo: challanNo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(challanNo),
+      noteNo:
+          noteNo == null && nullToAbsent ? const Value.absent() : Value(noteNo),
+      payMode: Value(payMode),
+      tpNo: tpNo == null && nullToAbsent ? const Value.absent() : Value(tpNo),
+      tpDate:
+          tpDate == null && nullToAbsent ? const Value.absent() : Value(tpDate),
+      stNo: stNo == null && nullToAbsent ? const Value.absent() : Value(stNo),
+      discount: Value(discount),
+      vat: Value(vat),
+      stamp: Value(stamp),
+      tcs: Value(tcs),
+      loadingFreight: Value(loadingFreight),
+      netAmount: Value(netAmount),
+      totalAmount: Value(totalAmount),
+      syncStatus: Value(syncStatus),
+      billDate: Value(billDate),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory CachedPurchaseBill.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CachedPurchaseBill(
+      id: serializer.fromJson<String>(json['id']),
+      supplierId: serializer.fromJson<String>(json['supplierId']),
+      billNo: serializer.fromJson<String?>(json['billNo']),
+      challanNo: serializer.fromJson<String?>(json['challanNo']),
+      noteNo: serializer.fromJson<String?>(json['noteNo']),
+      payMode: serializer.fromJson<String>(json['payMode']),
+      tpNo: serializer.fromJson<String?>(json['tpNo']),
+      tpDate: serializer.fromJson<String?>(json['tpDate']),
+      stNo: serializer.fromJson<String?>(json['stNo']),
+      discount: serializer.fromJson<double>(json['discount']),
+      vat: serializer.fromJson<double>(json['vat']),
+      stamp: serializer.fromJson<double>(json['stamp']),
+      tcs: serializer.fromJson<double>(json['tcs']),
+      loadingFreight: serializer.fromJson<double>(json['loadingFreight']),
+      netAmount: serializer.fromJson<double>(json['netAmount']),
+      totalAmount: serializer.fromJson<double>(json['totalAmount']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      billDate: serializer.fromJson<DateTime>(json['billDate']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'supplierId': serializer.toJson<String>(supplierId),
+      'billNo': serializer.toJson<String?>(billNo),
+      'challanNo': serializer.toJson<String?>(challanNo),
+      'noteNo': serializer.toJson<String?>(noteNo),
+      'payMode': serializer.toJson<String>(payMode),
+      'tpNo': serializer.toJson<String?>(tpNo),
+      'tpDate': serializer.toJson<String?>(tpDate),
+      'stNo': serializer.toJson<String?>(stNo),
+      'discount': serializer.toJson<double>(discount),
+      'vat': serializer.toJson<double>(vat),
+      'stamp': serializer.toJson<double>(stamp),
+      'tcs': serializer.toJson<double>(tcs),
+      'loadingFreight': serializer.toJson<double>(loadingFreight),
+      'netAmount': serializer.toJson<double>(netAmount),
+      'totalAmount': serializer.toJson<double>(totalAmount),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'billDate': serializer.toJson<DateTime>(billDate),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  CachedPurchaseBill copyWith(
+          {String? id,
+          String? supplierId,
+          Value<String?> billNo = const Value.absent(),
+          Value<String?> challanNo = const Value.absent(),
+          Value<String?> noteNo = const Value.absent(),
+          String? payMode,
+          Value<String?> tpNo = const Value.absent(),
+          Value<String?> tpDate = const Value.absent(),
+          Value<String?> stNo = const Value.absent(),
+          double? discount,
+          double? vat,
+          double? stamp,
+          double? tcs,
+          double? loadingFreight,
+          double? netAmount,
+          double? totalAmount,
+          String? syncStatus,
+          DateTime? billDate,
+          DateTime? createdAt,
+          DateTime? updatedAt}) =>
+      CachedPurchaseBill(
+        id: id ?? this.id,
+        supplierId: supplierId ?? this.supplierId,
+        billNo: billNo.present ? billNo.value : this.billNo,
+        challanNo: challanNo.present ? challanNo.value : this.challanNo,
+        noteNo: noteNo.present ? noteNo.value : this.noteNo,
+        payMode: payMode ?? this.payMode,
+        tpNo: tpNo.present ? tpNo.value : this.tpNo,
+        tpDate: tpDate.present ? tpDate.value : this.tpDate,
+        stNo: stNo.present ? stNo.value : this.stNo,
+        discount: discount ?? this.discount,
+        vat: vat ?? this.vat,
+        stamp: stamp ?? this.stamp,
+        tcs: tcs ?? this.tcs,
+        loadingFreight: loadingFreight ?? this.loadingFreight,
+        netAmount: netAmount ?? this.netAmount,
+        totalAmount: totalAmount ?? this.totalAmount,
+        syncStatus: syncStatus ?? this.syncStatus,
+        billDate: billDate ?? this.billDate,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  CachedPurchaseBill copyWithCompanion(CachedPurchaseBillsCompanion data) {
+    return CachedPurchaseBill(
+      id: data.id.present ? data.id.value : this.id,
+      supplierId:
+          data.supplierId.present ? data.supplierId.value : this.supplierId,
+      billNo: data.billNo.present ? data.billNo.value : this.billNo,
+      challanNo: data.challanNo.present ? data.challanNo.value : this.challanNo,
+      noteNo: data.noteNo.present ? data.noteNo.value : this.noteNo,
+      payMode: data.payMode.present ? data.payMode.value : this.payMode,
+      tpNo: data.tpNo.present ? data.tpNo.value : this.tpNo,
+      tpDate: data.tpDate.present ? data.tpDate.value : this.tpDate,
+      stNo: data.stNo.present ? data.stNo.value : this.stNo,
+      discount: data.discount.present ? data.discount.value : this.discount,
+      vat: data.vat.present ? data.vat.value : this.vat,
+      stamp: data.stamp.present ? data.stamp.value : this.stamp,
+      tcs: data.tcs.present ? data.tcs.value : this.tcs,
+      loadingFreight: data.loadingFreight.present
+          ? data.loadingFreight.value
+          : this.loadingFreight,
+      netAmount: data.netAmount.present ? data.netAmount.value : this.netAmount,
+      totalAmount:
+          data.totalAmount.present ? data.totalAmount.value : this.totalAmount,
+      syncStatus:
+          data.syncStatus.present ? data.syncStatus.value : this.syncStatus,
+      billDate: data.billDate.present ? data.billDate.value : this.billDate,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CachedPurchaseBill(')
+          ..write('id: $id, ')
+          ..write('supplierId: $supplierId, ')
+          ..write('billNo: $billNo, ')
+          ..write('challanNo: $challanNo, ')
+          ..write('noteNo: $noteNo, ')
+          ..write('payMode: $payMode, ')
+          ..write('tpNo: $tpNo, ')
+          ..write('tpDate: $tpDate, ')
+          ..write('stNo: $stNo, ')
+          ..write('discount: $discount, ')
+          ..write('vat: $vat, ')
+          ..write('stamp: $stamp, ')
+          ..write('tcs: $tcs, ')
+          ..write('loadingFreight: $loadingFreight, ')
+          ..write('netAmount: $netAmount, ')
+          ..write('totalAmount: $totalAmount, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('billDate: $billDate, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      supplierId,
+      billNo,
+      challanNo,
+      noteNo,
+      payMode,
+      tpNo,
+      tpDate,
+      stNo,
+      discount,
+      vat,
+      stamp,
+      tcs,
+      loadingFreight,
+      netAmount,
+      totalAmount,
+      syncStatus,
+      billDate,
+      createdAt,
+      updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CachedPurchaseBill &&
+          other.id == this.id &&
+          other.supplierId == this.supplierId &&
+          other.billNo == this.billNo &&
+          other.challanNo == this.challanNo &&
+          other.noteNo == this.noteNo &&
+          other.payMode == this.payMode &&
+          other.tpNo == this.tpNo &&
+          other.tpDate == this.tpDate &&
+          other.stNo == this.stNo &&
+          other.discount == this.discount &&
+          other.vat == this.vat &&
+          other.stamp == this.stamp &&
+          other.tcs == this.tcs &&
+          other.loadingFreight == this.loadingFreight &&
+          other.netAmount == this.netAmount &&
+          other.totalAmount == this.totalAmount &&
+          other.syncStatus == this.syncStatus &&
+          other.billDate == this.billDate &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class CachedPurchaseBillsCompanion extends UpdateCompanion<CachedPurchaseBill> {
+  final Value<String> id;
+  final Value<String> supplierId;
+  final Value<String?> billNo;
+  final Value<String?> challanNo;
+  final Value<String?> noteNo;
+  final Value<String> payMode;
+  final Value<String?> tpNo;
+  final Value<String?> tpDate;
+  final Value<String?> stNo;
+  final Value<double> discount;
+  final Value<double> vat;
+  final Value<double> stamp;
+  final Value<double> tcs;
+  final Value<double> loadingFreight;
+  final Value<double> netAmount;
+  final Value<double> totalAmount;
+  final Value<String> syncStatus;
+  final Value<DateTime> billDate;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const CachedPurchaseBillsCompanion({
+    this.id = const Value.absent(),
+    this.supplierId = const Value.absent(),
+    this.billNo = const Value.absent(),
+    this.challanNo = const Value.absent(),
+    this.noteNo = const Value.absent(),
+    this.payMode = const Value.absent(),
+    this.tpNo = const Value.absent(),
+    this.tpDate = const Value.absent(),
+    this.stNo = const Value.absent(),
+    this.discount = const Value.absent(),
+    this.vat = const Value.absent(),
+    this.stamp = const Value.absent(),
+    this.tcs = const Value.absent(),
+    this.loadingFreight = const Value.absent(),
+    this.netAmount = const Value.absent(),
+    this.totalAmount = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.billDate = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CachedPurchaseBillsCompanion.insert({
+    required String id,
+    required String supplierId,
+    this.billNo = const Value.absent(),
+    this.challanNo = const Value.absent(),
+    this.noteNo = const Value.absent(),
+    required String payMode,
+    this.tpNo = const Value.absent(),
+    this.tpDate = const Value.absent(),
+    this.stNo = const Value.absent(),
+    required double discount,
+    required double vat,
+    required double stamp,
+    required double tcs,
+    required double loadingFreight,
+    required double netAmount,
+    required double totalAmount,
+    this.syncStatus = const Value.absent(),
+    required DateTime billDate,
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        supplierId = Value(supplierId),
+        payMode = Value(payMode),
+        discount = Value(discount),
+        vat = Value(vat),
+        stamp = Value(stamp),
+        tcs = Value(tcs),
+        loadingFreight = Value(loadingFreight),
+        netAmount = Value(netAmount),
+        totalAmount = Value(totalAmount),
+        billDate = Value(billDate);
+  static Insertable<CachedPurchaseBill> custom({
+    Expression<String>? id,
+    Expression<String>? supplierId,
+    Expression<String>? billNo,
+    Expression<String>? challanNo,
+    Expression<String>? noteNo,
+    Expression<String>? payMode,
+    Expression<String>? tpNo,
+    Expression<String>? tpDate,
+    Expression<String>? stNo,
+    Expression<double>? discount,
+    Expression<double>? vat,
+    Expression<double>? stamp,
+    Expression<double>? tcs,
+    Expression<double>? loadingFreight,
+    Expression<double>? netAmount,
+    Expression<double>? totalAmount,
+    Expression<String>? syncStatus,
+    Expression<DateTime>? billDate,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (supplierId != null) 'supplier_id': supplierId,
+      if (billNo != null) 'bill_no': billNo,
+      if (challanNo != null) 'challan_no': challanNo,
+      if (noteNo != null) 'note_no': noteNo,
+      if (payMode != null) 'pay_mode': payMode,
+      if (tpNo != null) 'tp_no': tpNo,
+      if (tpDate != null) 'tp_date': tpDate,
+      if (stNo != null) 'st_no': stNo,
+      if (discount != null) 'discount': discount,
+      if (vat != null) 'vat': vat,
+      if (stamp != null) 'stamp': stamp,
+      if (tcs != null) 'tcs': tcs,
+      if (loadingFreight != null) 'loading_freight': loadingFreight,
+      if (netAmount != null) 'net_amount': netAmount,
+      if (totalAmount != null) 'total_amount': totalAmount,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (billDate != null) 'bill_date': billDate,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CachedPurchaseBillsCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? supplierId,
+      Value<String?>? billNo,
+      Value<String?>? challanNo,
+      Value<String?>? noteNo,
+      Value<String>? payMode,
+      Value<String?>? tpNo,
+      Value<String?>? tpDate,
+      Value<String?>? stNo,
+      Value<double>? discount,
+      Value<double>? vat,
+      Value<double>? stamp,
+      Value<double>? tcs,
+      Value<double>? loadingFreight,
+      Value<double>? netAmount,
+      Value<double>? totalAmount,
+      Value<String>? syncStatus,
+      Value<DateTime>? billDate,
+      Value<DateTime>? createdAt,
+      Value<DateTime>? updatedAt,
+      Value<int>? rowid}) {
+    return CachedPurchaseBillsCompanion(
+      id: id ?? this.id,
+      supplierId: supplierId ?? this.supplierId,
+      billNo: billNo ?? this.billNo,
+      challanNo: challanNo ?? this.challanNo,
+      noteNo: noteNo ?? this.noteNo,
+      payMode: payMode ?? this.payMode,
+      tpNo: tpNo ?? this.tpNo,
+      tpDate: tpDate ?? this.tpDate,
+      stNo: stNo ?? this.stNo,
+      discount: discount ?? this.discount,
+      vat: vat ?? this.vat,
+      stamp: stamp ?? this.stamp,
+      tcs: tcs ?? this.tcs,
+      loadingFreight: loadingFreight ?? this.loadingFreight,
+      netAmount: netAmount ?? this.netAmount,
+      totalAmount: totalAmount ?? this.totalAmount,
+      syncStatus: syncStatus ?? this.syncStatus,
+      billDate: billDate ?? this.billDate,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (supplierId.present) {
+      map['supplier_id'] = Variable<String>(supplierId.value);
+    }
+    if (billNo.present) {
+      map['bill_no'] = Variable<String>(billNo.value);
+    }
+    if (challanNo.present) {
+      map['challan_no'] = Variable<String>(challanNo.value);
+    }
+    if (noteNo.present) {
+      map['note_no'] = Variable<String>(noteNo.value);
+    }
+    if (payMode.present) {
+      map['pay_mode'] = Variable<String>(payMode.value);
+    }
+    if (tpNo.present) {
+      map['tp_no'] = Variable<String>(tpNo.value);
+    }
+    if (tpDate.present) {
+      map['tp_date'] = Variable<String>(tpDate.value);
+    }
+    if (stNo.present) {
+      map['st_no'] = Variable<String>(stNo.value);
+    }
+    if (discount.present) {
+      map['discount'] = Variable<double>(discount.value);
+    }
+    if (vat.present) {
+      map['vat'] = Variable<double>(vat.value);
+    }
+    if (stamp.present) {
+      map['stamp'] = Variable<double>(stamp.value);
+    }
+    if (tcs.present) {
+      map['tcs'] = Variable<double>(tcs.value);
+    }
+    if (loadingFreight.present) {
+      map['loading_freight'] = Variable<double>(loadingFreight.value);
+    }
+    if (netAmount.present) {
+      map['net_amount'] = Variable<double>(netAmount.value);
+    }
+    if (totalAmount.present) {
+      map['total_amount'] = Variable<double>(totalAmount.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (billDate.present) {
+      map['bill_date'] = Variable<DateTime>(billDate.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CachedPurchaseBillsCompanion(')
+          ..write('id: $id, ')
+          ..write('supplierId: $supplierId, ')
+          ..write('billNo: $billNo, ')
+          ..write('challanNo: $challanNo, ')
+          ..write('noteNo: $noteNo, ')
+          ..write('payMode: $payMode, ')
+          ..write('tpNo: $tpNo, ')
+          ..write('tpDate: $tpDate, ')
+          ..write('stNo: $stNo, ')
+          ..write('discount: $discount, ')
+          ..write('vat: $vat, ')
+          ..write('stamp: $stamp, ')
+          ..write('tcs: $tcs, ')
+          ..write('loadingFreight: $loadingFreight, ')
+          ..write('netAmount: $netAmount, ')
+          ..write('totalAmount: $totalAmount, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('billDate: $billDate, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CachedPurchaseLineItemsTable extends CachedPurchaseLineItems
+    with TableInfo<$CachedPurchaseLineItemsTable, CachedPurchaseLineItem> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CachedPurchaseLineItemsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _purchaseBillIdMeta =
+      const VerificationMeta('purchaseBillId');
+  @override
+  late final GeneratedColumn<String> purchaseBillId = GeneratedColumn<String>(
+      'purchase_bill_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _materialIdMeta =
+      const VerificationMeta('materialId');
+  @override
+  late final GeneratedColumn<String> materialId = GeneratedColumn<String>(
+      'material_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _batchNoMeta =
+      const VerificationMeta('batchNo');
+  @override
+  late final GeneratedColumn<String> batchNo = GeneratedColumn<String>(
+      'batch_no', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _packingMeta =
+      const VerificationMeta('packing');
+  @override
+  late final GeneratedColumn<String> packing = GeneratedColumn<String>(
+      'packing', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _qtyMeta = const VerificationMeta('qty');
+  @override
+  late final GeneratedColumn<int> qty = GeneratedColumn<int>(
+      'qty', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _rateMeta = const VerificationMeta('rate');
+  @override
+  late final GeneratedColumn<double> rate = GeneratedColumn<double>(
+      'rate', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _disPercentMeta =
+      const VerificationMeta('disPercent');
+  @override
+  late final GeneratedColumn<double> disPercent = GeneratedColumn<double>(
+      'dis_percent', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _disAmountMeta =
+      const VerificationMeta('disAmount');
+  @override
+  late final GeneratedColumn<double> disAmount = GeneratedColumn<double>(
+      'dis_amount', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _taxPercentMeta =
+      const VerificationMeta('taxPercent');
+  @override
+  late final GeneratedColumn<double> taxPercent = GeneratedColumn<double>(
+      'tax_percent', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _taxAmountMeta =
+      const VerificationMeta('taxAmount');
+  @override
+  late final GeneratedColumn<double> taxAmount = GeneratedColumn<double>(
+      'tax_amount', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _amountMeta = const VerificationMeta('amount');
+  @override
+  late final GeneratedColumn<double> amount = GeneratedColumn<double>(
+      'amount', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _lineNumberMeta =
+      const VerificationMeta('lineNumber');
+  @override
+  late final GeneratedColumn<int> lineNumber = GeneratedColumn<int>(
+      'line_number', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        purchaseBillId,
+        materialId,
+        batchNo,
+        packing,
+        qty,
+        rate,
+        disPercent,
+        disAmount,
+        taxPercent,
+        taxAmount,
+        amount,
+        lineNumber
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'cached_purchase_line_items';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<CachedPurchaseLineItem> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('purchase_bill_id')) {
+      context.handle(
+          _purchaseBillIdMeta,
+          purchaseBillId.isAcceptableOrUnknown(
+              data['purchase_bill_id']!, _purchaseBillIdMeta));
+    } else if (isInserting) {
+      context.missing(_purchaseBillIdMeta);
+    }
+    if (data.containsKey('material_id')) {
+      context.handle(
+          _materialIdMeta,
+          materialId.isAcceptableOrUnknown(
+              data['material_id']!, _materialIdMeta));
+    } else if (isInserting) {
+      context.missing(_materialIdMeta);
+    }
+    if (data.containsKey('batch_no')) {
+      context.handle(_batchNoMeta,
+          batchNo.isAcceptableOrUnknown(data['batch_no']!, _batchNoMeta));
+    } else if (isInserting) {
+      context.missing(_batchNoMeta);
+    }
+    if (data.containsKey('packing')) {
+      context.handle(_packingMeta,
+          packing.isAcceptableOrUnknown(data['packing']!, _packingMeta));
+    }
+    if (data.containsKey('qty')) {
+      context.handle(
+          _qtyMeta, qty.isAcceptableOrUnknown(data['qty']!, _qtyMeta));
+    } else if (isInserting) {
+      context.missing(_qtyMeta);
+    }
+    if (data.containsKey('rate')) {
+      context.handle(
+          _rateMeta, rate.isAcceptableOrUnknown(data['rate']!, _rateMeta));
+    } else if (isInserting) {
+      context.missing(_rateMeta);
+    }
+    if (data.containsKey('dis_percent')) {
+      context.handle(
+          _disPercentMeta,
+          disPercent.isAcceptableOrUnknown(
+              data['dis_percent']!, _disPercentMeta));
+    } else if (isInserting) {
+      context.missing(_disPercentMeta);
+    }
+    if (data.containsKey('dis_amount')) {
+      context.handle(_disAmountMeta,
+          disAmount.isAcceptableOrUnknown(data['dis_amount']!, _disAmountMeta));
+    } else if (isInserting) {
+      context.missing(_disAmountMeta);
+    }
+    if (data.containsKey('tax_percent')) {
+      context.handle(
+          _taxPercentMeta,
+          taxPercent.isAcceptableOrUnknown(
+              data['tax_percent']!, _taxPercentMeta));
+    } else if (isInserting) {
+      context.missing(_taxPercentMeta);
+    }
+    if (data.containsKey('tax_amount')) {
+      context.handle(_taxAmountMeta,
+          taxAmount.isAcceptableOrUnknown(data['tax_amount']!, _taxAmountMeta));
+    } else if (isInserting) {
+      context.missing(_taxAmountMeta);
+    }
+    if (data.containsKey('amount')) {
+      context.handle(_amountMeta,
+          amount.isAcceptableOrUnknown(data['amount']!, _amountMeta));
+    } else if (isInserting) {
+      context.missing(_amountMeta);
+    }
+    if (data.containsKey('line_number')) {
+      context.handle(
+          _lineNumberMeta,
+          lineNumber.isAcceptableOrUnknown(
+              data['line_number']!, _lineNumberMeta));
+    } else if (isInserting) {
+      context.missing(_lineNumberMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CachedPurchaseLineItem map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CachedPurchaseLineItem(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      purchaseBillId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}purchase_bill_id'])!,
+      materialId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}material_id'])!,
+      batchNo: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}batch_no'])!,
+      packing: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}packing']),
+      qty: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}qty'])!,
+      rate: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}rate'])!,
+      disPercent: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}dis_percent'])!,
+      disAmount: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}dis_amount'])!,
+      taxPercent: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}tax_percent'])!,
+      taxAmount: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}tax_amount'])!,
+      amount: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}amount'])!,
+      lineNumber: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}line_number'])!,
+    );
+  }
+
+  @override
+  $CachedPurchaseLineItemsTable createAlias(String alias) {
+    return $CachedPurchaseLineItemsTable(attachedDatabase, alias);
+  }
+}
+
+class CachedPurchaseLineItem extends DataClass
+    implements Insertable<CachedPurchaseLineItem> {
+  final String id;
+  final String purchaseBillId;
+  final String materialId;
+  final String batchNo;
+  final String? packing;
+  final int qty;
+  final double rate;
+  final double disPercent;
+  final double disAmount;
+  final double taxPercent;
+  final double taxAmount;
+  final double amount;
+  final int lineNumber;
+  const CachedPurchaseLineItem(
+      {required this.id,
+      required this.purchaseBillId,
+      required this.materialId,
+      required this.batchNo,
+      this.packing,
+      required this.qty,
+      required this.rate,
+      required this.disPercent,
+      required this.disAmount,
+      required this.taxPercent,
+      required this.taxAmount,
+      required this.amount,
+      required this.lineNumber});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['purchase_bill_id'] = Variable<String>(purchaseBillId);
+    map['material_id'] = Variable<String>(materialId);
+    map['batch_no'] = Variable<String>(batchNo);
+    if (!nullToAbsent || packing != null) {
+      map['packing'] = Variable<String>(packing);
+    }
+    map['qty'] = Variable<int>(qty);
+    map['rate'] = Variable<double>(rate);
+    map['dis_percent'] = Variable<double>(disPercent);
+    map['dis_amount'] = Variable<double>(disAmount);
+    map['tax_percent'] = Variable<double>(taxPercent);
+    map['tax_amount'] = Variable<double>(taxAmount);
+    map['amount'] = Variable<double>(amount);
+    map['line_number'] = Variable<int>(lineNumber);
+    return map;
+  }
+
+  CachedPurchaseLineItemsCompanion toCompanion(bool nullToAbsent) {
+    return CachedPurchaseLineItemsCompanion(
+      id: Value(id),
+      purchaseBillId: Value(purchaseBillId),
+      materialId: Value(materialId),
+      batchNo: Value(batchNo),
+      packing: packing == null && nullToAbsent
+          ? const Value.absent()
+          : Value(packing),
+      qty: Value(qty),
+      rate: Value(rate),
+      disPercent: Value(disPercent),
+      disAmount: Value(disAmount),
+      taxPercent: Value(taxPercent),
+      taxAmount: Value(taxAmount),
+      amount: Value(amount),
+      lineNumber: Value(lineNumber),
+    );
+  }
+
+  factory CachedPurchaseLineItem.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CachedPurchaseLineItem(
+      id: serializer.fromJson<String>(json['id']),
+      purchaseBillId: serializer.fromJson<String>(json['purchaseBillId']),
+      materialId: serializer.fromJson<String>(json['materialId']),
+      batchNo: serializer.fromJson<String>(json['batchNo']),
+      packing: serializer.fromJson<String?>(json['packing']),
+      qty: serializer.fromJson<int>(json['qty']),
+      rate: serializer.fromJson<double>(json['rate']),
+      disPercent: serializer.fromJson<double>(json['disPercent']),
+      disAmount: serializer.fromJson<double>(json['disAmount']),
+      taxPercent: serializer.fromJson<double>(json['taxPercent']),
+      taxAmount: serializer.fromJson<double>(json['taxAmount']),
+      amount: serializer.fromJson<double>(json['amount']),
+      lineNumber: serializer.fromJson<int>(json['lineNumber']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'purchaseBillId': serializer.toJson<String>(purchaseBillId),
+      'materialId': serializer.toJson<String>(materialId),
+      'batchNo': serializer.toJson<String>(batchNo),
+      'packing': serializer.toJson<String?>(packing),
+      'qty': serializer.toJson<int>(qty),
+      'rate': serializer.toJson<double>(rate),
+      'disPercent': serializer.toJson<double>(disPercent),
+      'disAmount': serializer.toJson<double>(disAmount),
+      'taxPercent': serializer.toJson<double>(taxPercent),
+      'taxAmount': serializer.toJson<double>(taxAmount),
+      'amount': serializer.toJson<double>(amount),
+      'lineNumber': serializer.toJson<int>(lineNumber),
+    };
+  }
+
+  CachedPurchaseLineItem copyWith(
+          {String? id,
+          String? purchaseBillId,
+          String? materialId,
+          String? batchNo,
+          Value<String?> packing = const Value.absent(),
+          int? qty,
+          double? rate,
+          double? disPercent,
+          double? disAmount,
+          double? taxPercent,
+          double? taxAmount,
+          double? amount,
+          int? lineNumber}) =>
+      CachedPurchaseLineItem(
+        id: id ?? this.id,
+        purchaseBillId: purchaseBillId ?? this.purchaseBillId,
+        materialId: materialId ?? this.materialId,
+        batchNo: batchNo ?? this.batchNo,
+        packing: packing.present ? packing.value : this.packing,
+        qty: qty ?? this.qty,
+        rate: rate ?? this.rate,
+        disPercent: disPercent ?? this.disPercent,
+        disAmount: disAmount ?? this.disAmount,
+        taxPercent: taxPercent ?? this.taxPercent,
+        taxAmount: taxAmount ?? this.taxAmount,
+        amount: amount ?? this.amount,
+        lineNumber: lineNumber ?? this.lineNumber,
+      );
+  CachedPurchaseLineItem copyWithCompanion(
+      CachedPurchaseLineItemsCompanion data) {
+    return CachedPurchaseLineItem(
+      id: data.id.present ? data.id.value : this.id,
+      purchaseBillId: data.purchaseBillId.present
+          ? data.purchaseBillId.value
+          : this.purchaseBillId,
+      materialId:
+          data.materialId.present ? data.materialId.value : this.materialId,
+      batchNo: data.batchNo.present ? data.batchNo.value : this.batchNo,
+      packing: data.packing.present ? data.packing.value : this.packing,
+      qty: data.qty.present ? data.qty.value : this.qty,
+      rate: data.rate.present ? data.rate.value : this.rate,
+      disPercent:
+          data.disPercent.present ? data.disPercent.value : this.disPercent,
+      disAmount: data.disAmount.present ? data.disAmount.value : this.disAmount,
+      taxPercent:
+          data.taxPercent.present ? data.taxPercent.value : this.taxPercent,
+      taxAmount: data.taxAmount.present ? data.taxAmount.value : this.taxAmount,
+      amount: data.amount.present ? data.amount.value : this.amount,
+      lineNumber:
+          data.lineNumber.present ? data.lineNumber.value : this.lineNumber,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CachedPurchaseLineItem(')
+          ..write('id: $id, ')
+          ..write('purchaseBillId: $purchaseBillId, ')
+          ..write('materialId: $materialId, ')
+          ..write('batchNo: $batchNo, ')
+          ..write('packing: $packing, ')
+          ..write('qty: $qty, ')
+          ..write('rate: $rate, ')
+          ..write('disPercent: $disPercent, ')
+          ..write('disAmount: $disAmount, ')
+          ..write('taxPercent: $taxPercent, ')
+          ..write('taxAmount: $taxAmount, ')
+          ..write('amount: $amount, ')
+          ..write('lineNumber: $lineNumber')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      purchaseBillId,
+      materialId,
+      batchNo,
+      packing,
+      qty,
+      rate,
+      disPercent,
+      disAmount,
+      taxPercent,
+      taxAmount,
+      amount,
+      lineNumber);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CachedPurchaseLineItem &&
+          other.id == this.id &&
+          other.purchaseBillId == this.purchaseBillId &&
+          other.materialId == this.materialId &&
+          other.batchNo == this.batchNo &&
+          other.packing == this.packing &&
+          other.qty == this.qty &&
+          other.rate == this.rate &&
+          other.disPercent == this.disPercent &&
+          other.disAmount == this.disAmount &&
+          other.taxPercent == this.taxPercent &&
+          other.taxAmount == this.taxAmount &&
+          other.amount == this.amount &&
+          other.lineNumber == this.lineNumber);
+}
+
+class CachedPurchaseLineItemsCompanion
+    extends UpdateCompanion<CachedPurchaseLineItem> {
+  final Value<String> id;
+  final Value<String> purchaseBillId;
+  final Value<String> materialId;
+  final Value<String> batchNo;
+  final Value<String?> packing;
+  final Value<int> qty;
+  final Value<double> rate;
+  final Value<double> disPercent;
+  final Value<double> disAmount;
+  final Value<double> taxPercent;
+  final Value<double> taxAmount;
+  final Value<double> amount;
+  final Value<int> lineNumber;
+  final Value<int> rowid;
+  const CachedPurchaseLineItemsCompanion({
+    this.id = const Value.absent(),
+    this.purchaseBillId = const Value.absent(),
+    this.materialId = const Value.absent(),
+    this.batchNo = const Value.absent(),
+    this.packing = const Value.absent(),
+    this.qty = const Value.absent(),
+    this.rate = const Value.absent(),
+    this.disPercent = const Value.absent(),
+    this.disAmount = const Value.absent(),
+    this.taxPercent = const Value.absent(),
+    this.taxAmount = const Value.absent(),
+    this.amount = const Value.absent(),
+    this.lineNumber = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CachedPurchaseLineItemsCompanion.insert({
+    required String id,
+    required String purchaseBillId,
+    required String materialId,
+    required String batchNo,
+    this.packing = const Value.absent(),
+    required int qty,
+    required double rate,
+    required double disPercent,
+    required double disAmount,
+    required double taxPercent,
+    required double taxAmount,
+    required double amount,
+    required int lineNumber,
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        purchaseBillId = Value(purchaseBillId),
+        materialId = Value(materialId),
+        batchNo = Value(batchNo),
+        qty = Value(qty),
+        rate = Value(rate),
+        disPercent = Value(disPercent),
+        disAmount = Value(disAmount),
+        taxPercent = Value(taxPercent),
+        taxAmount = Value(taxAmount),
+        amount = Value(amount),
+        lineNumber = Value(lineNumber);
+  static Insertable<CachedPurchaseLineItem> custom({
+    Expression<String>? id,
+    Expression<String>? purchaseBillId,
+    Expression<String>? materialId,
+    Expression<String>? batchNo,
+    Expression<String>? packing,
+    Expression<int>? qty,
+    Expression<double>? rate,
+    Expression<double>? disPercent,
+    Expression<double>? disAmount,
+    Expression<double>? taxPercent,
+    Expression<double>? taxAmount,
+    Expression<double>? amount,
+    Expression<int>? lineNumber,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (purchaseBillId != null) 'purchase_bill_id': purchaseBillId,
+      if (materialId != null) 'material_id': materialId,
+      if (batchNo != null) 'batch_no': batchNo,
+      if (packing != null) 'packing': packing,
+      if (qty != null) 'qty': qty,
+      if (rate != null) 'rate': rate,
+      if (disPercent != null) 'dis_percent': disPercent,
+      if (disAmount != null) 'dis_amount': disAmount,
+      if (taxPercent != null) 'tax_percent': taxPercent,
+      if (taxAmount != null) 'tax_amount': taxAmount,
+      if (amount != null) 'amount': amount,
+      if (lineNumber != null) 'line_number': lineNumber,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CachedPurchaseLineItemsCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? purchaseBillId,
+      Value<String>? materialId,
+      Value<String>? batchNo,
+      Value<String?>? packing,
+      Value<int>? qty,
+      Value<double>? rate,
+      Value<double>? disPercent,
+      Value<double>? disAmount,
+      Value<double>? taxPercent,
+      Value<double>? taxAmount,
+      Value<double>? amount,
+      Value<int>? lineNumber,
+      Value<int>? rowid}) {
+    return CachedPurchaseLineItemsCompanion(
+      id: id ?? this.id,
+      purchaseBillId: purchaseBillId ?? this.purchaseBillId,
+      materialId: materialId ?? this.materialId,
+      batchNo: batchNo ?? this.batchNo,
+      packing: packing ?? this.packing,
+      qty: qty ?? this.qty,
+      rate: rate ?? this.rate,
+      disPercent: disPercent ?? this.disPercent,
+      disAmount: disAmount ?? this.disAmount,
+      taxPercent: taxPercent ?? this.taxPercent,
+      taxAmount: taxAmount ?? this.taxAmount,
+      amount: amount ?? this.amount,
+      lineNumber: lineNumber ?? this.lineNumber,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (purchaseBillId.present) {
+      map['purchase_bill_id'] = Variable<String>(purchaseBillId.value);
+    }
+    if (materialId.present) {
+      map['material_id'] = Variable<String>(materialId.value);
+    }
+    if (batchNo.present) {
+      map['batch_no'] = Variable<String>(batchNo.value);
+    }
+    if (packing.present) {
+      map['packing'] = Variable<String>(packing.value);
+    }
+    if (qty.present) {
+      map['qty'] = Variable<int>(qty.value);
+    }
+    if (rate.present) {
+      map['rate'] = Variable<double>(rate.value);
+    }
+    if (disPercent.present) {
+      map['dis_percent'] = Variable<double>(disPercent.value);
+    }
+    if (disAmount.present) {
+      map['dis_amount'] = Variable<double>(disAmount.value);
+    }
+    if (taxPercent.present) {
+      map['tax_percent'] = Variable<double>(taxPercent.value);
+    }
+    if (taxAmount.present) {
+      map['tax_amount'] = Variable<double>(taxAmount.value);
+    }
+    if (amount.present) {
+      map['amount'] = Variable<double>(amount.value);
+    }
+    if (lineNumber.present) {
+      map['line_number'] = Variable<int>(lineNumber.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CachedPurchaseLineItemsCompanion(')
+          ..write('id: $id, ')
+          ..write('purchaseBillId: $purchaseBillId, ')
+          ..write('materialId: $materialId, ')
+          ..write('batchNo: $batchNo, ')
+          ..write('packing: $packing, ')
+          ..write('qty: $qty, ')
+          ..write('rate: $rate, ')
+          ..write('disPercent: $disPercent, ')
+          ..write('disAmount: $disAmount, ')
+          ..write('taxPercent: $taxPercent, ')
+          ..write('taxAmount: $taxAmount, ')
+          ..write('amount: $amount, ')
+          ..write('lineNumber: $lineNumber, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $CachedSaleLineItemsTable extends CachedSaleLineItems
     with TableInfo<$CachedSaleLineItemsTable, CachedSaleLineItem> {
   @override
@@ -4165,6 +5720,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $CachedInventoryStocksTable(this);
   late final $CachedSalesBillsTable cachedSalesBills =
       $CachedSalesBillsTable(this);
+  late final $CachedPurchaseBillsTable cachedPurchaseBills =
+      $CachedPurchaseBillsTable(this);
+  late final $CachedPurchaseLineItemsTable cachedPurchaseLineItems =
+      $CachedPurchaseLineItemsTable(this);
   late final $CachedSaleLineItemsTable cachedSaleLineItems =
       $CachedSaleLineItemsTable(this);
   @override
@@ -4179,6 +5738,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         syncQueueItems,
         cachedInventoryStocks,
         cachedSalesBills,
+        cachedPurchaseBills,
+        cachedPurchaseLineItems,
         cachedSaleLineItems
       ];
 }
@@ -5831,6 +7392,713 @@ typedef $$CachedSalesBillsTableProcessedTableManager = ProcessedTableManager<
     ),
     CachedSalesBill,
     PrefetchHooks Function()>;
+typedef $$CachedPurchaseBillsTableCreateCompanionBuilder
+    = CachedPurchaseBillsCompanion Function({
+  required String id,
+  required String supplierId,
+  Value<String?> billNo,
+  Value<String?> challanNo,
+  Value<String?> noteNo,
+  required String payMode,
+  Value<String?> tpNo,
+  Value<String?> tpDate,
+  Value<String?> stNo,
+  required double discount,
+  required double vat,
+  required double stamp,
+  required double tcs,
+  required double loadingFreight,
+  required double netAmount,
+  required double totalAmount,
+  Value<String> syncStatus,
+  required DateTime billDate,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+typedef $$CachedPurchaseBillsTableUpdateCompanionBuilder
+    = CachedPurchaseBillsCompanion Function({
+  Value<String> id,
+  Value<String> supplierId,
+  Value<String?> billNo,
+  Value<String?> challanNo,
+  Value<String?> noteNo,
+  Value<String> payMode,
+  Value<String?> tpNo,
+  Value<String?> tpDate,
+  Value<String?> stNo,
+  Value<double> discount,
+  Value<double> vat,
+  Value<double> stamp,
+  Value<double> tcs,
+  Value<double> loadingFreight,
+  Value<double> netAmount,
+  Value<double> totalAmount,
+  Value<String> syncStatus,
+  Value<DateTime> billDate,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+
+class $$CachedPurchaseBillsTableFilterComposer
+    extends Composer<_$AppDatabase, $CachedPurchaseBillsTable> {
+  $$CachedPurchaseBillsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get supplierId => $composableBuilder(
+      column: $table.supplierId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get billNo => $composableBuilder(
+      column: $table.billNo, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get challanNo => $composableBuilder(
+      column: $table.challanNo, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get noteNo => $composableBuilder(
+      column: $table.noteNo, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get payMode => $composableBuilder(
+      column: $table.payMode, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get tpNo => $composableBuilder(
+      column: $table.tpNo, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get tpDate => $composableBuilder(
+      column: $table.tpDate, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get stNo => $composableBuilder(
+      column: $table.stNo, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get discount => $composableBuilder(
+      column: $table.discount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get vat => $composableBuilder(
+      column: $table.vat, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get stamp => $composableBuilder(
+      column: $table.stamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get tcs => $composableBuilder(
+      column: $table.tcs, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get loadingFreight => $composableBuilder(
+      column: $table.loadingFreight,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get netAmount => $composableBuilder(
+      column: $table.netAmount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get totalAmount => $composableBuilder(
+      column: $table.totalAmount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+      column: $table.syncStatus, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get billDate => $composableBuilder(
+      column: $table.billDate, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$CachedPurchaseBillsTableOrderingComposer
+    extends Composer<_$AppDatabase, $CachedPurchaseBillsTable> {
+  $$CachedPurchaseBillsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get supplierId => $composableBuilder(
+      column: $table.supplierId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get billNo => $composableBuilder(
+      column: $table.billNo, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get challanNo => $composableBuilder(
+      column: $table.challanNo, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get noteNo => $composableBuilder(
+      column: $table.noteNo, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get payMode => $composableBuilder(
+      column: $table.payMode, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get tpNo => $composableBuilder(
+      column: $table.tpNo, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get tpDate => $composableBuilder(
+      column: $table.tpDate, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get stNo => $composableBuilder(
+      column: $table.stNo, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get discount => $composableBuilder(
+      column: $table.discount, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get vat => $composableBuilder(
+      column: $table.vat, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get stamp => $composableBuilder(
+      column: $table.stamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get tcs => $composableBuilder(
+      column: $table.tcs, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get loadingFreight => $composableBuilder(
+      column: $table.loadingFreight,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get netAmount => $composableBuilder(
+      column: $table.netAmount, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get totalAmount => $composableBuilder(
+      column: $table.totalAmount, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+      column: $table.syncStatus, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get billDate => $composableBuilder(
+      column: $table.billDate, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$CachedPurchaseBillsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CachedPurchaseBillsTable> {
+  $$CachedPurchaseBillsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get supplierId => $composableBuilder(
+      column: $table.supplierId, builder: (column) => column);
+
+  GeneratedColumn<String> get billNo =>
+      $composableBuilder(column: $table.billNo, builder: (column) => column);
+
+  GeneratedColumn<String> get challanNo =>
+      $composableBuilder(column: $table.challanNo, builder: (column) => column);
+
+  GeneratedColumn<String> get noteNo =>
+      $composableBuilder(column: $table.noteNo, builder: (column) => column);
+
+  GeneratedColumn<String> get payMode =>
+      $composableBuilder(column: $table.payMode, builder: (column) => column);
+
+  GeneratedColumn<String> get tpNo =>
+      $composableBuilder(column: $table.tpNo, builder: (column) => column);
+
+  GeneratedColumn<String> get tpDate =>
+      $composableBuilder(column: $table.tpDate, builder: (column) => column);
+
+  GeneratedColumn<String> get stNo =>
+      $composableBuilder(column: $table.stNo, builder: (column) => column);
+
+  GeneratedColumn<double> get discount =>
+      $composableBuilder(column: $table.discount, builder: (column) => column);
+
+  GeneratedColumn<double> get vat =>
+      $composableBuilder(column: $table.vat, builder: (column) => column);
+
+  GeneratedColumn<double> get stamp =>
+      $composableBuilder(column: $table.stamp, builder: (column) => column);
+
+  GeneratedColumn<double> get tcs =>
+      $composableBuilder(column: $table.tcs, builder: (column) => column);
+
+  GeneratedColumn<double> get loadingFreight => $composableBuilder(
+      column: $table.loadingFreight, builder: (column) => column);
+
+  GeneratedColumn<double> get netAmount =>
+      $composableBuilder(column: $table.netAmount, builder: (column) => column);
+
+  GeneratedColumn<double> get totalAmount => $composableBuilder(
+      column: $table.totalAmount, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+      column: $table.syncStatus, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get billDate =>
+      $composableBuilder(column: $table.billDate, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$CachedPurchaseBillsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $CachedPurchaseBillsTable,
+    CachedPurchaseBill,
+    $$CachedPurchaseBillsTableFilterComposer,
+    $$CachedPurchaseBillsTableOrderingComposer,
+    $$CachedPurchaseBillsTableAnnotationComposer,
+    $$CachedPurchaseBillsTableCreateCompanionBuilder,
+    $$CachedPurchaseBillsTableUpdateCompanionBuilder,
+    (
+      CachedPurchaseBill,
+      BaseReferences<_$AppDatabase, $CachedPurchaseBillsTable,
+          CachedPurchaseBill>
+    ),
+    CachedPurchaseBill,
+    PrefetchHooks Function()> {
+  $$CachedPurchaseBillsTableTableManager(
+      _$AppDatabase db, $CachedPurchaseBillsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CachedPurchaseBillsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CachedPurchaseBillsTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CachedPurchaseBillsTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> supplierId = const Value.absent(),
+            Value<String?> billNo = const Value.absent(),
+            Value<String?> challanNo = const Value.absent(),
+            Value<String?> noteNo = const Value.absent(),
+            Value<String> payMode = const Value.absent(),
+            Value<String?> tpNo = const Value.absent(),
+            Value<String?> tpDate = const Value.absent(),
+            Value<String?> stNo = const Value.absent(),
+            Value<double> discount = const Value.absent(),
+            Value<double> vat = const Value.absent(),
+            Value<double> stamp = const Value.absent(),
+            Value<double> tcs = const Value.absent(),
+            Value<double> loadingFreight = const Value.absent(),
+            Value<double> netAmount = const Value.absent(),
+            Value<double> totalAmount = const Value.absent(),
+            Value<String> syncStatus = const Value.absent(),
+            Value<DateTime> billDate = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              CachedPurchaseBillsCompanion(
+            id: id,
+            supplierId: supplierId,
+            billNo: billNo,
+            challanNo: challanNo,
+            noteNo: noteNo,
+            payMode: payMode,
+            tpNo: tpNo,
+            tpDate: tpDate,
+            stNo: stNo,
+            discount: discount,
+            vat: vat,
+            stamp: stamp,
+            tcs: tcs,
+            loadingFreight: loadingFreight,
+            netAmount: netAmount,
+            totalAmount: totalAmount,
+            syncStatus: syncStatus,
+            billDate: billDate,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String supplierId,
+            Value<String?> billNo = const Value.absent(),
+            Value<String?> challanNo = const Value.absent(),
+            Value<String?> noteNo = const Value.absent(),
+            required String payMode,
+            Value<String?> tpNo = const Value.absent(),
+            Value<String?> tpDate = const Value.absent(),
+            Value<String?> stNo = const Value.absent(),
+            required double discount,
+            required double vat,
+            required double stamp,
+            required double tcs,
+            required double loadingFreight,
+            required double netAmount,
+            required double totalAmount,
+            Value<String> syncStatus = const Value.absent(),
+            required DateTime billDate,
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              CachedPurchaseBillsCompanion.insert(
+            id: id,
+            supplierId: supplierId,
+            billNo: billNo,
+            challanNo: challanNo,
+            noteNo: noteNo,
+            payMode: payMode,
+            tpNo: tpNo,
+            tpDate: tpDate,
+            stNo: stNo,
+            discount: discount,
+            vat: vat,
+            stamp: stamp,
+            tcs: tcs,
+            loadingFreight: loadingFreight,
+            netAmount: netAmount,
+            totalAmount: totalAmount,
+            syncStatus: syncStatus,
+            billDate: billDate,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$CachedPurchaseBillsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $CachedPurchaseBillsTable,
+    CachedPurchaseBill,
+    $$CachedPurchaseBillsTableFilterComposer,
+    $$CachedPurchaseBillsTableOrderingComposer,
+    $$CachedPurchaseBillsTableAnnotationComposer,
+    $$CachedPurchaseBillsTableCreateCompanionBuilder,
+    $$CachedPurchaseBillsTableUpdateCompanionBuilder,
+    (
+      CachedPurchaseBill,
+      BaseReferences<_$AppDatabase, $CachedPurchaseBillsTable,
+          CachedPurchaseBill>
+    ),
+    CachedPurchaseBill,
+    PrefetchHooks Function()>;
+typedef $$CachedPurchaseLineItemsTableCreateCompanionBuilder
+    = CachedPurchaseLineItemsCompanion Function({
+  required String id,
+  required String purchaseBillId,
+  required String materialId,
+  required String batchNo,
+  Value<String?> packing,
+  required int qty,
+  required double rate,
+  required double disPercent,
+  required double disAmount,
+  required double taxPercent,
+  required double taxAmount,
+  required double amount,
+  required int lineNumber,
+  Value<int> rowid,
+});
+typedef $$CachedPurchaseLineItemsTableUpdateCompanionBuilder
+    = CachedPurchaseLineItemsCompanion Function({
+  Value<String> id,
+  Value<String> purchaseBillId,
+  Value<String> materialId,
+  Value<String> batchNo,
+  Value<String?> packing,
+  Value<int> qty,
+  Value<double> rate,
+  Value<double> disPercent,
+  Value<double> disAmount,
+  Value<double> taxPercent,
+  Value<double> taxAmount,
+  Value<double> amount,
+  Value<int> lineNumber,
+  Value<int> rowid,
+});
+
+class $$CachedPurchaseLineItemsTableFilterComposer
+    extends Composer<_$AppDatabase, $CachedPurchaseLineItemsTable> {
+  $$CachedPurchaseLineItemsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get purchaseBillId => $composableBuilder(
+      column: $table.purchaseBillId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get materialId => $composableBuilder(
+      column: $table.materialId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get batchNo => $composableBuilder(
+      column: $table.batchNo, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get packing => $composableBuilder(
+      column: $table.packing, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get qty => $composableBuilder(
+      column: $table.qty, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get rate => $composableBuilder(
+      column: $table.rate, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get disPercent => $composableBuilder(
+      column: $table.disPercent, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get disAmount => $composableBuilder(
+      column: $table.disAmount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get taxPercent => $composableBuilder(
+      column: $table.taxPercent, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get taxAmount => $composableBuilder(
+      column: $table.taxAmount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get amount => $composableBuilder(
+      column: $table.amount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get lineNumber => $composableBuilder(
+      column: $table.lineNumber, builder: (column) => ColumnFilters(column));
+}
+
+class $$CachedPurchaseLineItemsTableOrderingComposer
+    extends Composer<_$AppDatabase, $CachedPurchaseLineItemsTable> {
+  $$CachedPurchaseLineItemsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get purchaseBillId => $composableBuilder(
+      column: $table.purchaseBillId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get materialId => $composableBuilder(
+      column: $table.materialId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get batchNo => $composableBuilder(
+      column: $table.batchNo, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get packing => $composableBuilder(
+      column: $table.packing, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get qty => $composableBuilder(
+      column: $table.qty, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get rate => $composableBuilder(
+      column: $table.rate, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get disPercent => $composableBuilder(
+      column: $table.disPercent, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get disAmount => $composableBuilder(
+      column: $table.disAmount, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get taxPercent => $composableBuilder(
+      column: $table.taxPercent, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get taxAmount => $composableBuilder(
+      column: $table.taxAmount, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get amount => $composableBuilder(
+      column: $table.amount, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get lineNumber => $composableBuilder(
+      column: $table.lineNumber, builder: (column) => ColumnOrderings(column));
+}
+
+class $$CachedPurchaseLineItemsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CachedPurchaseLineItemsTable> {
+  $$CachedPurchaseLineItemsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get purchaseBillId => $composableBuilder(
+      column: $table.purchaseBillId, builder: (column) => column);
+
+  GeneratedColumn<String> get materialId => $composableBuilder(
+      column: $table.materialId, builder: (column) => column);
+
+  GeneratedColumn<String> get batchNo =>
+      $composableBuilder(column: $table.batchNo, builder: (column) => column);
+
+  GeneratedColumn<String> get packing =>
+      $composableBuilder(column: $table.packing, builder: (column) => column);
+
+  GeneratedColumn<int> get qty =>
+      $composableBuilder(column: $table.qty, builder: (column) => column);
+
+  GeneratedColumn<double> get rate =>
+      $composableBuilder(column: $table.rate, builder: (column) => column);
+
+  GeneratedColumn<double> get disPercent => $composableBuilder(
+      column: $table.disPercent, builder: (column) => column);
+
+  GeneratedColumn<double> get disAmount =>
+      $composableBuilder(column: $table.disAmount, builder: (column) => column);
+
+  GeneratedColumn<double> get taxPercent => $composableBuilder(
+      column: $table.taxPercent, builder: (column) => column);
+
+  GeneratedColumn<double> get taxAmount =>
+      $composableBuilder(column: $table.taxAmount, builder: (column) => column);
+
+  GeneratedColumn<double> get amount =>
+      $composableBuilder(column: $table.amount, builder: (column) => column);
+
+  GeneratedColumn<int> get lineNumber => $composableBuilder(
+      column: $table.lineNumber, builder: (column) => column);
+}
+
+class $$CachedPurchaseLineItemsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $CachedPurchaseLineItemsTable,
+    CachedPurchaseLineItem,
+    $$CachedPurchaseLineItemsTableFilterComposer,
+    $$CachedPurchaseLineItemsTableOrderingComposer,
+    $$CachedPurchaseLineItemsTableAnnotationComposer,
+    $$CachedPurchaseLineItemsTableCreateCompanionBuilder,
+    $$CachedPurchaseLineItemsTableUpdateCompanionBuilder,
+    (
+      CachedPurchaseLineItem,
+      BaseReferences<_$AppDatabase, $CachedPurchaseLineItemsTable,
+          CachedPurchaseLineItem>
+    ),
+    CachedPurchaseLineItem,
+    PrefetchHooks Function()> {
+  $$CachedPurchaseLineItemsTableTableManager(
+      _$AppDatabase db, $CachedPurchaseLineItemsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CachedPurchaseLineItemsTableFilterComposer(
+                  $db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CachedPurchaseLineItemsTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CachedPurchaseLineItemsTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> purchaseBillId = const Value.absent(),
+            Value<String> materialId = const Value.absent(),
+            Value<String> batchNo = const Value.absent(),
+            Value<String?> packing = const Value.absent(),
+            Value<int> qty = const Value.absent(),
+            Value<double> rate = const Value.absent(),
+            Value<double> disPercent = const Value.absent(),
+            Value<double> disAmount = const Value.absent(),
+            Value<double> taxPercent = const Value.absent(),
+            Value<double> taxAmount = const Value.absent(),
+            Value<double> amount = const Value.absent(),
+            Value<int> lineNumber = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              CachedPurchaseLineItemsCompanion(
+            id: id,
+            purchaseBillId: purchaseBillId,
+            materialId: materialId,
+            batchNo: batchNo,
+            packing: packing,
+            qty: qty,
+            rate: rate,
+            disPercent: disPercent,
+            disAmount: disAmount,
+            taxPercent: taxPercent,
+            taxAmount: taxAmount,
+            amount: amount,
+            lineNumber: lineNumber,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String purchaseBillId,
+            required String materialId,
+            required String batchNo,
+            Value<String?> packing = const Value.absent(),
+            required int qty,
+            required double rate,
+            required double disPercent,
+            required double disAmount,
+            required double taxPercent,
+            required double taxAmount,
+            required double amount,
+            required int lineNumber,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              CachedPurchaseLineItemsCompanion.insert(
+            id: id,
+            purchaseBillId: purchaseBillId,
+            materialId: materialId,
+            batchNo: batchNo,
+            packing: packing,
+            qty: qty,
+            rate: rate,
+            disPercent: disPercent,
+            disAmount: disAmount,
+            taxPercent: taxPercent,
+            taxAmount: taxAmount,
+            amount: amount,
+            lineNumber: lineNumber,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$CachedPurchaseLineItemsTableProcessedTableManager
+    = ProcessedTableManager<
+        _$AppDatabase,
+        $CachedPurchaseLineItemsTable,
+        CachedPurchaseLineItem,
+        $$CachedPurchaseLineItemsTableFilterComposer,
+        $$CachedPurchaseLineItemsTableOrderingComposer,
+        $$CachedPurchaseLineItemsTableAnnotationComposer,
+        $$CachedPurchaseLineItemsTableCreateCompanionBuilder,
+        $$CachedPurchaseLineItemsTableUpdateCompanionBuilder,
+        (
+          CachedPurchaseLineItem,
+          BaseReferences<_$AppDatabase, $CachedPurchaseLineItemsTable,
+              CachedPurchaseLineItem>
+        ),
+        CachedPurchaseLineItem,
+        PrefetchHooks Function()>;
 typedef $$CachedSaleLineItemsTableCreateCompanionBuilder
     = CachedSaleLineItemsCompanion Function({
   required String id,
@@ -6213,6 +8481,11 @@ class $AppDatabaseManager {
       $$CachedInventoryStocksTableTableManager(_db, _db.cachedInventoryStocks);
   $$CachedSalesBillsTableTableManager get cachedSalesBills =>
       $$CachedSalesBillsTableTableManager(_db, _db.cachedSalesBills);
+  $$CachedPurchaseBillsTableTableManager get cachedPurchaseBills =>
+      $$CachedPurchaseBillsTableTableManager(_db, _db.cachedPurchaseBills);
+  $$CachedPurchaseLineItemsTableTableManager get cachedPurchaseLineItems =>
+      $$CachedPurchaseLineItemsTableTableManager(
+          _db, _db.cachedPurchaseLineItems);
   $$CachedSaleLineItemsTableTableManager get cachedSaleLineItems =>
       $$CachedSaleLineItemsTableTableManager(_db, _db.cachedSaleLineItems);
 }

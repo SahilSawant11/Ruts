@@ -136,6 +136,13 @@ class AppSidebar extends ConsumerWidget {
                     active: location == '/reports',
                     onTap: () => context.go('/reports'),
                   ),
+                  SidebarItem(
+                    icon: Icons.liquor_outlined,
+                    label: 'Brandwise Report',
+                    collapsed: collapsed,
+                    active: location == '/brandwise-report',
+                    onTap: () => context.go('/brandwise-report'),
+                  ),
                   _sectionLabel(context, 'OPERATIONS', collapsed),
                   SidebarItem(
                     icon: Icons.sync_alt_rounded,

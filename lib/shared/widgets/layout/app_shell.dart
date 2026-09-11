@@ -27,6 +27,7 @@ const _branchMeta = [
   _BranchMeta('Masters', 'All Masters', 'Masters'),
   _BranchMeta('Inventory', 'Stock overview', 'Inventory'),
   _BranchMeta('Reports', 'Analysis', 'Reports'),
+  _BranchMeta('Brandwise Report', 'Excise Register', 'Brandwise'),
   _BranchMeta('Sync Center', 'Operations · Sync', 'Sync'),
 ];
 
