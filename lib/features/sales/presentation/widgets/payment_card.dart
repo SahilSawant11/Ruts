@@ -49,8 +49,21 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
     } else if (event.logicalKey == LogicalKeyboardKey.f6) {
       _holdBill();
       return true;
+    } else if (event.logicalKey == LogicalKeyboardKey.escape) {
+      _clearBill();
+      return true;
     }
     return false;
+  }
+
+  void _clearBill() {
+    final cart = ref.read(cartControllerProvider);
+    if (cart.isEmpty && _receivedController.text.isEmpty) {
+      return;
+    }
+    ref.read(cartControllerProvider.notifier).clear();
+    _receivedController.clear();
+    _showSnack('All scanned sales records cleared (Esc).');
   }
 
   String _payModeLabel(PaymentMethod method) {
@@ -305,12 +318,10 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
               Expanded(
                 child: DangerButton(
                   label: 'Clear Bill',
+                  shortcut: 'Esc',
                   icon: Icons.close_rounded,
                   outline: true,
-                  onPressed: () {
-                    ref.read(cartControllerProvider.notifier).clear();
-                    _receivedController.clear();
-                  },
+                  onPressed: _clearBill,
                 ),
               ),
             ],

@@ -58,6 +58,12 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
         extentOffset: _qtyController.text.length,
       );
       return true;
+    } else if (event.logicalKey == LogicalKeyboardKey.escape) {
+      _barcodeController.clear();
+      _qtyController.text = '1';
+      ref.read(cartControllerProvider.notifier).clear();
+      _barcodeFocusNode.requestFocus();
+      return true;
     }
     return false;
   }

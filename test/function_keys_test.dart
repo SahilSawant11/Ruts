@@ -57,5 +57,13 @@ void main() {
     );
     expect(handler(f8Event), isTrue);
     expect(detected, contains(LogicalKeyboardKey.f8));
+
+    const escEvent = KeyDownEvent(
+      physicalKey: PhysicalKeyboardKey.escape,
+      logicalKey: LogicalKeyboardKey.escape,
+      timeStamp: Duration.zero,
+    );
+    expect(handler(escEvent), isTrue);
+    expect(detected, contains(LogicalKeyboardKey.escape));
   });
 }
