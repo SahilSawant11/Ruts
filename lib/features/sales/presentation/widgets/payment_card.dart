@@ -6,9 +6,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
-import '../../data/models/create_sale_request.dart';
-import '../../data/sales_providers.dart';
 import '../cart_controller.dart';
+import '../sales_checkout_service.dart';
 import '../sales_providers.dart';
 
 /// Payment method selector, cash received input, and billing actions
@@ -66,17 +65,6 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
     _showSnack('All scanned sales records cleared (Esc).');
   }
 
-  String _payModeLabel(PaymentMethod method) {
-    switch (method) {
-      case PaymentMethod.cash:
-        return 'Cash';
-      case PaymentMethod.card:
-        return 'Card';
-      case PaymentMethod.upi:
-        return 'UPI';
-    }
-  }
-
   void _holdBill() {
     final cart = ref.read(cartControllerProvider);
     if (cart.isEmpty) {
@@ -95,43 +83,10 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
 
     setState(() => _isSaving = true);
     try {
-      final request = CreateSaleRequest(
-        billNo: ref.read(billNoProvider),
-        customerId: ref.read(selectedCustomerIdProvider),
-        payMode: _payModeLabel(ref.read(paymentMethodProvider)),
-        taxableValue: cart.taxableValue,
-        totalDiscount: cart.totalDiscount,
-        totalTax: cart.totalTax,
-        totalAmount: cart.totalAmount,
-        balanceDue: cart.totalAmount,
-        lineItems: cart.items
-            .map((i) => CreateSaleLineItemRequest(
-                  materialId: i.materialId,
-                  barcodeNo: i.barcode,
-                  materialType: i.type,
-                  materialName: i.material,
-                  batchNo: i.batch,
-                  packing: i.pack,
-                  quantity: i.qty,
-                  qtyCase: 0,
-                  rate: i.rate,
-                  discountPercent: i.discountPercent,
-                  discountAmount: i.discountAmount,
-                  taxPercent: i.taxPercent,
-                  taxAmount: i.taxAmount,
-                  amount: i.amount,
-                ))
-            .toList(),
-      );
-
-      final result = await ref.read(salesRepositoryProvider).createSale(request);
-
-      ref.read(cartControllerProvider.notifier).clear();
-      ref.read(billNoProvider.notifier).state = generateBillNo();
-      ref.invalidate(todaysBillsProvider);
+      final result = await ref.read(salesCheckoutServiceProvider).executeCheckout();
       _receivedController.clear();
 
-      if (!mounted) return;
+      if (!mounted || result == null) return;
       _showSnack(
         result.isPendingSync
             ? 'Bill ${result.billNo} queued offline · ${result.lineItemCount} item(s) will sync later.'

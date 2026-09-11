@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/network/api_exception.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../cart_controller.dart';
+import '../sales_checkout_service.dart';
 
 /// Inline Barcode Scan Row: directly touches the items table below.
 /// Features the brand's pebble-like styling, purple accent tokens,
@@ -24,6 +26,7 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
   final _qtyController = TextEditingController(text: '1');
   final _barcodeFocusNode = FocusNode();
   final _qtyFocusNode = FocusNode();
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -69,15 +72,67 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
   }
 
   Future<void> _submit() async {
+    if (_isSubmitting) return;
     final barcode = _barcodeController.text.trim();
     if (barcode.isEmpty) return;
 
-    final qty = int.tryParse(_qtyController.text.trim()) ?? 1;
-    await ref.read(cartControllerProvider.notifier).addByBarcode(barcode, qty: qty);
+    _isSubmitting = true;
+    try {
+      final qty = int.tryParse(_qtyController.text.trim()) ?? 1;
+      final added = await ref.read(cartControllerProvider.notifier).addByBarcode(barcode, qty: qty);
 
-    _barcodeController.clear();
-    _qtyController.text = '1';
-    _barcodeFocusNode.requestFocus();
+      _barcodeController.clear();
+      _qtyController.text = '1';
+      _barcodeFocusNode.requestFocus();
+
+      if (added && mounted) {
+        final cart = ref.read(cartControllerProvider);
+        if (cart.isLimitReached) {
+          await _triggerAutoCheckout();
+        }
+      }
+    } finally {
+      if (mounted) {
+        _isSubmitting = false;
+      }
+    }
+  }
+
+  Future<void> _triggerAutoCheckout() async {
+    try {
+      final result = await ref.read(salesCheckoutServiceProvider).executeCheckout(isAuto: true);
+      if (!mounted || result == null) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  result.isPendingSync
+                      ? '12-bottle limit reached · Bill ${result.billNo} auto-checked out and queued offline.'
+                      : '12-bottle limit reached · Auto checkout completed for Bill ${result.billNo}!',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.success,
+          duration: const Duration(seconds: 4),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    }
   }
 
   @override

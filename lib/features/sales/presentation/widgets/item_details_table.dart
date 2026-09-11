@@ -97,12 +97,52 @@ class ItemDetailsTable extends ConsumerWidget {
                   _hotkeyPill('Del', 'Delete Row'),
                 ],
               ),
-              Text(
-                '${items.length} line item${items.length == 1 ? '' : 's'} · ${cart.totalQty} total units',
-                style: AppTypography.caption.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondaryFor(context),
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                    decoration: BoxDecoration(
+                      color: cart.isLimitReached
+                          ? AppColors.danger.withValues(alpha: 0.12)
+                          : AppColors.primarySoftFor(context),
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      border: Border.all(
+                        color: cart.isLimitReached
+                            ? AppColors.danger.withValues(alpha: 0.35)
+                            : AppColors.primary.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.liquor_rounded,
+                          size: 13,
+                          color: cart.isLimitReached ? AppColors.danger : AppColors.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${cart.totalQty} / ${CartController.maxBottlesLimit} bottles',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: cart.isLimitReached ? AppColors.danger : AppColors.primary,
+                            fontFamily: AppTypography.mono.fontFamily,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${items.length} row${items.length == 1 ? '' : 's'}',
+                    style: AppTypography.caption.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondaryFor(context),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
