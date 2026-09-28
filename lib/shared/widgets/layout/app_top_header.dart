@@ -9,7 +9,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../features/sync/data/sync_providers.dart';
 import '../badges/status_chip.dart';
 import '../inputs/search_field.dart';
-import 'sidebar_state.dart';
+
 
 /// Top bar shown on every screen: hamburger (toggles sidebar collapse),
 /// current module title + its shortcut, global search, online/weather/
@@ -62,19 +62,7 @@ class AppTopHeader extends ConsumerWidget {
                 ),
                 child: Row(
                   children: [
-                    InkWell(
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      onTap: () => ref.read(sidebarCollapsedProvider.notifier).state =
-                          !ref.read(sidebarCollapsedProvider),
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: Icon(
-                          Icons.menu_rounded,
-                          color: AppColors.textSecondaryFor(context),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
+
                     Expanded(
                       child: Row(
                         mainAxisSize: MainAxisSize.min,

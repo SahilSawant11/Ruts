@@ -3,84 +3,106 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 
-class SidebarItem extends StatelessWidget {
+/// Sidebar constants – single source of truth.
+const double kSidebarRailWidth = 64.0;
+
+// ─── Colours (always dark, never theme-adaptive) ─────────────────────────────
+const _kIconIdle   = Color(0x8CFFFFFF); // white @ 55 % — crisp muted grey
+// Active pill: primary-tinted background (soft purple glow), matches reference
+// The icon itself turns accent-purple to complete the indicator.
+
+/// A single icon-rail nav item. Always renders as icon-only (no label in
+/// the layout). Hover state and active state are handled purely visually.
+///
+/// If you want the label to appear, the parent sidebar uses an [OverlayEntry]
+/// or a [Stack]-based expanded panel — the item itself never changes width.
+class SidebarItem extends StatefulWidget {
   const SidebarItem({
     super.key,
     required this.icon,
     required this.label,
-    this.shortcut,
     this.active = false,
-    this.collapsed = false,
     this.onTap,
   });
 
   final IconData icon;
   final String label;
-  final String? shortcut;
   final bool active;
-  final bool collapsed;
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final muted = AppColors.textSecondaryFor(context);
-        final iconOnly = collapsed || constraints.maxWidth < 170;
-        final surface = active
-            ? AppColors.primarySoft.withValues(alpha: AppColors.isDark(context) ? 0.20 : 0.92)
-            : Colors.transparent;
-        const activeColor = AppColors.primary;
+  State<SidebarItem> createState() => _SidebarItemState();
+}
 
-        final content = Material(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-          child: InkWell(
-            onTap: onTap,
+class _SidebarItemState extends State<SidebarItem> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final activeBg     = AppColors.primary.withValues(alpha: 0.18);
+    final activeBorder = AppColors.primary.withValues(alpha: 0.30);
+    const hoverBg      = Color(0xFF252533);
+
+    final iconColor = widget.active ? AppColors.primary : _kIconIdle;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit:  (_) => setState(() => _hovered = false),
+        cursor: SystemMouseCursors.click,
+        child: Tooltip(
+          message: widget.label,
+          preferBelow: false,
+          waitDuration: const Duration(milliseconds: 500),
+          textStyle: AppTypography.caption.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w500,
+          ),
+          decoration: BoxDecoration(
+            color: const Color(0xFF2C2C3A),
             borderRadius: BorderRadius.circular(AppRadius.sm),
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: iconOnly ? 0 : 8,
-                vertical: 9,
-              ),
-              decoration: BoxDecoration(
-                color: surface,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-              child: iconOnly
-                  ? Icon(icon, size: 18, color: active ? activeColor : muted)
-                  : Row(
-                      children: [
-                        Icon(icon, size: 17, color: active ? activeColor : muted),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            label,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.sidebarItem.copyWith(
-                              color: active ? activeColor : muted,
-                              fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
+          ),
+          child: GestureDetector(
+            onTap: widget.onTap,
+            // Full-width, full-height hit target — keeps hover detection smooth.
+            child: SizedBox(
+              height: 44,
+              width: double.infinity,
+              child: Center(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
+                  curve: Curves.easeOut,
+                  // Fixed compact size → pill never stretches to fill the rail.
+                  // 44 wide × 34 tall with radius 17 = perfect stadium capsule.
+                  width:  44,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: widget.active
+                        ? activeBg
+                        : (_hovered ? hoverBg : Colors.transparent),
+                    // Active: stadium pill (radius = half of height).
+                    // Idle:   gentle rounded-rect.
+                    borderRadius: BorderRadius.circular(widget.active ? 17 : 8),
+                    border: widget.active
+                        ? Border.all(color: activeBorder, width: 1)
+                        : null,
+                  ),
+                  child: Center(
+                    child: AnimatedScale(
+                      scale: _hovered ? 1.08 : 1.0,
+                      duration: const Duration(milliseconds: 140),
+                      curve: Curves.easeOut,
+                      child: Icon(widget.icon, size: 19, color: iconColor),
                     ),
+                  ),
+                ),
+              ),
             ),
           ),
-        );
-
-        return Padding(
-          padding: EdgeInsets.symmetric(horizontal: iconOnly ? 12 : AppSpacing.sm, vertical: 1),
-          child: iconOnly
-              ? Tooltip(
-                  message: label,
-                  waitDuration: const Duration(milliseconds: 400),
-                  child: content,
-                )
-              : content,
-        );
-      },
+        ),
+      ),
     );
   }
+
 }
