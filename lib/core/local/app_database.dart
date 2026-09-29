@@ -202,11 +202,14 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.defaults() : super(driftDatabase(name: 'pos_app.sqlite'));
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onCreate: (m) async => m.createAll(),
+        onCreate: (m) async {
+          await m.createAll();
+          await _createIndexes();
+        },
         onUpgrade: (m, from, to) async {
           if (from < 2) {
             await m.createTable(syncQueueItems);
@@ -234,8 +237,30 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(cachedPackings);
             await _backfillPackings();
           }
+          if (from < 9) {
+            await _createIndexes();
+          }
         },
       );
+
+  Future<void> _createIndexes() async {
+    const indexes = [
+      'CREATE INDEX IF NOT EXISTS idx_materials_barcode ON cached_materials(barcode)',
+      'CREATE INDEX IF NOT EXISTS idx_materials_sync ON cached_materials(sync_status)',
+      'CREATE INDEX IF NOT EXISTS idx_suppliers_sync ON cached_suppliers(sync_status)',
+      'CREATE INDEX IF NOT EXISTS idx_sales_bills_date ON cached_sales_bills(bill_date)',
+      'CREATE INDEX IF NOT EXISTS idx_sales_bills_sync ON cached_sales_bills(sync_status)',
+      'CREATE INDEX IF NOT EXISTS idx_sale_lines_bill ON cached_sale_line_items(sales_bill_id)',
+      'CREATE INDEX IF NOT EXISTS idx_purchase_bills_supplier ON cached_purchase_bills(supplier_id)',
+      'CREATE INDEX IF NOT EXISTS idx_purchase_bills_date ON cached_purchase_bills(bill_date)',
+      'CREATE INDEX IF NOT EXISTS idx_purchase_lines_bill ON cached_purchase_line_items(purchase_bill_id)',
+      'CREATE INDEX IF NOT EXISTS idx_sync_queue_type_status ON sync_queue_items(entity_type, status)',
+      'CREATE INDEX IF NOT EXISTS idx_inventory_barcode ON cached_inventory_stocks(barcode)',
+    ];
+    for (final sql in indexes) {
+      await customStatement(sql);
+    }
+  }
 
   Future<void> ensureStarterData() async {
     final hasMaterials = await _tableHasRows('cached_materials');

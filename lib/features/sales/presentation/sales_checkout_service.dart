@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/models/create_sale_request.dart';
 import '../data/sales_providers.dart';
@@ -55,7 +56,12 @@ class SalesCheckoutService {
             .toList(),
       );
 
+      final sw = kDebugMode ? (Stopwatch()..start()) : null;
       final result = await ref.read(salesRepositoryProvider).createSale(request);
+      if (kDebugMode) {
+        sw!.stop();
+        debugPrint('⏱ bill save (total): ${sw.elapsedMilliseconds}ms');
+      }
 
       ref.read(cartControllerProvider.notifier).clear();
       ref.read(billNoProvider.notifier).state = generateBillNo();

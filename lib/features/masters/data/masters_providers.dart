@@ -9,12 +9,17 @@ import 'models/category_dto.dart';
 import 'models/manufacturer_dto.dart';
 import 'models/packaging_dto.dart';
 import 'models/supplier_dto.dart';
+import '../../../core/local/material_lookup_cache.dart';
 
 final appDatabaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase.defaults();
   ref.onDispose(db.close);
   return db;
 });
+
+/// In-memory material lookup cache. Null until bootstrap completes.
+/// Used by the scan path for O(1) barcode/item-code lookups.
+final materialLookupCacheProvider = StateProvider<MaterialLookupCache?>((ref) => null);
 
 final mastersApiRepositoryProvider = Provider<MastersApiRepository>((ref) {
   return MastersApiRepository(ref.watch(httpClientProvider));
@@ -24,6 +29,11 @@ final mastersRepositoryProvider = Provider<LocalMastersRepository>((ref) {
   return LocalMastersRepository(
     ref.watch(appDatabaseProvider),
     ref.watch(mastersApiRepositoryProvider),
+    onMaterialsChanged: () async {
+      final db = ref.read(appDatabaseProvider);
+      final cache = await MaterialLookupCache.load(db);
+      ref.read(materialLookupCacheProvider.notifier).state = cache;
+    },
   );
 });
 

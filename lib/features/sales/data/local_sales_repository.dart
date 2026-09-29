@@ -20,11 +20,6 @@ class LocalSalesRepository {
   final LocalMastersRepository _masters;
 
   Future<List<SalesBillDto>> getTodaysBills() async {
-    try {
-      await syncPendingSales();
-    } on ApiException {
-      // Fall through to local cache below.
-    }
 
     final now = DateTime.now();
     final dayStart = DateTime(now.year, now.month, now.day);
@@ -50,10 +45,6 @@ class LocalSalesRepository {
   }
 
   Future<List<SalesBillDetailDto>> getSalesBills({String? search, DateTime? date}) async {
-    try {
-      await syncPendingSales();
-      return await _remote.getSalesBills(search: search, date: date);
-    } on ApiException {
       final billsQuery = _db.select(_db.cachedSalesBills)
         ..orderBy([(tbl) => OrderingTerm.desc(tbl.createdAt)]);
       if (date != null) {
@@ -114,7 +105,6 @@ class LocalSalesRepository {
         );
       }
       return result;
-    }
   }
 
   Future<void> returnSalesBill(String billId) async {
@@ -172,11 +162,6 @@ class LocalSalesRepository {
   }
 
   Future<MaterialDto?> getMaterialByBarcode(String barcode) async {
-    try {
-      await syncPendingSales();
-    } on ApiException {
-      // Fall back to local masters cache below.
-    }
     return _masters.getMaterialByBarcode(barcode);
   }
 
@@ -244,47 +229,33 @@ class LocalSalesRepository {
   }
 
   Future<CreateSaleResult> createSale(CreateSaleRequest request) async {
-    try {
-      await syncPendingSales();
-      final syncedRequest = await _resolveDependencies(request);
-      final result = await _remote.createSale(syncedRequest);
-      await _persistSale(
-        saleId: result.id,
-        request: syncedRequest,
-        syncStatus: 'synced',
-        status: 'paid',
-        billNo: result.billNo,
-      );
-      return result;
-    } on ApiException catch (e) {
-      if (e.statusCode != null) rethrow;
+    // Local-first: persist immediately, queue for background sync.
+    // Never blocks on network — sync happens via Sync Center.
+    final localId = 'local-sale-${DateTime.now().microsecondsSinceEpoch}';
+    await _persistSale(
+      saleId: localId,
+      request: request,
+      syncStatus: 'pending_create',
+      status: 'pending sync',
+      billNo: request.billNo,
+    );
+    await _db.into(_db.syncQueueItems).insert(
+          SyncQueueItemsCompanion.insert(
+            entityType: 'sale',
+            entityId: localId,
+            operation: 'create',
+            payload: jsonEncode(request.toJson()),
+            status: const Value('pending'),
+            updatedAt: Value(DateTime.now().toUtc()),
+          ),
+        );
 
-      final localId = 'local-sale-${DateTime.now().microsecondsSinceEpoch}';
-      await _persistSale(
-        saleId: localId,
-        request: request,
-        syncStatus: 'pending_create',
-        status: 'pending sync',
-        billNo: request.billNo,
-      );
-      await _db.into(_db.syncQueueItems).insert(
-            SyncQueueItemsCompanion.insert(
-              entityType: 'sale',
-              entityId: localId,
-              operation: 'create',
-              payload: jsonEncode(request.toJson()),
-              status: const Value('pending'),
-              updatedAt: Value(DateTime.now().toUtc()),
-            ),
-          );
-
-      return CreateSaleResult(
-        id: localId,
-        billNo: request.billNo,
-        lineItemCount: request.lineItems.length,
-        isPendingSync: true,
-      );
-    }
+    return CreateSaleResult(
+      id: localId,
+      billNo: request.billNo,
+      lineItemCount: request.lineItems.length,
+      isPendingSync: true,
+    );
   }
 
   Future<CreateSaleRequest> _resolveDependencies(CreateSaleRequest request) async {
@@ -363,30 +334,33 @@ class LocalSalesRepository {
             mode: InsertMode.insertOrReplace,
           );
 
-      for (var i = 0; i < request.lineItems.length; i++) {
-        final item = request.lineItems[i];
-        await _db.into(_db.cachedSaleLineItems).insert(
-              CachedSaleLineItemsCompanion.insert(
-                id: '$saleId-line-${i + 1}',
-                salesBillId: saleId,
-                materialId: Value(item.materialId),
-                barcodeNo: item.barcodeNo,
-                materialType: item.materialType,
-                materialName: item.materialName,
-                batchNo: Value(item.batchNo),
-                packing: Value(item.packing),
-                quantity: item.quantity,
-                qtyCase: Value(item.qtyCase),
-                rate: item.rate,
-                discountPercent: item.discountPercent,
-                discountAmount: item.discountAmount,
-                taxPercent: item.taxPercent,
-                taxAmount: item.taxAmount,
-                amount: item.amount,
-                lineNumber: i + 1,
-              ),
-            );
-      }
+      await _db.batch((batch) {
+        for (var i = 0; i < request.lineItems.length; i++) {
+          final item = request.lineItems[i];
+          batch.insert(
+            _db.cachedSaleLineItems,
+            CachedSaleLineItemsCompanion.insert(
+              id: '$saleId-line-${i + 1}',
+              salesBillId: saleId,
+              materialId: Value(item.materialId),
+              barcodeNo: item.barcodeNo,
+              materialType: item.materialType,
+              materialName: item.materialName,
+              batchNo: Value(item.batchNo),
+              packing: Value(item.packing),
+              quantity: item.quantity,
+              qtyCase: Value(item.qtyCase),
+              rate: item.rate,
+              discountPercent: item.discountPercent,
+              discountAmount: item.discountAmount,
+              taxPercent: item.taxPercent,
+              taxAmount: item.taxAmount,
+              amount: item.amount,
+              lineNumber: i + 1,
+            ),
+          );
+        }
+      });
     });
   }
 

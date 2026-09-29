@@ -17,10 +17,14 @@ import 'models/save_supplier_request.dart';
 import 'models/supplier_dto.dart';
 
 class LocalMastersRepository {
-  LocalMastersRepository(this._db, this._remote);
+  LocalMastersRepository(this._db, this._remote, {this.onMaterialsChanged});
 
   final AppDatabase _db;
   final MastersApiRepository _remote;
+
+  /// Called after any material is created or updated to refresh the
+  /// in-memory lookup cache.
+  final Future<void> Function()? onMaterialsChanged;
 
   Future<List<CategoryDto>> getCategories() async {
     final cached = await _getCachedCategories();
@@ -408,6 +412,7 @@ class LocalMastersRepository {
     try {
       final created = (await _remote.createMaterial(request)).copyWith(manufacturer: request.manufacturer);
       await _upsertMaterial(created, syncStatus: 'synced');
+      await onMaterialsChanged?.call();
       return created;
     } on ApiException catch (e) {
       if (e.statusCode != null) rethrow;
@@ -437,6 +442,7 @@ class LocalMastersRepository {
         operation: 'create',
         payload: request.toJson(),
       );
+      await onMaterialsChanged?.call();
       return local;
     }
   }
@@ -447,6 +453,7 @@ class LocalMastersRepository {
     try {
       final updated = (await _remote.updateMaterial(id, request)).copyWith(manufacturer: request.manufacturer);
       await _upsertMaterial(updated, syncStatus: 'synced');
+      await onMaterialsChanged?.call();
       return updated;
     } on ApiException catch (e) {
       if (e.statusCode != null) rethrow;
@@ -473,19 +480,12 @@ class LocalMastersRepository {
         operation: nextStatus == 'pending_create' ? 'create' : 'update',
         payload: request.toJson(),
       );
+      await onMaterialsChanged?.call();
       return local;
     }
   }
 
   Future<MaterialDto?> getMaterialByBarcode(String barcode) async {
-    try {
-      await syncPendingMasters();
-      final remote = await _remote.getMaterials();
-      await _cacheMaterials(remote);
-    } on ApiException {
-      // Fall back to local cache below.
-    }
-
     final row = await (_db.select(_db.cachedMaterials)
           ..where((tbl) => tbl.barcode.equals(barcode) | tbl.id.equals(barcode)))
         .getSingleOrNull();
