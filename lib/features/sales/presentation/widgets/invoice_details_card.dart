@@ -20,7 +20,7 @@ class InvoiceDetailsCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final billNo = ref.watch(billNoProvider);
     final payMode = ref.watch(paymentMethodProvider);
-    final cart = ref.watch(cartControllerProvider);
+    final totalAmount = ref.watch(cartControllerProvider.select((s) => s.totalAmount));
 
     final payModeText = switch (payMode) {
       PaymentMethod.cash => 'CASH',
@@ -124,11 +124,11 @@ class InvoiceDetailsCard extends ConsumerWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '₹${cart.totalAmount.toStringAsFixed(2)}',
+                  '₹${totalAmount.toStringAsFixed(2)}',
                   style: AppTypography.mono.copyWith(
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
-                    color: cart.totalAmount > 0 ? AppColors.danger : AppColors.success,
+                    color: totalAmount > 0 ? AppColors.danger : AppColors.success,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),

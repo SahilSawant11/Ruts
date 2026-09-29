@@ -4,6 +4,7 @@ import 'package:drift/drift.dart' hide Column;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
+import '../../../core/config/app_config.dart';
 import '../../../core/local/app_database.dart';
 import '../../../core/network/api_config.dart';
 import '../../../core/network/api_exception.dart';
@@ -31,17 +32,18 @@ final brandwiseExcelExporterProvider = Provider<BrandwiseExcelExporter>((ref) {
 final brandwiseReportProvider = FutureProvider<BrandwiseReportDto>((ref) async {
   final date = ref.watch(brandwiseReportDateProvider);
   final db = ref.watch(appDatabaseProvider);
-  final client = ref.watch(httpClientProvider);
 
   // 1. Try to build from local data first.
   final local = await _buildLocalBrandwiseReport(db, date);
   if (local != null) return local;
 
-  // 2. Fall back to remote API.
+  // 2. In offline mode, return empty report. Otherwise try remote.
+  if (AppConfig.offlineOnly) return _emptyReport(date);
+
+  final client = ref.watch(httpClientProvider);
   try {
     return await _fetchRemoteBrandwiseReport(client, date);
   } on ApiException {
-    // If API also fails, return an empty report so the UI doesn't crash.
     return _emptyReport(date);
   }
 });

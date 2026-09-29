@@ -113,11 +113,12 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
   @override
   Widget build(BuildContext context) {
     final method = ref.watch(paymentMethodProvider);
-    final cart = ref.watch(cartControllerProvider);
+    final totalAmount = ref.watch(cartControllerProvider.select((s) => s.totalAmount));
+    final isEmpty = ref.watch(cartControllerProvider.select((s) => s.isEmpty));
 
     final receivedVal = double.tryParse(_receivedController.text.trim()) ?? 0.0;
-    final changeDue = receivedVal > cart.totalAmount && cart.totalAmount > 0
-        ? receivedVal - cart.totalAmount
+    final changeDue = receivedVal > totalAmount && totalAmount > 0
+        ? receivedVal - totalAmount
         : 0.0;
 
     return Container(
@@ -228,7 +229,7 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
                 fontSize: 14,
                 color: AppColors.textSecondaryFor(context),
               ),
-              hintText: cart.totalAmount > 0 ? cart.totalAmount.toStringAsFixed(2) : '0.00',
+              hintText: totalAmount > 0 ? totalAmount.toStringAsFixed(2) : '0.00',
               hintStyle: TextStyle(color: AppColors.textMutedFor(context), fontSize: 13),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -253,7 +254,7 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
             shortcut: 'F8',
             icon: Icons.print_outlined,
             expand: true,
-            onPressed: _isSaving ? null : _saveSale,
+            onPressed: _isSaving || isEmpty ? null : _saveSale,
           ),
           const SizedBox(height: AppSpacing.xs),
 

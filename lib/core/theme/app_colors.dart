@@ -120,19 +120,19 @@ class AppColors {
       ? [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.30),
-            blurRadius: 28,
-            offset: const Offset(0, 18),
+            blurRadius: 6,
+            offset: const Offset(0, 4),
           ),
         ]
       : [
           const BoxShadow(
             color: Color(0x220F172A),
-            blurRadius: 24,
-            offset: Offset(0, 12),
+            blurRadius: 8,
+            offset: Offset(0, 4),
           ),
           BoxShadow(
             color: Colors.white.withValues(alpha: 0.50),
-            blurRadius: 6,
+            blurRadius: 4,
             offset: const Offset(0, 1),
           ),
         ];

@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:path_provider/path_provider.dart';
+
 import 'models/sales_report_dto.dart';
 
 class ReportExcelExporter {
@@ -14,16 +16,12 @@ class ReportExcelExporter {
   }
 
   Future<Directory> _resolveOutputDirectory() async {
-    final home = Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'];
-    if (home != null && home.isNotEmpty) {
-      final downloads = Directory('$home${Platform.pathSeparator}Downloads');
-      if (await downloads.exists()) {
-        return Directory('${downloads.path}${Platform.pathSeparator}Caskly Reports');
-      }
-      return Directory('$home${Platform.pathSeparator}Caskly Reports');
+    final downloads = await getDownloadsDirectory();
+    if (downloads != null) {
+      return Directory('${downloads.path}${Platform.pathSeparator}Caskly Reports');
     }
-
-    return Directory('${Directory.current.path}${Platform.pathSeparator}Caskly Reports');
+    final docs = await getApplicationDocumentsDirectory();
+    return Directory('${docs.path}${Platform.pathSeparator}Caskly Reports');
   }
 
   String _buildFileName(SalesReportDto report) {

@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' hide Column;
 
+import '../../../core/config/app_config.dart';
 import '../../../core/local/app_database.dart';
 import '../../../core/network/api_exception.dart';
 import '../../sales/data/local_sales_repository.dart';
@@ -14,6 +15,8 @@ class LocalDashboardRepository {
   final LocalSalesRepository _sales;
 
   Future<DashboardSummaryDto> getSummary() async {
+    if (AppConfig.offlineOnly) return _buildLocalSummary();
+
     try {
       await _sales.syncPendingSales();
     } on ApiException {

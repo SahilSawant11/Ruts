@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart' hide Column;
 
+import '../../../core/config/app_config.dart';
 import '../../../core/local/app_database.dart';
 import '../../../core/network/api_exception.dart';
 import '../../sales/data/models/material_dto.dart';
@@ -28,6 +29,7 @@ class LocalMastersRepository {
 
   Future<List<CategoryDto>> getCategories() async {
     final cached = await _getCachedCategories();
+    if (AppConfig.offlineOnly) return cached;
 
     try {
       await syncPendingMasters();
@@ -234,6 +236,21 @@ class LocalMastersRepository {
       throw const ApiException('Category already exists.');
     }
 
+    if (AppConfig.offlineOnly) {
+      final category = CategoryDto(
+        name: name,
+        description: request.description?.trim().isEmpty ?? true ? null : request.description?.trim(),
+        isPendingSync: true,
+      );
+      await _upsertCategoryRecord(category, syncStatus: 'pending_create');
+      await _enqueueSync(
+        entityType: 'category',
+        entityId: category.name,
+        operation: 'create',
+        payload: SaveCategoryRequest(name: category.name, description: category.description).toJson(),
+      );
+      return category;
+    }
     try {
       final created = await _remote.createCategory(
         SaveCategoryRequest(
@@ -276,6 +293,23 @@ class LocalMastersRepository {
     }
 
     final trimmedDescription = request.description?.trim().isEmpty ?? true ? null : request.description?.trim();
+    if (AppConfig.offlineOnly) {
+      final cached = await (_db.select(_db.cachedCategories)..where((tbl) => tbl.name.equals(previousName))).getSingleOrNull();
+      final syncStatus = cached == null ? 'pending_create' : 'pending_update';
+      final pending = CategoryDto(name: nextName, description: trimmedDescription, isPendingSync: true);
+      await _db.transaction(() async {
+        await _renameCategoryReferences(previousName: previousName, nextName: nextName);
+        await _upsertCategoryRecord(pending, syncStatus: syncStatus, preserveCreatedAt: cached?.createdAt);
+        await _enqueueSync(
+          entityType: 'category',
+          entityId: nextName,
+          operation: syncStatus == 'pending_create' ? 'create' : 'update',
+          payload: SaveCategoryRequest(name: nextName, description: trimmedDescription).toJson(),
+          previousEntityId: previousName == nextName ? null : previousName,
+        );
+      });
+      return pending;
+    }
     try {
       final saved = await _remote.updateCategory(previousName, SaveCategoryRequest(name: nextName, description: trimmedDescription));
       await _db.transaction(() async {
@@ -311,6 +345,7 @@ class LocalMastersRepository {
 
   Future<List<SupplierDto>> getSuppliers() async {
     final cached = await _getCachedSuppliers();
+    if (AppConfig.offlineOnly) return cached;
 
     try {
       await syncPendingMasters();
@@ -324,6 +359,29 @@ class LocalMastersRepository {
   }
 
   Future<SupplierDto> createSupplier(SaveSupplierRequest request) async {
+    if (AppConfig.offlineOnly) {
+      final local = SupplierDto(
+        id: 'local-supplier-${DateTime.now().microsecondsSinceEpoch}',
+        name: request.name,
+        address: request.address,
+        contactNo: request.contactNo,
+        email: request.email,
+        vatNo: request.vatNo,
+        bankDetails: request.bankDetails,
+        disPercent: request.disPercent,
+        openingBalance: request.openingBalance,
+        balanceType: request.balanceType,
+        isPendingSync: true,
+      );
+      await _upsertSupplier(local, syncStatus: 'pending_create');
+      await _enqueueSync(
+        entityType: 'supplier',
+        entityId: local.id,
+        operation: 'create',
+        payload: request.toJson(),
+      );
+      return local;
+    }
     try {
       final created = await _remote.createSupplier(request);
       await _upsertSupplier(created, syncStatus: 'synced');
@@ -357,6 +415,31 @@ class LocalMastersRepository {
   }
 
   Future<SupplierDto> updateSupplier(String id, SaveSupplierRequest request) async {
+    if (AppConfig.offlineOnly) {
+      final cached = await (_db.select(_db.cachedSuppliers)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
+      final local = SupplierDto(
+        id: id,
+        name: request.name,
+        address: request.address,
+        contactNo: request.contactNo,
+        email: request.email,
+        vatNo: request.vatNo,
+        bankDetails: request.bankDetails,
+        disPercent: request.disPercent,
+        openingBalance: request.openingBalance,
+        balanceType: request.balanceType,
+        isPendingSync: true,
+      );
+      final nextStatus = cached?.syncStatus == 'pending_create' ? 'pending_create' : 'pending_update';
+      await _upsertSupplier(local, syncStatus: nextStatus, preserveCreatedAt: cached?.createdAt);
+      await _enqueueSync(
+        entityType: 'supplier',
+        entityId: id,
+        operation: nextStatus == 'pending_create' ? 'create' : 'update',
+        payload: request.toJson(),
+      );
+      return local;
+    }
     try {
       final updated = await _remote.updateSupplier(id, request);
       await _upsertSupplier(updated, syncStatus: 'synced');
@@ -394,6 +477,7 @@ class LocalMastersRepository {
 
   Future<List<MaterialDto>> getMaterials() async {
     final cached = await _getCachedMaterials();
+    if (AppConfig.offlineOnly) return cached;
 
     try {
       await syncPendingMasters();
@@ -409,6 +493,33 @@ class LocalMastersRepository {
   Future<MaterialDto> createMaterial(SaveMaterialRequest request) async {
     await ensureManufacturerExists(request.manufacturer);
     await ensureCategoryExists(request.category);
+    if (AppConfig.offlineOnly) {
+      final existing = await (_db.select(_db.cachedMaterials)..where((tbl) => tbl.id.equals(request.id))).getSingleOrNull();
+      if (existing != null) {
+        throw const ApiException('Material code already exists in local cache.');
+      }
+      final local = MaterialDto(
+        id: request.id,
+        barcode: request.barcode ?? request.id,
+        name: request.name,
+        manufacturer: request.manufacturer,
+        category: request.category,
+        packing: request.packing,
+        saleRate: request.saleRate,
+        taxPercent: request.taxPercent,
+        stockQty: 0,
+        isPendingSync: true,
+      );
+      await _upsertMaterial(local, syncStatus: 'pending_create');
+      await _enqueueSync(
+        entityType: 'material',
+        entityId: local.id,
+        operation: 'create',
+        payload: request.toJson(),
+      );
+      await onMaterialsChanged?.call();
+      return local;
+    }
     try {
       final created = (await _remote.createMaterial(request)).copyWith(manufacturer: request.manufacturer);
       await _upsertMaterial(created, syncStatus: 'synced');
@@ -450,6 +561,31 @@ class LocalMastersRepository {
   Future<MaterialDto> updateMaterial(String id, SaveMaterialRequest request) async {
     await ensureManufacturerExists(request.manufacturer);
     await ensureCategoryExists(request.category);
+    if (AppConfig.offlineOnly) {
+      final cached = await (_db.select(_db.cachedMaterials)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
+      final local = MaterialDto(
+        id: id,
+        barcode: request.barcode ?? cached?.barcode ?? id,
+        name: request.name,
+        manufacturer: request.manufacturer,
+        category: request.category,
+        packing: request.packing,
+        saleRate: request.saleRate,
+        taxPercent: request.taxPercent,
+        stockQty: cached?.stockQty ?? 0,
+        isPendingSync: true,
+      );
+      final nextStatus = cached?.syncStatus == 'pending_create' ? 'pending_create' : 'pending_update';
+      await _upsertMaterial(local, syncStatus: nextStatus, preserveCreatedAt: cached?.createdAt);
+      await _enqueueSync(
+        entityType: 'material',
+        entityId: id,
+        operation: nextStatus == 'pending_create' ? 'create' : 'update',
+        payload: request.toJson(),
+      );
+      await onMaterialsChanged?.call();
+      return local;
+    }
     try {
       final updated = (await _remote.updateMaterial(id, request)).copyWith(manufacturer: request.manufacturer);
       await _upsertMaterial(updated, syncStatus: 'synced');

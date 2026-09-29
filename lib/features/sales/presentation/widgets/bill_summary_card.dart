@@ -15,7 +15,12 @@ class BillSummaryCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cart = ref.watch(cartControllerProvider);
+    final itemCount = ref.watch(cartControllerProvider.select((s) => s.items.length));
+    final totalQty = ref.watch(cartControllerProvider.select((s) => s.totalQty));
+    final taxableValue = ref.watch(cartControllerProvider.select((s) => s.taxableValue));
+    final totalTax = ref.watch(cartControllerProvider.select((s) => s.totalTax));
+    final totalDiscount = ref.watch(cartControllerProvider.select((s) => s.totalDiscount));
+    final totalAmount = ref.watch(cartControllerProvider.select((s) => s.totalAmount));
 
     return Container(
       decoration: BoxDecoration(
@@ -54,7 +59,7 @@ class BillSummaryCard extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(AppRadius.pill),
                 ),
                 child: Text(
-                  '${cart.items.length} items',
+                  '$itemCount items',
                   style: const TextStyle(
                     fontSize: 10.5,
                     fontWeight: FontWeight.w700,
@@ -67,10 +72,10 @@ class BillSummaryCard extends ConsumerWidget {
               const SizedBox(height: AppSpacing.sm),
 
               // Breakdown Rows
-              _summaryRow('Total Qty', '${cart.totalQty}', context),
-              _summaryRow('Taxable Amount', '₹${cart.taxableValue.toStringAsFixed(2)}', context),
-              _summaryRow('Total Tax', '₹${cart.totalTax.toStringAsFixed(2)}', context),
-              _summaryRow('Discount', '₹${cart.totalDiscount.toStringAsFixed(2)}', context),
+              _summaryRow('Total Qty', '$totalQty', context),
+              _summaryRow('Taxable Amount', '₹${taxableValue.toStringAsFixed(2)}', context),
+              _summaryRow('Total Tax', '₹${totalTax.toStringAsFixed(2)}', context),
+              _summaryRow('Discount', '₹${totalDiscount.toStringAsFixed(2)}', context),
 
               const SizedBox(height: AppSpacing.sm),
 
@@ -95,7 +100,7 @@ class BillSummaryCard extends ConsumerWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '₹${cart.totalAmount.toStringAsFixed(2)}',
+                      '₹${totalAmount.toStringAsFixed(2)}',
                       style: AppTypography.mono.copyWith(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
@@ -122,11 +127,11 @@ class BillSummaryCard extends ConsumerWidget {
                       ),
                     ),
                     Text(
-                      '₹${cart.totalAmount.toStringAsFixed(2)}',
+                      '₹${totalAmount.toStringAsFixed(2)}',
                       style: AppTypography.mono.copyWith(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w700,
-                        color: cart.totalAmount > 0 ? AppColors.danger : AppColors.success,
+                        color: totalAmount > 0 ? AppColors.danger : AppColors.success,
                       ),
                     ),
                   ],

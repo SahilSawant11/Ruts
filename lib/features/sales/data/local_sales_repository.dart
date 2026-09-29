@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart' hide Column;
 
+import '../../../core/config/app_config.dart';
 import '../../../core/local/app_database.dart';
 import '../../../core/network/api_exception.dart';
 import '../../masters/data/local_masters_repository.dart';
@@ -109,16 +110,19 @@ class LocalSalesRepository {
 
   Future<void> returnSalesBill(String billId) async {
     var remoteSucceeded = false;
-    try {
-      await _remote.returnSalesBill(billId);
-      remoteSucceeded = true;
-    } on ApiException catch (e) {
-      if (e.statusCode != null && e.statusCode != 404) {
-        rethrow;
+    if (!AppConfig.offlineOnly) {
+      try {
+        await _remote.returnSalesBill(billId);
+        remoteSucceeded = true;
+      } on ApiException catch (e) {
+        if (e.statusCode != null && e.statusCode != 404) {
+          rethrow;
+        }
       }
     }
 
     await _db.transaction(() async {
+      // Restore stock for returned sale items
       final lineItems = await (_db.select(_db.cachedSaleLineItems)
             ..where((tbl) => tbl.salesBillId.equals(billId)))
           .get();
@@ -166,6 +170,7 @@ class LocalSalesRepository {
   }
 
   Future<List<CustomerDto>> getCustomers() async {
+    if (AppConfig.offlineOnly) return const [];
     try {
       return await _remote.getCustomers();
     } on ApiException {
@@ -361,6 +366,25 @@ class LocalSalesRepository {
           );
         }
       });
+
+      // Stock deduction: sale deducts stock (inside same transaction)
+      for (final item in request.lineItems) {
+        if (item.materialId == null) continue;
+        final stock = await (_db.select(_db.cachedInventoryStocks)
+              ..where((tbl) => tbl.materialId.equals(item.materialId!)))
+            .getSingleOrNull();
+
+        if (stock != null) {
+          await (_db.update(_db.cachedInventoryStocks)
+                ..where((tbl) => tbl.materialId.equals(item.materialId!)))
+              .write(
+            CachedInventoryStocksCompanion(
+              qtyOnHand: Value((stock.qtyOnHand - item.quantity).clamp(0, 999999)),
+              updatedAt: Value(now),
+            ),
+          );
+        }
+      }
     });
   }
 

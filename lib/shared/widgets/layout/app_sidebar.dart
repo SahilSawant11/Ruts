@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/auth/auth_controller.dart';
+import '../../../core/config/app_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 
@@ -149,14 +150,16 @@ class AppSidebar extends ConsumerWidget {
                   onTap: () => context.go('/brandwise-report'),
                 ),
 
-                // OPERATIONS
-                _GroupDivider(),
-                SidebarItem(
-                  icon: Icons.sync_alt_rounded,
-                  label: 'Sync Center',
-                  active: location == '/sync',
-                  onTap: () => context.go('/sync'),
-                ),
+                // OPERATIONS — hidden when offline-only
+                if (!AppConfig.offlineOnly) ...[
+                  _GroupDivider(),
+                  SidebarItem(
+                    icon: Icons.sync_alt_rounded,
+                    label: 'Sync Center',
+                    active: location == '/sync',
+                    onTap: () => context.go('/sync'),
+                  ),
+                ],
               ],
             ),
           ),

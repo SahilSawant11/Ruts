@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:path_provider/path_provider.dart';
+
 import '../network/api_exception.dart';
 import 'app_user.dart';
 
@@ -49,10 +51,12 @@ class AuthRepository {
     }
   }
 
+  /// Returns the session file inside the platform-standard application
+  /// support directory.  Works on Windows, macOS, and Linux without
+  /// relying on `HOME` / `USERPROFILE` environment variables.
   Future<File> _sessionFile() async {
-    final home = Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'];
-    final root = home != null && home.isNotEmpty ? Directory(home) : Directory.current;
-    return File('${root.path}${Platform.pathSeparator}.caskly${Platform.pathSeparator}session.json');
+    final dir = await getApplicationSupportDirectory();
+    return File('${dir.path}${Platform.pathSeparator}caskly${Platform.pathSeparator}session.json');
   }
 }
 

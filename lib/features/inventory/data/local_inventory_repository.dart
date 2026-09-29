@@ -1,9 +1,7 @@
-import 'dart:convert';
-
 import 'package:drift/drift.dart' hide Column;
 
+import '../../../core/config/app_config.dart';
 import '../../../core/local/app_database.dart';
-import '../../../core/network/api_exception.dart';
 import '../../masters/data/local_masters_repository.dart';
 import 'models/inventory_item_dto.dart';
 import 'models/inventory_overview_item.dart';
@@ -17,12 +15,14 @@ class LocalInventoryRepository {
   final LocalMastersRepository _masters;
 
   Future<List<InventoryItemDto>> getInventory() async {
-    try {
-      await _masters.syncPendingMasters();
-      final remote = await _remote.getInventory();
-      await _cacheInventory(remote);
-    } on ApiException {
-      // Fall back to cached snapshot below.
+    if (!AppConfig.offlineOnly) {
+      try {
+        await _masters.syncPendingMasters();
+        final remote = await _remote.getInventory();
+        await _cacheInventory(remote);
+      } catch (_) {
+        // Fall back to cached snapshot below.
+      }
     }
 
     return _buildLocalInventoryList();
@@ -81,8 +81,9 @@ class LocalInventoryRepository {
       for (final row in snapshot) row.materialId: row.reorderLevel,
     };
 
-    await _applyPendingPurchaseDeltas(qtyByMaterial);
-    await _applyPendingSaleDeltas(qtyByMaterial);
+    // Stock levels are real-time: sale/purchase transactions update
+    // cachedInventoryStocks in the same transaction as the bill.
+    // No delta scanning needed.
 
     final allMaterialIds = {
       ...materialById.keys,
@@ -111,39 +112,5 @@ class LocalInventoryRepository {
         reorderLevel: reorderByMaterial[materialId] ?? 10,
       );
     }).toList();
-  }
-
-  Future<void> _applyPendingPurchaseDeltas(Map<String, int> qtyByMaterial) async {
-    final rows = await (_db.select(_db.syncQueueItems)
-          ..where((tbl) => tbl.entityType.equals('purchase') & tbl.status.isNotValue('failed')))
-        .get();
-
-    for (final row in rows) {
-      final payload = jsonDecode(row.payload) as Map<String, dynamic>;
-      final lineItems = payload['lineItems'] as List<dynamic>? ?? const [];
-      for (final item in lineItems) {
-        final materialId = (item as Map<String, dynamic>)['materialId'] as String;
-        final qty = item['qty'] as int;
-        qtyByMaterial[materialId] = (qtyByMaterial[materialId] ?? 0) + qty;
-      }
-    }
-  }
-
-  Future<void> _applyPendingSaleDeltas(Map<String, int> qtyByMaterial) async {
-    final rows = await (_db.select(_db.syncQueueItems)
-          ..where((tbl) => tbl.entityType.equals('sale') & tbl.status.isNotValue('failed')))
-        .get();
-
-    for (final row in rows) {
-      final payload = jsonDecode(row.payload) as Map<String, dynamic>;
-      final lineItems = payload['lineItems'] as List<dynamic>? ?? const [];
-      for (final item in lineItems) {
-        final map = item as Map<String, dynamic>;
-        final materialId = map['materialId'] as String?;
-        if (materialId == null) continue;
-        final qty = map['quantity'] as int;
-        qtyByMaterial[materialId] = (qtyByMaterial[materialId] ?? 0) - qty;
-      }
-    }
   }
 }

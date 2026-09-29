@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' hide Column;
 
+import '../../../core/config/app_config.dart';
 import '../../../core/local/app_database.dart';
 import '../../../core/network/api_exception.dart';
 import '../../sales/data/local_sales_repository.dart';
@@ -19,10 +20,12 @@ class LocalReportsRepository {
     String? category,
     String? manufacturer,
   }) async {
-    try {
-      await _sales.syncPendingSales();
-    } on ApiException {
-      // Fall through to local data below.
+    if (!AppConfig.offlineOnly) {
+      try {
+        await _sales.syncPendingSales();
+      } on ApiException {
+        // Fall through to local data below.
+      }
     }
 
     final local = await _buildLocalSalesReport(
@@ -31,7 +34,7 @@ class LocalReportsRepository {
       category: category,
       manufacturer: manufacturer,
     );
-    if (local.totalBills > 0) return local;
+    if (AppConfig.offlineOnly || local.totalBills > 0) return local;
     if ((category?.trim().isNotEmpty ?? false) || (manufacturer?.trim().isNotEmpty ?? false)) {
       return local;
     }
