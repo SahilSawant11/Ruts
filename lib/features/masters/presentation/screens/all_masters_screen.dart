@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:file_selector/file_selector.dart';
+import '../../../../core/local/backup_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -108,16 +110,47 @@ class AllMastersScreen extends ConsumerWidget {
                 subtitle: 'License no., validity',
                 comingSoon: true,
               ),
-              const MasterTile(
+              MasterTile(
                 icon: Icons.settings_outlined,
                 title: 'App Settings',
-                subtitle: 'Printer, backup, theme',
-                comingSoon: true,
+                subtitle: 'Backup database',
+                onTap: () => _showBackupDialog(context, ref),
               ),
             ],
           ),
         ],
       ),
     );
+  }
+
+  void _showBackupDialog(BuildContext context, WidgetRef ref) async {
+    final db = ref.read(appDatabaseProvider);
+    final backup = BackupService(db);
+
+    final folder = await getDirectoryPath(
+      confirmButtonText: 'Save Backup Here',
+    );
+    if (folder == null) return;
+
+    try {
+      final path = await backup.backupNow(folder);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Backup saved: ${path.split('/').last}'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Backup failed: $e'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
   }
 }
