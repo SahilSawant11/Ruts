@@ -137,7 +137,8 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
 
   @override
   Widget build(BuildContext context) {
-    final cart = ref.watch(cartControllerProvider);
+    final isScanning = ref.watch(cartControllerProvider.select((s) => s.isScanning));
+    final scanError = ref.watch(cartControllerProvider.select((s) => s.scanError));
     final isDark = AppColors.isDark(context);
 
     final barBg = isDark ? AppColors.surfaceFor(context) : AppColors.surfaceFor(context);
@@ -224,7 +225,7 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
                       ),
 
                       // Trailing Actions (Scanner progress or paste)
-                      if (cart.isScanning)
+                      if (isScanning)
                         const Padding(
                           padding: EdgeInsets.symmetric(horizontal: 8),
                           child: SizedBox(
@@ -303,7 +304,7 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
                   color: AppColors.primary,
                   borderRadius: BorderRadius.circular(AppRadius.md),
                   child: InkWell(
-                    onTap: cart.isScanning ? null : _submit,
+                    onTap: isScanning ? null : _submit,
                     borderRadius: BorderRadius.circular(AppRadius.md),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -330,7 +331,7 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
           ),
 
           // Scan Error row
-          if (cart.scanError != null) ...[
+          if (scanError != null) ...[
             const SizedBox(height: 6),
             Row(
               children: [
@@ -338,7 +339,7 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    cart.scanError!,
+                    scanError,
                     style: AppTypography.caption.copyWith(
                       color: AppColors.danger,
                       fontSize: 11.5,

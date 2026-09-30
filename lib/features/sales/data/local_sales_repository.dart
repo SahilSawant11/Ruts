@@ -367,7 +367,8 @@ class LocalSalesRepository {
         }
       });
 
-      // Stock deduction: sale deducts stock (inside same transaction)
+      // Stock deduction: sale deducts stock (inside same transaction).
+      // Upsert: creates the stock row if missing. Allows negative stock.
       for (final item in request.lineItems) {
         if (item.materialId == null) continue;
         final stock = await (_db.select(_db.cachedInventoryStocks)
@@ -379,10 +380,27 @@ class LocalSalesRepository {
                 ..where((tbl) => tbl.materialId.equals(item.materialId!)))
               .write(
             CachedInventoryStocksCompanion(
-              qtyOnHand: Value((stock.qtyOnHand - item.quantity).clamp(0, 999999)),
+              qtyOnHand: Value(stock.qtyOnHand - item.quantity),
               updatedAt: Value(now),
             ),
           );
+        } else {
+          // Stock row missing — create it with the negative qty.
+          final material = await (_db.select(_db.cachedMaterials)
+                ..where((tbl) => tbl.id.equals(item.materialId!)))
+              .getSingleOrNull();
+          await _db.into(_db.cachedInventoryStocks).insert(
+                CachedInventoryStocksCompanion.insert(
+                  materialId: item.materialId!,
+                  barcode: material?.barcode ?? item.barcodeNo,
+                  name: material?.name ?? item.materialName,
+                  category: material?.category ?? item.materialType,
+                  qtyOnHand: -item.quantity,
+                  reorderLevel: const Value(10),
+                  updatedAt: Value(now),
+                ),
+                mode: InsertMode.insertOrReplace,
+              );
         }
       }
     });

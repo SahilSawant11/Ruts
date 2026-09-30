@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
@@ -202,7 +204,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.defaults() : super(driftDatabase(name: 'pos_app.sqlite'));
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -240,6 +242,15 @@ class AppDatabase extends _$AppDatabase {
           if (from < 9) {
             await _createIndexes();
           }
+          if (from < 10) {
+            await _applyPendingStockDeltas();
+          }
+        },
+        beforeOpen: (details) async {
+          // PRAGMAs must be set per-connection, before any queries.
+          await customStatement('PRAGMA journal_mode=WAL');
+          await customStatement('PRAGMA synchronous=NORMAL');
+          await customStatement('PRAGMA cache_size=-8000'); // 8 MB
         },
       );
 
@@ -260,6 +271,157 @@ class AppDatabase extends _$AppDatabase {
     for (final sql in indexes) {
       await customStatement(sql);
     }
+  }
+
+  /// One-time migration (v9 → v10): apply stock deltas from pending bills
+  /// created under the OLD logic (which did NOT deduct/add stock at save time).
+  ///
+  /// Logic:
+  ///   - Sale 'create' pending → subtract qty from cachedInventoryStocks
+  ///   - Purchase 'create' pending → add qty to cachedInventoryStocks
+  ///   - Sale 'return' pending → add qty back (undo a sale)
+  ///   - Purchase 'return' pending → subtract qty (undo a purchase)
+  ///
+  /// Idempotency: inserts a marker row ('_migration', 'v10_stock_deltas')
+  /// into sync_queue_items. If the marker exists, the migration is a no-op.
+  Future<void> _applyPendingStockDeltas() async {
+    // Check if already applied
+    final marker = await customSelect(
+      "SELECT 1 FROM sync_queue_items WHERE entity_type = '_migration' AND entity_id = 'v10_stock_deltas' LIMIT 1",
+    ).getSingleOrNull();
+    if (marker != null) return;
+
+    // Gather deltas: {materialId: qty_change} (positive = add, negative = subtract)
+    final deltas = <String, int>{};
+
+    // --- Sale creates: subtract stock ---
+    final saleRows = await customSelect(
+      "SELECT payload FROM sync_queue_items WHERE entity_type = 'sale' AND operation = 'create' AND status != 'failed'",
+    ).get();
+    for (final row in saleRows) {
+      _accumulateSaleDeltas(row.read<String>('payload'), deltas, subtract: true);
+    }
+
+    // --- Sale returns: add stock back ---
+    final saleReturnRows = await customSelect(
+      "SELECT entity_id FROM sync_queue_items WHERE entity_type = 'sale' AND operation = 'return' AND status != 'failed'",
+    ).get();
+    for (final row in saleReturnRows) {
+      final billId = row.read<String>('entity_id');
+      final lineRows = await customSelect(
+        'SELECT material_id, quantity FROM cached_sale_line_items WHERE sales_bill_id = ?',
+        variables: [Variable.withString(billId)],
+      ).get();
+      for (final line in lineRows) {
+        final materialId = line.readNullable<String>('material_id');
+        if (materialId == null) continue;
+        final qty = line.read<int>('quantity');
+        deltas[materialId] = (deltas[materialId] ?? 0) + qty;
+      }
+    }
+
+    // --- Purchase creates: add stock ---
+    final purchaseRows = await customSelect(
+      "SELECT payload FROM sync_queue_items WHERE entity_type = 'purchase' AND operation = 'create' AND status != 'failed'",
+    ).get();
+    for (final row in purchaseRows) {
+      _accumulatePurchaseDeltas(row.read<String>('payload'), deltas, add: true);
+    }
+
+    // --- Purchase returns: subtract stock ---
+    final purchaseReturnRows = await customSelect(
+      "SELECT entity_id FROM sync_queue_items WHERE entity_type = 'purchase' AND operation = 'return' AND status != 'failed'",
+    ).get();
+    for (final row in purchaseReturnRows) {
+      final billId = row.read<String>('entity_id');
+      final lineRows = await customSelect(
+        'SELECT material_id, qty FROM cached_purchase_line_items WHERE purchase_bill_id = ?',
+        variables: [Variable.withString(billId)],
+      ).get();
+      for (final line in lineRows) {
+        final materialId = line.read<String>('material_id');
+        final qty = line.read<int>('qty');
+        deltas[materialId] = (deltas[materialId] ?? 0) - qty;
+      }
+    }
+
+    // Apply deltas via upsert
+    for (final entry in deltas.entries) {
+      final materialId = entry.key;
+      final delta = entry.value;
+      if (delta == 0) continue;
+
+      // Try to read existing stock row
+      final existing = await customSelect(
+        'SELECT qty_on_hand FROM cached_inventory_stocks WHERE material_id = ?',
+        variables: [Variable.withString(materialId)],
+      ).getSingleOrNull();
+
+      if (existing != null) {
+        final newQty = existing.read<int>('qty_on_hand') + delta;
+        await customStatement(
+          'UPDATE cached_inventory_stocks SET qty_on_hand = ?, updated_at = ? WHERE material_id = ?',
+          [newQty, DateTime.now().toUtc().millisecondsSinceEpoch ~/ 1000, materialId],
+        );
+      } else {
+        // Upsert: create stock row from material master
+        final mat = await customSelect(
+          'SELECT barcode, name, category FROM cached_materials WHERE id = ?',
+          variables: [Variable.withString(materialId)],
+        ).getSingleOrNull();
+        final barcode = mat?.read<String>('barcode') ?? materialId;
+        final name = mat?.read<String>('name') ?? materialId;
+        final category = mat?.read<String>('category') ?? 'Unknown';
+        await customStatement(
+          'INSERT OR REPLACE INTO cached_inventory_stocks (material_id, barcode, name, category, qty_on_hand, reorder_level, updated_at) VALUES (?, ?, ?, ?, ?, 10, ?)',
+          [materialId, barcode, name, category, delta, DateTime.now().toUtc().millisecondsSinceEpoch ~/ 1000],
+        );
+      }
+    }
+
+    // Insert idempotency marker
+    await customStatement(
+      "INSERT INTO sync_queue_items (entity_type, entity_id, operation, payload, status, updated_at) VALUES ('_migration', 'v10_stock_deltas', 'completed', '{}', 'done', ?)",
+      [DateTime.now().toUtc().millisecondsSinceEpoch ~/ 1000],
+    );
+  }
+
+  /// Parse a sale create payload and accumulate material deltas.
+  void _accumulateSaleDeltas(String payload, Map<String, int> deltas, {required bool subtract}) {
+    try {
+      final json = _parseJson(payload);
+      final lineItems = json['lineItems'] as List<dynamic>? ?? const [];
+      for (final item in lineItems) {
+        final map = item as Map<String, dynamic>;
+        final materialId = map['materialId'] as String?;
+        if (materialId == null) continue;
+        final qty = (map['quantity'] as num?)?.toInt() ?? 0;
+        deltas[materialId] = (deltas[materialId] ?? 0) + (subtract ? -qty : qty);
+      }
+    } catch (_) {
+      // Corrupted payload — skip silently.
+    }
+  }
+
+  /// Parse a purchase create payload and accumulate material deltas.
+  void _accumulatePurchaseDeltas(String payload, Map<String, int> deltas, {required bool add}) {
+    try {
+      final json = _parseJson(payload);
+      final lineItems = json['lineItems'] as List<dynamic>? ?? const [];
+      for (final item in lineItems) {
+        final map = item as Map<String, dynamic>;
+        final materialId = map['materialId'] as String?;
+        if (materialId == null) continue;
+        final qty = (map['qty'] as num?)?.toInt() ?? 0;
+        deltas[materialId] = (deltas[materialId] ?? 0) + (add ? qty : -qty);
+      }
+    } catch (_) {
+      // Corrupted payload — skip silently.
+    }
+  }
+
+  Map<String, dynamic> _parseJson(String raw) {
+    return (const JsonCodec().decode(raw) as Map).cast<String, dynamic>();
   }
 
   Future<void> ensureStarterData() async {

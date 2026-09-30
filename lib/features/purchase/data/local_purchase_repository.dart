@@ -205,7 +205,7 @@ class LocalPurchaseRepository {
                 ..where((tbl) => tbl.materialId.equals(item.materialId)))
               .write(
             CachedInventoryStocksCompanion(
-              qtyOnHand: Value((stock.qtyOnHand - item.qty).clamp(0, 999999)),
+              qtyOnHand: Value(stock.qtyOnHand - item.qty),
               updatedAt: Value(DateTime.now().toUtc()),
             ),
           );
