@@ -8,7 +8,9 @@ on:
 
 jobs:
   build-windows:
-    runs-on: windows-latest
+    # Pin to windows-2022 (VS 17). windows-latest now uses VS 2025 (v18),
+    # whose CMake install phase is incompatible with Flutter's Windows build.
+    runs-on: windows-2022
 
     steps:
       - uses: actions/checkout@v4
