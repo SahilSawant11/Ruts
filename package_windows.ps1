@@ -26,29 +26,84 @@ if (-not (Test-Path "pubspec.yaml")) {
 
 # 2. Build release if not skipped
 if (-not $SkipBuild) {
-    Write-Host "`n[1/5] Building Flutter Windows Release..." -ForegroundColor Yellow
+    Write-Host "`n[1/6] Building Flutter Windows Release..." -ForegroundColor Yellow
     flutter build windows --release
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Flutter release build failed. Please resolve build errors and retry."
     }
 } else {
-    Write-Host "`n[1/5] Skipping Flutter build as requested (-SkipBuild)." -ForegroundColor Yellow
+    Write-Host "`n[1/6] Skipping Flutter build as requested (-SkipBuild)." -ForegroundColor Yellow
 }
 
 $ReleaseDir = "build\windows\x64\runner\Release"
 if (-not (Test-Path $ReleaseDir)) {
-    Write-Error "Release directory '$ReleaseDir' not found. Build may have failed."
+    # Fallback check for non-x64 path
+    if (Test-Path "build\windows\runner\Release") {
+        $ReleaseDir = "build\windows\runner\Release"
+    } else {
+        Write-Error "Release directory '$ReleaseDir' not found. Build may have failed."
+    }
 }
 
-# 3. Verify and bundle Microsoft Visual C++ Runtime DLLs
-Write-Host "`n[2/5] Checking and bundling MSVC C++ Runtime DLLs (vcruntime140.dll, msvcp140.dll)..." -ForegroundColor Yellow
+$DataDir = Join-Path $ReleaseDir "data"
+if (-not (Test-Path $DataDir)) {
+    New-Item -ItemType Directory -Path $DataDir -Force | Out-Null
+}
+
+# 3. Verify and safeguard Flutter core files & AOT snapshot (app.so)
+Write-Host "`n[2/6] Verifying Flutter engine, assets, and AOT data (app.so)..." -ForegroundColor Yellow
+
+$TargetAppSo = Join-Path $DataDir "app.so"
+if (-not (Test-Path $TargetAppSo)) {
+    Write-Host "  app.so not in Release\data. Searching build outputs..." -ForegroundColor Yellow
+    $PossibleAppSo = @(
+        "build\windows\x64\app.so",
+        "build\windows\app.so",
+        "build\windows\x64\extracted\app.so",
+        "build\app.so"
+    )
+    $FoundSo = $null
+    foreach ($path in $PossibleAppSo) {
+        if (Test-Path $path) {
+            $FoundSo = $path
+            break
+        }
+    }
+
+    if (-not $FoundSo) {
+        $FoundSo = Get-ChildItem -Path "build" -Filter "app.so" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
+    }
+
+    if ($FoundSo) {
+        Copy-Item -Path $FoundSo -Destination $TargetAppSo -Force
+        Write-Host "  Copied AOT snapshot from $FoundSo to $TargetAppSo" -ForegroundColor Green
+    } else {
+        Write-Error "CRITICAL: app.so (AOT compiled Flutter snapshot) was not found in the build folder! Flutter Windows engine cannot launch without app.so."
+    }
+} else {
+    Write-Host "  app.so verified in $TargetAppSo" -ForegroundColor Green
+}
+
+# Verify other essential Flutter files
+$Icudtl = Join-Path $DataDir "icudtl.dat"
+if (-not (Test-Path $Icudtl)) {
+    $foundIcu = Get-ChildItem -Path "windows" -Filter "icudtl.dat" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
+    if ($foundIcu) {
+        Copy-Item -Path $foundIcu -Destination $Icudtl -Force
+    }
+}
+
+# 4. Verify and bundle Microsoft Visual C++ Runtime DLLs (vcruntime140, msvcp140, etc.)
+Write-Host "`n[3/6] Checking and bundling MSVC C++ Runtime DLLs (vcruntime140.dll, msvcp140.dll)..." -ForegroundColor Yellow
 
 $RequiredDlls = @(
     "msvcp140.dll",
     "msvcp140_1.dll",
     "msvcp140_2.dll",
+    "msvcp140_codecvt_ids.dll",
     "vcruntime140.dll",
-    "vcruntime140_1.dll"
+    "vcruntime140_1.dll",
+    "vcomp140.dll"
 )
 
 $MissingDlls = @()
@@ -60,7 +115,7 @@ foreach ($dll in $RequiredDlls) {
 }
 
 if ($MissingDlls.Count -gt 0) {
-    Write-Host "  CMake did not bundle all CRT DLLs. Locating Visual Studio Redistributable folder..." -ForegroundColor Cyan
+    Write-Host "  Locating Visual Studio Redistributable folder..." -ForegroundColor Cyan
 
     $VswherePath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
     $VsPath = $null
@@ -75,9 +130,9 @@ if ($MissingDlls.Count -gt 0) {
 
     if (-not $VsPath) {
         $PossiblePaths = @(
+            "C:\Program Files\Microsoft Visual Studio\2022\Enterprise",
             "C:\Program Files\Microsoft Visual Studio\2022\Community",
             "C:\Program Files\Microsoft Visual Studio\2022\Professional",
-            "C:\Program Files\Microsoft Visual Studio\2022\Enterprise",
             "C:\Program Files\Microsoft Visual Studio\2022\BuildTools",
             "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community",
             "C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional"
@@ -113,26 +168,23 @@ if ($MissingDlls.Count -gt 0) {
             }
         }
     }
-} else {
-    Write-Host "  All required MSVC C++ runtime DLLs are present in the Release directory." -ForegroundColor Green
 }
 
-# Fallback: check Windows System32 if any DLL is still missing
-foreach ($dll in $RequiredDlls) {
+# Fallback: check Windows System32 if any critical DLL is still missing
+$CriticalDlls = @("msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll")
+foreach ($dll in $CriticalDlls) {
     $dllPath = Join-Path $ReleaseDir $dll
     if (-not (Test-Path $dllPath)) {
         $sys32Path = "C:\Windows\System32\$dll"
         if (Test-Path $sys32Path) {
             Copy-Item -Path $sys32Path -Destination $ReleaseDir -Force
             Write-Host "  Copied $dll from System32 into Release bundle." -ForegroundColor Cyan
-        } else {
-            Write-Warning "Could not find $dll. The client might need Visual C++ Redistributable if this is missing."
         }
     }
 }
 
-# 4. Create Desktop / Taskbar Shortcut Helper in the portable folder
-Write-Host "`n[3/5] Adding desktop shortcut creator helper..." -ForegroundColor Yellow
+# 5. Create Desktop / Taskbar Shortcut Helper in the portable folder
+Write-Host "`n[4/6] Adding desktop shortcut creator helper..." -ForegroundColor Yellow
 $ShortcutScript = @"
 @echo off
 setlocal
@@ -141,7 +193,7 @@ set TARGET=%~dp0pos_app.exe
 set SHORTCUT=%USERPROFILE%\Desktop\Caskly POS.lnk
 
 echo Creating Desktop Shortcut for Caskly POS...
-powershell -NoProfile -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('%SHORTCUT%'); $s.TargetPath = '%TARGET%'; $s.WorkingDirectory = '%~dp0'; $s.Save()"
+powershell -NoProfile -Command "`$ws = New-Object -ComObject WScript.Shell; `$s = `$ws.CreateShortcut('%SHORTCUT%'); `$s.TargetPath = '%TARGET%'; `$s.WorkingDirectory = '%~dp0'; `$s.Save()"
 
 echo Done! Shortcut created on your Desktop.
 echo Tip: Double-click the shortcut to run, then right-click its taskbar icon and click 'Pin to taskbar'.
@@ -151,25 +203,26 @@ pause
 $ShortcutScriptPath = Join-Path $ReleaseDir "Create_Desktop_Shortcut.bat"
 Set-Content -Path $ShortcutScriptPath -Value $ShortcutScript -Encoding ASCII
 
-# 5. Create Portable ZIP
-Write-Host "`n[4/5] Compressing portable ZIP archive..." -ForegroundColor Yellow
+# 6. Create Portable ZIP (Ensuring all subfolders like data/ and assets are preserved)
+Write-Host "`n[5/6] Compressing portable ZIP archive..." -ForegroundColor Yellow
 $DistDir = "build\dist"
 if (-not (Test-Path $DistDir)) {
-    New-Item -ItemType Directory -Path $DistDir | Out-Null
+    New-Item -ItemType Directory -Path $DistDir -Force | Out-Null
 }
 
 $ZipFileName = "Caskly_POS_v${Version}_Windows_Portable.zip"
-$ZipFilePath = Join-Path $DistDir $ZipFileName
+$ZipFilePath = Join-Path (Get-Item $DistDir).FullName $ZipFileName
 
 if (Test-Path $ZipFilePath) {
     Remove-Item $ZipFilePath -Force
 }
 
-Compress-Archive -Path "$ReleaseDir\*" -DestinationPath $ZipFilePath -CompressionLevel Optimal
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+[System.IO.Compression.ZipFile]::CreateFromDirectory((Get-Item $ReleaseDir).FullName, $ZipFilePath, [System.IO.Compression.CompressionLevel]::Optimal, $false)
 Write-Host "  Successfully created portable ZIP: $ZipFilePath" -ForegroundColor Green
 
-# 6. Optional: Compile Inno Setup installer if iscc.exe is available
-Write-Host "`n[5/5] Checking for Inno Setup (ISCC.exe)..." -ForegroundColor Yellow
+# 7. Optional: Compile Inno Setup installer if iscc.exe is available
+Write-Host "`n[6/6] Checking for Inno Setup (ISCC.exe)..." -ForegroundColor Yellow
 $IsccPaths = @(
     "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
     "C:\Program Files\Inno Setup 6\ISCC.exe"
@@ -189,22 +242,19 @@ if (-not $Iscc) {
 
 if ($Iscc -and (Test-Path "installer_script.iss")) {
     Write-Host "  Inno Setup detected at: $Iscc" -ForegroundColor Green
-    Write-Host "  Compiling installer..." -ForegroundColor Cyan
+    Write-Host "  Compiling single-file Setup Installer (.exe)..." -ForegroundColor Cyan
     & $Iscc "installer_script.iss"
     if ($LASTEXITCODE -eq 0) {
         Write-Host "  Installer generated at: build\windows\installer\" -ForegroundColor Green
     }
 } else {
-    Write-Host "  Inno Setup not installed or skipped. (Optional - portable ZIP is ready)." -ForegroundColor DarkGray
+    Write-Host "  Inno Setup not installed or skipped. (Portable ZIP is ready)." -ForegroundColor DarkGray
 }
 
 Write-Host "`n==================================================" -ForegroundColor Green
-Write-Host "  SUCCESS! Windows Portable Build Ready:         " -ForegroundColor Green
-Write-Host "  $ZipFilePath" -ForegroundColor White
+Write-Host "  SUCCESS! Windows Build & Package Complete:      " -ForegroundColor Green
+Write-Host "  Portable ZIP: $ZipFilePath" -ForegroundColor White
+if (Test-Path "build\windows\installer\Caskly_POS_Setup_v${Version}.exe") {
+    Write-Host "  Setup Wizard: build\windows\installer\Caskly_POS_Setup_v${Version}.exe" -ForegroundColor White
+}
 Write-Host "==================================================" -ForegroundColor Green
-Write-Host "Client instructions:" -ForegroundColor Yellow
-Write-Host "1. Send the client '$ZipFileName'."
-Write-Host "2. Client extracts the ZIP anywhere on their PC."
-Write-Host "3. Double-click 'pos_app.exe' (or 'Create_Desktop_Shortcut.bat')."
-Write-Host "4. Right-click the app icon in the taskbar and select 'Pin to taskbar'."
-Write-Host "No Visual Studio or C++ install needed!" -ForegroundColor Green

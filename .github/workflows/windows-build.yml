@@ -25,18 +25,30 @@ jobs:
 
       - run: dart run build_runner build --delete-conflicting-outputs
 
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
       - name: Build Windows Application
         run: flutter build windows --release
 
-      - name: Bundle VC Runtime DLLs and Package Portable ZIP
+      - name: Bundle VC Runtime DLLs and Package
         run: powershell -ExecutionPolicy Bypass -File .\package_windows.ps1 -SkipBuild
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload Setup Installer (.exe)
+        uses: actions/upload-artifact@v4
         with:
-          name: windows-release
-          path: build/windows/x64/runner/Release/
+          name: Caskly-POS-Windows-Installer
+          path: build/windows/installer/*.exe
+          if-no-files-found: ignore
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload Portable Zero-Install ZIP
+        uses: actions/upload-artifact@v4
         with:
-          name: windows-portable-zip
+          name: Caskly-POS-Windows-Portable-ZIP
           path: build/dist/*.zip
+
+      - name: Upload Raw Release Folder
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release-raw
+          path: build/windows/x64/runner/Release/
