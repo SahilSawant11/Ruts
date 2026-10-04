@@ -25,9 +25,18 @@ jobs:
 
       - run: dart run build_runner build --delete-conflicting-outputs
 
-      - run: flutter build windows --release
+      - name: Build Windows Application
+        run: flutter build windows --release
+
+      - name: Bundle VC Runtime DLLs and Package Portable ZIP
+        run: powershell -ExecutionPolicy Bypass -File .\package_windows.ps1 -SkipBuild
 
       - uses: actions/upload-artifact@v4
         with:
           name: windows-release
           path: build/windows/x64/runner/Release/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-portable-zip
+          path: build/dist/*.zip
