@@ -108,6 +108,70 @@ class LocalSalesRepository {
       return result;
   }
 
+  Stream<List<SalesBillDetailDto>> watchSalesBills({String? search, DateTime? date}) {
+    final billsQuery = _db.select(_db.cachedSalesBills)
+      ..orderBy([(tbl) => OrderingTerm.desc(tbl.createdAt)]);
+    if (date != null) {
+      final start = DateTime(date.year, date.month, date.day);
+      final end = start.add(const Duration(days: 1));
+      billsQuery.where((tbl) => tbl.billDate.isBiggerOrEqualValue(start) & tbl.billDate.isSmallerThanValue(end));
+    }
+    if (search != null && search.trim().isNotEmpty) {
+      final s = search.trim().toLowerCase();
+      billsQuery.where((tbl) => tbl.billNo.lower().contains(s));
+    }
+
+    return billsQuery.watch().asyncMap((billRows) async {
+      final result = <SalesBillDetailDto>[];
+      for (final bill in billRows) {
+        final lineRows = await (_db.select(_db.cachedSaleLineItems)
+              ..where((tbl) => tbl.salesBillId.equals(bill.id))
+              ..orderBy([(tbl) => OrderingTerm.asc(tbl.lineNumber)]))
+            .get();
+
+        result.add(
+          SalesBillDetailDto(
+            id: bill.id,
+            billNo: bill.billNo,
+            customerId: bill.customerId,
+            billType: 'CounterSale.Sale',
+            billDate: bill.billDate.toIso8601String(),
+            payMode: bill.payMode,
+            taxableValue: bill.totalAmount - bill.totalTax,
+            totalDiscount: 0,
+            totalTax: bill.totalTax,
+            totalAmount: bill.totalAmount,
+            balanceDue: bill.balanceDue,
+            status: bill.status,
+            createdAt: bill.createdAt.toIso8601String(),
+            lineItems: lineRows
+                .map((li) => SaleLineItemDetailDto(
+                      id: li.id,
+                      salesBillId: li.salesBillId,
+                      barcodeNo: li.barcodeNo,
+                      materialId: li.materialId,
+                      materialType: li.materialType,
+                      materialName: li.materialName,
+                      batchNo: li.batchNo,
+                      packing: li.packing,
+                      quantity: li.quantity,
+                      qtyCase: li.qtyCase,
+                      rate: li.rate,
+                      discountPercent: li.discountPercent,
+                      discountAmount: li.discountAmount,
+                      taxPercent: li.taxPercent,
+                      taxAmount: li.taxAmount,
+                      amount: li.amount,
+                      lineNumber: li.lineNumber,
+                    ))
+                .toList(),
+          ),
+        );
+      }
+      return result;
+    });
+  }
+
   Future<void> returnSalesBill(String billId) async {
     var remoteSucceeded = false;
     if (!AppConfig.offlineOnly) {

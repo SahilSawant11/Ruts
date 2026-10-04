@@ -231,7 +231,7 @@ $ShortcutScript = @"
 @echo off
 setlocal
 cd /d "%~dp0"
-set TARGET=%~dp0pos_app.exe
+set TARGET=%~dp0caskly.exe
 set SHORTCUT=%USERPROFILE%\Desktop\Caskly POS.lnk
 
 echo Creating Desktop Shortcut for Caskly POS...

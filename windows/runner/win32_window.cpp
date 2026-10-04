@@ -227,6 +227,13 @@ Win32Window::MessageHandler(HWND hwnd,
       }
       return 0;
 
+    case WM_SYSCOMMAND:
+      // Prevent F10 and Alt from activating a non-existent Win32 window menu
+      if (wparam == SC_KEYMENU) {
+        return 0;
+      }
+      break;
+
     case WM_DWMCOLORIZATIONCOLORCHANGED:
       UpdateTheme(hwnd);
       return 0;

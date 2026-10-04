@@ -56,8 +56,8 @@ class SalesReturnFilter {
   int get hashCode => Object.hash(search, date?.year, date?.month, date?.day);
 }
 
-final salesBillsListProvider = FutureProvider.family<List<SalesBillDetailDto>, SalesReturnFilter>((ref, filter) {
-  return ref.watch(salesRepositoryProvider).getSalesBills(search: filter.search, date: filter.date);
+final salesBillsListProvider = StreamProvider.family<List<SalesBillDetailDto>, SalesReturnFilter>((ref, filter) {
+  return ref.watch(salesRepositoryProvider).watchSalesBills(search: filter.search, date: filter.date);
 });
 
 final selectedSalesBillProvider = StateProvider<SalesBillDetailDto?>((ref) => null);

@@ -304,7 +304,9 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
         SecondaryButton(
           label: 'Refresh',
           icon: Icons.refresh_rounded,
-          onPressed: () => ref.invalidate(salesBillsListProvider),
+          onPressed: () {
+            ref.refresh(salesBillsListProvider(SalesReturnFilter(search: _searchQuery, date: _selectedDate)));
+          },
         ),
       ],
     );

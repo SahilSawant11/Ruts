@@ -4,7 +4,7 @@
 #define MyAppName "Caskly POS"
 #define MyAppVersion "0.1.0"
 #define MyAppPublisher "Caskly"
-#define MyAppExeName "pos_app.exe"
+#define MyAppExeName "caskly.exe"
 #define MyAppBuildDir "build\windows\x64\runner\Release"
 
 [Setup]

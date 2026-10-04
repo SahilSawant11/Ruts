@@ -68,6 +68,32 @@ class _AppShellState extends State<AppShell> {
     if (event is! KeyDownEvent) return false;
 
     final key = event.logicalKey;
+    final currentBranch = widget.navigationShell.currentIndex;
+
+    // When on Sales Screen (branch 1):
+    // F1 -> focus Barcode
+    // F4 -> focus Qty
+    // F6 -> Hold Bill
+    // F8 -> Settle / Save Sale
+    // These keys are consumed by SalesBillingScreen widgets. The shell MUST NOT hijack them!
+    if (currentBranch == 1) {
+      if (key == LogicalKeyboardKey.f1 ||
+          key == LogicalKeyboardKey.f4 ||
+          key == LogicalKeyboardKey.f6 ||
+          key == LogicalKeyboardKey.f8 ||
+          key == LogicalKeyboardKey.escape) {
+        return false;
+      }
+    }
+
+    // When on Purchase Screen (branch 2):
+    // F8 -> Save / Complete Purchase
+    if (currentBranch == 2) {
+      if (key == LogicalKeyboardKey.f8 || key == LogicalKeyboardKey.escape) {
+        return false;
+      }
+    }
+
     if (key == LogicalKeyboardKey.f1) {
       widget.navigationShell.goBranch(0);
       return true;

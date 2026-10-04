@@ -51,7 +51,7 @@ void main() {
 
     setUp(() {
       repo = _FakeSalesRepository();
-      controller = CartController(repo);
+      controller = CartController((code) => repo.materials[code]);
     });
 
     test('addByBarcode with custom qty adds correct item and computes totals', () async {

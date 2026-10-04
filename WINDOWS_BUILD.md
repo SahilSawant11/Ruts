@@ -7,13 +7,13 @@ This guide explains how to build a **100% portable, zero-install Windows ZIP** t
 ## Why Did the Client Need to Install Visual Studio / C++ Before?
 
 Flutter Windows applications are compiled with Microsoft Visual C++ (MSVC). By default:
-- The compiled executable (`pos_app.exe`) dynamically links to the **Microsoft Visual C++ Redistributable runtime DLLs** (`vcruntime140.dll`, `msvcp140.dll`, etc.).
+- The compiled executable (`caskly.exe`) dynamically links to the **Microsoft Visual C++ Redistributable runtime DLLs** (`vcruntime140.dll`, `msvcp140.dll`, etc.).
 - If a client's computer doesn't already have the Visual C++ Redistributable installed, Windows blocks the app with:
   > *"The code execution cannot proceed because VCRUNTIME140.dll was not found."*
 
 ### How We Fixed It:
 Windows searches the local folder of the executable **first** before checking system folders.
-Our build system and packager now bundle the required Microsoft C++ runtime DLLs (`vcruntime140.dll`, `vcruntime140_1.dll`, `msvcp140.dll`, etc.) **directly beside `pos_app.exe`**.
+Our build system and packager now bundle the required Microsoft C++ runtime DLLs (`vcruntime140.dll`, `vcruntime140_1.dll`, `msvcp140.dll`, etc.) **directly beside `caskly.exe`**.
 When your client unzips the folder and runs the app, Windows loads the bundled DLLs locally. **The client does not need to install anything!**
 
 ---
@@ -64,7 +64,7 @@ build\dist\Caskly_POS_v0.1.0_Windows_Portable.zip
 
 ### Instructions for the Client:
 1. **Extract** the ZIP to any folder (e.g. `C:\Caskly POS` or Desktop).
-2. Double-click **`pos_app.exe`** to run the app immediately.
+2. Double-click **`caskly.exe`** to run the app immediately.
    *(Or double-click `Create_Desktop_Shortcut.bat` to place a shortcut on their desktop).*
 3. **Pin to Taskbar**:
    - While the app is running, **right-click the Caskly app icon on the Windows taskbar** at the bottom of the screen.
