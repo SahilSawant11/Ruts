@@ -183,8 +183,50 @@ foreach ($dll in $CriticalDlls) {
     }
 }
 
-# 5. Create Desktop / Taskbar Shortcut Helper in the portable folder
-Write-Host "`n[4/6] Adding desktop shortcut creator helper..." -ForegroundColor Yellow
+# 5. Verify and bundle sqlite3.dll for Drift / SQLite database
+Write-Host "`n[4/7] Checking and bundling sqlite3.dll..." -ForegroundColor Yellow
+$SqliteDllPath = Join-Path $ReleaseDir "sqlite3.dll"
+if (-not (Test-Path $SqliteDllPath)) {
+    $PossibleSqlite = @(
+        "windows\sqlite3.dll",
+        "windows\runner\resources\sqlite3.dll"
+    )
+    $foundSqlite = $null
+    foreach ($p in $PossibleSqlite) {
+        if (Test-Path $p) {
+            $foundSqlite = $p
+            break
+        }
+    }
+    if (-not $foundSqlite) {
+        $foundSqlite = Get-ChildItem -Path "windows", "build", ".dart_tool" -Filter "sqlite3.dll" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
+    }
+    if ($foundSqlite) {
+        Copy-Item -Path $foundSqlite -Destination $SqliteDllPath -Force
+        Write-Host "  Copied sqlite3.dll from $foundSqlite to $SqliteDllPath" -ForegroundColor Green
+    } else {
+        Write-Host "  sqlite3.dll not found locally. Downloading official SQLite x64 DLL..." -ForegroundColor Cyan
+        try {
+            $SqliteZipUrl = "https://www.sqlite.org/2024/sqlite-dll-win-x64-3460100.zip"
+            $TempZip = Join-Path $env:TEMP "sqlite_x64.zip"
+            $TempExtract = Join-Path $env:TEMP "sqlite_x64_extracted"
+            Invoke-WebRequest -Uri $SqliteZipUrl -OutFile $TempZip -UseBasicParsing
+            Expand-Archive -Path $TempZip -DestinationPath $TempExtract -Force
+            $DownloadedDll = Join-Path $TempExtract "sqlite3.dll"
+            if (Test-Path $DownloadedDll) {
+                Copy-Item -Path $DownloadedDll -Destination $SqliteDllPath -Force
+                Write-Host "  Successfully downloaded and bundled sqlite3.dll" -ForegroundColor Green
+            }
+        } catch {
+            Write-Warning "Failed to download sqlite3.dll: $_"
+        }
+    }
+} else {
+    Write-Host "  sqlite3.dll verified in $SqliteDllPath" -ForegroundColor Green
+}
+
+# 6. Create Desktop / Taskbar Shortcut Helper in the portable folder
+Write-Host "`n[5/7] Adding desktop shortcut creator helper..." -ForegroundColor Yellow
 $ShortcutScript = @"
 @echo off
 setlocal
