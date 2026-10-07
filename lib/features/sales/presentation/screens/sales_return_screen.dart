@@ -24,6 +24,8 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
   String _searchQuery = '';
   DateTime? _selectedDate;
   bool _isProcessing = false;
+  Set<int> _selectedLineNumbers = {};
+  String? _lastSelectedBillId;
 
   static const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -66,6 +68,13 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
   }
 
   Future<void> _processReturn(SalesBillDetailDto bill) async {
+    if (_selectedLineNumbers.isEmpty) return;
+
+    final selectedItems = bill.lineItems.where((li) => _selectedLineNumbers.contains(li.lineNumber)).toList();
+    final isFullReturn = selectedItems.length == bill.lineItems.length;
+    final totalRefundAmount = selectedItems.fold<double>(0.0, (sum, i) => sum + i.amount);
+    final totalQty = selectedItems.fold<int>(0, (sum, i) => sum + i.quantity);
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -82,7 +91,7 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
               child: const Icon(Icons.delete_sweep_rounded, color: AppColors.danger, size: 24),
             ),
             const SizedBox(width: AppSpacing.sm),
-            const Text('Confirm Sales Return'),
+            Text(isFullReturn ? 'Confirm Sales Return' : 'Confirm Partial Return'),
           ],
         ),
         content: Column(
@@ -90,12 +99,14 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Are you sure you want to return Bill ${bill.billNo}?',
+              isFullReturn
+                  ? 'Are you sure you want to return Bill ${bill.billNo}?'
+                  : 'Are you sure you want to return ${selectedItems.length} selected item(s) from Bill ${bill.billNo}?',
               style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Total Refund Amount: ₹${bill.totalAmount.toStringAsFixed(2)}',
+              'Total Refund Amount: ₹${totalRefundAmount.toStringAsFixed(2)}',
               style: AppTypography.body.copyWith(color: AppColors.danger, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -113,7 +124,12 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
                     children: [
                       const Icon(Icons.check_circle_outline, size: 16, color: AppColors.primary),
                       const SizedBox(width: 6),
-                      Text('Soft-deletes the sales bill record', style: AppTypography.caption),
+                      Text(
+                        isFullReturn
+                            ? 'Soft-deletes the sales bill record'
+                            : 'Removes selected item(s) from the sales bill',
+                        style: AppTypography.caption,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -122,7 +138,7 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
                       const Icon(Icons.check_circle_outline, size: 16, color: AppColors.primary),
                       const SizedBox(width: 6),
                       Text(
-                        'Restores ${bill.lineItems.fold<int>(0, (sum, i) => sum + i.quantity)} item(s) back to inventory',
+                        'Restores $totalQty item(s) back to inventory',
                         style: AppTypography.caption,
                       ),
                     ],
@@ -150,7 +166,10 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
 
     setState(() => _isProcessing = true);
     try {
-      await ref.read(salesRepositoryProvider).returnSalesBill(bill.id);
+      await ref.read(salesRepositoryProvider).returnSalesBill(
+            bill.id,
+            lineNumbers: _selectedLineNumbers.toList(),
+          );
 
       ref.invalidate(salesBillsListProvider);
       ref.invalidate(todaysBillsProvider);
@@ -163,7 +182,9 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Bill ${bill.billNo} returned successfully. Inventory stock restored.'),
+          content: Text(isFullReturn
+              ? 'Bill ${bill.billNo} returned successfully. Inventory stock restored.'
+              : 'Selected item(s) from Bill ${bill.billNo} returned successfully. Inventory stock restored.'),
           backgroundColor: AppColors.success,
         ),
       );
@@ -186,6 +207,14 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
       salesBillsListProvider(SalesReturnFilter(search: _searchQuery, date: _selectedDate)),
     );
     final selectedBill = ref.watch(selectedSalesBillProvider);
+
+    if (selectedBill != null && _lastSelectedBillId != selectedBill.id) {
+      _lastSelectedBillId = selectedBill.id;
+      _selectedLineNumbers = selectedBill.lineItems.map((e) => e.lineNumber).toSet();
+    } else if (selectedBill == null) {
+      _lastSelectedBillId = null;
+      _selectedLineNumbers = {};
+    }
 
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -304,9 +333,7 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
         SecondaryButton(
           label: 'Refresh',
           icon: Icons.refresh_rounded,
-          onPressed: () {
-            ref.refresh(salesBillsListProvider(SalesReturnFilter(search: _searchQuery, date: _selectedDate)));
-          },
+          onPressed: () => ref.invalidate(salesBillsListProvider),
         ),
       ],
     );
@@ -500,6 +527,10 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
       );
     }
 
+    final selectedItems = bill.lineItems.where((li) => _selectedLineNumbers.contains(li.lineNumber)).toList();
+    final selectedRefundAmount = selectedItems.fold<double>(0.0, (sum, i) => sum + i.amount);
+    final allSelected = bill.lineItems.isNotEmpty && _selectedLineNumbers.length == bill.lineItems.length;
+
     return AppCard(
       padding: EdgeInsets.zero,
       child: Column(
@@ -536,9 +567,14 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text('Total Bill Amount', style: AppTypography.caption),
                     Text(
-                      '₹${bill.totalAmount.toStringAsFixed(2)}',
+                      _selectedLineNumbers.length == bill.lineItems.length
+                          ? 'Total Bill Amount'
+                          : 'Selected Return Amount (${selectedItems.length}/${bill.lineItems.length})',
+                      style: AppTypography.caption,
+                    ),
+                    Text(
+                      '₹${selectedRefundAmount.toStringAsFixed(2)}',
                       style: AppTypography.h1.copyWith(color: AppColors.primary),
                     ),
                   ],
@@ -554,9 +590,21 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Line Items (${bill.lineItems.length})',
-                    style: AppTypography.body.copyWith(fontWeight: FontWeight.w700),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Line Items (${bill.lineItems.length})',
+                        style: AppTypography.body.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      Text(
+                        '${selectedItems.length} of ${bill.lineItems.length} selected for return',
+                        style: AppTypography.caption.copyWith(
+                          color: selectedItems.isEmpty ? AppColors.danger : AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Container(
@@ -566,14 +614,15 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
                     ),
                     child: Table(
                       columnWidths: const {
-                        0: FixedColumnWidth(40),
-                        1: FixedColumnWidth(120),
-                        2: FlexColumnWidth(3),
-                        3: FlexColumnWidth(1),
-                        4: FixedColumnWidth(70),
-                        5: FixedColumnWidth(80),
+                        0: FixedColumnWidth(46),
+                        1: FixedColumnWidth(34),
+                        2: FixedColumnWidth(110),
+                        3: FlexColumnWidth(3),
+                        4: FlexColumnWidth(1.2),
+                        5: FixedColumnWidth(60),
                         6: FixedColumnWidth(80),
-                        7: FixedColumnWidth(100),
+                        7: FixedColumnWidth(70),
+                        8: FixedColumnWidth(90),
                       },
                       children: [
                         TableRow(
@@ -582,6 +631,22 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
                             borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.md)),
                           ),
                           children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              child: Checkbox(
+                                value: allSelected ? true : (_selectedLineNumbers.isEmpty ? false : null),
+                                tristate: true,
+                                onChanged: (val) {
+                                  setState(() {
+                                    if (val == true || _selectedLineNumbers.length < bill.lineItems.length) {
+                                      _selectedLineNumbers = bill.lineItems.map((e) => e.lineNumber).toSet();
+                                    } else {
+                                      _selectedLineNumbers.clear();
+                                    }
+                                  });
+                                },
+                              ),
+                            ),
                             _th('#'),
                             _th('Barcode'),
                             _th('Material Name'),
@@ -593,21 +658,40 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
                           ],
                         ),
                         ...bill.lineItems.map(
-                          (item) => TableRow(
-                            decoration: BoxDecoration(
-                              border: Border(top: BorderSide(color: AppColors.borderFor(context))),
-                            ),
-                            children: [
-                              _td(item.lineNumber.toString()),
-                              _td(item.barcodeNo, mono: true),
-                              _td(item.materialName),
-                              _td('${item.batchNo ?? '-'} / ${item.packing ?? '-'}'),
-                              _td(item.quantity.toString(), bold: true),
-                              _td('₹${item.rate.toStringAsFixed(2)}'),
-                              _td('${item.taxPercent}%'),
-                              _td('₹${item.amount.toStringAsFixed(2)}', align: TextAlign.right, bold: true),
-                            ],
-                          ),
+                          (item) {
+                            final isSelected = _selectedLineNumbers.contains(item.lineNumber);
+                            return TableRow(
+                              decoration: BoxDecoration(
+                                color: isSelected ? AppColors.primary.withValues(alpha: 0.04) : null,
+                                border: Border(top: BorderSide(color: AppColors.borderFor(context))),
+                              ),
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                  child: Checkbox(
+                                    value: isSelected,
+                                    onChanged: (val) {
+                                      setState(() {
+                                        if (val == true) {
+                                          _selectedLineNumbers.add(item.lineNumber);
+                                        } else {
+                                          _selectedLineNumbers.remove(item.lineNumber);
+                                        }
+                                      });
+                                    },
+                                  ),
+                                ),
+                                _td(item.lineNumber.toString()),
+                                _td(item.barcodeNo, mono: true),
+                                _td(item.materialName),
+                                _td('${item.batchNo ?? '-'} / ${item.packing ?? '-'}'),
+                                _td(item.quantity.toString(), bold: true),
+                                _td('₹${item.rate.toStringAsFixed(2)}'),
+                                _td('${item.taxPercent}%'),
+                                _td('₹${item.amount.toStringAsFixed(2)}', align: TextAlign.right, bold: true),
+                              ],
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -636,9 +720,13 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
                   },
                 ),
                 DangerButton(
-                  label: _isProcessing ? 'Processing…' : 'Process Sales Return',
+                  label: _isProcessing
+                      ? 'Processing…'
+                      : (allSelected
+                          ? 'Process Sales Return'
+                          : 'Process Return (${_selectedLineNumbers.length} items)'),
                   icon: Icons.assignment_return_rounded,
-                  onPressed: _isProcessing ? null : () => _processReturn(bill),
+                  onPressed: (_isProcessing || _selectedLineNumbers.isEmpty) ? null : () => _processReturn(bill),
                 ),
               ],
             ),

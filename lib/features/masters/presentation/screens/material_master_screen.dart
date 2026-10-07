@@ -90,7 +90,7 @@ class _ScreenHeaderState extends ConsumerState<_ScreenHeader> {
               ),
               const SizedBox(height: 4),
               Text(
-                'Real catalog, keyed by Local Item Code.',
+                'Real catalog, keyed by SCM Code.',
                 style: AppTypography.bodyMuted.copyWith(
                   color: AppColors.textSecondaryFor(context),
                 ),

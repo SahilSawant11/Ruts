@@ -172,26 +172,32 @@ class LocalSalesRepository {
     });
   }
 
-  Future<void> returnSalesBill(String billId) async {
-    var remoteSucceeded = false;
-    if (!AppConfig.offlineOnly) {
-      try {
-        await _remote.returnSalesBill(billId);
-        remoteSucceeded = true;
-      } on ApiException catch (e) {
-        if (e.statusCode != null && e.statusCode != 404) {
-          rethrow;
-        }
-      }
-    }
-
+  Future<void> returnSalesBill(String billId, {List<int>? lineNumbers}) async {
     await _db.transaction(() async {
-      // Restore stock for returned sale items
-      final lineItems = await (_db.select(_db.cachedSaleLineItems)
+      final allLineItems = await (_db.select(_db.cachedSaleLineItems)
             ..where((tbl) => tbl.salesBillId.equals(billId)))
           .get();
 
-      for (final item in lineItems) {
+      final returningItems = (lineNumbers == null || lineNumbers.isEmpty)
+          ? allLineItems
+          : allLineItems.where((li) => lineNumbers.contains(li.lineNumber)).toList();
+
+      final isFullReturn = returningItems.length >= allLineItems.length;
+
+      var remoteSucceeded = false;
+      if (!AppConfig.offlineOnly && isFullReturn) {
+        try {
+          await _remote.returnSalesBill(billId);
+          remoteSucceeded = true;
+        } on ApiException catch (e) {
+          if (e.statusCode != null && e.statusCode != 404) {
+            rethrow;
+          }
+        }
+      }
+
+      // Restore stock for returned sale items
+      for (final item in returningItems) {
         if (item.materialId != null) {
           final stock = await (_db.select(_db.cachedInventoryStocks)
                 ..where((tbl) => tbl.materialId.equals(item.materialId!)))
@@ -210,21 +216,38 @@ class LocalSalesRepository {
         }
       }
 
-      await (_db.delete(_db.cachedSaleLineItems)..where((tbl) => tbl.salesBillId.equals(billId))).go();
-      await (_db.delete(_db.cachedSalesBills)..where((tbl) => tbl.id.equals(billId))).go();
-      await (_db.delete(_db.syncQueueItems)..where((tbl) => tbl.entityId.equals(billId))).go();
+      if (isFullReturn) {
+        await (_db.delete(_db.cachedSaleLineItems)..where((tbl) => tbl.salesBillId.equals(billId))).go();
+        await (_db.delete(_db.cachedSalesBills)..where((tbl) => tbl.id.equals(billId))).go();
+        await (_db.delete(_db.syncQueueItems)..where((tbl) => tbl.entityId.equals(billId))).go();
 
-      if (!remoteSucceeded && !billId.startsWith('local-')) {
-        await _db.into(_db.syncQueueItems).insert(
-              SyncQueueItemsCompanion.insert(
-                entityType: 'sale',
-                entityId: billId,
-                operation: 'return',
-                payload: jsonEncode({'id': billId}),
-                status: const Value('pending'),
-                updatedAt: Value(DateTime.now().toUtc()),
-              ),
-            );
+        if (!remoteSucceeded && !billId.startsWith('local-')) {
+          await _db.into(_db.syncQueueItems).insert(
+                SyncQueueItemsCompanion.insert(
+                  entityType: 'sale',
+                  entityId: billId,
+                  operation: 'return',
+                  payload: jsonEncode({'id': billId}),
+                  status: const Value('pending'),
+                  updatedAt: Value(DateTime.now().toUtc()),
+                ),
+              );
+        }
+      } else {
+        final returningLineNumbers = returningItems.map((e) => e.lineNumber).toList();
+        await (_db.delete(_db.cachedSaleLineItems)
+              ..where((tbl) => tbl.salesBillId.equals(billId) & tbl.lineNumber.isIn(returningLineNumbers)))
+            .go();
+
+        final remainingLineItems = allLineItems.where((li) => !lineNumbers!.contains(li.lineNumber)).toList();
+        final newTotalAmount = remainingLineItems.fold<double>(0.0, (sum, i) => sum + i.amount);
+
+        await (_db.update(_db.cachedSalesBills)..where((tbl) => tbl.id.equals(billId))).write(
+          CachedSalesBillsCompanion(
+            totalAmount: Value(newTotalAmount),
+            updatedAt: Value(DateTime.now().toUtc()),
+          ),
+        );
       }
     });
   }

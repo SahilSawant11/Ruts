@@ -256,7 +256,7 @@ class ItemDetailsTable extends ConsumerWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Scan barcode with scanner gun or type item code above (F1)',
+            'Scan barcode with scanner gun or type SCM code above (F1)',
             style: AppTypography.bodyMuted.copyWith(
               fontSize: 12,
               color: AppColors.textSecondaryFor(context),

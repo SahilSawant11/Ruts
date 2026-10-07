@@ -65,6 +65,16 @@ class $CachedMaterialsTable extends CachedMaterials
       type: DriftSqlType.int,
       requiredDuringInsert: false,
       defaultValue: const Constant(0));
+  static const VerificationMeta _isActiveMeta =
+      const VerificationMeta('isActive');
+  @override
+  late final GeneratedColumn<bool> isActive = GeneratedColumn<bool>(
+      'is_active', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_active" IN (0, 1))'),
+      defaultValue: const Constant(true));
   static const VerificationMeta _syncStatusMeta =
       const VerificationMeta('syncStatus');
   @override
@@ -106,6 +116,7 @@ class $CachedMaterialsTable extends CachedMaterials
         saleRate,
         taxPercent,
         stockQty,
+        isActive,
         syncStatus,
         createdAt,
         updatedAt,
@@ -174,6 +185,10 @@ class $CachedMaterialsTable extends CachedMaterials
       context.handle(_stockQtyMeta,
           stockQty.isAcceptableOrUnknown(data['stock_qty']!, _stockQtyMeta));
     }
+    if (data.containsKey('is_active')) {
+      context.handle(_isActiveMeta,
+          isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta));
+    }
     if (data.containsKey('sync_status')) {
       context.handle(
           _syncStatusMeta,
@@ -221,6 +236,8 @@ class $CachedMaterialsTable extends CachedMaterials
           .read(DriftSqlType.double, data['${effectivePrefix}tax_percent'])!,
       stockQty: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}stock_qty'])!,
+      isActive: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_active'])!,
       syncStatus: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}sync_status'])!,
       createdAt: attachedDatabase.typeMapping
@@ -248,6 +265,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
   final double saleRate;
   final double taxPercent;
   final int stockQty;
+  final bool isActive;
   final String syncStatus;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -262,6 +280,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
       required this.saleRate,
       required this.taxPercent,
       required this.stockQty,
+      required this.isActive,
       required this.syncStatus,
       required this.createdAt,
       required this.updatedAt,
@@ -278,6 +297,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
     map['sale_rate'] = Variable<double>(saleRate);
     map['tax_percent'] = Variable<double>(taxPercent);
     map['stock_qty'] = Variable<int>(stockQty);
+    map['is_active'] = Variable<bool>(isActive);
     map['sync_status'] = Variable<String>(syncStatus);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -298,6 +318,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
       saleRate: Value(saleRate),
       taxPercent: Value(taxPercent),
       stockQty: Value(stockQty),
+      isActive: Value(isActive),
       syncStatus: Value(syncStatus),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
@@ -320,6 +341,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
       saleRate: serializer.fromJson<double>(json['saleRate']),
       taxPercent: serializer.fromJson<double>(json['taxPercent']),
       stockQty: serializer.fromJson<int>(json['stockQty']),
+      isActive: serializer.fromJson<bool>(json['isActive']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
@@ -339,6 +361,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
       'saleRate': serializer.toJson<double>(saleRate),
       'taxPercent': serializer.toJson<double>(taxPercent),
       'stockQty': serializer.toJson<int>(stockQty),
+      'isActive': serializer.toJson<bool>(isActive),
       'syncStatus': serializer.toJson<String>(syncStatus),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
@@ -356,6 +379,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
           double? saleRate,
           double? taxPercent,
           int? stockQty,
+          bool? isActive,
           String? syncStatus,
           DateTime? createdAt,
           DateTime? updatedAt,
@@ -370,6 +394,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
         saleRate: saleRate ?? this.saleRate,
         taxPercent: taxPercent ?? this.taxPercent,
         stockQty: stockQty ?? this.stockQty,
+        isActive: isActive ?? this.isActive,
         syncStatus: syncStatus ?? this.syncStatus,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
@@ -390,6 +415,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
       taxPercent:
           data.taxPercent.present ? data.taxPercent.value : this.taxPercent,
       stockQty: data.stockQty.present ? data.stockQty.value : this.stockQty,
+      isActive: data.isActive.present ? data.isActive.value : this.isActive,
       syncStatus:
           data.syncStatus.present ? data.syncStatus.value : this.syncStatus,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
@@ -412,6 +438,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
           ..write('saleRate: $saleRate, ')
           ..write('taxPercent: $taxPercent, ')
           ..write('stockQty: $stockQty, ')
+          ..write('isActive: $isActive, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
@@ -431,6 +458,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
       saleRate,
       taxPercent,
       stockQty,
+      isActive,
       syncStatus,
       createdAt,
       updatedAt,
@@ -448,6 +476,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
           other.saleRate == this.saleRate &&
           other.taxPercent == this.taxPercent &&
           other.stockQty == this.stockQty &&
+          other.isActive == this.isActive &&
           other.syncStatus == this.syncStatus &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
@@ -464,6 +493,7 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
   final Value<double> saleRate;
   final Value<double> taxPercent;
   final Value<int> stockQty;
+  final Value<bool> isActive;
   final Value<String> syncStatus;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
@@ -479,6 +509,7 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
     this.saleRate = const Value.absent(),
     this.taxPercent = const Value.absent(),
     this.stockQty = const Value.absent(),
+    this.isActive = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -495,6 +526,7 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
     required double saleRate,
     required double taxPercent,
     this.stockQty = const Value.absent(),
+    this.isActive = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -517,6 +549,7 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
     Expression<double>? saleRate,
     Expression<double>? taxPercent,
     Expression<int>? stockQty,
+    Expression<bool>? isActive,
     Expression<String>? syncStatus,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
@@ -533,6 +566,7 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
       if (saleRate != null) 'sale_rate': saleRate,
       if (taxPercent != null) 'tax_percent': taxPercent,
       if (stockQty != null) 'stock_qty': stockQty,
+      if (isActive != null) 'is_active': isActive,
       if (syncStatus != null) 'sync_status': syncStatus,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
@@ -551,6 +585,7 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
       Value<double>? saleRate,
       Value<double>? taxPercent,
       Value<int>? stockQty,
+      Value<bool>? isActive,
       Value<String>? syncStatus,
       Value<DateTime>? createdAt,
       Value<DateTime>? updatedAt,
@@ -566,6 +601,7 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
       saleRate: saleRate ?? this.saleRate,
       taxPercent: taxPercent ?? this.taxPercent,
       stockQty: stockQty ?? this.stockQty,
+      isActive: isActive ?? this.isActive,
       syncStatus: syncStatus ?? this.syncStatus,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -604,6 +640,9 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
     if (stockQty.present) {
       map['stock_qty'] = Variable<int>(stockQty.value);
     }
+    if (isActive.present) {
+      map['is_active'] = Variable<bool>(isActive.value);
+    }
     if (syncStatus.present) {
       map['sync_status'] = Variable<String>(syncStatus.value);
     }
@@ -634,6 +673,7 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
           ..write('saleRate: $saleRate, ')
           ..write('taxPercent: $taxPercent, ')
           ..write('stockQty: $stockQty, ')
+          ..write('isActive: $isActive, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
@@ -6032,6 +6072,7 @@ typedef $$CachedMaterialsTableCreateCompanionBuilder = CachedMaterialsCompanion
   required double saleRate,
   required double taxPercent,
   Value<int> stockQty,
+  Value<bool> isActive,
   Value<String> syncStatus,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
@@ -6049,6 +6090,7 @@ typedef $$CachedMaterialsTableUpdateCompanionBuilder = CachedMaterialsCompanion
   Value<double> saleRate,
   Value<double> taxPercent,
   Value<int> stockQty,
+  Value<bool> isActive,
   Value<String> syncStatus,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
@@ -6091,6 +6133,9 @@ class $$CachedMaterialsTableFilterComposer
 
   ColumnFilters<int> get stockQty => $composableBuilder(
       column: $table.stockQty, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isActive => $composableBuilder(
+      column: $table.isActive, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get syncStatus => $composableBuilder(
       column: $table.syncStatus, builder: (column) => ColumnFilters(column));
@@ -6142,6 +6187,9 @@ class $$CachedMaterialsTableOrderingComposer
   ColumnOrderings<int> get stockQty => $composableBuilder(
       column: $table.stockQty, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<bool> get isActive => $composableBuilder(
+      column: $table.isActive, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get syncStatus => $composableBuilder(
       column: $table.syncStatus, builder: (column) => ColumnOrderings(column));
 
@@ -6192,6 +6240,9 @@ class $$CachedMaterialsTableAnnotationComposer
   GeneratedColumn<int> get stockQty =>
       $composableBuilder(column: $table.stockQty, builder: (column) => column);
 
+  GeneratedColumn<bool> get isActive =>
+      $composableBuilder(column: $table.isActive, builder: (column) => column);
+
   GeneratedColumn<String> get syncStatus => $composableBuilder(
       column: $table.syncStatus, builder: (column) => column);
 
@@ -6241,6 +6292,7 @@ class $$CachedMaterialsTableTableManager extends RootTableManager<
             Value<double> saleRate = const Value.absent(),
             Value<double> taxPercent = const Value.absent(),
             Value<int> stockQty = const Value.absent(),
+            Value<bool> isActive = const Value.absent(),
             Value<String> syncStatus = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
@@ -6257,6 +6309,7 @@ class $$CachedMaterialsTableTableManager extends RootTableManager<
             saleRate: saleRate,
             taxPercent: taxPercent,
             stockQty: stockQty,
+            isActive: isActive,
             syncStatus: syncStatus,
             createdAt: createdAt,
             updatedAt: updatedAt,
@@ -6273,6 +6326,7 @@ class $$CachedMaterialsTableTableManager extends RootTableManager<
             required double saleRate,
             required double taxPercent,
             Value<int> stockQty = const Value.absent(),
+            Value<bool> isActive = const Value.absent(),
             Value<String> syncStatus = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
@@ -6289,6 +6343,7 @@ class $$CachedMaterialsTableTableManager extends RootTableManager<
             saleRate: saleRate,
             taxPercent: taxPercent,
             stockQty: stockQty,
+            isActive: isActive,
             syncStatus: syncStatus,
             createdAt: createdAt,
             updatedAt: updatedAt,

@@ -23,6 +23,7 @@ class BrandwiseReportTable extends ConsumerWidget {
   static const frozenTotalWidth = brandWidth + tpWidth; // 330.0
   static const sizeColWidth = 54.0;
   static const groupSepWidth = 2.0;
+  static const middleBrandWidth = 200.0;
 
   // Row heights — strictly fixed so frozen and scrollable rows stay 1:1 aligned.
   static const groupHeaderH = 36.0;
@@ -32,8 +33,8 @@ class BrandwiseReportTable extends ConsumerWidget {
   static const dataRowH = 30.0;
   static const subtotalH = 32.0;
 
-  // Total scrollable content width: (7 cols * 4 groups * 54.0) + (3 separators * 2.0) = 1518.0
-  static const scrollableWidth = (sizeColWidth * 28) + (groupSepWidth * 3);
+  // Total scrollable content width: (7 cols * 4 groups * 54.0) + (4 separators * 2.0) + 200.0 = 1720.0
+  static const scrollableWidth = (sizeColWidth * 28) + (groupSepWidth * 4) + middleBrandWidth;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -412,28 +413,110 @@ class _FrozenColumnTableState extends State<_FrozenColumnTable> {
       height: _groupH,
       child: Row(
         children: [
-          for (int g = 0; g < BrandwiseReportTable.groupLabels.length; g++) ...[
-            if (g > 0) Container(width: _sepW, color: _strongBorder),
-            Container(
-              width: _sizeW * 7,
-              height: _groupH,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: _headerBg,
-                border: Border(bottom: BorderSide(color: _cellBorder.withValues(alpha: 0.3))),
-              ),
-              child: Text(
-                BrandwiseReportTable.groupLabels[g],
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                  letterSpacing: 0.8,
-                ),
+          // OPENING BALANCE
+          Container(
+            width: _sizeW * 7,
+            height: _groupH,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: _headerBg,
+              border: Border(bottom: BorderSide(color: _cellBorder.withValues(alpha: 0.3))),
+            ),
+            child: const Text(
+              'OPENING BALANCE',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+                letterSpacing: 0.8,
               ),
             ),
-          ],
+          ),
+          Container(width: _sepW, color: _strongBorder),
+          // PURCHASE
+          Container(
+            width: _sizeW * 7,
+            height: _groupH,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: _headerBg,
+              border: Border(bottom: BorderSide(color: _cellBorder.withValues(alpha: 0.3))),
+            ),
+            child: const Text(
+              'PURCHASE',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ),
+          Container(width: _sepW, color: _strongBorder),
+          // BRAND NAME (Middle Column)
+          Container(
+            width: BrandwiseReportTable.middleBrandWidth,
+            height: _groupH,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: _headerBg,
+              border: Border(bottom: BorderSide(color: _cellBorder.withValues(alpha: 0.3))),
+            ),
+            child: const Text(
+              'BRAND NAME',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ),
+          Container(width: _sepW, color: _strongBorder),
+          // SALE
+          Container(
+            width: _sizeW * 7,
+            height: _groupH,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: _headerBg,
+              border: Border(bottom: BorderSide(color: _cellBorder.withValues(alpha: 0.3))),
+            ),
+            child: const Text(
+              'SALE',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ),
+          Container(width: _sepW, color: _strongBorder),
+          // CLOSING BALANCE
+          Container(
+            width: _sizeW * 7,
+            height: _groupH,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: _headerBg,
+              border: Border(bottom: BorderSide(color: _cellBorder.withValues(alpha: 0.3))),
+            ),
+            child: const Text(
+              'CLOSING BALANCE',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ),
         ],
       ),
     ));
@@ -443,32 +526,41 @@ class _FrozenColumnTableState extends State<_FrozenColumnTable> {
       height: _sizeH,
       child: Row(
         children: [
-          for (int g = 0; g < 4; g++) ...[
-            if (g > 0) Container(width: _sepW, color: _strongBorder),
-            for (final label in BrandwiseReportTable.sizeLabels)
-              Container(
-                width: _sizeW,
-                height: _sizeH,
-                alignment: Alignment.center,
-                padding: const EdgeInsets.symmetric(horizontal: 1),
-                decoration: BoxDecoration(
-                  color: _subHeaderBg,
-                  border: Border(
-                    bottom: BorderSide(color: _strongBorder, width: 1.5),
-                    right: BorderSide(color: _cellBorder.withValues(alpha: 0.25)),
-                  ),
-                ),
-                child: Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 7.5,
-                    fontWeight: FontWeight.w600,
-                    color: widget.isDark ? const Color(0xFFCAD0E5) : Colors.white.withValues(alpha: 0.95),
-                  ),
-                ),
+          // Opening sizes
+          for (final label in BrandwiseReportTable.sizeLabels) _buildSizeHeaderCell(label),
+          Container(width: _sepW, color: _strongBorder),
+          // Purchase sizes
+          for (final label in BrandwiseReportTable.sizeLabels) _buildSizeHeaderCell(label),
+          Container(width: _sepW, color: _strongBorder),
+          // Brand subheader
+          Container(
+            width: BrandwiseReportTable.middleBrandWidth,
+            height: _sizeH,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: _subHeaderBg,
+              border: Border(
+                bottom: BorderSide(color: _strongBorder, width: 1.5),
+                right: BorderSide(color: _cellBorder.withValues(alpha: 0.25)),
               ),
-          ],
+            ),
+            child: Text(
+              'BRAND',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 8.5,
+                fontWeight: FontWeight.w700,
+                color: widget.isDark ? const Color(0xFFCAD0E5) : Colors.white.withValues(alpha: 0.95),
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+          Container(width: _sepW, color: _strongBorder),
+          // Sale sizes
+          for (final label in BrandwiseReportTable.sizeLabels) _buildSizeHeaderCell(label),
+          Container(width: _sepW, color: _strongBorder),
+          // Closing sizes
+          for (final label in BrandwiseReportTable.sizeLabels) _buildSizeHeaderCell(label),
         ],
       ),
     ));
@@ -507,8 +599,41 @@ class _FrozenColumnTableState extends State<_FrozenColumnTable> {
                 children: [
                   ..._buildQtyGroup(item.openingBalance, groupIndex: 0, bg: bg, isRowSelected: isSelected),
                   ..._buildQtyGroup(item.purchase, groupIndex: 1, bg: bg, isRowSelected: isSelected),
-                  ..._buildQtyGroup(item.sale, groupIndex: 2, bg: bg, isRowSelected: isSelected),
-                  ..._buildQtyGroup(item.closingBalance, groupIndex: 3, bg: bg, isRowSelected: isSelected),
+                  Container(width: _sepW, color: _strongBorder),
+                  // Middle Brand column cell
+                  Container(
+                    width: BrandwiseReportTable.middleBrandWidth,
+                    height: _rowH,
+                    alignment: Alignment.centerLeft,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: bg,
+                      border: Border(
+                        bottom: BorderSide(
+                          color: isSelected ? const Color(0xFF3B82F6).withValues(alpha: 0.5) : _cellBorder,
+                        ),
+                        right: BorderSide(color: _cellBorder),
+                      ),
+                    ),
+                    child: Tooltip(
+                      message: item.brandName,
+                      waitDuration: const Duration(milliseconds: 300),
+                      child: Text(
+                        item.brandName,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                          color: isSelected
+                              ? (widget.isDark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8))
+                              : (widget.isDark ? const Color(0xFFE2E7F5) : const Color(0xFF1E2538)),
+                        ),
+                      ),
+                    ),
+                  ),
+                  ..._buildQtyGroup(item.sale, groupIndex: 1, bg: bg, isRowSelected: isSelected),
+                  ..._buildQtyGroup(item.closingBalance, groupIndex: 1, bg: bg, isRowSelected: isSelected),
                 ],
               ),
             ),
@@ -523,14 +648,61 @@ class _FrozenColumnTableState extends State<_FrozenColumnTable> {
           children: [
             ..._buildQtyGroup(category.subtotal.openingBalance, groupIndex: 0, bg: _subtotalBg, bold: true),
             ..._buildQtyGroup(category.subtotal.purchase, groupIndex: 1, bg: _subtotalBg, bold: true),
-            ..._buildQtyGroup(category.subtotal.sale, groupIndex: 2, bg: _subtotalBg, bold: true),
-            ..._buildQtyGroup(category.subtotal.closingBalance, groupIndex: 3, bg: _subtotalBg, bold: true),
+            Container(width: _sepW, color: _strongBorder),
+            Container(
+              width: BrandwiseReportTable.middleBrandWidth,
+              height: _subH,
+              alignment: Alignment.centerLeft,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: _subtotalBg,
+                border: Border(
+                  bottom: BorderSide(color: _strongBorder, width: 1.5),
+                  right: BorderSide(color: _cellBorder),
+                ),
+              ),
+              child: Text(
+                'Total',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: widget.isDark ? Colors.white : const Color(0xFF161C2E),
+                ),
+              ),
+            ),
+            ..._buildQtyGroup(category.subtotal.sale, groupIndex: 1, bg: _subtotalBg, bold: true),
+            ..._buildQtyGroup(category.subtotal.closingBalance, groupIndex: 1, bg: _subtotalBg, bold: true),
           ],
         ),
       ));
     }
 
     return rows;
+  }
+
+  Widget _buildSizeHeaderCell(String label) {
+    return Container(
+      width: _sizeW,
+      height: _sizeH,
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 1),
+      decoration: BoxDecoration(
+        color: _subHeaderBg,
+        border: Border(
+          bottom: BorderSide(color: _strongBorder, width: 1.5),
+          right: BorderSide(color: _cellBorder.withValues(alpha: 0.25)),
+        ),
+      ),
+      child: Text(
+        label,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 7.5,
+          fontWeight: FontWeight.w600,
+          color: widget.isDark ? const Color(0xFFCAD0E5) : Colors.white.withValues(alpha: 0.95),
+        ),
+      ),
+    );
   }
 
   // ── Helper to build 7 quantity cells for a balance group ──

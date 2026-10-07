@@ -7,8 +7,8 @@ import '../../../../shared/widgets/layout/app_card.dart';
 import '../../data/models/sales_report_dto.dart';
 import '../../data/reports_providers.dart';
 
-/// Matches the client's real DailySaleReport export exactly:
-/// Sale Date | Local Item Code | Brand Name | Size | Qty (Case) |
+/// Matches the client's real SCM DailySaleReport export exactly:
+/// Sale Date | SCM Code | Brand Name | Size | Qty (Case) |
 /// Qty (Loose Bottle) — one row per material, aggregated across the
 /// selected date range, with a totals row at the bottom.
 class DailySaleReportTable extends ConsumerWidget {
@@ -24,10 +24,10 @@ class DailySaleReportTable extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           reportAsync.when(
-            loading: () => const SectionHeader(title: 'Daily Sale Report', subtitle: 'Loading…'),
-            error: (error, _) => SectionHeader(title: 'Daily Sale Report', subtitle: 'Could not load: $error'),
+            loading: () => const SectionHeader(title: 'SCM Daily Sale Report', subtitle: 'Loading…'),
+            error: (error, _) => SectionHeader(title: 'SCM Daily Sale Report', subtitle: 'Could not load: $error'),
             data: (report) => SectionHeader(
-              title: 'Daily Sale Report',
+              title: 'SCM Daily Sale Report',
               subtitle: '${_fmt(report.fromDate)} to ${_fmt(report.toDate)} · ${report.items.length} item${report.items.length == 1 ? '' : 's'}',
             ),
           ),
@@ -73,7 +73,7 @@ class DailySaleReportTable extends ConsumerWidget {
       child: Row(
         children: [
           _cell(context, 'SR', flex: 1, header: true),
-          _cell(context, 'LOCAL ITEM CODE', flex: 2, header: true),
+          _cell(context, 'SCM CODE', flex: 2, header: true),
           _cell(context, 'MANUFACTURER', flex: 2, header: true),
           _cell(context, 'BRAND NAME', flex: 4, header: true),
           _cell(context, 'SIZE', flex: 2, header: true),

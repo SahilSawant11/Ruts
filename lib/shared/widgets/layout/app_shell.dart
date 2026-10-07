@@ -27,7 +27,7 @@ const _branchMeta = [
   _BranchMeta('Manufacturer', 'Master · Manufacturer', 'Manufacturer'),
   _BranchMeta('Masters', 'F9 · All Masters', 'Masters'),
   _BranchMeta('Inventory', 'F5 · Inventory', 'Inventory'),
-  _BranchMeta('Reports', 'F6 · Reports', 'Reports'),
+  _BranchMeta('SCM Daily Sale', 'F6 · SCM Daily Sale', 'SCM Daily Sale Report'),
   _BranchMeta('Brandwise Report', 'F10 · Brandwise', 'Brandwise'),
   _BranchMeta('Sync Center', 'F12 · Sync Center', 'Sync'),
   _BranchMeta('Sales Return', 'F8 · Sales Return', 'Sales Return'),

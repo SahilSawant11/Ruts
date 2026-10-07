@@ -11,12 +11,13 @@ class SaveMaterialRequest {
     required this.packing,
     required this.saleRate,
     required this.taxPercent,
+    this.isActive = true,
   });
 
   final String id;
 
   /// The real scannable barcode, if this item has one — distinct from
-  /// [id] (the internal Local Item Code). Left blank, the server falls
+  /// [id] (the internal SCM Code). Left blank, the server falls
   /// back to using the item code as the barcode too.
   final String? barcode;
   final String name;
@@ -25,6 +26,7 @@ class SaveMaterialRequest {
   final String packing;
   final double saleRate;
   final double taxPercent;
+  final bool isActive;
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -35,5 +37,6 @@ class SaveMaterialRequest {
         'packing': packing,
         'saleRate': saleRate,
         'taxPercent': taxPercent,
+        'isActive': isActive,
       };
 }

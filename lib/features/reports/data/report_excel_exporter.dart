@@ -28,7 +28,7 @@ class ReportExcelExporter {
     final from = _dateStamp(report.fromDate);
     final to = _dateStamp(report.toDate);
     final suffix = from == to ? from : '${from}_to_$to';
-    return 'daily_sale_report_$suffix.xls';
+    return 'scm_daily_sale_report_$suffix.xls';
   }
 
   String _buildWorkbook(SalesReportDto report) {
@@ -41,7 +41,7 @@ class ReportExcelExporter {
       ..writeln(' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"')
       ..writeln(' xmlns:html="http://www.w3.org/TR/REC-html40">')
       ..writeln(_stylesXml)
-      ..writeln('<Worksheet ss:Name="DailySaleReport">')
+      ..writeln('<Worksheet ss:Name="SCMDailySaleReport">')
       ..writeln('<Table>');
 
     const columnWidths = [90, 130, 150, 250, 90, 95, 130];
@@ -52,8 +52,8 @@ class ReportExcelExporter {
     final title = report.fromDate.year == report.toDate.year &&
             report.fromDate.month == report.toDate.month &&
             report.fromDate.day == report.toDate.day
-        ? 'Daily Sale Report - ${_displayDate(report.fromDate)}'
-        : 'Daily Sale Report - ${_displayDate(report.fromDate)} to ${_displayDate(report.toDate)}';
+        ? 'SCM Daily Sale Report - ${_displayDate(report.fromDate)}'
+        : 'SCM Daily Sale Report - ${_displayDate(report.fromDate)} to ${_displayDate(report.toDate)}';
 
     buffer
       ..writeln('<Row ss:Height="22">')
@@ -61,7 +61,7 @@ class ReportExcelExporter {
       ..writeln('</Row>')
       ..writeln('<Row ss:Height="20">')
       ..writeln('<Cell ss:StyleID="header"><Data ss:Type="String">Sale Date</Data></Cell>')
-      ..writeln('<Cell ss:StyleID="header"><Data ss:Type="String">Local Item Code</Data></Cell>')
+      ..writeln('<Cell ss:StyleID="header"><Data ss:Type="String">SCM Code</Data></Cell>')
       ..writeln('<Cell ss:StyleID="header"><Data ss:Type="String">Manufacturer</Data></Cell>')
       ..writeln('<Cell ss:StyleID="header"><Data ss:Type="String">Brand Name</Data></Cell>')
       ..writeln('<Cell ss:StyleID="header"><Data ss:Type="String">Size</Data></Cell>')

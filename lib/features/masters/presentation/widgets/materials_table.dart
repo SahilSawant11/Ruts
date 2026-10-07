@@ -53,7 +53,7 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
               ),
               SizedBox(
                 width: 240,
-                child: AppTextField(label: '', hint: 'Search name or code', controller: _search, suffix: const Icon(Icons.search_rounded, size: 18)),
+                child: AppTextField(label: '', hint: 'Search name or SCM code', controller: _search, suffix: const Icon(Icons.search_rounded, size: 18)),
               ),
             ],
           ),
@@ -109,12 +109,13 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
         children: [
-          _cell('ITEM CODE', flex: 2, header: true),
+          _cell('SCM CODE', flex: 2, header: true),
           _cell('NAME', flex: 4, header: true),
           _cell('MANUFACTURER', flex: 2, header: true),
           _cell('CATEGORY', flex: 1, header: true),
           _cell('PACKING', flex: 2, header: true),
           _cell('BARCODE', flex: 2, header: true),
+          _cell('STATUS', flex: 1, header: true),
           _cell('SYNC', flex: 1, header: true),
           _cell('SALE RATE', flex: 1, header: true, alignEnd: true),
         ],
@@ -145,6 +146,12 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
               mono: true,
               muted: m.barcode == m.id,
               selected: isSelected,
+            ),
+            Expanded(
+              flex: 1,
+              child: m.isActive
+                  ? const TagPill(label: 'Active', tone: TagPillTone.success)
+                  : const TagPill(label: 'Inactive', tone: TagPillTone.neutral),
             ),
             Expanded(
               flex: 1,

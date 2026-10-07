@@ -98,7 +98,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Reports',
+                      'SCM Daily Sale Report',
                       style: AppTypography.h1.copyWith(
                         color: AppColors.textPrimaryFor(context),
                       ),

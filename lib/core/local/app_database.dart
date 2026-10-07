@@ -14,6 +14,7 @@ class CachedMaterials extends Table {
   RealColumn get saleRate => real()();
   RealColumn get taxPercent => real()();
   IntColumn get stockQty => integer().withDefault(const Constant(0))();
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
   TextColumn get syncStatus => text().withDefault(const Constant('synced'))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
@@ -203,7 +204,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.defaults() : super(driftDatabase(name: 'pos_app.sqlite'));
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -244,6 +245,9 @@ class AppDatabase extends _$AppDatabase {
           if (from < 10) {
             // v10: ensure indexes exist (idempotent).
             await _createIndexes();
+          }
+          if (from < 11) {
+            await m.addColumn(cachedMaterials, cachedMaterials.isActive);
           }
         },
         beforeOpen: (details) async {

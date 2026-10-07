@@ -80,6 +80,14 @@ class LocalReportsRepository {
           ..where((tbl) => tbl.salesBillId.isIn(billIds)))
         .get();
     final materials = await _db.select(_db.cachedMaterials).get();
+    final inactiveMaterialIds = {
+      for (final material in materials)
+        if (!material.isActive) material.id: true,
+    };
+    final inactiveBarcodes = {
+      for (final material in materials)
+        if (!material.isActive) material.barcode: true,
+    };
     final manufacturerByMaterialId = {
       for (final material in materials) material.id: material.manufacturer,
     };
@@ -89,11 +97,20 @@ class LocalReportsRepository {
 
     final grouped = <String, _Agg>{};
     for (final line in lines) {
+      final matId = line.materialId ?? '';
+      final barcode = line.barcodeNo;
+      // Skip inactive materials
+      if (matId.isNotEmpty && inactiveMaterialIds.containsKey(matId)) {
+        continue;
+      }
+      if (barcode.isNotEmpty && inactiveBarcodes.containsKey(barcode)) {
+        continue;
+      }
       if (normalizedCategory != null && normalizedCategory.isNotEmpty && line.materialType != normalizedCategory) {
         continue;
       }
-      final manufacturerName = manufacturerByMaterialId[line.materialId ?? ''] ??
-          manufacturerByBarcode[line.barcodeNo] ??
+      final manufacturerName = manufacturerByMaterialId[matId] ??
+          manufacturerByBarcode[barcode] ??
           '';
       if (normalizedManufacturer != null &&
           normalizedManufacturer.isNotEmpty &&

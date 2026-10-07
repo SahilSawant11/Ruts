@@ -176,26 +176,34 @@ class LocalPurchaseRepository {
     return result;
   }
 
-  Future<void> returnPurchaseBill(String billId) async {
-    var remoteSucceeded = false;
-    if (!AppConfig.offlineOnly) {
-      try {
-        await _remote.returnPurchaseBill(billId);
-        remoteSucceeded = true;
-      } on ApiException catch (e) {
-        if (e.statusCode != null && e.statusCode != 404) {
-          rethrow;
-        }
-      }
-    }
-
+  Future<void> returnPurchaseBill(String billId, {List<int>? lineNumbers}) async {
     await _db.transaction(() async {
-      // Deduct stock for returned purchase items
-      final lineItems = await (_db.select(_db.cachedPurchaseLineItems)
+      final allLineItems = await (_db.select(_db.cachedPurchaseLineItems)
             ..where((tbl) => tbl.purchaseBillId.equals(billId)))
           .get();
 
-      for (final item in lineItems) {
+      if (allLineItems.isEmpty) return;
+
+      final returningItems = (lineNumbers == null || lineNumbers.isEmpty)
+          ? allLineItems
+          : allLineItems.where((li) => lineNumbers.contains(li.lineNumber)).toList();
+
+      final isFullReturn = returningItems.length >= allLineItems.length;
+
+      var remoteSucceeded = false;
+      if (!AppConfig.offlineOnly && isFullReturn) {
+        try {
+          await _remote.returnPurchaseBill(billId);
+          remoteSucceeded = true;
+        } on ApiException catch (e) {
+          if (e.statusCode != null && e.statusCode != 404) {
+            rethrow;
+          }
+        }
+      }
+
+      // Deduct stock for returned purchase items
+      for (final item in returningItems) {
         final stock = await (_db.select(_db.cachedInventoryStocks)
               ..where((tbl) => tbl.materialId.equals(item.materialId)))
             .getSingleOrNull();
@@ -212,21 +220,43 @@ class LocalPurchaseRepository {
         }
       }
 
-      await (_db.delete(_db.cachedPurchaseLineItems)..where((tbl) => tbl.purchaseBillId.equals(billId))).go();
-      await (_db.delete(_db.cachedPurchaseBills)..where((tbl) => tbl.id.equals(billId))).go();
-      await (_db.delete(_db.syncQueueItems)..where((tbl) => tbl.entityId.equals(billId))).go();
+      if (isFullReturn) {
+        await (_db.delete(_db.cachedPurchaseLineItems)..where((tbl) => tbl.purchaseBillId.equals(billId))).go();
+        await (_db.delete(_db.cachedPurchaseBills)..where((tbl) => tbl.id.equals(billId))).go();
+        await (_db.delete(_db.syncQueueItems)..where((tbl) => tbl.entityId.equals(billId))).go();
 
-      if (!remoteSucceeded && !billId.startsWith('local-')) {
-        await _db.into(_db.syncQueueItems).insert(
-              SyncQueueItemsCompanion.insert(
-                entityType: 'purchase',
-                entityId: billId,
-                operation: 'return',
-                payload: jsonEncode({'id': billId}),
-                status: const Value('pending'),
-                updatedAt: Value(DateTime.now().toUtc()),
-              ),
-            );
+        if (!remoteSucceeded && !billId.startsWith('local-')) {
+          await _db.into(_db.syncQueueItems).insert(
+                SyncQueueItemsCompanion.insert(
+                  entityType: 'purchase',
+                  entityId: billId,
+                  operation: 'return',
+                  payload: jsonEncode({'id': billId}),
+                  status: const Value('pending'),
+                  updatedAt: Value(DateTime.now().toUtc()),
+                ),
+              );
+        }
+      } else {
+        final returningLineNumbers = returningItems.map((e) => e.lineNumber).toList();
+        await (_db.delete(_db.cachedPurchaseLineItems)
+              ..where((tbl) => tbl.purchaseBillId.equals(billId) & tbl.lineNumber.isIn(returningLineNumbers)))
+            .go();
+
+        final remainingLineItems = allLineItems.where((li) => !lineNumbers!.contains(li.lineNumber)).toList();
+        final newTotalAmount = remainingLineItems.fold<double>(0.0, (sum, i) => sum + i.amount);
+
+        final bill = await (_db.select(_db.cachedPurchaseBills)..where((tbl) => tbl.id.equals(billId))).getSingleOrNull();
+        if (bill != null) {
+          final newNetAmount = newTotalAmount - bill.discount + bill.vat + bill.stamp + bill.tcs + bill.loadingFreight;
+          await (_db.update(_db.cachedPurchaseBills)..where((tbl) => tbl.id.equals(billId))).write(
+            CachedPurchaseBillsCompanion(
+              totalAmount: Value(newTotalAmount),
+              netAmount: Value(newNetAmount),
+              updatedAt: Value(DateTime.now().toUtc()),
+            ),
+          );
+        }
       }
     });
   }

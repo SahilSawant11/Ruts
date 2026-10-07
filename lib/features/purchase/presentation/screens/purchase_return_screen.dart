@@ -25,6 +25,8 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
   String _searchQuery = '';
   DateTime? _selectedDate;
   bool _isProcessing = false;
+  Set<int> _selectedLineNumbers = {};
+  String? _lastSelectedBillId;
 
   static const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -67,6 +69,13 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
   }
 
   Future<void> _processReturn(PurchaseBillDetailDto bill) async {
+    if (_selectedLineNumbers.isEmpty) return;
+
+    final selectedItems = bill.lineItems.where((li) => _selectedLineNumbers.contains(li.lineNumber)).toList();
+    final isFullReturn = selectedItems.length == bill.lineItems.length;
+    final totalItemAmount = selectedItems.fold<double>(0.0, (sum, i) => sum + i.amount);
+    final totalQty = selectedItems.fold<int>(0, (sum, i) => sum + i.qty);
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -83,7 +92,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
               child: const Icon(Icons.delete_sweep_rounded, color: AppColors.danger, size: 24),
             ),
             const SizedBox(width: AppSpacing.sm),
-            const Text('Confirm Purchase Return'),
+            Text(isFullReturn ? 'Confirm Purchase Return' : 'Confirm Partial Return'),
           ],
         ),
         content: Column(
@@ -91,12 +100,16 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Are you sure you want to return purchase bill from ${bill.supplierName}?',
+              isFullReturn
+                  ? 'Are you sure you want to return purchase bill from ${bill.supplierName}?'
+                  : 'Are you sure you want to return ${selectedItems.length} selected item(s) from ${bill.supplierName}?',
               style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Bill No: ${bill.billNo ?? bill.challanNo ?? 'N/A'} · Amount: ₹${bill.netAmount.toStringAsFixed(2)}',
+              isFullReturn
+                  ? 'Bill No: ${bill.billNo ?? bill.challanNo ?? 'N/A'} · Net Amount: ₹${bill.netAmount.toStringAsFixed(2)}'
+                  : 'Bill No: ${bill.billNo ?? bill.challanNo ?? 'N/A'} · Selected Items Amount: ₹${totalItemAmount.toStringAsFixed(2)}',
               style: AppTypography.body.copyWith(color: AppColors.danger, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -114,7 +127,12 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                     children: [
                       const Icon(Icons.check_circle_outline, size: 16, color: AppColors.primary),
                       const SizedBox(width: 6),
-                      Text('Soft-deletes the purchase bill record', style: AppTypography.caption),
+                      Text(
+                        isFullReturn
+                            ? 'Soft-deletes the purchase bill record'
+                            : 'Removes selected item(s) from the purchase bill',
+                        style: AppTypography.caption,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -123,7 +141,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                       const Icon(Icons.check_circle_outline, size: 16, color: AppColors.primary),
                       const SizedBox(width: 6),
                       Text(
-                        'Deducts ${bill.lineItems.fold<int>(0, (sum, i) => sum + i.qty)} item(s) from inventory stock',
+                        'Deducts $totalQty item(s) from inventory stock',
                         style: AppTypography.caption,
                       ),
                     ],
@@ -151,7 +169,10 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
 
     setState(() => _isProcessing = true);
     try {
-      await ref.read(purchaseRepositoryProvider).returnPurchaseBill(bill.id);
+      await ref.read(purchaseRepositoryProvider).returnPurchaseBill(
+            bill.id,
+            lineNumbers: _selectedLineNumbers.toList(),
+          );
 
       ref.invalidate(purchaseBillsListProvider);
       ref.invalidate(inventoryListProvider);
@@ -164,7 +185,9 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Purchase Bill ${bill.billNo ?? ''} returned successfully. Stock deducted.'),
+          content: Text(isFullReturn
+              ? 'Purchase Bill ${bill.billNo ?? ''} returned successfully. Stock deducted.'
+              : 'Selected item(s) from Purchase Bill ${bill.billNo ?? ''} returned successfully. Stock deducted.'),
           backgroundColor: AppColors.success,
         ),
       );
@@ -187,6 +210,14 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
       purchaseBillsListProvider(PurchaseReturnFilter(search: _searchQuery, date: _selectedDate)),
     );
     final selectedBill = ref.watch(selectedPurchaseBillProvider);
+
+    if (selectedBill != null && _lastSelectedBillId != selectedBill.id) {
+      _lastSelectedBillId = selectedBill.id;
+      _selectedLineNumbers = selectedBill.lineItems.map((e) => e.lineNumber).toSet();
+    } else if (selectedBill == null) {
+      _lastSelectedBillId = null;
+      _selectedLineNumbers = {};
+    }
 
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -499,6 +530,10 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
       );
     }
 
+    final selectedItems = bill.lineItems.where((li) => _selectedLineNumbers.contains(li.lineNumber)).toList();
+    final allSelected = bill.lineItems.isNotEmpty && _selectedLineNumbers.length == bill.lineItems.length;
+    final selectedItemAmount = selectedItems.fold<double>(0.0, (sum, i) => sum + i.amount);
+
     return AppCard(
       padding: EdgeInsets.zero,
       child: Column(
@@ -543,9 +578,14 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text('Net Invoice Amount', style: AppTypography.caption),
                     Text(
-                      '₹${bill.netAmount.toStringAsFixed(2)}',
+                      allSelected
+                          ? 'Net Invoice Amount'
+                          : 'Selected Return Amount (${selectedItems.length}/${bill.lineItems.length})',
+                      style: AppTypography.caption,
+                    ),
+                    Text(
+                      '₹${(allSelected ? bill.netAmount : selectedItemAmount).toStringAsFixed(2)}',
                       style: AppTypography.h1.copyWith(color: AppColors.primary),
                     ),
                   ],
@@ -561,9 +601,21 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Purchased Materials (${bill.lineItems.length})',
-                    style: AppTypography.body.copyWith(fontWeight: FontWeight.w700),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Purchased Materials (${bill.lineItems.length})',
+                        style: AppTypography.body.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      Text(
+                        '${selectedItems.length} of ${bill.lineItems.length} selected for return',
+                        style: AppTypography.caption.copyWith(
+                          color: selectedItems.isEmpty ? AppColors.danger : AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Container(
@@ -573,14 +625,15 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                     ),
                     child: Table(
                       columnWidths: const {
-                        0: FixedColumnWidth(40),
-                        1: FlexColumnWidth(3),
-                        2: FixedColumnWidth(100),
-                        3: FixedColumnWidth(80),
-                        4: FixedColumnWidth(70),
-                        5: FixedColumnWidth(80),
-                        6: FixedColumnWidth(70),
-                        7: FixedColumnWidth(100),
+                        0: FixedColumnWidth(46),
+                        1: FixedColumnWidth(34),
+                        2: FlexColumnWidth(3),
+                        3: FixedColumnWidth(100),
+                        4: FixedColumnWidth(80),
+                        5: FixedColumnWidth(60),
+                        6: FixedColumnWidth(80),
+                        7: FixedColumnWidth(70),
+                        8: FixedColumnWidth(90),
                       },
                       children: [
                         TableRow(
@@ -589,6 +642,22 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                             borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.md)),
                           ),
                           children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              child: Checkbox(
+                                value: allSelected ? true : (_selectedLineNumbers.isEmpty ? false : null),
+                                tristate: true,
+                                onChanged: (val) {
+                                  setState(() {
+                                    if (val == true || _selectedLineNumbers.length < bill.lineItems.length) {
+                                      _selectedLineNumbers = bill.lineItems.map((e) => e.lineNumber).toSet();
+                                    } else {
+                                      _selectedLineNumbers.clear();
+                                    }
+                                  });
+                                },
+                              ),
+                            ),
                             _th('#'),
                             _th('Material'),
                             _th('Batch'),
@@ -600,21 +669,40 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                           ],
                         ),
                         ...bill.lineItems.map(
-                          (item) => TableRow(
-                            decoration: BoxDecoration(
-                              border: Border(top: BorderSide(color: AppColors.borderFor(context))),
-                            ),
-                            children: [
-                              _td(item.lineNumber.toString()),
-                              _td(item.materialName),
-                              _td(item.batchNo, mono: true),
-                              _td(item.packing ?? '-'),
-                              _td(item.qty.toString(), bold: true),
-                              _td('₹${item.rate.toStringAsFixed(2)}'),
-                              _td('${item.taxPercent}%'),
-                              _td('₹${item.amount.toStringAsFixed(2)}', align: TextAlign.right, bold: true),
-                            ],
-                          ),
+                          (item) {
+                            final isSelected = _selectedLineNumbers.contains(item.lineNumber);
+                            return TableRow(
+                              decoration: BoxDecoration(
+                                color: isSelected ? AppColors.primary.withValues(alpha: 0.04) : null,
+                                border: Border(top: BorderSide(color: AppColors.borderFor(context))),
+                              ),
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                  child: Checkbox(
+                                    value: isSelected,
+                                    onChanged: (val) {
+                                      setState(() {
+                                        if (val == true) {
+                                          _selectedLineNumbers.add(item.lineNumber);
+                                        } else {
+                                          _selectedLineNumbers.remove(item.lineNumber);
+                                        }
+                                      });
+                                    },
+                                  ),
+                                ),
+                                _td(item.lineNumber.toString()),
+                                _td(item.materialName),
+                                _td(item.batchNo, mono: true),
+                                _td(item.packing ?? '-'),
+                                _td(item.qty.toString(), bold: true),
+                                _td('₹${item.rate.toStringAsFixed(2)}'),
+                                _td('${item.taxPercent}%'),
+                                _td('₹${item.amount.toStringAsFixed(2)}', align: TextAlign.right, bold: true),
+                              ],
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -665,9 +753,13 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                   },
                 ),
                 DangerButton(
-                  label: _isProcessing ? 'Processing…' : 'Process Purchase Return',
+                  label: _isProcessing
+                      ? 'Processing…'
+                      : (allSelected
+                          ? 'Process Purchase Return'
+                          : 'Process Return (${_selectedLineNumbers.length} items)'),
                   icon: Icons.assignment_return_rounded,
-                  onPressed: _isProcessing ? null : () => _processReturn(bill),
+                  onPressed: (_isProcessing || _selectedLineNumbers.isEmpty) ? null : () => _processReturn(bill),
                 ),
               ],
             ),

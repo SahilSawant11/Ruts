@@ -132,8 +132,9 @@ Future<BrandwiseReportDto?> _buildLocalBrandwiseReport(AppDatabase db, DateTime 
   final start = DateTime(date.year, date.month, date.day);
   final endExclusive = start.add(const Duration(days: 1));
 
-  // Load all materials (for category / packing info)
-  final materials = await db.select(db.cachedMaterials).get();
+  // Load active materials (for category / packing info)
+  final rawMaterials = await db.select(db.cachedMaterials).get();
+  final materials = rawMaterials.where((m) => m.isActive).toList();
   if (materials.isEmpty) return null;
 
   // Load sales for this day

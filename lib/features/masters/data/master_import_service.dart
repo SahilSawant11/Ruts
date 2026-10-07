@@ -104,7 +104,7 @@ class MasterImportService {
 
       if (code.isEmpty || name.isEmpty) {
         failed++;
-        errors.add('Row ${rowNumber + 2}: Local Item Code and Name are required.');
+        errors.add('Row ${rowNumber + 2}: SCM Code and Name are required.');
         continue;
       }
 

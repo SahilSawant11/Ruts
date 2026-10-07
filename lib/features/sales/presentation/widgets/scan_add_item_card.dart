@@ -215,7 +215,7 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
                             isDense: true,
                             border: InputBorder.none,
                             contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                            hintText: 'Scan barcode or type item code, then press Enter...',
+                            hintText: 'Scan barcode or type SCM code, then press Enter...',
                             hintStyle: AppTypography.bodyMuted.copyWith(
                               fontSize: 12,
                               color: AppColors.textMutedFor(context),

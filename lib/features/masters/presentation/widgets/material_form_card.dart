@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
 import '../../../../shared/widgets/inputs/app_dropdown.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
@@ -16,7 +17,7 @@ import '../material_browser_controller.dart';
 /// list, Modify unlocks editing, Save creates a new record (when
 /// browsing "New") or updates the current one.
 ///
-/// Local Item Code is the real primary key from the client's system —
+/// SCM Code is the real primary key from the client's system —
 /// editable only while creating a new record, locked forever after.
 class MaterialFormCard extends ConsumerStatefulWidget {
   const MaterialFormCard({super.key});
@@ -34,6 +35,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
   String _manufacturer = '';
   String _category = '';
   String _packing = '';
+  bool _isActive = true;
 
   int? _lastIndex;
   bool? _lastIsNew;
@@ -57,13 +59,14 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
     _taxPercent.text = material != null ? material.taxPercent.toString() : '5';
     _manufacturer = material?.manufacturer ?? '';
     _category = material?.category ?? '';
+    _isActive = material?.isActive ?? true;
   }
 
   Future<void> _save() async {
     final browser = ref.read(materialBrowserProvider);
 
     if (_id.text.trim().isEmpty) {
-      _showSnack('Local Item Code is required.', isError: true);
+      _showSnack('SCM Code is required.', isError: true);
       return;
     }
     if (_name.text.trim().isEmpty) {
@@ -82,6 +85,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
         packing: _packing.trim(),
         saleRate: double.tryParse(_saleRate.text) ?? 0,
         taxPercent: double.tryParse(_taxPercent.text) ?? 0,
+        isActive: _isActive,
       );
 
       final repo = ref.read(mastersRepositoryProvider);
@@ -191,10 +195,53 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
                     child: SectionHeader(
                       title: 'Material Details',
                       subtitle: browser.isNew
-                          ? 'New material — type the Local Item Code from the client sheet'
+                          ? 'New material — type the SCM Code from the client sheet'
                           : 'Record ${browser.index + 1} of ${materials.length}',
                     ),
                   ),
+                  InkWell(
+                    onTap: editable ? () => setState(() => _isActive = !_isActive) : null,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: _isActive
+                            ? AppColors.success.withValues(alpha: 0.12)
+                            : AppColors.danger.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        border: Border.all(
+                          color: _isActive ? AppColors.success : AppColors.danger,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _isActive ? Icons.check_circle_outline_rounded : Icons.block_rounded,
+                            size: 16,
+                            color: _isActive ? AppColors.success : AppColors.danger,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _isActive ? 'Active Material' : 'Inactive Material',
+                            style: AppTypography.caption.copyWith(
+                              color: _isActive ? AppColors.success : AppColors.danger,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          if (editable) ...[
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.touch_app_outlined,
+                              size: 14,
+                              color: _isActive ? AppColors.success : AppColors.danger,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
                   SecondaryButton(
                     label: 'New',
                     icon: Icons.add_rounded,
@@ -210,7 +257,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
                   Expanded(
                     flex: 3,
                     child: AppTextField(
-                      label: 'LOCAL ITEM CODE *',
+                      label: 'SCM CODE *',
                       controller: _id,
                       enabled: idEditable,
                       selectAllOnFocus: true,
@@ -224,7 +271,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
                       label: 'BARCODE',
                       controller: _barcode,
                       enabled: editable,
-                      hint: 'Same as item code if blank',
+                      hint: 'Same as SCM code if blank',
                       selectAllOnFocus: true,
                       showPasteButton: true,
                     ),

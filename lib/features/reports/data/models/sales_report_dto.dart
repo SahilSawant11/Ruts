@@ -1,6 +1,6 @@
 /// A single aggregated row — one per material across the queried
-/// date range, matching the client's real DailySaleReport export
-/// (Local Item Code / Brand Name / Size / Qty Case / Qty Loose).
+/// date range, matching the client's real SCM DailySaleReport export
+/// (SCM Code / Brand Name / Size / Qty Case / Qty Loose).
 class SalesReportItemDto {
   const SalesReportItemDto({
     required this.materialId,

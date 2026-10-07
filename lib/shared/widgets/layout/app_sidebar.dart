@@ -139,7 +139,7 @@ class AppSidebar extends ConsumerWidget {
                 _GroupDivider(),
                 SidebarItem(
                   icon: Icons.assessment_outlined,
-                  label: 'Reports',
+                  label: 'SCM Daily Sale Report',
                   active: location == '/reports',
                   onTap: () => context.go('/reports'),
                 ),
@@ -210,8 +210,8 @@ class _BrandMark extends StatelessWidget {
 class _GroupDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 5),
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 18, vertical: 5),
       child: Divider(
         height: 1,
         thickness: 1,
@@ -245,7 +245,7 @@ class _SidebarBottom extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Divider(height: 1, color: _kBorder),
+        const Divider(height: 1, color: _kBorder),
         const SizedBox(height: 6),
         _LogoutButton(onTap: onLogout),
         const SizedBox(height: 4),

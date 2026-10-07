@@ -12,6 +12,7 @@ class MaterialDto {
     required this.saleRate,
     required this.taxPercent,
     required this.stockQty,
+    this.isActive = true,
     this.isPendingSync = false,
   });
 
@@ -24,6 +25,7 @@ class MaterialDto {
   final double saleRate;
   final double taxPercent;
   final int stockQty;
+  final bool isActive;
   final bool isPendingSync;
 
   factory MaterialDto.fromJson(Map<String, dynamic> json) {
@@ -37,6 +39,7 @@ class MaterialDto {
       saleRate: (json['saleRate'] as num).toDouble(),
       taxPercent: (json['taxPercent'] as num).toDouble(),
       stockQty: json['stockQty'] as int,
+      isActive: (json['isActive'] as bool?) ?? true,
       isPendingSync: false,
     );
   }
@@ -51,6 +54,7 @@ class MaterialDto {
     double? saleRate,
     double? taxPercent,
     int? stockQty,
+    bool? isActive,
     bool? isPendingSync,
   }) {
     return MaterialDto(
@@ -63,6 +67,7 @@ class MaterialDto {
       saleRate: saleRate ?? this.saleRate,
       taxPercent: taxPercent ?? this.taxPercent,
       stockQty: stockQty ?? this.stockQty,
+      isActive: isActive ?? this.isActive,
       isPendingSync: isPendingSync ?? this.isPendingSync,
     );
   }

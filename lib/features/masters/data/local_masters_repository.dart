@@ -508,6 +508,7 @@ class LocalMastersRepository {
         saleRate: request.saleRate,
         taxPercent: request.taxPercent,
         stockQty: 0,
+        isActive: request.isActive,
         isPendingSync: true,
       );
       await _upsertMaterial(local, syncStatus: 'pending_create');
@@ -521,7 +522,10 @@ class LocalMastersRepository {
       return local;
     }
     try {
-      final created = (await _remote.createMaterial(request)).copyWith(manufacturer: request.manufacturer);
+      final created = (await _remote.createMaterial(request)).copyWith(
+        manufacturer: request.manufacturer,
+        isActive: request.isActive,
+      );
       await _upsertMaterial(created, syncStatus: 'synced');
       await onMaterialsChanged?.call();
       return created;
@@ -543,6 +547,7 @@ class LocalMastersRepository {
         saleRate: request.saleRate,
         taxPercent: request.taxPercent,
         stockQty: 0,
+        isActive: request.isActive,
         isPendingSync: true,
       );
 
@@ -573,6 +578,7 @@ class LocalMastersRepository {
         saleRate: request.saleRate,
         taxPercent: request.taxPercent,
         stockQty: cached?.stockQty ?? 0,
+        isActive: request.isActive,
         isPendingSync: true,
       );
       final nextStatus = cached?.syncStatus == 'pending_create' ? 'pending_create' : 'pending_update';
@@ -587,7 +593,10 @@ class LocalMastersRepository {
       return local;
     }
     try {
-      final updated = (await _remote.updateMaterial(id, request)).copyWith(manufacturer: request.manufacturer);
+      final updated = (await _remote.updateMaterial(id, request)).copyWith(
+        manufacturer: request.manufacturer,
+        isActive: request.isActive,
+      );
       await _upsertMaterial(updated, syncStatus: 'synced');
       await onMaterialsChanged?.call();
       return updated;
@@ -605,6 +614,7 @@ class LocalMastersRepository {
         saleRate: request.saleRate,
         taxPercent: request.taxPercent,
         stockQty: cached?.stockQty ?? 0,
+        isActive: request.isActive,
         isPendingSync: true,
       );
 
@@ -748,6 +758,7 @@ class LocalMastersRepository {
             saleRate: row.saleRate,
             taxPercent: row.taxPercent,
             stockQty: row.stockQty,
+            isActive: row.isActive,
             isPendingSync: row.syncStatus != 'synced',
           ),
         )
@@ -914,6 +925,7 @@ class LocalMastersRepository {
             saleRate: material.saleRate,
             taxPercent: material.taxPercent,
             stockQty: Value(material.stockQty),
+            isActive: Value(material.isActive),
             syncStatus: Value(syncStatus),
             createdAt: Value(preserveCreatedAt ?? now),
             updatedAt: Value(now),

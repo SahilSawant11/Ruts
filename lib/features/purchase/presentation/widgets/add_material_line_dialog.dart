@@ -163,7 +163,7 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
     final rate = double.tryParse(_rateController.text) ?? 0;
 
     if (itemCode.isEmpty) {
-      setState(() => _error = 'Local item code is required for a new item.');
+      setState(() => _error = 'SCM code is required for a new item.');
       return;
     }
     if (itemName.isEmpty) {
@@ -313,7 +313,7 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
                     focusNode: _lookupScopeFocusNode,
                     onKeyEvent: (_, event) => _handleLookupKeyEvent(event, suggestions),
                     child: AppTextField(
-                      label: 'ITEM CODE / BARCODE',
+                      label: 'SCM CODE / BARCODE',
                       hint: 'Scan or type name, code, or barcode',
                       controller: _lookupController,
                       focusNode: _lookupInputFocusNode,
@@ -432,7 +432,7 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
                 children: [
                   Expanded(
                     child: AppTextField(
-                      label: 'LOCAL ITEM CODE *',
+                      label: 'SCM CODE *',
                       controller: _itemCodeController,
                       showPasteButton: true,
                       selectAllOnFocus: true,
