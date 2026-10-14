@@ -213,7 +213,10 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
                           ),
                           decoration: InputDecoration(
                             isDense: true,
+                            filled: false,
                             border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
                             contentPadding: const EdgeInsets.symmetric(vertical: 8),
                             hintText: 'Scan barcode or type SCM code, then press Enter...',
                             hintStyle: AppTypography.bodyMuted.copyWith(
@@ -288,7 +291,10 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
                   ),
                   decoration: InputDecoration(
                     isDense: true,
+                    filled: false,
                     border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(vertical: 8),
                     hintText: 'Qty',
                     hintStyle: AppTypography.bodyMuted.copyWith(fontSize: 12),

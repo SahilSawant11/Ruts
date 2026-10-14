@@ -48,17 +48,6 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              PrimaryButton(
-                label: _isSyncing ? 'Syncing…' : 'Sync Now',
-                icon: Icons.sync_rounded,
-                onPressed: _isSyncing ? null : _syncNow,
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
           overviewAsync.when(
             loading: () => const _OverviewSkeleton(),
             error: (error, _) => AppCard(child: Text('Could not load sync status: $error')),
@@ -81,8 +70,18 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
               loading: () => const SizedBox(height: 80, child: Center(child: CircularProgressIndicator(strokeWidth: 2))),
               error: (_, __) => const Text('Could not load sync breakdown.'),
               data: (overview) {
+                final syncButton = PrimaryButton(
+                  label: _isSyncing ? 'Syncing…' : 'Sync Now',
+                  icon: Icons.sync_rounded,
+                  onPressed: _isSyncing ? null : _syncNow,
+                );
+
                 if (overview.byEntityType.isEmpty) {
-                  return const SectionHeader(title: 'Queue Breakdown', subtitle: 'Everything is synced.');
+                  return SectionHeader(
+                    title: 'Queue Breakdown',
+                    subtitle: 'Everything is synced.',
+                    trailing: syncButton,
+                  );
                 }
 
                 final entries = overview.byEntityType.entries.toList()
@@ -91,7 +90,11 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SectionHeader(title: 'Queue Breakdown', subtitle: 'Queued work by entity'),
+                    SectionHeader(
+                      title: 'Queue Breakdown',
+                      subtitle: 'Queued work by entity',
+                      trailing: syncButton,
+                    ),
                     const SizedBox(height: AppSpacing.sm),
                     Wrap(
                       spacing: AppSpacing.sm,

@@ -57,23 +57,29 @@ class _BrandwiseFiltersCardState extends ConsumerState<BrandwiseFiltersCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionHeader(title: 'Filters'),
+          SectionHeader(
+            title: 'Filters',
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _modeToggle(context, mode),
+                if (widget.trailingAction != null) ...[
+                  const SizedBox(width: AppSpacing.sm),
+                  widget.trailingAction!,
+                ],
+              ],
+            ),
+          ),
           const SizedBox(height: AppSpacing.md),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               SizedBox(
-                width: 220,
+                width: 240,
                 child: _dateField('REPORT DATE', _pendingDate ?? current),
               ),
               const SizedBox(width: AppSpacing.md),
-              _modeToggle(context, mode),
-              const Spacer(),
               PrimaryButton(label: 'Generate', icon: Icons.search_rounded, onPressed: _generate),
-              if (widget.trailingAction != null) ...[
-                const SizedBox(width: AppSpacing.sm),
-                widget.trailingAction!,
-              ],
             ],
           ),
         ],
@@ -82,40 +88,32 @@ class _BrandwiseFiltersCardState extends ConsumerState<BrandwiseFiltersCard> {
   }
 
   Widget _modeToggle(BuildContext context, BrandwiseViewMode currentMode) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('REPORT TYPE', style: AppTypography.label),
-        const SizedBox(height: 6),
-        Container(
-          height: 46,
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceFor(context),
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(color: AppColors.borderFor(context)),
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceFor(context),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.borderFor(context)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _modeSegment(
+            context,
+            mode: BrandwiseViewMode.brandwise,
+            label: 'Brandwise',
+            icon: Icons.liquor_outlined,
+            isSelected: currentMode == BrandwiseViewMode.brandwise,
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _modeSegment(
-                context,
-                mode: BrandwiseViewMode.brandwise,
-                label: 'Brandwise',
-                icon: Icons.liquor_outlined,
-                isSelected: currentMode == BrandwiseViewMode.brandwise,
-              ),
-              _modeSegment(
-                context,
-                mode: BrandwiseViewMode.counterBrandwise,
-                label: 'Counter Brandwise',
-                icon: Icons.storefront_outlined,
-                isSelected: currentMode == BrandwiseViewMode.counterBrandwise,
-              ),
-            ],
+          _modeSegment(
+            context,
+            mode: BrandwiseViewMode.counterBrandwise,
+            label: 'Counter Brandwise',
+            icon: Icons.storefront_outlined,
+            isSelected: currentMode == BrandwiseViewMode.counterBrandwise,
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

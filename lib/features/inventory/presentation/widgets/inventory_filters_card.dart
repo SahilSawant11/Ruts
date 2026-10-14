@@ -47,7 +47,28 @@ class _InventoryFiltersCardState extends ConsumerState<InventoryFiltersCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionHeader(title: 'Filters'),
+          SectionHeader(
+            title: 'Filters',
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SecondaryButton(
+                  label: 'Clear Filters',
+                  icon: Icons.filter_alt_off_rounded,
+                  dense: true,
+                  onPressed: () {
+                    _searchController.clear();
+                    ref.read(inventoryCategoryFilterProvider.notifier).state = null;
+                    ref.read(inventoryManufacturerFilterProvider.notifier).state = null;
+                    ref.read(inventoryStatusFilterProvider.notifier).state = null;
+                    ref.read(inventorySearchFilterProvider.notifier).state = '';
+                  },
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                PrimaryButton(label: 'Add Stock', icon: Icons.add_rounded, dense: true, onPressed: () {}),
+              ],
+            ),
+          ),
           const SizedBox(height: AppSpacing.md),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -94,24 +115,6 @@ class _InventoryFiltersCardState extends ConsumerState<InventoryFiltersCard> {
                   onChanged: (value) => ref.read(inventorySearchFilterProvider.notifier).state = value,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            children: [
-              SecondaryButton(
-                label: 'Clear Filters',
-                icon: Icons.filter_alt_off_rounded,
-                onPressed: () {
-                  _searchController.clear();
-                  ref.read(inventoryCategoryFilterProvider.notifier).state = null;
-                  ref.read(inventoryManufacturerFilterProvider.notifier).state = null;
-                  ref.read(inventoryStatusFilterProvider.notifier).state = null;
-                  ref.read(inventorySearchFilterProvider.notifier).state = '';
-                },
-              ),
-              const Spacer(),
-              PrimaryButton(label: 'Add Stock', icon: Icons.add_rounded, onPressed: () {}),
             ],
           ),
         ],

@@ -1,13 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../../../../core/theme/app_typography.dart';
-import '../../../../shared/widgets/badges/status_chip.dart';
-import '../../../../shared/widgets/buttons/named_buttons.dart';
-import '../../../inventory/data/inventory_providers.dart';
-import '../../../sales/data/sales_providers.dart';
-import '../../data/dashboard_providers.dart';
 import '../widgets/category_sales_card.dart';
 import '../widgets/daily_target_card.dart';
 import '../widgets/kpi_row.dart';
@@ -23,7 +15,6 @@ import '../widgets/top_selling_items_card.dart';
 /// AppShell
 ///   └── DashboardScreen body
 ///         └── SingleChildScrollView → Column
-///               ├── _DashboardHeader (title + real date + Refresh)
 ///               ├── DashboardKpiRow (4 KPI cards, real data)
 ///               ├── Row: SalesTrendCard | CategorySalesCard
 ///               ├── Row: PaymentMixCard | DailyTargetCard
@@ -44,8 +35,6 @@ class DashboardScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _DashboardActionsRow(),
-          SizedBox(height: AppSpacing.md),
           DashboardKpiRow(),
           SizedBox(height: AppSpacing.lg),
           _TwoColumn(left: SalesTrendCard(), right: CategorySalesCard()),
@@ -58,81 +47,6 @@ class DashboardScreen extends StatelessWidget {
           TransactionActivityHeatmapCard(),
         ],
       ),
-    );
-  }
-}
-
-class _DashboardActionsRow extends ConsumerWidget {
-  const _DashboardActionsRow();
-
-  String _formatToday() {
-    const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    final now = DateTime.now();
-    return '${now.day.toString().padLeft(2, '0')}-${months[now.month - 1]}-${now.year} (${weekdays[now.weekday - 1]})';
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final pendingSyncAsync = ref.watch(pendingSalesSyncCountProvider);
-
-    return Row(
-      children: [
-        Text(
-          _formatToday(),
-          style: AppTypography.bodyMuted.copyWith(
-            color: AppColors.textSecondaryFor(context),
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const Spacer(),
-        pendingSyncAsync.when(
-          loading: () => const SizedBox.shrink(),
-          error: (_, __) => const SizedBox.shrink(),
-          data: (count) => count > 0
-              ? const Padding(
-                  padding: EdgeInsets.only(right: AppSpacing.sm),
-                  child: StatusChip(label: 'Queued offline', tone: StatusChipTone.neutral),
-                )
-              : const SizedBox.shrink(),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 9),
-          decoration: BoxDecoration(
-            color: AppColors.backgroundFor(context),
-            border: Border.all(color: AppColors.borderFor(context)),
-            borderRadius: BorderRadius.circular(AppRadius.md),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Today',
-                style: AppTypography.body.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimaryFor(context),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Icon(
-                Icons.unfold_more_rounded,
-                size: 16,
-                color: AppColors.textSecondaryFor(context),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        SecondaryButton(
-          label: 'Refresh',
-          icon: Icons.refresh_rounded,
-          dense: true,
-          onPressed: () {
-            ref.invalidate(dashboardSummaryProvider);
-            ref.invalidate(inventoryOverviewProvider);
-          },
-        ),
-      ],
     );
   }
 }

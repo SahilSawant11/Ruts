@@ -3,31 +3,30 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 
-/// Sidebar constants – single source of truth.
-const double kSidebarRailWidth = 64.0;
+/// Sidebar dimensions – single source of truth.
+const double kSidebarCollapsedWidth = 68.0;
+const double kSidebarExpandedWidth  = 236.0;
+const double kSidebarRailWidth      = kSidebarCollapsedWidth;
 
-// ─── Colours (always dark, never theme-adaptive) ─────────────────────────────
-const _kIconIdle   = Color(0x8CFFFFFF); // white @ 55 % — crisp muted grey
-// Active pill: primary-tinted background (soft purple glow), matches reference
-// The icon itself turns accent-purple to complete the indicator.
-
-/// A single icon-rail nav item. Always renders as icon-only (no label in
-/// the layout). Hover state and active state are handled purely visually.
-///
-/// If you want the label to appear, the parent sidebar uses an [OverlayEntry]
-/// or a [Stack]-based expanded panel — the item itself never changes width.
+/// An Apple Music macOS-styled navigation item.
+/// Supports both full-width expanded layout (with label & shortcut key badge)
+/// and collapsed layout (compact icon rail with rich tooltip).
 class SidebarItem extends StatefulWidget {
   const SidebarItem({
     super.key,
     required this.icon,
     required this.label,
+    this.shortcut,
     this.active = false,
+    this.collapsed = false,
     this.onTap,
   });
 
   final IconData icon;
   final String label;
+  final String? shortcut;
   final bool active;
+  final bool collapsed;
   final VoidCallback? onTap;
 
   @override
@@ -39,61 +38,135 @@ class _SidebarItemState extends State<SidebarItem> {
 
   @override
   Widget build(BuildContext context) {
-    final activeBg     = AppColors.primary.withValues(alpha: 0.18);
-    final activeBorder = AppColors.primary.withValues(alpha: 0.30);
-    const hoverBg      = Color(0xFF252533);
+    final isDark = AppColors.isDark(context);
 
-    final iconColor = widget.active ? AppColors.primary : _kIconIdle;
+    // Active & hover styling tailored to light/dark surfaces
+    final activeBg = isDark
+        ? AppColors.primary.withValues(alpha: 0.22)
+        : AppColors.primary.withValues(alpha: 0.12);
+
+    final activeBorderColor = isDark
+        ? AppColors.primary.withValues(alpha: 0.35)
+        : AppColors.primary.withValues(alpha: 0.20);
+
+    final hoverBg = isDark
+        ? Colors.white.withValues(alpha: 0.06)
+        : Colors.black.withValues(alpha: 0.04);
+
+    final idleIconColor = isDark
+        ? const Color(0xFFBAC2D6)
+        : const Color(0xFF5A5A6E);
+
+    final iconColor = widget.active ? AppColors.primary : idleIconColor;
+
+    final tooltipMessage = widget.shortcut != null
+        ? '${widget.label}  (${widget.shortcut})'
+        : widget.label;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1.5),
       child: MouseRegion(
         onEnter: (_) => setState(() => _hovered = true),
-        onExit:  (_) => setState(() => _hovered = false),
+        onExit: (_) => setState(() => _hovered = false),
         cursor: SystemMouseCursors.click,
         child: Tooltip(
-          message: widget.label,
+          message: widget.collapsed ? tooltipMessage : '',
           preferBelow: false,
-          waitDuration: const Duration(milliseconds: 500),
+          waitDuration: const Duration(milliseconds: 350),
           textStyle: AppTypography.caption.copyWith(
             color: Colors.white,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
           ),
           decoration: BoxDecoration(
-            color: const Color(0xFF2C2C3A),
+            color: const Color(0xFF1E202A),
             borderRadius: BorderRadius.circular(AppRadius.sm),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x33000000),
+                blurRadius: 10,
+                offset: Offset(0, 4),
+              ),
+            ],
           ),
           child: GestureDetector(
             onTap: widget.onTap,
-            // Full-width, full-height hit target — keeps hover detection smooth.
-            child: SizedBox(
-              height: 44,
-              width: double.infinity,
-              child: Center(
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 160),
-                  curve: Curves.easeOut,
-                  // Fixed compact size → pill never stretches to fill the rail.
-                  // 44 wide × 34 tall with radius 17 = perfect stadium capsule.
-                  width:  44,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: widget.active
-                        ? activeBg
-                        : (_hovered ? hoverBg : Colors.transparent),
-                    // Active: stadium pill (radius = half of height).
-                    // Idle:   gentle rounded-rect.
-                    borderRadius: BorderRadius.circular(widget.active ? 17 : 8),
-                    border: widget.active
-                        ? Border.all(color: activeBorder, width: 1)
-                        : null,
-                  ),
-                  child: Center(
-                    child: AnimatedScale(
-                      scale: _hovered ? 1.08 : 1.0,
-                      duration: const Duration(milliseconds: 140),
-                      curve: Curves.easeOut,
-                      child: Icon(widget.icon, size: 19, color: iconColor),
+            behavior: HitTestBehavior.opaque,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 140),
+              curve: Curves.easeOut,
+              height: 36,
+              decoration: BoxDecoration(
+                color: widget.active
+                    ? activeBg
+                    : (_hovered ? hoverBg : Colors.transparent),
+                borderRadius: BorderRadius.circular(8),
+                border: widget.active
+                    ? Border.all(color: activeBorderColor, width: 1)
+                    : null,
+              ),
+              child: ClipRect(
+                child: OverflowBox(
+                  alignment: Alignment.centerLeft,
+                  minWidth: 0,
+                  maxWidth: kSidebarExpandedWidth - 16,
+                  minHeight: 36,
+                  maxHeight: 36,
+                  child: SizedBox(
+                    width: kSidebarExpandedWidth - 16,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 36,
+                            child: Center(
+                              child: AnimatedScale(
+                                scale: _hovered ? 1.08 : 1.0,
+                                duration: const Duration(milliseconds: 120),
+                                curve: Curves.easeOut,
+                                child: Icon(
+                                  widget.icon,
+                                  size: 19,
+                                  color: iconColor,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: AnimatedOpacity(
+                              duration: const Duration(milliseconds: 120),
+                              opacity: widget.collapsed ? 0.0 : 1.0,
+                              child: Text(
+                                widget.label,
+                                style: AppTypography.body.copyWith(
+                                  fontSize: 13,
+                                  fontWeight: widget.active
+                                      ? FontWeight.w600
+                                      : FontWeight.w500,
+                                  color: widget.active
+                                      ? (isDark
+                                          ? const Color(0xFFC4B8FF)
+                                          : AppColors.primary)
+                                      : AppColors.textPrimaryFor(context),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                          if (widget.shortcut != null) ...[
+                            const SizedBox(width: 6),
+                            AnimatedOpacity(
+                              duration: const Duration(milliseconds: 120),
+                              opacity: widget.collapsed ? 0.0 : 1.0,
+                              child: _buildShortcutBadge(isDark),
+                            ),
+                            const SizedBox(width: 4),
+                          ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -105,4 +178,42 @@ class _SidebarItemState extends State<SidebarItem> {
     );
   }
 
+  Widget _buildShortcutBadge(bool isDark) {
+    final badgeBg = widget.active
+        ? (isDark
+            ? AppColors.primary.withValues(alpha: 0.32)
+            : AppColors.primarySoft)
+        : (isDark
+            ? Colors.white.withValues(alpha: 0.08)
+            : Colors.black.withValues(alpha: 0.05));
+
+    final badgeTextColor = widget.active
+        ? (isDark ? const Color(0xFFD6CEFF) : AppColors.primary)
+        : (isDark ? const Color(0xFF8B93A7) : const Color(0xFF7E8494));
+
+    final badgeBorderColor = widget.active
+        ? AppColors.primary.withValues(alpha: isDark ? 0.40 : 0.25)
+        : (isDark
+            ? Colors.white.withValues(alpha: 0.08)
+            : Colors.black.withValues(alpha: 0.06));
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: badgeBg,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: badgeBorderColor, width: 0.8),
+      ),
+      child: Text(
+        widget.shortcut!,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.3,
+          color: badgeTextColor,
+        ),
+      ),
+    );
+  }
 }
+

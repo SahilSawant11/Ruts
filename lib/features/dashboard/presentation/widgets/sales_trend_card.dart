@@ -4,6 +4,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/charts/vertical_bar_chart.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
+import '../../../inventory/data/inventory_providers.dart';
 import '../../data/dashboard_providers.dart';
 
 class SalesTrendCard extends ConsumerWidget {
@@ -25,7 +26,20 @@ class SalesTrendCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionHeader(title: 'Sales — last 7 days', subtitle: 'Net amount (₹)'),
+          SectionHeader(
+            title: 'Sales — last 7 days',
+            subtitle: 'Net amount (₹)',
+            trailing: IconButton(
+              icon: const Icon(Icons.refresh_rounded, size: 16),
+              tooltip: 'Refresh Dashboard',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: () {
+                ref.invalidate(dashboardSummaryProvider);
+                ref.invalidate(inventoryOverviewProvider);
+              },
+            ),
+          ),
           const SizedBox(height: 12),
           summaryAsync.when(
             loading: () => const SizedBox(height: 220, child: Center(child: CircularProgressIndicator(strokeWidth: 2))),

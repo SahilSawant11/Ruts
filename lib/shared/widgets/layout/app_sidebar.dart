@@ -5,200 +5,330 @@ import '../../../core/auth/auth_controller.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
-
+import '../../../core/theme/app_typography.dart';
 import 'sidebar_item.dart';
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
-const _kBg      = Color(0xFF1A1A24);
-const _kBorder  = Color(0xFF2C2C3A);
-const _kMuted   = Color(0x66FFFFFF); // white @ 40 %
-
-/// The fixed-width dark icon rail that lives at the left edge of the shell.
+/// Apple Music macOS-style navigation sidebar.
 ///
-/// Layout:
-///   • [kSidebarRailWidth] = 64 px, never changes — zero overflow risk.
-///   • Top    : brand mark (cocktail glass in a rounded accent tile)
-///   • Middle : scrollable nav icons, grouped by section
-///   • Bottom : user avatar circle + logout icon
-class AppSidebar extends ConsumerWidget {
+/// Features:
+///   • Full-height docked design with 1px right border (no awkward floating margins).
+///   • Pure hover-to-expand: smoothly expands when cursor hovers, collapses on leave.
+///   • Clearly categorized sections (Workspace, Masters, Inventory & Reports, System).
+///   • Visual POS keyboard shortcut tags (F1–F12) for fast muscle-memory navigation.
+///   • Adaptive light / dark appearance matching the app's macOS theme tokens.
+///   • Zero overflow or cropped text during transitions.
+class AppSidebar extends ConsumerStatefulWidget {
   const AppSidebar({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AppSidebar> createState() => _AppSidebarState();
+}
+
+class _AppSidebarState extends ConsumerState<AppSidebar> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
     final location    = GoRouterState.of(context).uri.toString();
     final currentUser = ref.watch(currentUserProvider);
-    final initials    = currentUser?.initials ?? 'U';
+    final isDark      = AppColors.isDark(context);
 
-    return Container(
-      width: kSidebarRailWidth,
-      margin: const EdgeInsets.fromLTRB(8, 8, 0, 8),
-      decoration: BoxDecoration(
-        color: _kBg,
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(color: _kBorder),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.40),
-            blurRadius: 28,
-            offset: const Offset(3, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // ── Brand mark ─────────────────────────────────────────────────
-          _BrandMark(),
+    // Pure hover-to-expand: expanded when hovered, compact rail when not.
+    final collapsed = !_isHovered;
+    final width     = _isHovered ? kSidebarExpandedWidth : kSidebarCollapsedWidth;
 
-          // ── Scrollable nav ─────────────────────────────────────────────
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              children: [
-                // WORKSPACE
-                _GroupDot(),
-                SidebarItem(
-                  icon: Icons.grid_view_rounded,
-                  label: 'Dashboard',
-                  active: location == '/dashboard',
-                  onTap: () => context.go('/dashboard'),
-                ),
-                SidebarItem(
-                  icon: Icons.point_of_sale_rounded,
-                  label: 'Sales Bill',
-                  active: location == '/sales',
-                  onTap: () => context.go('/sales'),
-                ),
-                SidebarItem(
-                  icon: Icons.assignment_return_outlined,
-                  label: 'Sales Return',
-                  active: location == '/sales-return',
-                  onTap: () => context.go('/sales-return'),
-                ),
-                SidebarItem(
-                  icon: Icons.receipt_long_rounded,
-                  label: 'Purchase Bill',
-                  active: location == '/purchase',
-                  onTap: () => context.go('/purchase'),
-                ),
-                SidebarItem(
-                  icon: Icons.keyboard_return_rounded,
-                  label: 'Purchase Return',
-                  active: location == '/purchase-return',
-                  onTap: () => context.go('/purchase-return'),
-                ),
+    final sidebarBg = isDark
+        ? const Color(0xFF151720)
+        : const Color(0xFFF6F6F9);
 
-                // MASTERS
-                _GroupDivider(),
-                SidebarItem(
-                  icon: Icons.local_shipping_outlined,
-                  label: 'Supplier Master',
-                  active: location == '/supplier',
-                  onTap: () => context.go('/supplier'),
-                ),
-                SidebarItem(
-                  icon: Icons.inventory_2_outlined,
-                  label: 'Material Master',
-                  active: location == '/material',
-                  onTap: () => context.go('/material'),
-                ),
-                SidebarItem(
-                  icon: Icons.category_outlined,
-                  label: 'Category Master',
-                  active: location == '/category',
-                  onTap: () => context.go('/category'),
-                ),
-                SidebarItem(
-                  icon: Icons.business_outlined,
-                  label: 'Manufacturer',
-                  active: location == '/manufacturer',
-                  onTap: () => context.go('/manufacturer'),
-                ),
-                SidebarItem(
-                  icon: Icons.all_inbox_rounded,
-                  label: 'Packaging Master',
-                  active: location == '/packaging',
-                  onTap: () => context.go('/packaging'),
-                ),
-                SidebarItem(
-                  icon: Icons.dashboard_customize_outlined,
-                  label: 'All Masters',
-                  active: location == '/masters',
-                  onTap: () => context.go('/masters'),
-                ),
-
-                // INVENTORY
-                _GroupDivider(),
-                SidebarItem(
-                  icon: Icons.widgets_outlined,
-                  label: 'Inventory',
-                  active: location == '/inventory',
-                  onTap: () => context.go('/inventory'),
-                ),
-
-                // REPORTS
-                _GroupDivider(),
-                SidebarItem(
-                  icon: Icons.assessment_outlined,
-                  label: 'SCM Daily Sale Report',
-                  active: location == '/reports',
-                  onTap: () => context.go('/reports'),
-                ),
-                SidebarItem(
-                  icon: Icons.liquor_outlined,
-                  label: 'Brandwise Report',
-                  active: location == '/brandwise-report',
-                  onTap: () => context.go('/brandwise-report'),
-                ),
-
-                // OPERATIONS — hidden when offline-only
-                if (!AppConfig.offlineOnly) ...[
-                  _GroupDivider(),
-                  SidebarItem(
-                    icon: Icons.sync_alt_rounded,
-                    label: 'Sync Center',
-                    active: location == '/sync',
-                    onTap: () => context.go('/sync'),
-                  ),
-                ],
-              ],
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit:  (_) => setState(() => _isHovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+        width: width,
+        decoration: BoxDecoration(
+          color: sidebarBg,
+          border: Border(
+            right: BorderSide(
+              color: AppColors.borderFor(context),
+              width: 1,
             ),
           ),
+        ),
+        child: Column(
+          children: [
+            // ── Header (Centered Brand Mark + Wordmark) ─────────────────
+            _SidebarHeader(collapsed: collapsed),
 
-          // ── Bottom: logout + avatar ───────────────────────────────────
-          _SidebarBottom(
-            initials: initials,
-            onLogout: () =>
-                ref.read(authControllerProvider.notifier).signOut(),
-          ),
-        ],
+            // ── Nav Items ─────────────────────────────────────────────────
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                children: [
+                  // 1. WORKSPACE
+                  _SectionHeader(title: 'Workspace', collapsed: collapsed),
+                  SidebarItem(
+                    icon: Icons.grid_view_rounded,
+                    label: 'Dashboard',
+                    shortcut: 'F1',
+                    active: location == '/dashboard',
+                    collapsed: collapsed,
+                    onTap: () {
+                      context.go('/dashboard');
+                      setState(() => _isHovered = false);
+                    },
+                  ),
+                  SidebarItem(
+                    icon: Icons.point_of_sale_rounded,
+                    label: 'Sales Bill',
+                    shortcut: 'F3',
+                    active: location == '/sales',
+                    collapsed: collapsed,
+                    onTap: () {
+                      context.go('/sales');
+                      setState(() => _isHovered = false);
+                    },
+                  ),
+                  SidebarItem(
+                    icon: Icons.assignment_return_outlined,
+                    label: 'Sales Return',
+                    shortcut: 'F8',
+                    active: location == '/sales-return',
+                    collapsed: collapsed,
+                    onTap: () {
+                      context.go('/sales-return');
+                      setState(() => _isHovered = false);
+                    },
+                  ),
+                  SidebarItem(
+                    icon: Icons.receipt_long_rounded,
+                    label: 'Purchase Bill',
+                    shortcut: 'F2',
+                    active: location == '/purchase',
+                    collapsed: collapsed,
+                    onTap: () {
+                      context.go('/purchase');
+                      setState(() => _isHovered = false);
+                    },
+                  ),
+                  SidebarItem(
+                    icon: Icons.keyboard_return_rounded,
+                    label: 'Purchase Return',
+                    active: location == '/purchase-return',
+                    collapsed: collapsed,
+                    onTap: () {
+                      context.go('/purchase-return');
+                      setState(() => _isHovered = false);
+                    },
+                  ),
+
+                  // 2. MASTERS
+                  _SectionHeader(title: 'Masters', collapsed: collapsed),
+                  SidebarItem(
+                    icon: Icons.inventory_2_outlined,
+                    label: 'Material Master',
+                    shortcut: 'F4',
+                    active: location == '/material',
+                    collapsed: collapsed,
+                    onTap: () {
+                      context.go('/material');
+                      setState(() => _isHovered = false);
+                    },
+                  ),
+                  SidebarItem(
+                    icon: Icons.category_outlined,
+                    label: 'Category Master',
+                    shortcut: 'F11',
+                    active: location == '/category',
+                    collapsed: collapsed,
+                    onTap: () {
+                      context.go('/category');
+                      setState(() => _isHovered = false);
+                    },
+                  ),
+                  SidebarItem(
+                    icon: Icons.local_shipping_outlined,
+                    label: 'Supplier Master',
+                    shortcut: 'F7',
+                    active: location == '/supplier',
+                    collapsed: collapsed,
+                    onTap: () {
+                      context.go('/supplier');
+                      setState(() => _isHovered = false);
+                    },
+                  ),
+                  SidebarItem(
+                    icon: Icons.business_outlined,
+                    label: 'Manufacturer',
+                    active: location == '/manufacturer',
+                    collapsed: collapsed,
+                    onTap: () {
+                      context.go('/manufacturer');
+                      setState(() => _isHovered = false);
+                    },
+                  ),
+                  SidebarItem(
+                    icon: Icons.all_inbox_rounded,
+                    label: 'Packaging Master',
+                    active: location == '/packaging',
+                    collapsed: collapsed,
+                    onTap: () {
+                      context.go('/packaging');
+                      setState(() => _isHovered = false);
+                    },
+                  ),
+                  SidebarItem(
+                    icon: Icons.dashboard_customize_outlined,
+                    label: 'All Masters',
+                    shortcut: 'F9',
+                    active: location == '/masters',
+                    collapsed: collapsed,
+                    onTap: () {
+                      context.go('/masters');
+                      setState(() => _isHovered = false);
+                    },
+                  ),
+
+                  // 3. INVENTORY & REPORTS
+                  _SectionHeader(title: 'Inventory & Reports', collapsed: collapsed),
+                  SidebarItem(
+                    icon: Icons.widgets_outlined,
+                    label: 'Inventory',
+                    shortcut: 'F5',
+                    active: location == '/inventory',
+                    collapsed: collapsed,
+                    onTap: () {
+                      context.go('/inventory');
+                      setState(() => _isHovered = false);
+                    },
+                  ),
+                  SidebarItem(
+                    icon: Icons.assessment_outlined,
+                    label: 'SCM Daily Sale',
+                    shortcut: 'F6',
+                    active: location == '/reports',
+                    collapsed: collapsed,
+                    onTap: () {
+                      context.go('/reports');
+                      setState(() => _isHovered = false);
+                    },
+                  ),
+                  SidebarItem(
+                    icon: Icons.liquor_outlined,
+                    label: 'Brandwise Report',
+                    shortcut: 'F10',
+                    active: location == '/brandwise-report',
+                    collapsed: collapsed,
+                    onTap: () {
+                      context.go('/brandwise-report');
+                      setState(() => _isHovered = false);
+                    },
+                  ),
+
+                  // 4. SYSTEM
+                  if (!AppConfig.offlineOnly) ...[
+                    _SectionHeader(title: 'System', collapsed: collapsed),
+                    SidebarItem(
+                      icon: Icons.sync_alt_rounded,
+                      label: 'Sync Center',
+                      shortcut: 'F12',
+                      active: location == '/sync',
+                      collapsed: collapsed,
+                      onTap: () {
+                        context.go('/sync');
+                        setState(() => _isHovered = false);
+                      },
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            // ── Footer (User profile / Sign out) ──────────────────────────
+            _SidebarFooter(
+              collapsed: collapsed,
+              initials: currentUser?.initials ?? 'GU',
+              username: currentUser?.username ?? 'Guest User',
+              roleLabel: currentUser?.roleLabel ?? 'Offline Mode',
+              onLogout: () => ref.read(authControllerProvider.notifier).signOut(),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-// ─── Sub-widgets ──────────────────────────────────────────────────────────────
+// ─── Header ──────────────────────────────────────────────────────────────────
 
-/// Cocktail-glass brand mark at the top of the rail.
-class _BrandMark extends StatelessWidget {
+class _SidebarHeader extends StatelessWidget {
+  const _SidebarHeader({required this.collapsed});
+  final bool collapsed;
+
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 14, 10, 8),
-      child: Container(
-        height: 38,
-        width: 38,
-        decoration: BoxDecoration(
-          color: AppColors.primary.withValues(alpha: 0.18),
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.35),
+    return Container(
+      height: 60,
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.borderFor(context),
+            width: 1,
           ),
         ),
-        child: const Center(
-          child: Icon(
-            Icons.local_bar_rounded,
-            size: 19,
-            color: AppColors.primary,
+      ),
+      child: ClipRect(
+        child: OverflowBox(
+          alignment: Alignment.centerLeft,
+          minWidth: 0,
+          maxWidth: kSidebarExpandedWidth,
+          minHeight: 60,
+          maxHeight: 60,
+          child: SizedBox(
+            width: kSidebarExpandedWidth,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  const _CocktailMark(),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: AnimatedOpacity(
+                      duration: const Duration(milliseconds: 140),
+                      opacity: collapsed ? 0.0 : 1.0,
+                      curve: Curves.easeOut,
+                      child: ClipRect(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Caskly',
+                              style: AppTypography.sectionTitle.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.clip,
+                            ),
+                            Text(
+                              'Liquor POS',
+                              style: AppTypography.caption.copyWith(
+                                color: AppColors.textSecondaryFor(context),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.clip,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -206,102 +336,152 @@ class _BrandMark extends StatelessWidget {
   }
 }
 
-/// A subtle dot/line between icon groups (visible at all times, very compact).
-class _GroupDivider extends StatelessWidget {
+class _CocktailMark extends StatelessWidget {
+  const _CocktailMark();
+
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 18, vertical: 5),
-      child: Divider(
-        height: 1,
-        thickness: 1,
-        color: _kBorder,
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: AppColors.primarySoft,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: Border.all(color: AppColors.borderFor(context)),
+      ),
+      alignment: Alignment.center,
+      child: const Icon(
+        Icons.local_bar_rounded,
+        size: 19,
+        color: AppColors.primary,
       ),
     );
   }
 }
 
-/// Tiny accent dot that marks the start of the first group.
-class _GroupDot extends StatelessWidget {
+// ─── Section Header ──────────────────────────────────────────────────────────
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title, required this.collapsed});
+  final String title;
+  final bool collapsed;
+
   @override
   Widget build(BuildContext context) {
-    return const SizedBox(height: 4);
+    if (collapsed) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Divider(
+          height: 1,
+          thickness: 1,
+          color: AppColors.borderFor(context),
+        ),
+      );
+    }
+
+    return ClipRect(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+        child: Text(
+          title.toUpperCase(),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 10.5,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.8,
+            color: AppColors.textMutedFor(context),
+          ),
+        ),
+      ),
+    );
   }
 }
 
-/// Avatar circle + logout icon pinned to the bottom.
-class _SidebarBottom extends StatelessWidget {
-  const _SidebarBottom({
+// ─── Footer ──────────────────────────────────────────────────────────────────
+
+class _SidebarFooter extends StatelessWidget {
+  const _SidebarFooter({
+    required this.collapsed,
     required this.initials,
+    required this.username,
+    required this.roleLabel,
     required this.onLogout,
   });
 
+  final bool collapsed;
   final String initials;
+  final String username;
+  final String roleLabel;
   final VoidCallback onLogout;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        const Divider(height: 1, color: _kBorder),
-        const SizedBox(height: 6),
-        _LogoutButton(onTap: onLogout),
-        const SizedBox(height: 4),
-        _AvatarBadge(initials: initials),
-        const SizedBox(height: 8),
-      ],
-    );
-  }
-}
-
-class _LogoutButton extends StatefulWidget {
-  const _LogoutButton({required this.onTap});
-  final VoidCallback onTap;
-
-  @override
-  State<_LogoutButton> createState() => _LogoutButtonState();
-}
-
-class _LogoutButtonState extends State<_LogoutButton> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: 'Sign out',
-      preferBelow: false,
-      waitDuration: const Duration(milliseconds: 500),
-      child: MouseRegion(
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit:  (_) => setState(() => _hovered = false),
-        cursor: SystemMouseCursors.click,
-        // Full hit target matches nav item row height, but NOT full rail width.
-        child: GestureDetector(
-          onTap: widget.onTap,
+    return Container(
+      height: 44,
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(
+            color: AppColors.borderFor(context),
+            width: 1,
+          ),
+        ),
+      ),
+      child: ClipRect(
+        child: OverflowBox(
+          alignment: Alignment.centerLeft,
+          minWidth: 0,
+          maxWidth: kSidebarExpandedWidth,
+          minHeight: 44,
+          maxHeight: 44,
           child: SizedBox(
-            width: 44,
-            height: 44,
-            child: Center(
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 160),
-                curve: Curves.easeOut,
-                width:  44,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: _hovered
-                      ? Colors.white.withValues(alpha: 0.06)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.logout_rounded,
-                    size: 18,
-                    color: _hovered ? Colors.white : _kMuted,
+            width: kSidebarExpandedWidth,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 19),
+              child: Row(
+                children: [
+                  _AvatarBadge(initials: initials, size: 30),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: AnimatedOpacity(
+                      duration: const Duration(milliseconds: 140),
+                      opacity: collapsed ? 0.0 : 1.0,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            username,
+                            style: AppTypography.caption.copyWith(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12.5,
+                              color: AppColors.textPrimaryFor(context),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 1),
+                          Text(
+                            roleLabel,
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textMutedFor(context),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 4),
+                  AnimatedOpacity(
+                    duration: const Duration(milliseconds: 140),
+                    opacity: collapsed ? 0.0 : 1.0,
+                    child: _LogoutIconButton(onTap: onLogout),
+                  ),
+                ],
               ),
             ),
           ),
@@ -312,31 +492,30 @@ class _LogoutButtonState extends State<_LogoutButton> {
 }
 
 class _AvatarBadge extends StatelessWidget {
-  const _AvatarBadge({required this.initials});
+  const _AvatarBadge({required this.initials, this.size = 34});
   final String initials;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 36,
-      height: 36,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
-        // Deep purple gradient — professional, not flat primary blue
         gradient: const LinearGradient(
-          colors: [Color(0xFF6C5DD3), Color(0xFF4C3DBF)],
+          colors: [Color(0xFF6C5CE7), Color(0xFF5A46D6)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        // 10 px matches the nav item pill shape exactly
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(
-          color: const Color(0xFF7C6DE0),
-          width: 1.5,
+          color: Colors.white.withValues(alpha: 0.18),
+          width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF6C5DD3).withValues(alpha: 0.35),
-            blurRadius: 8,
+            color: const Color(0xFF6C5CE7).withValues(alpha: 0.28),
+            blurRadius: 6,
             offset: const Offset(0, 2),
           ),
         ],
@@ -347,11 +526,64 @@ class _AvatarBadge extends StatelessWidget {
           style: const TextStyle(
             color: Colors.white,
             fontSize: 11,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.5,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.4,
           ),
         ),
       ),
     );
   }
 }
+
+class _LogoutIconButton extends StatefulWidget {
+  const _LogoutIconButton({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  State<_LogoutIconButton> createState() => _LogoutIconButtonState();
+}
+
+class _LogoutIconButtonState extends State<_LogoutIconButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+
+    return Tooltip(
+      message: 'Sign out',
+      preferBelow: false,
+      waitDuration: const Duration(milliseconds: 400),
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: widget.onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 140),
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: _hovered
+                  ? (isDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : Colors.black.withValues(alpha: 0.05))
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Icon(
+              Icons.logout_rounded,
+              size: 17,
+              color: _hovered
+                  ? AppColors.danger
+                  : AppColors.textMutedFor(context),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+

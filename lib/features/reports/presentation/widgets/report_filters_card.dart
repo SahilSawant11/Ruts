@@ -14,7 +14,14 @@ import '../../data/reports_providers.dart';
 /// the new range to reportDateRangeProvider (and triggers the fetch),
 /// so the report doesn't refire on every single date tap.
 class ReportFiltersCard extends ConsumerStatefulWidget {
-  const ReportFiltersCard({super.key});
+  const ReportFiltersCard({
+    super.key,
+    this.tabs,
+    this.trailingAction,
+  });
+
+  final Widget? tabs;
+  final Widget? trailingAction;
 
   @override
   ConsumerState<ReportFiltersCard> createState() => _ReportFiltersCardState();
@@ -88,7 +95,21 @@ class _ReportFiltersCardState extends ConsumerState<ReportFiltersCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionHeader(title: 'Filters'),
+          SectionHeader(
+            title: 'Filters',
+            trailing: (widget.tabs != null || widget.trailingAction != null)
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (widget.tabs != null) widget.tabs!,
+                      if (widget.trailingAction != null) ...[
+                        const SizedBox(width: AppSpacing.sm),
+                        widget.trailingAction!,
+                      ],
+                    ],
+                  )
+                : null,
+          ),
           const SizedBox(height: AppSpacing.md),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,

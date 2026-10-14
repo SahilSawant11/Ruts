@@ -88,29 +88,29 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              ReportTabs(selected: _tab, onChanged: _onTabChanged),
-              const Spacer(),
-              pendingSyncAsync.when(
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
-                data: (count) => count > 0
-                    ? const Padding(
-                        padding: EdgeInsets.only(right: AppSpacing.sm),
-                        child: StatusChip(label: 'Queued offline', tone: StatusChipTone.neutral),
-                      )
-                    : const SizedBox.shrink(),
-              ),
-              SecondaryButton(
-                label: _isExporting ? 'Exporting…' : 'Export Excel',
-                icon: Icons.download_rounded,
-                onPressed: _isExporting ? null : _exportExcel,
-              ),
-            ],
+          ReportFiltersCard(
+            tabs: ReportTabs(selected: _tab, onChanged: _onTabChanged),
+            trailingAction: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                pendingSyncAsync.when(
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                  data: (count) => count > 0
+                      ? const Padding(
+                          padding: EdgeInsets.only(right: AppSpacing.sm),
+                          child: StatusChip(label: 'Queued offline', tone: StatusChipTone.neutral),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+                SecondaryButton(
+                  label: _isExporting ? 'Exporting…' : 'Export Excel',
+                  icon: Icons.download_rounded,
+                  onPressed: _isExporting ? null : _exportExcel,
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: AppSpacing.lg),
-          const ReportFiltersCard(),
           const SizedBox(height: AppSpacing.lg),
           const ReportKpiRow(),
           const SizedBox(height: AppSpacing.lg),

@@ -1,18 +1,20 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/auth/auth_controller.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/theme_mode_provider.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../features/sync/data/sync_providers.dart';
-import '../badges/status_chip.dart';
-import '../inputs/search_field.dart';
 
-
-/// Top bar shown on every screen: hamburger (toggles sidebar collapse),
-/// current module title + its shortcut, global search, online/weather/
-/// date chips, quick icon actions and the signed-in user.
+/// A docked Apple macOS window toolbar that connects flush with the sidebar.
+///
+/// Features:
+///   • Docked 60px height with continuous 1px bottom border.
+///   • Zero duplicates (no redundant avatar, logout, or date chips).
+///   • High-utility tools: Quick Calculator, Notes, POS Shortcuts Dialog, Theme Switcher.
+///   • Interactive Sync status pill with 1-click drilldown to Sync Center.
 class AppTopHeader extends ConsumerWidget {
   const AppTopHeader({
     super.key,
@@ -23,305 +25,511 @@ class AppTopHeader extends ConsumerWidget {
   final String moduleTitle;
   final String moduleShortcutLabel;
 
+  void _launchApp(String appName) {
+    try {
+      if (Platform.isMacOS) {
+        Process.run('open', ['-a', appName]);
+      }
+    } catch (_) {}
+  }
+
+  void _showShortcutsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => const _KeyboardShortcutsDialog(),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final syncOverviewAsync = ref.watch(syncOverviewProvider);
     final themeMode = ref.watch(appThemeModeProvider);
-    final currentUser = ref.watch(currentUserProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final showSearch = width >= 1420;
-        final showLocalMode = width >= 1280;
-        final showDate = width >= 1160;
-        final showUtilityIcons = width >= 1040;
-        final showProfile = width >= 760;
-        final showProfileLabel = width >= 1180;
-        final showShortcutBadge = width >= 980;
-        final compactTitle = width < 1080;
-        final showSyncChip = width >= 940;
-        final titleFontSize = width < 860 ? 18.0 : 22.0;
+    final headerBg = isDark
+        ? const Color(0xFF151720)
+        : const Color(0xFFF6F6F9);
 
-        return Container(
-          height: 76,
-          padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.sm),
-          child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: AppColors.glassSurfaceStrongFor(context),
-                  border: Border.all(color: AppColors.glassBorderFor(context)),
-                  borderRadius: BorderRadius.circular(AppRadius.xl),
-                  boxShadow: AppColors.cardShadowFor(context),
-                ),
-                child: Row(
-                  children: [
-
-                    Expanded(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              moduleTitle,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTypography.h2.copyWith(
-                                fontSize: titleFontSize,
-                                color: AppColors.textPrimaryFor(context),
-                              ),
-                            ),
-                          ),
-                          if (showShortcutBadge && !compactTitle) ...[
-                            const SizedBox(width: AppSpacing.xs),
-                            _pillBadge(moduleShortcutLabel),
-                          ],
-                        ],
-                      ),
-                    ),
-                    if (showSearch) ...[
-                      const SizedBox(width: AppSpacing.lg),
-                      const SizedBox(width: 240, child: SearchField()),
-                    ],
-                    const Spacer(),
-                    if (showSyncChip)
-                      syncOverviewAsync.when(
-                        loading: () => const StatusChip(label: 'Sync…', tone: StatusChipTone.neutral),
-                        error: (_, __) => const StatusChip(label: 'Sync unknown', tone: StatusChipTone.neutral),
-                        data: (overview) => StatusChip(
-                          label: overview.failed > 0
-                              ? '${overview.failed} failed'
-                              : overview.total > 0
-                                  ? '${overview.total} queued'
-                                  : 'Sync clean',
-                          tone: overview.failed > 0 ? StatusChipTone.dark : StatusChipTone.neutral,
-                        ),
-                      ),
-                    if (showLocalMode) ...[
-                      const SizedBox(width: AppSpacing.xs),
-                      const StatusChip(
-                        label: 'Local-first mode',
-                        tone: StatusChipTone.neutral,
-                        icon: Icons.storage_rounded,
-                      ),
-                    ],
-                    if (showDate) ...[
-                      const SizedBox(width: AppSpacing.xs),
-                      StatusChip(
-                        label: _todayLabel(),
-                        tone: StatusChipTone.neutral,
-                        icon: Icons.calendar_today_outlined,
-                      ),
-                    ],
-                    const SizedBox(width: AppSpacing.sm),
-                    _themeButton(
-                      context: context,
-                      isDark: isDark,
-                      themeMode: themeMode,
-                      onTap: () => ref.read(appThemeModeProvider.notifier).state =
-                          isDark ? ThemeMode.light : ThemeMode.dark,
-                    ),
-                    if (showUtilityIcons) ...[
-                      const SizedBox(width: 6),
-                      _iconButton(context, Icons.calculate_outlined),
-                      const SizedBox(width: 6),
-                      _iconButton(context, Icons.description_outlined),
-                    ],
-                    if (showProfile) ...[
-                      const SizedBox(width: 6),
-                      _logoutButton(context, ref),
-                      const SizedBox(width: AppSpacing.sm),
-                      _profile(
-                        context,
-                        showLabel: showProfileLabel,
-                        username: currentUser?.username ?? 'guest',
-                        roleLabel: currentUser?.roleLabel ?? 'Offline User',
-                        initials: currentUser?.initials ?? 'GU',
-                      ),
-                    ],
-                  ],
-                ),
+    return Container(
+      height: 60,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        color: headerBg,
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.borderFor(context),
+            width: 1,
           ),
+        ),
+      ),
+      child: Row(
+        children: [
+          // ── Module Title & Shortcut Tag ─────────────────────────────────
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                moduleTitle,
+                style: AppTypography.h2.copyWith(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimaryFor(context),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              _buildShortcutPill(context, moduleShortcutLabel, isDark),
+            ],
+          ),
+
+          const Spacer(),
+
+          // ── Sync & Connectivity Status Pill (Clickable) ────────────────
+          _buildSyncStatusPill(context, syncOverviewAsync, isDark),
+
+          const SizedBox(width: 12),
+          _divider(context),
+          const SizedBox(width: 12),
+
+          // ── Quick POS Utilities ────────────────────────────────────────
+          _HeaderIconButton(
+            icon: Icons.calculate_outlined,
+            tooltip: 'Open Calculator (macOS)',
+            onTap: () => _launchApp('Calculator'),
+          ),
+          const SizedBox(width: 6),
+          _HeaderIconButton(
+            icon: Icons.edit_note_rounded,
+            tooltip: 'Quick Notes (macOS)',
+            onTap: () => _launchApp('Notes'),
+          ),
+          const SizedBox(width: 6),
+          _HeaderIconButton(
+            icon: Icons.keyboard_outlined,
+            tooltip: 'Keyboard Shortcuts (F1–F12)',
+            onTap: () => _showShortcutsDialog(context),
+          ),
+          const SizedBox(width: 6),
+          _HeaderIconButton(
+            icon: themeMode == ThemeMode.dark
+                ? Icons.dark_mode_rounded
+                : Icons.light_mode_rounded,
+            tooltip: isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+            onTap: () => ref.read(appThemeModeProvider.notifier).state =
+                isDark ? ThemeMode.light : ThemeMode.dark,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShortcutPill(
+    BuildContext context,
+    String label,
+    bool isDark,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+      decoration: BoxDecoration(
+        color: isDark
+            ? AppColors.primary.withValues(alpha: 0.22)
+            : AppColors.primarySoft,
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: isDark ? 0.35 : 0.25),
+          width: 0.8,
+        ),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.2,
+          color: isDark ? const Color(0xFFD0C7FF) : AppColors.primary,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSyncStatusPill(
+    BuildContext context,
+    AsyncValue syncOverviewAsync,
+    bool isDark,
+  ) {
+    return syncOverviewAsync.when(
+      loading: () => _syncPillContainer(
+        context,
+        dotColor: AppColors.textMutedFor(context),
+        label: 'Checking sync…',
+        onTap: () => context.go('/sync'),
+        isDark: isDark,
+      ),
+      error: (_, __) => _syncPillContainer(
+        context,
+        dotColor: AppColors.warning,
+        label: 'Sync diagnostics',
+        onTap: () => context.go('/sync'),
+        isDark: isDark,
+      ),
+      data: (overview) {
+        if (overview.failed > 0) {
+          return _syncPillContainer(
+            context,
+            dotColor: AppColors.danger,
+            label: '${overview.failed} failed',
+            onTap: () => context.go('/sync'),
+            isDark: isDark,
+          );
+        }
+        if (overview.total > 0) {
+          return _syncPillContainer(
+            context,
+            dotColor: AppColors.warning,
+            label: '${overview.total} queued offline',
+            onTap: () => context.go('/sync'),
+            isDark: isDark,
+          );
+        }
+        return _syncPillContainer(
+          context,
+          dotColor: AppColors.success,
+          label: 'Sync clean',
+          onTap: () => context.go('/sync'),
+          isDark: isDark,
         );
       },
     );
   }
 
-  String _todayLabel() {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    final now = DateTime.now();
-    return '${now.day.toString().padLeft(2, '0')}-${months[now.month - 1]}-${now.year}';
-  }
-
-  Widget _pillBadge(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.primarySoft.withValues(alpha: 0.96),
-        borderRadius: BorderRadius.circular(AppRadius.pill),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.95)),
-      ),
-      child: Text(
-        label,
-        style: AppTypography.caption.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700),
-      ),
-    );
-  }
-
-  Widget _iconButton(BuildContext context, IconData icon) {
-    return Container(
-      width: 38,
-      height: 38,
-      decoration: BoxDecoration(
-        color: AppColors.glassSurfaceStrongFor(context),
-        border: Border.all(color: AppColors.glassBorderFor(context)),
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(
-              alpha: AppColors.isDark(context) ? 0.18 : 0.06,
-            ),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Icon(
-        icon,
-        size: 18,
-        color: AppColors.textSecondaryFor(context),
-      ),
-    );
-  }
-
-  Widget _themeButton({
-    required BuildContext context,
-    required bool isDark,
-    required ThemeMode themeMode,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.sm),
-      child: Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.surfaceAltFor(context) : AppColors.glassSurfaceStrongFor(context),
-          border: Border.all(color: AppColors.glassBorderFor(context)),
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(
-                alpha: AppColors.isDark(context) ? 0.18 : 0.06,
-              ),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Icon(
-          themeMode == ThemeMode.dark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-          size: 18,
-          color: AppColors.textSecondaryFor(context),
-        ),
-      ),
-    );
-  }
-
-  Widget _profile(
+  Widget _syncPillContainer(
     BuildContext context, {
-    required bool showLabel,
-    required String username,
-    required String roleLabel,
-    required String initials,
+    required Color dotColor,
+    required String label,
+    required VoidCallback onTap,
+    required bool isDark,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.glassSurfaceStrongFor(context),
-        border: Border.all(color: AppColors.glassBorderFor(context)),
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(
-              alpha: AppColors.isDark(context) ? 0.18 : 0.06,
+    return Tooltip(
+      message: 'Click to open Sync Center',
+      waitDuration: const Duration(milliseconds: 400),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.05)
+                : Colors.black.withValues(alpha: 0.04),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : Colors.black.withValues(alpha: 0.06),
+              width: 0.8,
             ),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
           ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CircleAvatar(
-            radius: 14,
-            backgroundColor: AppColors.primary,
-            child: Text(initials, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
-          ),
-          if (showLabel) ...[
-            const SizedBox(width: 8),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 120),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    username,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.body.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimaryFor(context),
-                    ),
-                  ),
-                  Text(
-                    roleLabel,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.textSecondaryFor(context),
-                    ),
-                  ),
-                ],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 7,
+                height: 7,
+                decoration: BoxDecoration(
+                  color: dotColor,
+                  shape: BoxShape.circle,
+                ),
               ),
-            ),
-          ],
-        ],
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondaryFor(context),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  Widget _logoutButton(BuildContext context, WidgetRef ref) {
-    return InkWell(
-      onTap: () => ref.read(authControllerProvider.notifier).signOut(),
-      borderRadius: BorderRadius.circular(AppRadius.sm),
-      child: Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          color: AppColors.glassSurfaceStrongFor(context),
-          border: Border.all(color: AppColors.glassBorderFor(context)),
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(
-                alpha: AppColors.isDark(context) ? 0.18 : 0.06,
-              ),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
+  Widget _divider(BuildContext context) {
+    return Container(
+      width: 1,
+      height: 18,
+      color: AppColors.borderFor(context),
+    );
+  }
+}
+
+// ─── Reusable Header Icon Button ─────────────────────────────────────────────
+
+class _HeaderIconButton extends StatefulWidget {
+  const _HeaderIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  State<_HeaderIconButton> createState() => _HeaderIconButtonState();
+}
+
+class _HeaderIconButtonState extends State<_HeaderIconButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+
+    return Tooltip(
+      message: widget.tooltip,
+      preferBelow: false,
+      waitDuration: const Duration(milliseconds: 350),
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: widget.onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 140),
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: _hovered
+                  ? (isDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : Colors.black.withValues(alpha: 0.05))
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(6),
             ),
-          ],
-        ),
-        child: Icon(
-          Icons.logout_rounded,
-          size: 18,
-          color: AppColors.textSecondaryFor(context),
+            child: Icon(
+              widget.icon,
+              size: 17,
+              color: _hovered
+                  ? AppColors.textPrimaryFor(context)
+                  : AppColors.textSecondaryFor(context),
+            ),
+          ),
         ),
       ),
     );
   }
 }
+
+// ─── Keyboard Shortcuts Modal ────────────────────────────────────────────────
+
+class _KeyboardShortcutsDialog extends StatelessWidget {
+  const _KeyboardShortcutsDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+
+    return Dialog(
+      backgroundColor: isDark ? const Color(0xFF1B1E28) : Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primarySoft,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.keyboard_outlined,
+                          size: 20,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'POS Keyboard Shortcuts',
+                            style: AppTypography.h2.copyWith(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimaryFor(context),
+                            ),
+                          ),
+                          Text(
+                            'Hardware function keys for high-speed operation',
+                            style: AppTypography.caption.copyWith(
+                              color: AppColors.textSecondaryFor(context),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 18),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+              Divider(height: 1, color: AppColors.borderFor(context)),
+              const SizedBox(height: 16),
+
+              // Two columns: Global Nav vs Billing Actions
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Global Screen Navigation
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'SCREEN NAVIGATION',
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8,
+                            color: AppColors.textMutedFor(context),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        _shortcutRow(context, 'F1', 'Dashboard'),
+                        _shortcutRow(context, 'F2', 'Purchase Bill'),
+                        _shortcutRow(context, 'F3', 'Sales Bill'),
+                        _shortcutRow(context, 'F4', 'Material Master'),
+                        _shortcutRow(context, 'F5', 'Inventory'),
+                        _shortcutRow(context, 'F6', 'Daily Sale Report'),
+                        _shortcutRow(context, 'F7', 'Supplier Master'),
+                        _shortcutRow(context, 'F8', 'Sales Return'),
+                        _shortcutRow(context, 'F9', 'All Masters'),
+                        _shortcutRow(context, 'F10', 'Brandwise Report'),
+                        _shortcutRow(context, 'F11', 'Category Master'),
+                        _shortcutRow(context, 'F12', 'Sync Center'),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(width: 24),
+                  Container(
+                    width: 1,
+                    height: 260,
+                    color: AppColors.borderFor(context),
+                  ),
+                  const SizedBox(width: 24),
+
+                  // In-Billing Shortcuts
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'SALES BILLING ACTIONS',
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8,
+                            color: AppColors.textMutedFor(context),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        _shortcutRow(context, 'F1', 'Focus Barcode Scanner'),
+                        _shortcutRow(context, 'F4', 'Focus Quantity Field'),
+                        _shortcutRow(context, 'F6', 'Hold Current Bill'),
+                        _shortcutRow(context, 'F8', 'Settle / Complete Sale'),
+                        _shortcutRow(context, 'Esc', 'Clear / Cancel Action'),
+                        const SizedBox(height: 24),
+                        Text(
+                          'PURCHASE BILLING',
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8,
+                            color: AppColors.textMutedFor(context),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        _shortcutRow(context, 'F8', 'Save / Complete Bill'),
+                        _shortcutRow(context, 'Esc', 'Cancel / Back'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _shortcutRow(BuildContext context, String key, String label) {
+    final isDark = AppColors.isDark(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Container(
+            constraints: const BoxConstraints(minWidth: 32),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : const Color(0xFFF1F1F6),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.12)
+                    : const Color(0xFFE0E0EA),
+                width: 0.8,
+              ),
+            ),
+            child: Text(
+              key,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimaryFor(context),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: AppTypography.caption.copyWith(
+                fontWeight: FontWeight.w500,
+                color: AppColors.textSecondaryFor(context),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+

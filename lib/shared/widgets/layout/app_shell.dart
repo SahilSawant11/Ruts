@@ -152,7 +152,10 @@ class _AppShellState extends State<AppShell> {
                 children: [
                   AppTopHeader(moduleTitle: meta.title, moduleShortcutLabel: meta.shortcut),
                   Expanded(child: widget.navigationShell),
-                  AppStatusBar(moduleName: meta.statusName),
+                  AppStatusBar(
+                    moduleName: meta.statusName,
+                    branchIndex: widget.navigationShell.currentIndex,
+                  ),
                 ],
               ),
             ),

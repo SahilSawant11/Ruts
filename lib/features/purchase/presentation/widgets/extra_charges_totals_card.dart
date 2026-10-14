@@ -7,7 +7,6 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
-import '../../../../shared/widgets/layout/app_card.dart';
 import '../../../inventory/data/inventory_providers.dart';
 import '../../../masters/data/masters_providers.dart';
 import '../../data/models/create_purchase_request.dart';
@@ -15,8 +14,12 @@ import '../../data/purchase_providers.dart';
 import '../purchase_cart_controller.dart';
 import '../purchase_form_controller.dart';
 
+/// Settlement, extra charges and actions card for Purchase,
+/// styled in the app's signature pebble card aesthetic matching PaymentCard.
 class ExtraChargesTotalsCard extends ConsumerStatefulWidget {
-  const ExtraChargesTotalsCard({super.key});
+  const ExtraChargesTotalsCard({super.key, this.compact = true});
+
+  final bool compact;
 
   @override
   ConsumerState<ExtraChargesTotalsCard> createState() => _ExtraChargesTotalsCardState();
@@ -53,6 +56,9 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
         _save();
       }
       return true;
+    } else if (event.logicalKey == LogicalKeyboardKey.escape) {
+      _clear();
+      return true;
     }
     return false;
   }
@@ -62,6 +68,42 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
   void _showSnack(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: isError ? AppColors.danger : AppColors.success),
+    );
+  }
+
+  void _clear() {
+    final cart = ref.read(purchaseCartControllerProvider);
+    if (cart.isEmpty && _discountController.text == '0') return;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.backgroundFor(ctx),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+        title: const Row(
+          children: [
+            Icon(Icons.clear_all_rounded, color: AppColors.danger, size: 22),
+            SizedBox(width: 8),
+            Text('Discard Purchase Bill?'),
+          ],
+        ),
+        content: const Text('This will clear all entered line items and extra charges for this bill.'),
+        actions: [
+          SecondaryButton(label: 'Cancel', onPressed: () => Navigator.of(ctx).pop()),
+          DangerButton(
+            label: 'Clear Bill',
+            icon: Icons.delete_outline_rounded,
+            onPressed: () {
+              ref.read(purchaseCartControllerProvider.notifier).clear();
+              ref.read(purchaseFormControllerProvider.notifier).reset();
+              for (final c in [_discountController, _vatController, _stampController, _tcsController, _loadingFreightController]) {
+                c.text = '0';
+              }
+              Navigator.of(ctx).pop();
+            },
+          ),
+        ],
+      ),
     );
   }
 
@@ -144,137 +186,112 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
 
   @override
   Widget build(BuildContext context) {
-    final cart = ref.watch(purchaseCartControllerProvider);
-    final form = ref.watch(purchaseFormControllerProvider);
-    final netAmount = cart.itemsAmount + form.extraCharges;
-
-    return AppCard(
-      padding: EdgeInsets.zero,
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.backgroundFor(context),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.borderFor(context)),
+        boxShadow: AppColors.cardShadowFor(context),
+      ),
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.sm),
-            child: SectionHeader(title: 'Extra Charges & Totals'),
+          // Header
+          Row(
+            children: [
+              const Icon(Icons.tune_rounded, size: 16, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text(
+                'Extra Charges & Settlement',
+                style: AppTypography.sectionTitle.copyWith(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimaryFor(context),
+                ),
+              ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-            child: Row(
-              children: [
-                Expanded(
-                  child: AppTextField(
-                    label: 'DISCOUNT',
-                    controller: _discountController,
-                    onChanged: (v) => ref.read(purchaseFormControllerProvider.notifier).setDiscount(_parse(v)),
-                  ),
+
+          const SizedBox(height: AppSpacing.sm),
+
+          // 2-column compact inputs
+          Row(
+            children: [
+              Expanded(
+                child: AppTextField(
+                  label: 'DISCOUNT',
+                  hint: '0',
+                  controller: _discountController,
+                  onChanged: (v) => ref.read(purchaseFormControllerProvider.notifier).setDiscount(_parse(v)),
                 ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: AppTextField(
-                    label: 'VAT',
-                    controller: _vatController,
-                    onChanged: (v) => ref.read(purchaseFormControllerProvider.notifier).setVat(_parse(v)),
-                  ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: AppTextField(
+                  label: 'VAT',
+                  hint: '0',
+                  controller: _vatController,
+                  onChanged: (v) => ref.read(purchaseFormControllerProvider.notifier).setVat(_parse(v)),
                 ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: AppTextField(
-                    label: 'STAMP',
-                    controller: _stampController,
-                    onChanged: (v) => ref.read(purchaseFormControllerProvider.notifier).setStamp(_parse(v)),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: AppTextField(
-                    label: 'TCS',
-                    controller: _tcsController,
-                    onChanged: (v) => ref.read(purchaseFormControllerProvider.notifier).setTcs(_parse(v)),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: AppTextField(
-                    label: 'LOADING / FREIGHT',
-                    controller: _loadingFreightController,
-                    onChanged: (v) => ref.read(purchaseFormControllerProvider.notifier).setLoadingFreight(_parse(v)),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
+
+          const SizedBox(height: AppSpacing.xs),
+
+          Row(
+            children: [
+              Expanded(
+                child: AppTextField(
+                  label: 'STAMP DUTY',
+                  hint: '0',
+                  controller: _stampController,
+                  onChanged: (v) => ref.read(purchaseFormControllerProvider.notifier).setStamp(_parse(v)),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: AppTextField(
+                  label: 'TCS',
+                  hint: '0',
+                  controller: _tcsController,
+                  onChanged: (v) => ref.read(purchaseFormControllerProvider.notifier).setTcs(_parse(v)),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: AppSpacing.xs),
+
+          AppTextField(
+            label: 'LOADING / FREIGHT',
+            hint: '0',
+            controller: _loadingFreightController,
+            onChanged: (v) => ref.read(purchaseFormControllerProvider.notifier).setLoadingFreight(_parse(v)),
+          ),
+
           const SizedBox(height: AppSpacing.md),
-          Divider(height: 1, color: AppColors.borderFor(context)),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.sm,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Net Amount',
-                  style: AppTypography.bodyMuted.copyWith(
-                    color: AppColors.textSecondaryFor(context),
-                  ),
-                ),
-                Text(
-                  netAmount.toStringAsFixed(0),
-                  style: AppTypography.body.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimaryFor(context),
-                  ),
-                ),
-              ],
-            ),
+
+          // Primary Save Button
+          PrimaryButton(
+            label: _isSaving ? 'Saving…' : 'Save Purchase',
+            shortcut: 'F8',
+            icon: Icons.save_outlined,
+            expand: true,
+            onPressed: _isSaving ? null : _save,
           ),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.md,
-            ),
-            color: AppColors.totalSurfaceFor(context),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Total Amount',
-                  style: AppTypography.body.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  netAmount.toStringAsFixed(0),
-                  style: AppTypography.h1.copyWith(color: Colors.white),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.sm,
-              children: [
-                SecondaryButton(label: 'Modify', icon: Icons.edit_outlined, onPressed: () {}),
-                SecondaryButton(label: 'View', icon: Icons.visibility_outlined, onPressed: () {}),
-                DangerButton(
-                  label: 'Delete',
-                  icon: Icons.delete_outline_rounded,
-                  onPressed: () => ref.read(purchaseCartControllerProvider.notifier).clear(),
-                ),
-                SecondaryButton(label: 'Payments', icon: Icons.account_balance_wallet_outlined, onPressed: () {}),
-                PrimaryButton(
-                  label: _isSaving ? 'Saving…' : 'Save',
-                  shortcut: 'F8',
-                  icon: Icons.save_outlined,
-                  onPressed: _isSaving ? null : _save,
-                ),
-              ],
-            ),
+
+          const SizedBox(height: AppSpacing.xs),
+
+          // Clear / Discard Button
+          SecondaryButton(
+            label: 'Discard / Clear Bill',
+            icon: Icons.clear_all_rounded,
+            expand: true,
+            dense: true,
+            onPressed: _clear,
           ),
         ],
       ),

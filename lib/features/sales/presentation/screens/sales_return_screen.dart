@@ -45,6 +45,10 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
             colorScheme: ColorScheme.fromSeed(
               seedColor: AppColors.primary,
               brightness: AppColors.isDark(context) ? Brightness.dark : Brightness.light,
+              surface: AppColors.surfaceFor(context),
+            ),
+            datePickerTheme: DatePickerThemeData(
+              backgroundColor: AppColors.surfaceFor(context),
             ),
           ),
           child: child!,
@@ -78,7 +82,7 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.backgroundFor(ctx),
+        backgroundColor: AppColors.surfaceFor(ctx),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
         title: Row(
           children: [
@@ -91,7 +95,10 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
               child: const Icon(Icons.delete_sweep_rounded, color: AppColors.danger, size: 24),
             ),
             const SizedBox(width: AppSpacing.sm),
-            Text(isFullReturn ? 'Confirm Sales Return' : 'Confirm Partial Return'),
+            Text(
+              isFullReturn ? 'Confirm Sales Return' : 'Confirm Partial Return',
+              style: AppTypography.h2.copyWith(color: AppColors.textPrimaryFor(ctx)),
+            ),
           ],
         ),
         content: Column(
@@ -102,7 +109,10 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
               isFullReturn
                   ? 'Are you sure you want to return Bill ${bill.billNo}?'
                   : 'Are you sure you want to return ${selectedItems.length} selected item(s) from Bill ${bill.billNo}?',
-              style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
+              style: AppTypography.body.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimaryFor(ctx),
+              ),
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
@@ -113,7 +123,9 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
             Container(
               padding: const EdgeInsets.all(AppSpacing.sm),
               decoration: BoxDecoration(
-                color: AppColors.surfaceFor(ctx),
+                color: AppColors.isDark(ctx)
+                    ? AppColors.surfaceAltFor(ctx)
+                    : AppColors.surfaceFor(ctx),
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 border: Border.all(color: AppColors.borderFor(ctx)),
               ),
@@ -124,11 +136,13 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
                     children: [
                       const Icon(Icons.check_circle_outline, size: 16, color: AppColors.primary),
                       const SizedBox(width: 6),
-                      Text(
-                        isFullReturn
-                            ? 'Soft-deletes the sales bill record'
-                            : 'Removes selected item(s) from the sales bill',
-                        style: AppTypography.caption,
+                      Expanded(
+                        child: Text(
+                          isFullReturn
+                              ? 'Soft-deletes the sales bill record'
+                              : 'Removes selected item(s) from the sales bill',
+                          style: AppTypography.caption.copyWith(color: AppColors.textSecondaryFor(ctx)),
+                        ),
                       ),
                     ],
                   ),
@@ -137,9 +151,11 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
                     children: [
                       const Icon(Icons.check_circle_outline, size: 16, color: AppColors.primary),
                       const SizedBox(width: 6),
-                      Text(
-                        'Restores $totalQty item(s) back to inventory',
-                        style: AppTypography.caption,
+                      Expanded(
+                        child: Text(
+                          'Restores $totalQty item(s) back to inventory',
+                          style: AppTypography.caption.copyWith(color: AppColors.textSecondaryFor(ctx)),
+                        ),
                       ),
                     ],
                   ),
@@ -218,104 +234,68 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
 
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.md),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildToolbar(context),
-          const SizedBox(height: AppSpacing.md),
+          SizedBox(
+            width: 420,
+            child: _buildBillsList(billsAsync, selectedBill),
+          ),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: 380,
-                  child: _buildBillsList(billsAsync, selectedBill),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: _buildDetailPanel(selectedBill),
-                ),
-              ],
-            ),
+            child: _buildDetailPanel(selectedBill),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildToolbar(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        // Date Picker Button
-        InkWell(
-          onTap: _pickDate,
+  Widget _buildDatePickerButton(BuildContext context) {
+    final hasDate = _selectedDate != null;
+    return InkWell(
+      onTap: _pickDate,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Container(
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+        decoration: BoxDecoration(
+          color: hasDate
+              ? (AppColors.isDark(context)
+                  ? AppColors.primary.withValues(alpha: 0.22)
+                  : AppColors.primary.withValues(alpha: 0.1))
+              : AppColors.surfaceFor(context),
           borderRadius: BorderRadius.circular(AppRadius.md),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 10),
-            decoration: BoxDecoration(
-              color: _selectedDate != null
-                  ? AppColors.primary.withValues(alpha: 0.1)
-                  : AppColors.surfaceFor(context),
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              border: Border.all(
-                color: _selectedDate != null ? AppColors.primary : AppColors.borderFor(context),
+          border: Border.all(
+            color: hasDate ? AppColors.primary : AppColors.borderFor(context),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.calendar_month_outlined,
+              size: 18,
+              color: hasDate ? AppColors.primary : AppColors.textSecondaryFor(context),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              !hasDate ? 'Date' : _formatDate(_selectedDate!),
+              style: AppTypography.body.copyWith(
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+                color: hasDate ? AppColors.primary : AppColors.textPrimaryFor(context),
               ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.calendar_month_outlined,
-                  size: 18,
-                  color: _selectedDate != null ? AppColors.primary : AppColors.textSecondaryFor(context),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  _selectedDate == null ? 'All Dates' : _formatDate(_selectedDate!),
-                  style: AppTypography.body.copyWith(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                    color: _selectedDate != null ? AppColors.primary : AppColors.textPrimaryFor(context),
-                  ),
-                ),
-                if (_selectedDate != null) ...[
-                  const SizedBox(width: 4),
-                  GestureDetector(
-                    onTap: () => setState(() => _selectedDate = null),
-                    child: const Icon(Icons.close_rounded, size: 16, color: AppColors.primary),
-                  ),
-                ],
-              ],
-            ),
-          ),
+            if (hasDate) ...[
+              const SizedBox(width: 2),
+              GestureDetector(
+                onTap: () => setState(() => _selectedDate = null),
+                child: const Icon(Icons.close_rounded, size: 14, color: AppColors.primary),
+              ),
+            ],
+          ],
         ),
-        const SizedBox(width: AppSpacing.sm),
-        SizedBox(
-          width: 280,
-          child: AppTextField(
-            label: '',
-            hint: 'Search Bill # or Customer…',
-            controller: _searchController,
-            onChanged: _onSearchChanged,
-            suffix: _searchQuery.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.clear, size: 18),
-                    onPressed: () {
-                      _searchController.clear();
-                      _onSearchChanged('');
-                    },
-                  )
-                : const Icon(Icons.search_rounded, size: 18),
-          ),
-        ),
-        const Spacer(),
-        SecondaryButton(
-          label: 'Refresh',
-          icon: Icons.refresh_rounded,
-          onPressed: () => ref.invalidate(salesBillsListProvider),
-        ),
-      ],
+      ),
     );
   }
 
@@ -331,11 +311,15 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: AppSpacing.xs),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Recent Sales Bills',
-                  style: AppTypography.body.copyWith(fontWeight: FontWeight.w700),
+                Expanded(
+                  child: Text(
+                    'Recent Sales Bills',
+                    style: AppTypography.body.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimaryFor(context),
+                    ),
+                  ),
                 ),
                 billsAsync.maybeWhen(
                   data: (bills) => StatusChip(
@@ -344,10 +328,45 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
                   ),
                   orElse: () => const SizedBox.shrink(),
                 ),
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: Icon(
+                    Icons.refresh_rounded,
+                    size: 18,
+                    color: AppColors.textSecondaryFor(context),
+                  ),
+                  tooltip: 'Refresh',
+                  onPressed: () => ref.invalidate(salesBillsListProvider),
+                ),
               ],
             ),
           ),
-          const Divider(height: AppSpacing.sm),
+          const SizedBox(height: AppSpacing.xs),
+          Row(
+            children: [
+              Expanded(
+                child: AppTextField(
+                  label: '',
+                  hint: 'Search Bill # or Customer…',
+                  controller: _searchController,
+                  onChanged: _onSearchChanged,
+                  suffix: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: Icon(Icons.clear, size: 18, color: AppColors.textSecondaryFor(context)),
+                          onPressed: () {
+                            _searchController.clear();
+                            _onSearchChanged('');
+                          },
+                        )
+                      : Icon(Icons.search_rounded, size: 18, color: AppColors.textSecondaryFor(context)),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              _buildDatePickerButton(context),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Divider(height: 1, color: AppColors.borderFor(context)),
           Expanded(
             child: billsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
@@ -371,7 +390,7 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
                         const SizedBox(height: AppSpacing.sm),
                         Text(
                           _searchQuery.isEmpty ? 'No sales bills found' : 'No bills match "$_searchQuery"',
-                          style: AppTypography.bodyMuted,
+                          style: AppTypography.bodyMuted.copyWith(color: AppColors.textSecondaryFor(context)),
                         ),
                       ],
                     ),
@@ -387,7 +406,9 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
 
                     return Material(
                       color: isSelected
-                          ? AppColors.primary.withValues(alpha: 0.1)
+                          ? (AppColors.isDark(context)
+                              ? AppColors.primary.withValues(alpha: 0.2)
+                              : AppColors.primary.withValues(alpha: 0.1))
                           : AppColors.surfaceFor(context),
                       borderRadius: BorderRadius.circular(AppRadius.md),
                       child: InkWell(
@@ -499,7 +520,7 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
               const SizedBox(height: AppSpacing.xs),
               Text(
                 'Choose an invoice from the left panel to inspect items and initiate a return.',
-                style: AppTypography.bodyMuted,
+                style: AppTypography.bodyMuted.copyWith(color: AppColors.textMutedFor(context)),
               ),
             ],
           ),
@@ -532,7 +553,10 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
                   children: [
                     Row(
                       children: [
-                        Text(bill.billNo, style: AppTypography.h2),
+                        Text(
+                          bill.billNo,
+                          style: AppTypography.h2.copyWith(color: AppColors.textPrimaryFor(context)),
+                        ),
                         const SizedBox(width: AppSpacing.sm),
                         StatusChip(label: bill.status.toUpperCase(), tone: StatusChipTone.neutral),
                       ],
@@ -540,7 +564,7 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
                     const SizedBox(height: 4),
                     Text(
                       'Customer: ${bill.customerName ?? 'Walk-in Customer'} · Date: ${bill.billDate.split('T').first} · Mode: ${bill.payMode}',
-                      style: AppTypography.bodyMuted,
+                      style: AppTypography.bodyMuted.copyWith(color: AppColors.textSecondaryFor(context)),
                     ),
                   ],
                 ),
@@ -551,7 +575,7 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
                       _selectedLineNumbers.length == bill.lineItems.length
                           ? 'Total Bill Amount'
                           : 'Selected Return Amount (${selectedItems.length}/${bill.lineItems.length})',
-                      style: AppTypography.caption,
+                      style: AppTypography.caption.copyWith(color: AppColors.textSecondaryFor(context)),
                     ),
                     Text(
                       '₹${selectedRefundAmount.toStringAsFixed(2)}',
@@ -575,7 +599,10 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
                     children: [
                       Text(
                         'Line Items (${bill.lineItems.length})',
-                        style: AppTypography.body.copyWith(fontWeight: FontWeight.w700),
+                        style: AppTypography.body.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimaryFor(context),
+                        ),
                       ),
                       Text(
                         '${selectedItems.length} of ${bill.lineItems.length} selected for return',
@@ -589,6 +616,9 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
                   const SizedBox(height: AppSpacing.sm),
                   Container(
                     decoration: BoxDecoration(
+                      color: AppColors.isDark(context)
+                          ? AppColors.surfaceFor(context)
+                          : AppColors.backgroundFor(context),
                       border: Border.all(color: AppColors.borderFor(context)),
                       borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
@@ -607,7 +637,9 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
                       children: [
                         TableRow(
                           decoration: BoxDecoration(
-                            color: AppColors.surfaceFor(context),
+                            color: AppColors.isDark(context)
+                                ? AppColors.surfaceAltFor(context)
+                                : AppColors.surfaceFor(context),
                             borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.md)),
                           ),
                           children: [
@@ -616,6 +648,12 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
                               child: Checkbox(
                                 value: allSelected ? true : (_selectedLineNumbers.isEmpty ? false : null),
                                 tristate: true,
+                                activeColor: AppColors.primary,
+                                checkColor: Colors.white,
+                                side: BorderSide(
+                                  color: AppColors.borderStrongFor(context),
+                                  width: 1.5,
+                                ),
                                 onChanged: (val) {
                                   setState(() {
                                     if (val == true || _selectedLineNumbers.length < bill.lineItems.length) {
@@ -627,14 +665,14 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
                                 },
                               ),
                             ),
-                            _th('#'),
-                            _th('Barcode'),
-                            _th('Material Name'),
-                            _th('Batch / Pack'),
-                            _th('Qty'),
-                            _th('Rate'),
-                            _th('Tax %'),
-                            _th('Amount', align: TextAlign.right),
+                            _th(context, '#'),
+                            _th(context, 'Barcode'),
+                            _th(context, 'Material Name'),
+                            _th(context, 'Batch / Pack'),
+                            _th(context, 'Qty'),
+                            _th(context, 'Rate'),
+                            _th(context, 'Tax %'),
+                            _th(context, 'Amount', align: TextAlign.right),
                           ],
                         ),
                         ...bill.lineItems.map(
@@ -642,7 +680,11 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
                             final isSelected = _selectedLineNumbers.contains(item.lineNumber);
                             return TableRow(
                               decoration: BoxDecoration(
-                                color: isSelected ? AppColors.primary.withValues(alpha: 0.04) : null,
+                                color: isSelected
+                                    ? (AppColors.isDark(context)
+                                        ? AppColors.primary.withValues(alpha: 0.14)
+                                        : AppColors.primary.withValues(alpha: 0.05))
+                                    : null,
                                 border: Border(top: BorderSide(color: AppColors.borderFor(context))),
                               ),
                               children: [
@@ -650,6 +692,12 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
                                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                                   child: Checkbox(
                                     value: isSelected,
+                                    activeColor: AppColors.primary,
+                                    checkColor: Colors.white,
+                                    side: BorderSide(
+                                      color: AppColors.borderStrongFor(context),
+                                      width: 1.5,
+                                    ),
                                     onChanged: (val) {
                                       setState(() {
                                         if (val == true) {
@@ -661,14 +709,14 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
                                     },
                                   ),
                                 ),
-                                _td(item.lineNumber.toString()),
-                                _td(item.barcodeNo, mono: true),
-                                _td(item.materialName),
-                                _td('${item.batchNo ?? '-'} / ${item.packing ?? '-'}'),
-                                _td(item.quantity.toString(), bold: true),
-                                _td('₹${item.rate.toStringAsFixed(2)}'),
-                                _td('${item.taxPercent}%'),
-                                _td('₹${item.amount.toStringAsFixed(2)}', align: TextAlign.right, bold: true),
+                                _td(context, item.lineNumber.toString()),
+                                _td(context, item.barcodeNo, mono: true),
+                                _td(context, item.materialName),
+                                _td(context, '${item.batchNo ?? '-'} / ${item.packing ?? '-'}'),
+                                _td(context, item.quantity.toString(), bold: true),
+                                _td(context, '₹${item.rate.toStringAsFixed(2)}'),
+                                _td(context, '${item.taxPercent}%'),
+                                _td(context, '₹${item.amount.toStringAsFixed(2)}', align: TextAlign.right, bold: true),
                               ],
                             );
                           },
@@ -716,27 +764,41 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
     );
   }
 
-  Widget _th(String label, {TextAlign align = TextAlign.left}) {
+  Widget _th(BuildContext context, String label, {TextAlign align = TextAlign.left}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 10),
       child: Text(
         label,
-        style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700),
+        style: AppTypography.caption.copyWith(
+          fontWeight: FontWeight.w700,
+          color: AppColors.textMutedFor(context),
+        ),
         textAlign: align,
       ),
     );
   }
 
-  Widget _td(String val, {bool mono = false, bool bold = false, TextAlign align = TextAlign.left}) {
+  Widget _td(
+    BuildContext context,
+    String val, {
+    bool mono = false,
+    bool bold = false,
+    TextAlign align = TextAlign.left,
+    Color? color,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 10),
       child: Text(
         val,
         style: mono
-            ? AppTypography.mono.copyWith(fontSize: 12)
+            ? AppTypography.mono.copyWith(
+                fontSize: 12,
+                color: color ?? AppColors.textPrimaryFor(context),
+              )
             : AppTypography.body.copyWith(
                 fontSize: 13,
                 fontWeight: bold ? FontWeight.w600 : FontWeight.normal,
+                color: color ?? AppColors.textPrimaryFor(context),
               ),
         textAlign: align,
       ),

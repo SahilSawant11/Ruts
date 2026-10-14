@@ -13,6 +13,7 @@ class PrimaryButton extends StatelessWidget {
     this.icon,
     this.shortcut,
     this.expand = false,
+    this.dense = false,
   });
 
   final String label;
@@ -20,6 +21,7 @@ class PrimaryButton extends StatelessWidget {
   final IconData? icon;
   final String? shortcut;
   final bool expand;
+  final bool dense;
 
   @override
   Widget build(BuildContext context) => AppButton(
@@ -28,6 +30,7 @@ class PrimaryButton extends StatelessWidget {
         icon: icon,
         shortcut: shortcut,
         expand: expand,
+        dense: dense,
         variant: AppButtonVariant.primary,
       );
 }
