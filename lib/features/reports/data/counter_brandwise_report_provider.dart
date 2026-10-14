@@ -10,6 +10,7 @@ import '../../../core/network/api_config.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/network/http_client_provider.dart';
 import '../../masters/data/masters_providers.dart';
+import 'brandwise_report_provider.dart';
 import 'counter_brandwise_excel_exporter.dart';
 import 'models/brandwise_report_dto.dart';
 import 'models/counter_brandwise_report_dto.dart';
@@ -18,10 +19,8 @@ import 'models/counter_brandwise_report_dto.dart';
 //  Providers
 // ---------------------------------------------------------------------------
 
-final counterBrandwiseReportDateProvider = StateProvider<DateTime>((ref) {
-  final now = DateTime.now();
-  return DateTime(now.year, now.month, now.day);
-});
+/// Date provider for Counter Brandwise — alias to [brandwiseReportDateProvider] so date selection is always in sync.
+final counterBrandwiseReportDateProvider = brandwiseReportDateProvider;
 
 final counterBrandwiseExcelExporterProvider = Provider<CounterBrandwiseExcelExporter>((ref) {
   return CounterBrandwiseExcelExporter();

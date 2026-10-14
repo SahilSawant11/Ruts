@@ -51,6 +51,8 @@ class _BrandwiseFiltersCardState extends ConsumerState<BrandwiseFiltersCard> {
       _pendingDate = current;
     }
 
+    final mode = ref.watch(brandwiseViewModeProvider);
+
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -60,10 +62,13 @@ class _BrandwiseFiltersCardState extends ConsumerState<BrandwiseFiltersCard> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Expanded(child: _dateField('REPORT DATE', _pendingDate ?? current)),
+              SizedBox(
+                width: 220,
+                child: _dateField('REPORT DATE', _pendingDate ?? current),
+              ),
               const SizedBox(width: AppSpacing.md),
-              // Spacers so the Generate button isn't stretched across the full width
-              const Expanded(flex: 2, child: SizedBox.shrink()),
+              _modeToggle(context, mode),
+              const Spacer(),
               PrimaryButton(label: 'Generate', icon: Icons.search_rounded, onPressed: _generate),
               if (widget.trailingAction != null) ...[
                 const SizedBox(width: AppSpacing.sm),
@@ -72,6 +77,84 @@ class _BrandwiseFiltersCardState extends ConsumerState<BrandwiseFiltersCard> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _modeToggle(BuildContext context, BrandwiseViewMode currentMode) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('REPORT TYPE', style: AppTypography.label),
+        const SizedBox(height: 6),
+        Container(
+          height: 46,
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceFor(context),
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: AppColors.borderFor(context)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _modeSegment(
+                context,
+                mode: BrandwiseViewMode.brandwise,
+                label: 'Brandwise',
+                icon: Icons.liquor_outlined,
+                isSelected: currentMode == BrandwiseViewMode.brandwise,
+              ),
+              _modeSegment(
+                context,
+                mode: BrandwiseViewMode.counterBrandwise,
+                label: 'Counter Brandwise',
+                icon: Icons.storefront_outlined,
+                isSelected: currentMode == BrandwiseViewMode.counterBrandwise,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _modeSegment(
+    BuildContext context, {
+    required BrandwiseViewMode mode,
+    required String label,
+    required IconData icon,
+    required bool isSelected,
+  }) {
+    return Material(
+      color: isSelected ? AppColors.backgroundFor(context) : Colors.transparent,
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      elevation: isSelected ? 1 : 0,
+      child: InkWell(
+        onTap: () => ref.read(brandwiseViewModeProvider.notifier).state = mode,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 15,
+                color: isSelected ? AppColors.primary : AppColors.textMutedFor(context),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: AppTypography.body.copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  color: isSelected ? AppColors.primary : AppColors.textSecondaryFor(context),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

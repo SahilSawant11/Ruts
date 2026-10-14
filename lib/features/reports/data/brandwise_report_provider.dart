@@ -17,6 +17,15 @@ import 'models/brandwise_report_dto.dart';
 //  Providers
 // ---------------------------------------------------------------------------
 
+enum BrandwiseViewMode {
+  brandwise,
+  counterBrandwise,
+}
+
+final brandwiseViewModeProvider = StateProvider<BrandwiseViewMode>((ref) {
+  return BrandwiseViewMode.brandwise;
+});
+
 final brandwiseReportDateProvider = StateProvider<DateTime>((ref) {
   final now = DateTime.now();
   return DateTime(now.year, now.month, now.day);
