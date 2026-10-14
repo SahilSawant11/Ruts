@@ -10,6 +10,7 @@ import '../features/masters/presentation/screens/supplier_master_screen.dart';
 import '../features/purchase/presentation/screens/purchase_bill_screen.dart';
 import '../features/purchase/presentation/screens/purchase_return_screen.dart';
 import '../features/reports/presentation/screens/brandwise_report_screen.dart';
+import '../features/reports/presentation/screens/counter_brandwise_report_screen.dart';
 import '../features/reports/presentation/screens/reports_screen.dart';
 import '../features/sales/presentation/screens/sales_billing_screen.dart';
 import '../features/sales/presentation/screens/sales_return_screen.dart';
@@ -61,6 +62,9 @@ final appRouter = GoRouter(
         ]),
         StatefulShellBranch(routes: [
           GoRoute(path: '/brandwise-report', builder: (context, state) => const BrandwiseReportScreen()),
+        ]),
+        StatefulShellBranch(routes: [
+          GoRoute(path: '/counter-brandwise-report', builder: (context, state) => const CounterBrandwiseReportScreen()),
         ]),
         StatefulShellBranch(routes: [
           GoRoute(path: '/sync', builder: (context, state) => const SyncCenterScreen()),

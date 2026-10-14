@@ -29,6 +29,7 @@ const _branchMeta = [
   _BranchMeta('Inventory', 'F5 · Inventory', 'Inventory'),
   _BranchMeta('SCM Daily Sale', 'F6 · SCM Daily Sale', 'SCM Daily Sale Report'),
   _BranchMeta('Brandwise Report', 'F10 · Brandwise', 'Brandwise'),
+  _BranchMeta('Counter Brandwise Report', 'Report · Counter Brandwise', 'Counter Brandwise'),
   _BranchMeta('Sync Center', 'F12 · Sync Center', 'Sync'),
   _BranchMeta('Sales Return', 'F8 · Sales Return', 'Sales Return'),
   _BranchMeta('Purchase Return', 'Purchase · Return', 'Purchase Return'),
@@ -116,7 +117,7 @@ class _AppShellState extends State<AppShell> {
       widget.navigationShell.goBranch(3);
       return true;
     } else if (key == LogicalKeyboardKey.f8) {
-      widget.navigationShell.goBranch(12);
+      widget.navigationShell.goBranch(13);
       return true;
     } else if (key == LogicalKeyboardKey.f9) {
       widget.navigationShell.goBranch(7);
@@ -128,7 +129,7 @@ class _AppShellState extends State<AppShell> {
       widget.navigationShell.goBranch(5);
       return true;
     } else if (key == LogicalKeyboardKey.f12) {
-      widget.navigationShell.goBranch(11);
+      widget.navigationShell.goBranch(12);
       return true;
     }
 

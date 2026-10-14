@@ -149,6 +149,12 @@ class AppSidebar extends ConsumerWidget {
                   active: location == '/brandwise-report',
                   onTap: () => context.go('/brandwise-report'),
                 ),
+                SidebarItem(
+                  icon: Icons.storefront_outlined,
+                  label: 'Counter Brandwise',
+                  active: location == '/counter-brandwise-report',
+                  onTap: () => context.go('/counter-brandwise-report'),
+                ),
 
                 // OPERATIONS — hidden when offline-only
                 if (!AppConfig.offlineOnly) ...[
