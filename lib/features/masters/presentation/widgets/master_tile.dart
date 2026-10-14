@@ -23,6 +23,8 @@ class MasterTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+
     return InkWell(
       onTap: comingSoon ? null : onTap,
       borderRadius: BorderRadius.circular(AppRadius.md),
@@ -39,7 +41,9 @@ class MasterTile extends StatelessWidget {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: AppColors.primarySoft,
+                      color: isDark
+                          ? AppColors.primarySoftDark
+                          : AppColors.primarySoft,
                       borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
                     alignment: Alignment.center,
@@ -49,9 +53,20 @@ class MasterTile extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: AppSpacing.sm),
-              Text(title, style: AppTypography.sectionTitle),
+              Text(
+                title,
+                style: AppTypography.sectionTitle.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimaryFor(context),
+                ),
+              ),
               const SizedBox(height: 2),
-              Text(subtitle, style: AppTypography.bodyMuted),
+              Text(
+                subtitle,
+                style: AppTypography.bodyMuted.copyWith(
+                  color: AppColors.textSecondaryFor(context),
+                ),
+              ),
             ],
           ),
         ),

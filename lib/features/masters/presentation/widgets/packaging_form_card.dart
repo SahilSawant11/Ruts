@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
@@ -12,7 +12,9 @@ import '../../data/models/save_packaging_request.dart';
 import '../packaging_browser_controller.dart';
 
 class PackagingFormCard extends ConsumerStatefulWidget {
-  const PackagingFormCard({super.key});
+  const PackagingFormCard({super.key, this.isSplitView = false});
+
+  final bool isSplitView;
 
   @override
   ConsumerState<PackagingFormCard> createState() => _PackagingFormCardState();
@@ -21,7 +23,7 @@ class PackagingFormCard extends ConsumerStatefulWidget {
 class _PackagingFormCardState extends ConsumerState<PackagingFormCard> {
   final _name = TextEditingController();
   final _description = TextEditingController();
-  int? _lastIndex;
+  String? _lastPopulatedName;
   bool? _lastIsNew;
 
   @override
@@ -58,7 +60,7 @@ class _PackagingFormCardState extends ConsumerState<PackagingFormCard> {
       ref.invalidate(packingsListProvider);
       ref.invalidate(materialsListProvider);
       if (!mounted) return;
-      _showSnack('Packaging saved.');
+      _showSnack('Packaging saved successfully.');
     } on ApiException catch (e) {
       ref.read(packagingBrowserProvider.notifier).setSaving(false);
       if (!mounted) return;
@@ -75,13 +77,19 @@ class _PackagingFormCardState extends ConsumerState<PackagingFormCard> {
   @override
   Widget build(BuildContext context) {
     final packingsAsync = ref.watch(packingsListProvider);
-    ref.listen(packingsListProvider, (previous, next) {
-      next.whenData((packings) => ref.read(packagingBrowserProvider.notifier).syncList(packings));
-    });
     final browser = ref.watch(packagingBrowserProvider);
+    packingsAsync.whenData((packings) {
+      if (packings.isNotEmpty && browser.packings.isEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          ref.read(packagingBrowserProvider.notifier).syncList(packings);
+        });
+      }
+    });
 
-    if (_lastIndex != browser.index || _lastIsNew != browser.isNew) {
-      _lastIndex = browser.index;
+    final currentName = browser.current?.name;
+    if (_lastPopulatedName != currentName || _lastIsNew != browser.isNew) {
+      _lastPopulatedName = currentName;
       _lastIsNew = browser.isNew;
       _populate(browser.current?.name, browser.current?.description);
     }
@@ -91,103 +99,155 @@ class _PackagingFormCardState extends ConsumerState<PackagingFormCard> {
     return packingsAsync.when(
       loading: () => const AppCard(
         child: Padding(
-          padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
+          padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
           child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
         ),
       ),
       error: (error, _) => AppCard(
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-          child: Center(child: Text('Could not load packaging: $error')),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+          child: Center(child: Text('Could not load packaging: $error', style: AppTypography.bodyMuted)),
         ),
       ),
       data: (packings) {
-        return AppCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: SectionHeader(
-                      title: 'Packaging Details',
-                      subtitle: browser.isNew ? 'New packaging' : 'Record ${browser.index + 1} of ${packings.length}',
-                    ),
+        final cardContent = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: browser.isNew
+                        ? AppColors.success.withValues(alpha: 0.15)
+                        : AppColors.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
-                  SecondaryButton(
-                    label: 'New',
-                    icon: Icons.add_rounded,
-                    dense: true,
-                    onPressed: () => ref.read(packagingBrowserProvider.notifier).startNew(),
+                  child: Icon(
+                    browser.isNew ? Icons.add_circle_outline_rounded : Icons.all_inbox_rounded,
+                    size: 20,
+                    color: browser.isNew ? AppColors.success : AppColors.primary,
                   ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: AppTextField(
-                      label: 'PACKAGING NAME *',
-                      controller: _name,
-                      enabled: editable,
-                      selectAllOnFocus: true,
-                      showPasteButton: true,
-                    ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        browser.isNew ? 'New Packaging Record' : (_name.text.isEmpty ? 'Packaging Details' : _name.text),
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.sectionTitle.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        browser.isNew
+                            ? 'Configure standard bottle or can volume size'
+                            : 'Record ${browser.index + 1} of ${packings.length}',
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.caption.copyWith(color: AppColors.textMutedFor(context)),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    flex: 5,
-                    child: AppTextField(
-                      label: 'DESCRIPTION',
-                      controller: _description,
-                      enabled: editable,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              Divider(height: 1, color: AppColors.borderFor(context)),
-              const SizedBox(height: AppSpacing.md),
-              Wrap(
-                spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.sm,
-                children: [
-                  SecondaryButton(
-                    label: browser.isEditing ? 'Lock' : 'Modify',
-                    icon: browser.isEditing ? Icons.lock_outline_rounded : Icons.edit_outlined,
-                    onPressed: browser.isNew ? null : () => ref.read(packagingBrowserProvider.notifier).toggleEditing(),
-                  ),
-                  SecondaryButton(
-                    label: 'Prev',
-                    icon: Icons.chevron_left_rounded,
+                ),
+                if (!browser.isNew) ...[
+                  IconButton(
+                    tooltip: 'Previous Packaging',
+                    icon: const Icon(Icons.chevron_left_rounded),
+                    iconSize: 20,
+                    visualDensity: VisualDensity.compact,
                     onPressed: browser.hasPrev ? () => ref.read(packagingBrowserProvider.notifier).prev() : null,
                   ),
-                  SecondaryButton(
-                    label: 'Next',
-                    icon: Icons.chevron_right_rounded,
+                  IconButton(
+                    tooltip: 'Next Packaging',
+                    icon: const Icon(Icons.chevron_right_rounded),
+                    iconSize: 20,
+                    visualDensity: VisualDensity.compact,
                     onPressed: browser.hasNext ? () => ref.read(packagingBrowserProvider.notifier).next() : null,
                   ),
-                  PrimaryButton(
-                    label: browser.isSaving ? 'Saving…' : 'Save',
-                    icon: Icons.save_outlined,
-                    onPressed: browser.isSaving ? null : _save,
-                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Divider(height: 1, color: AppColors.borderFor(context)),
+            const SizedBox(height: AppSpacing.sm),
+
+            // Form Fields
+            if (widget.isSplitView)
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: _buildFields(editable),
+                ),
+              )
+            else
+              _buildFields(editable),
+
+            // Sticky Bottom Action Bar
+            const SizedBox(height: AppSpacing.sm),
+            Divider(height: 1, color: AppColors.borderFor(context)),
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              children: [
+                SecondaryButton(
+                  label: 'New Size',
+                  icon: Icons.add_rounded,
+                  onPressed: () => ref.read(packagingBrowserProvider.notifier).startNew(),
+                ),
+                const Spacer(),
+                if (!browser.isNew) ...[
                   SecondaryButton(
-                    label: 'Close',
-                    icon: Icons.close_rounded,
+                    label: browser.isEditing ? 'Cancel / Lock' : 'Modify',
+                    icon: browser.isEditing ? Icons.lock_outline_rounded : Icons.edit_outlined,
                     onPressed: () {
-                      ref.read(packagingBrowserProvider.notifier).syncList(packings);
-                      _populate(browser.current?.name, browser.current?.description);
+                      if (browser.isEditing) {
+                        _populate(browser.current?.name, browser.current?.description);
+                      }
+                      ref.read(packagingBrowserProvider.notifier).toggleEditing();
                     },
                   ),
+                  const SizedBox(width: AppSpacing.sm),
                 ],
-              ),
-            ],
-          ),
+                PrimaryButton(
+                  label: browser.isSaving ? 'Saving…' : (browser.isNew ? 'Create Size' : 'Save Changes'),
+                  icon: Icons.check_circle_outline_rounded,
+                  onPressed: editable && !browser.isSaving ? _save : null,
+                ),
+              ],
+            ),
+          ],
+        );
+
+        return AppCard(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: widget.isSplitView ? SizedBox(height: double.infinity, child: cardContent) : cardContent,
         );
       },
+    );
+  }
+
+  Widget _buildFields(bool editable) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppTextField(
+          label: 'PACKAGING / VOLUME SIZE *',
+          controller: _name,
+          enabled: editable,
+          hint: 'e.g. 750 ML, 375 ML, 500 ML CAN, KEG 30L',
+          selectAllOnFocus: true,
+          showPasteButton: true,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        AppTextField(
+          label: 'DESCRIPTION, UNITS PER CASE & NOTES',
+          controller: _description,
+          enabled: editable,
+          hint: 'Bottle type, pack of 12, crate specs, or excise volume…',
+        ),
+      ],
     );
   }
 }

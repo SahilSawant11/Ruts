@@ -13,12 +13,15 @@ import '../../data/master_import_service.dart';
 import '../../data/masters_providers.dart';
 import '../material_browser_controller.dart';
 
-/// Full list of materials in a scrollable table. Tapping a row loads
-/// that material into MaterialFormCard below for viewing/editing —
-/// this is the "see everything at once" view; the form card is the
-/// "work on one record" view.
+enum _SortField { name, id, saleRate }
+
+/// Full list of materials in a high-density, scrollable data table.
+/// In split-view mode, rows are optimized for side-by-side inspection
+/// with quick category pills and pinned headers.
 class MaterialsTable extends ConsumerStatefulWidget {
-  const MaterialsTable({super.key});
+  const MaterialsTable({super.key, this.isSplitView = false});
+
+  final bool isSplitView;
 
   @override
   ConsumerState<MaterialsTable> createState() => _MaterialsTableState();
@@ -27,6 +30,9 @@ class MaterialsTable extends ConsumerStatefulWidget {
 class _MaterialsTableState extends ConsumerState<MaterialsTable> {
   final _search = TextEditingController();
   bool _isImporting = false;
+  String _selectedCategory = 'All';
+  _SortField _sortField = _SortField.name;
+  bool _sortAscending = true;
 
   @override
   void initState() {
@@ -69,160 +75,429 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
     }
   }
 
+  void _toggleSort(_SortField field) {
+    setState(() {
+      if (_sortField == field) {
+        _sortAscending = !_sortAscending;
+      } else {
+        _sortField = field;
+        _sortAscending = true;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final materialsAsync = ref.watch(materialsListProvider);
+    final categoriesAsync = ref.watch(categoriesListProvider);
     final browser = ref.watch(materialBrowserProvider);
     final pendingSyncAsync = ref.watch(pendingMastersSyncCountProvider);
 
-    return AppCard(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.sm),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Expanded(
-                child: SectionHeader(title: 'All Materials', subtitle: 'Tap a row to load it below'),
+    final cardContent = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Top Toolbar
+        Row(
+          children: [
+            Expanded(
+              child: SectionHeader(
+                title: 'Materials Directory',
+                subtitle: widget.isSplitView
+                    ? 'Select an item to inspect & modify'
+                    : 'Tap a row to load it below',
               ),
-              materialsAsync.maybeWhen(
-                data: (materials) => Padding(
-                  padding: const EdgeInsets.only(right: AppSpacing.sm),
-                  child: StatusChip(label: '${materials.length} material${materials.length == 1 ? '' : 's'}'),
-                ),
+            ),
+            materialsAsync.maybeWhen(
+              data: (materials) => Padding(
+                padding: const EdgeInsets.only(right: AppSpacing.xs),
+                child: StatusChip(label: '${materials.length} SKUs'),
+              ),
+              orElse: () => const SizedBox.shrink(),
+            ),
+            pendingSyncAsync.maybeWhen(
+              data: (count) => count > 0
+                  ? Padding(
+                      padding: const EdgeInsets.only(right: AppSpacing.xs),
+                      child: StatusChip(label: '$count pending sync', tone: StatusChipTone.neutral),
+                    )
+                  : const SizedBox.shrink(),
+              orElse: () => const SizedBox.shrink(),
+            ),
+            SecondaryButton(
+              label: _isImporting ? 'Importing…' : 'Import Excel',
+              icon: Icons.upload_file_rounded,
+              dense: true,
+              onPressed: _isImporting ? null : _import,
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            SecondaryButton(
+              label: 'New',
+              icon: Icons.add_rounded,
+              dense: true,
+              onPressed: () => ref.read(materialBrowserProvider.notifier).startNew(),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+
+        // Search + Quick Filter Chips Row
+        Row(
+          children: [
+            Expanded(
+              flex: widget.isSplitView ? 5 : 4,
+              child: AppTextField(
+                label: '',
+                hint: 'Search name, SCM code, brand…',
+                controller: _search,
+                suffix: const Icon(Icons.search_rounded, size: 18),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            // Category filter chips
+            Expanded(
+              flex: widget.isSplitView ? 6 : 6,
+              child: categoriesAsync.maybeWhen(
+                data: (categories) {
+                  final allCategories = ['All', ...categories.map((c) => c.name)];
+                  return SizedBox(
+                    height: 34,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: allCategories.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 6),
+                      itemBuilder: (context, idx) {
+                        final cat = allCategories[idx];
+                        final isSelected = _selectedCategory == cat;
+                        return InkWell(
+                          onTap: () => setState(() => _selectedCategory = cat),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : AppColors.surfaceAltFor(context),
+                              borderRadius: BorderRadius.circular(AppRadius.md),
+                              border: Border.all(
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : AppColors.borderFor(context),
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                cat,
+                                style: AppTypography.caption.copyWith(
+                                  color: isSelected
+                                      ? Colors.white
+                                      : AppColors.textPrimaryFor(context),
+                                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
                 orElse: () => const SizedBox.shrink(),
               ),
-              pendingSyncAsync.maybeWhen(
-                data: (count) => count > 0
-                    ? const Padding(
-                        padding: EdgeInsets.only(right: AppSpacing.sm),
-                        child: StatusChip(label: 'Pending sync', tone: StatusChipTone.neutral),
-                      )
-                    : const SizedBox.shrink(),
-                orElse: () => const SizedBox.shrink(),
-              ),
-              SecondaryButton(
-                label: _isImporting ? 'Importing…' : 'Import Excel',
-                icon: Icons.upload_file_rounded,
-                dense: true,
-                onPressed: _isImporting ? null : _import,
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              SizedBox(
-                width: 240,
-                child: AppTextField(label: '', hint: 'Search name or SCM code', controller: _search, suffix: const Icon(Icons.search_rounded, size: 18)),
-              ),
-            ],
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+
+        // Table Header
+        _headerRow(context),
+        Divider(height: 1, color: AppColors.borderFor(context)),
+
+        // Table Body
+        materialsAsync.when(
+          loading: () => const Expanded(
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          materialsAsync.when(
-            loading: () => const Padding(
-              padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
-              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          error: (error, _) => Expanded(
+            child: Center(
+              child: Text('Could not load materials: $error', style: AppTypography.bodyMuted),
             ),
-            error: (error, _) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-              child: Center(child: Text('Could not load materials: $error', style: AppTypography.bodyMuted)),
-            ),
-            data: (materials) {
-              final query = _search.text.trim().toLowerCase();
-              final filtered = query.isEmpty
-                  ? materials
-                  : materials
-                      .where((m) =>
-                          m.name.toLowerCase().contains(query) ||
-                          m.id.toLowerCase().contains(query) ||
-                          m.manufacturer.toLowerCase().contains(query))
-                      .toList();
+          ),
+          data: (materials) {
+            final query = _search.text.trim().toLowerCase();
+            var filtered = materials.where((m) {
+              final matchesQuery = query.isEmpty ||
+                  m.name.toLowerCase().contains(query) ||
+                  m.id.toLowerCase().contains(query) ||
+                  m.manufacturer.toLowerCase().contains(query) ||
+                  m.barcode.toLowerCase().contains(query);
 
-              if (filtered.isEmpty) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-                  child: Center(child: Text('No materials match "$query".', style: AppTypography.bodyMuted)),
-                );
+              final matchesCategory =
+                  _selectedCategory == 'All' || m.category.toLowerCase() == _selectedCategory.toLowerCase();
+
+              return matchesQuery && matchesCategory;
+            }).toList();
+
+            // Sorting
+            filtered.sort((a, b) {
+              int cmp;
+              switch (_sortField) {
+                case _SortField.name:
+                  cmp = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+                  break;
+                case _SortField.id:
+                  cmp = a.id.toLowerCase().compareTo(b.id.toLowerCase());
+                  break;
+                case _SortField.saleRate:
+                  cmp = a.saleRate.compareTo(b.saleRate);
+                  break;
               }
+              return _sortAscending ? cmp : -cmp;
+            });
 
-              return ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 360),
-                child: SingleChildScrollView(
+            if (filtered.isEmpty) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+                child: Center(
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      _headerRow(),
-                      Divider(height: 1, color: AppColors.borderFor(context)),
-                      for (final m in filtered) _dataRow(m, isSelected: browser.current?.id == m.id),
+                      Icon(Icons.search_off_rounded, size: 36, color: AppColors.textMutedFor(context)),
+                      const SizedBox(height: 8),
+                      Text(
+                        'No materials found matching your filters.',
+                        style: AppTypography.bodyMuted.copyWith(color: AppColors.textMutedFor(context)),
+                      ),
                     ],
                   ),
                 ),
               );
-            },
-          ),
-        ],
-      ),
+            }
+
+            final listWidget = ListView.separated(
+              itemCount: filtered.length,
+              separatorBuilder: (_, __) => Divider(
+                height: 1,
+                thickness: 0.5,
+                color: AppColors.borderFor(context).withValues(alpha: 0.4),
+              ),
+              itemBuilder: (context, index) {
+                final m = filtered[index];
+                return _dataRow(
+                  m,
+                  isSelected: browser.current?.id == m.id && !browser.isNew,
+                );
+              },
+            );
+
+            if (widget.isSplitView) {
+              return Expanded(child: listWidget);
+            } else {
+              return ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 380),
+                child: listWidget,
+              );
+            }
+          },
+        ),
+      ],
+    );
+
+    return AppCard(
+      padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.sm),
+      child: widget.isSplitView ? SizedBox(height: double.infinity, child: cardContent) : cardContent,
     );
   }
 
-  Widget _headerRow() {
+  Widget _headerRow(BuildContext context) {
+    if (widget.isSplitView) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        child: Row(
+          children: [
+            _sortableHeader('SCM CODE', _SortField.id, flex: 3),
+            _sortableHeader('NAME & BRAND', _SortField.name, flex: 6),
+            _cell('PACKING', flex: 3, header: true),
+            _cell('STATUS', flex: 2, header: true),
+            _sortableHeader('RATE (₹)', _SortField.saleRate, flex: 2, alignEnd: true),
+          ],
+        ),
+      );
+    }
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
       child: Row(
         children: [
-          _cell('SCM CODE', flex: 2, header: true),
-          _cell('NAME', flex: 4, header: true),
+          _sortableHeader('SCM CODE', _SortField.id, flex: 2),
+          _sortableHeader('NAME', _SortField.name, flex: 4),
           _cell('MANUFACTURER', flex: 2, header: true),
           _cell('CATEGORY', flex: 1, header: true),
           _cell('PACKING', flex: 2, header: true),
           _cell('BARCODE', flex: 2, header: true),
           _cell('STATUS', flex: 1, header: true),
           _cell('SYNC', flex: 1, header: true),
-          _cell('SALE RATE', flex: 1, header: true, alignEnd: true),
+          _sortableHeader('SALE RATE', _SortField.saleRate, flex: 1, alignEnd: true),
         ],
       ),
     );
   }
 
-  Widget _dataRow(MaterialDto m, {required bool isSelected}) {
-    final selectedBg = AppColors.isDark(context)
-        ? AppColors.primary.withValues(alpha: 0.16)
-        : AppColors.primarySoft;
-
-    return InkWell(
-      onTap: () => ref.read(materialBrowserProvider.notifier).selectById(m.id),
-      child: Container(
-        color: isSelected ? selectedBg : null,
-        padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
+  Widget _sortableHeader(String label, _SortField field, {required int flex, bool alignEnd = false}) {
+    final isCurrent = _sortField == field;
+    return Expanded(
+      flex: flex,
+      child: InkWell(
+        onTap: () => _toggleSort(field),
         child: Row(
+          mainAxisAlignment: alignEnd ? MainAxisAlignment.end : MainAxisAlignment.start,
           children: [
-            _cell(m.id, flex: 2, mono: true, selected: isSelected),
-            _cell(m.name, flex: 4, bold: true, selected: isSelected),
-            _cell(m.manufacturer, flex: 2, selected: isSelected),
-            Expanded(flex: 1, child: TagPill(label: m.category, tone: TagPillTone.neutral)),
-            _cell(m.packing, flex: 2, selected: isSelected),
-            _cell(
-              m.barcode,
-              flex: 2,
-              mono: true,
-              muted: m.barcode == m.id,
-              selected: isSelected,
+            Text(
+              label,
+              style: AppTypography.label.copyWith(
+                color: isCurrent ? AppColors.primary : AppColors.textMutedFor(context),
+                fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w600,
+              ),
             ),
-            Expanded(
-              flex: 1,
-              child: m.isActive
-                  ? const TagPill(label: 'Active', tone: TagPillTone.success)
-                  : const TagPill(label: 'Inactive', tone: TagPillTone.neutral),
-            ),
-            Expanded(
-              flex: 1,
-              child: m.isPendingSync
-                  ? const TagPill(label: 'Pending', tone: TagPillTone.amber)
-                  : const SizedBox.shrink(),
-            ),
-            _cell(
-              m.saleRate == 0 ? '—' : '₹${m.saleRate.toStringAsFixed(0)}',
-              flex: 1,
-              alignEnd: true,
-              selected: isSelected,
-            ),
+            if (isCurrent) ...[
+              const SizedBox(width: 3),
+              Icon(
+                _sortAscending ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                size: 13,
+                color: AppColors.primary,
+              ),
+            ],
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _dataRow(MaterialDto m, {required bool isSelected}) {
+    final isDark = AppColors.isDark(context);
+    final selectedBg = isDark
+        ? AppColors.primary.withValues(alpha: 0.18)
+        : AppColors.primary.withValues(alpha: 0.08);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
+      child: InkWell(
+        onTap: () => ref.read(materialBrowserProvider.notifier).selectById(m.id),
+        borderRadius: BorderRadius.circular(6),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 100),
+          decoration: BoxDecoration(
+            color: isSelected ? selectedBg : Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+            border: isSelected
+                ? Border.all(
+                    color: AppColors.primary.withValues(alpha: isDark ? 0.35 : 0.22),
+                    width: 1,
+                  )
+                : null,
+          ),
+          padding: EdgeInsets.symmetric(
+            vertical: widget.isSplitView ? 8 : 9,
+            horizontal: 10,
+          ),
+          child: widget.isSplitView
+              ? Row(
+                  children: [
+                    _cell(m.id, flex: 3, mono: true, selected: isSelected),
+                    Expanded(
+                      flex: 6,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            m.name,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.body.copyWith(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                              color: AppColors.textPrimaryFor(context),
+                            ),
+                          ),
+                        if (m.manufacturer.isNotEmpty)
+                          Text(
+                            m.manufacturer,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.caption.copyWith(
+                              fontSize: 11,
+                              color: AppColors.textMutedFor(context),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    flex: 3,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            m.packing,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.caption.copyWith(
+                              color: AppColors.textSecondaryFor(context),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: m.isActive
+                        ? const TagPill(label: 'Active', tone: TagPillTone.success)
+                        : const TagPill(label: 'Inactive', tone: TagPillTone.neutral),
+                  ),
+                  _cell(
+                    m.saleRate == 0 ? '—' : '₹${m.saleRate.toStringAsFixed(0)}',
+                    flex: 2,
+                    alignEnd: true,
+                    bold: true,
+                    selected: isSelected,
+                  ),
+                ],
+              )
+            : Row(
+                children: [
+                  _cell(m.id, flex: 2, mono: true, selected: isSelected),
+                  _cell(m.name, flex: 4, bold: true, selected: isSelected),
+                  _cell(m.manufacturer, flex: 2, selected: isSelected),
+                  Expanded(flex: 1, child: TagPill(label: m.category, tone: TagPillTone.neutral)),
+                  _cell(m.packing, flex: 2, selected: isSelected),
+                  _cell(
+                    m.barcode,
+                    flex: 2,
+                    mono: true,
+                    muted: m.barcode == m.id,
+                    selected: isSelected,
+                  ),
+                  Expanded(
+                    flex: 1,
+                    child: m.isActive
+                        ? const TagPill(label: 'Active', tone: TagPillTone.success)
+                        : const TagPill(label: 'Inactive', tone: TagPillTone.neutral),
+                  ),
+                  Expanded(
+                    flex: 1,
+                    child: m.isPendingSync
+                        ? const TagPill(label: 'Pending', tone: TagPillTone.amber)
+                        : const SizedBox.shrink(),
+                  ),
+                  _cell(
+                    m.saleRate == 0 ? '—' : '₹${m.saleRate.toStringAsFixed(0)}',
+                    flex: 1,
+                    alignEnd: true,
+                    selected: isSelected,
+                  ),
+                ],
+              ),
         ),
       ),
     );
@@ -255,12 +530,17 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
     } else {
       style = AppTypography.body.copyWith(
         fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-        color: AppColors.textPrimaryFor(context),
+        color: selected ? AppColors.primary : AppColors.textPrimaryFor(context),
       );
     }
     return Expanded(
       flex: flex,
-      child: Text(text, textAlign: alignEnd ? TextAlign.end : TextAlign.start, overflow: TextOverflow.ellipsis, style: style),
+      child: Text(
+        text,
+        textAlign: alignEnd ? TextAlign.end : TextAlign.start,
+        overflow: TextOverflow.ellipsis,
+        style: style,
+      ),
     );
   }
 }

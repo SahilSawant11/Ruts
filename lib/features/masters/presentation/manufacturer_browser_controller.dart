@@ -43,7 +43,14 @@ class ManufacturerBrowserController extends StateNotifier<ManufacturerBrowserSta
       state = state.copyWith(manufacturers: manufacturers, index: -1);
       return;
     }
-    final clampedIndex = state.index < 0 ? -1 : state.index.clamp(0, manufacturers.length - 1);
+    final int clampedIndex;
+    if (state.isNew && state.isEditing) {
+      clampedIndex = -1;
+    } else if (state.index < 0) {
+      clampedIndex = 0;
+    } else {
+      clampedIndex = state.index.clamp(0, manufacturers.length - 1);
+    }
     state = state.copyWith(manufacturers: manufacturers, index: clampedIndex);
   }
 

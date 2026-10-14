@@ -31,75 +31,75 @@ class AllMastersScreen extends ConsumerWidget {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 4,
-            crossAxisSpacing: AppSpacing.md,
-            mainAxisSpacing: AppSpacing.md,
-            childAspectRatio: 1.5,
-            children: [
-              MasterTile(
-                icon: Icons.local_shipping_outlined,
-                title: 'Supplier Master',
-                subtitle: countLabel(suppliersAsync, 'supplier'),
-                onTap: () => context.go('/supplier'),
-              ),
-              MasterTile(
-                icon: Icons.inventory_2_outlined,
-                title: 'Material Master',
-                subtitle: countLabel(materialsAsync, 'material'),
-                onTap: () => context.go('/material'),
-              ),
-              MasterTile(
-                icon: Icons.category_outlined,
-                title: 'Category Master',
-                subtitle: countLabel(categoriesAsync, 'category'),
-                onTap: () => context.go('/category'),
-              ),
-              MasterTile(
-                icon: Icons.business_outlined,
-                title: 'Manufacturer Master',
-                subtitle: countLabel(manufacturersAsync, 'manufacturer'),
-                onTap: () => context.go('/manufacturer'),
-              ),
-              MasterTile(
-                icon: Icons.all_inbox_rounded,
-                title: 'Packaging Master',
-                subtitle: countLabel(packingsAsync, 'packaging'),
-                onTap: () => context.go('/packaging'),
-              ),
-              const MasterTile(
-                icon: Icons.people_outline_rounded,
-                title: 'Customer Master',
-                subtitle: 'Credit accounts & balances',
-                comingSoon: true,
-              ),
-              const MasterTile(
-                icon: Icons.badge_outlined,
-                title: 'User Management',
-                subtitle: 'Roles & permissions',
-                comingSoon: true,
-              ),
-              const MasterTile(
-                icon: Icons.receipt_long_outlined,
-                title: 'Tax / GST Master',
-                subtitle: 'Slab configuration',
-                comingSoon: true,
-              ),
-              const MasterTile(
-                icon: Icons.store_outlined,
-                title: 'Store License',
-                subtitle: 'License no., validity',
-                comingSoon: true,
-              ),
-              MasterTile(
-                icon: Icons.settings_outlined,
-                title: 'App Settings',
-                subtitle: 'Backup database',
-                onTap: () => _showBackupDialog(context, ref),
-              ),
-            ],
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisCount: 4,
+        crossAxisSpacing: AppSpacing.md,
+        mainAxisSpacing: AppSpacing.md,
+        childAspectRatio: 1.5,
+        children: [
+          MasterTile(
+            icon: Icons.local_shipping_outlined,
+            title: 'Supplier Master',
+            subtitle: countLabel(suppliersAsync, 'supplier'),
+            onTap: () => context.go('/supplier'),
           ),
+          MasterTile(
+            icon: Icons.inventory_2_outlined,
+            title: 'Material Master',
+            subtitle: countLabel(materialsAsync, 'material'),
+            onTap: () => context.go('/material'),
+          ),
+          MasterTile(
+            icon: Icons.category_outlined,
+            title: 'Category Master',
+            subtitle: countLabel(categoriesAsync, 'category'),
+            onTap: () => context.go('/category'),
+          ),
+          MasterTile(
+            icon: Icons.business_outlined,
+            title: 'Manufacturer Master',
+            subtitle: countLabel(manufacturersAsync, 'manufacturer'),
+            onTap: () => context.go('/manufacturer'),
+          ),
+          MasterTile(
+            icon: Icons.all_inbox_rounded,
+            title: 'Packaging Master',
+            subtitle: countLabel(packingsAsync, 'packaging'),
+            onTap: () => context.go('/packaging'),
+          ),
+          const MasterTile(
+            icon: Icons.people_outline_rounded,
+            title: 'Customer Master',
+            subtitle: 'Credit accounts & balances',
+            comingSoon: true,
+          ),
+          const MasterTile(
+            icon: Icons.badge_outlined,
+            title: 'User Management',
+            subtitle: 'Roles & permissions',
+            comingSoon: true,
+          ),
+          const MasterTile(
+            icon: Icons.receipt_long_outlined,
+            title: 'Tax / GST Master',
+            subtitle: 'Slab configuration',
+            comingSoon: true,
+          ),
+          const MasterTile(
+            icon: Icons.store_outlined,
+            title: 'Store License',
+            subtitle: 'License no., validity',
+            comingSoon: true,
+          ),
+          MasterTile(
+            icon: Icons.settings_outlined,
+            title: 'App Settings',
+            subtitle: 'Backup database',
+            onTap: () => _showBackupDialog(context, ref),
+          ),
+        ],
+      ),
     );
   }
 
@@ -117,7 +117,10 @@ class AllMastersScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Backup saved: ${path.split('/').last}'),
+            content: Text(
+              'Backup saved: ${path.split('/').last}',
+              style: const TextStyle(color: Colors.white),
+            ),
             backgroundColor: AppColors.success,
           ),
         );
@@ -126,7 +129,10 @@ class AllMastersScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Backup failed: $e'),
+            content: Text(
+              'Backup failed: $e',
+              style: const TextStyle(color: Colors.white),
+            ),
             backgroundColor: AppColors.danger,
           ),
         );

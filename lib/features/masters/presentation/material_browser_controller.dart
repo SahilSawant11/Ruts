@@ -47,7 +47,16 @@ class MaterialBrowserController extends StateNotifier<MaterialBrowserState> {
       state = state.copyWith(materials: materials, index: -1);
       return;
     }
-    final clampedIndex = state.index < 0 ? -1 : state.index.clamp(0, materials.length - 1);
+    final int clampedIndex;
+    if (state.isNew && state.isEditing) {
+      // User explicitly clicked New, keep it in New mode
+      clampedIndex = -1;
+    } else if (state.index < 0) {
+      // First load: auto-select the first material
+      clampedIndex = 0;
+    } else {
+      clampedIndex = state.index.clamp(0, materials.length - 1);
+    }
     state = state.copyWith(materials: materials, index: clampedIndex);
   }
 

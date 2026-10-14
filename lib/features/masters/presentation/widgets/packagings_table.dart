@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/badges/status_chip.dart';
+import '../../../../shared/widgets/buttons/named_buttons.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
 import '../../data/masters_providers.dart';
 import '../packaging_browser_controller.dart';
 
 class PackagingsTable extends ConsumerStatefulWidget {
-  const PackagingsTable({super.key});
+  const PackagingsTable({super.key, this.isSplitView = false});
+
+  final bool isSplitView;
 
   @override
   ConsumerState<PackagingsTable> createState() => _PackagingsTableState();
@@ -19,6 +21,7 @@ class PackagingsTable extends ConsumerStatefulWidget {
 
 class _PackagingsTableState extends ConsumerState<PackagingsTable> {
   final _search = TextEditingController();
+  bool _sortAscending = true;
 
   @override
   void initState() {
@@ -37,125 +40,225 @@ class _PackagingsTableState extends ConsumerState<PackagingsTable> {
     final packingsAsync = ref.watch(packingsListProvider);
     final browser = ref.watch(packagingBrowserProvider);
 
-    return AppCard(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.sm),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Expanded(
-                child: SectionHeader(
-                  title: 'All Packaging',
-                  subtitle: 'Tap a row to load it below',
-                ),
+    final cardContent = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Top Toolbar
+        Row(
+          children: [
+            Expanded(
+              child: SectionHeader(
+                title: 'Packaging Directory',
+                subtitle: widget.isSplitView
+                    ? 'Select a volume or packaging size to inspect'
+                    : 'Tap a row to load it below',
               ),
-              packingsAsync.maybeWhen(
-                data: (packings) => Padding(
-                  padding: const EdgeInsets.only(right: AppSpacing.sm),
-                  child: StatusChip(label: '${packings.length} packaging${packings.length == 1 ? '' : 's'}'),
-                ),
-                orElse: () => const SizedBox.shrink(),
+            ),
+            packingsAsync.maybeWhen(
+              data: (packings) => Padding(
+                padding: const EdgeInsets.only(right: AppSpacing.xs),
+                child: StatusChip(label: '${packings.length} sizes'),
               ),
-              SizedBox(
-                width: 240,
-                child: AppTextField(
-                  label: '',
-                  hint: 'Search packaging',
-                  controller: _search,
-                  suffix: const Icon(Icons.search_rounded, size: 18),
-                ),
-              ),
-            ],
+              orElse: () => const SizedBox.shrink(),
+            ),
+            SecondaryButton(
+              label: 'New',
+              icon: Icons.add_rounded,
+              dense: true,
+              onPressed: () => ref.read(packagingBrowserProvider.notifier).startNew(),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+
+        // Search Input
+        AppTextField(
+          label: '',
+          hint: 'Search packaging size (e.g. 750 ML, Pint, Can)…',
+          controller: _search,
+          suffix: const Icon(Icons.search_rounded, size: 18),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+
+        // Table Header
+        _headerRow(context),
+        Divider(height: 1, color: AppColors.borderFor(context)),
+
+        // Table Body
+        packingsAsync.when(
+          loading: () => const Expanded(
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          packingsAsync.when(
-            loading: () => const Padding(
-              padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
-              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          error: (error, _) => Expanded(
+            child: Center(
+              child: Text('Could not load packaging: $error', style: AppTypography.bodyMuted),
             ),
-            error: (error, _) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-              child: Center(child: Text('Could not load packaging: $error', style: AppTypography.bodyMuted)),
-            ),
-            data: (packings) {
-              final query = _search.text.trim().toLowerCase();
-              final filtered = query.isEmpty
-                  ? packings
-                  : packings.where((p) {
-                      return p.name.toLowerCase().contains(query) ||
-                          (p.description ?? '').toLowerCase().contains(query);
-                    }).toList();
+          ),
+          data: (packings) {
+            final query = _search.text.trim().toLowerCase();
+            var filtered = query.isEmpty
+                ? packings
+                : packings.where((p) {
+                    return p.name.toLowerCase().contains(query) ||
+                        (p.description ?? '').toLowerCase().contains(query);
+                  }).toList();
 
-              if (filtered.isEmpty) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-                  child: Center(child: Text('No packaging matches "$query".', style: AppTypography.bodyMuted)),
-                );
-              }
+            filtered.sort((a, b) {
+              final cmp = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+              return _sortAscending ? cmp : -cmp;
+            });
 
-              return ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 300),
-                child: SingleChildScrollView(
+            if (filtered.isEmpty) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+                child: Center(
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      _headerRow(),
-                      Divider(height: 1, color: AppColors.borderFor(context)),
-                      for (final packing in filtered)
-                        _dataRow(
-                          packing.name,
-                          packing.description ?? '—',
-                          browser.current?.name == packing.name,
-                        ),
+                      Icon(Icons.search_off_rounded, size: 36, color: AppColors.textMutedFor(context)),
+                      const SizedBox(height: 8),
+                      Text('No packaging matches "$query".', style: AppTypography.bodyMuted),
                     ],
                   ),
                 ),
               );
-            },
-          ),
-        ],
-      ),
+            }
+
+            final listWidget = ListView.separated(
+              itemCount: filtered.length,
+              separatorBuilder: (_, __) => Divider(
+                height: 1,
+                thickness: 0.5,
+                color: AppColors.borderFor(context).withValues(alpha: 0.4),
+              ),
+              itemBuilder: (context, index) {
+                final p = filtered[index];
+                final isSelected = browser.current?.name == p.name && !browser.isNew;
+                return _dataRow(
+                  p.name,
+                  p.description ?? '—',
+                  isSelected: isSelected,
+                );
+              },
+            );
+
+            if (widget.isSplitView) {
+              return Expanded(child: listWidget);
+            } else {
+              return ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 380),
+                child: listWidget,
+              );
+            }
+          },
+        ),
+      ],
+    );
+
+    return AppCard(
+      padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.sm),
+      child: widget.isSplitView ? SizedBox(height: double.infinity, child: cardContent) : cardContent,
     );
   }
 
-  Widget _headerRow() {
+  Widget _headerRow(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
       child: Row(
         children: [
-          _cell('NAME', flex: 2, header: true),
-          _cell('DESCRIPTION', flex: 5, header: true),
+          Expanded(
+            flex: 3,
+            child: InkWell(
+              onTap: () => setState(() => _sortAscending = !_sortAscending),
+              child: Row(
+                children: [
+                  Text(
+                    'PACKAGING / SIZE',
+                    style: AppTypography.label.copyWith(
+                      color: AppColors.textMutedFor(context),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(width: 3),
+                  Icon(
+                    _sortAscending ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                    size: 13,
+                    color: AppColors.primary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          _cell('DESCRIPTION / SPECIFICATION', flex: 5, header: true),
         ],
       ),
     );
   }
 
-  Widget _dataRow(String name, String description, bool isSelected) {
-    final selectedBg = AppColors.isDark(context)
-        ? AppColors.primary.withValues(alpha: 0.16)
-        : AppColors.primarySoft;
-    return InkWell(
-      onTap: () => ref.read(packagingBrowserProvider.notifier).selectByName(name),
-      child: Container(
-        color: isSelected ? selectedBg : null,
-        padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
-        child: Row(
-          children: [
-            _cell(name, flex: 2, bold: true),
-            _cell(description, flex: 5, muted: description == '—'),
-          ],
+  Widget _dataRow(String name, String description, {required bool isSelected}) {
+    final isDark = AppColors.isDark(context);
+    final selectedBg = isDark
+        ? AppColors.primary.withValues(alpha: 0.18)
+        : AppColors.primary.withValues(alpha: 0.08);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      child: InkWell(
+        onTap: () => ref.read(packagingBrowserProvider.notifier).selectByName(name),
+        borderRadius: BorderRadius.circular(6),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 100),
+          decoration: BoxDecoration(
+            color: isSelected ? selectedBg : Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+            border: isSelected
+                ? Border.all(
+                    color: AppColors.primary.withValues(alpha: isDark ? 0.35 : 0.22),
+                    width: 1,
+                  )
+                : null,
+          ),
+          padding: EdgeInsets.symmetric(
+            vertical: widget.isSplitView ? 9 : 10,
+            horizontal: 10,
+          ),
+          child: Row(
+            children: [
+              _cell(name, flex: 3, bold: isSelected, selected: isSelected),
+              _cell(
+                description,
+                flex: 5,
+                muted: description == '—',
+                selected: isSelected,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _cell(String text, {required int flex, bool header = false, bool bold = false, bool muted = false}) {
-    final style = header
-        ? AppTypography.label.copyWith(color: AppColors.textMutedFor(context))
-        : AppTypography.body.copyWith(
-            fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-            color: muted ? AppColors.textMutedFor(context) : AppColors.textPrimaryFor(context),
-          );
+  Widget _cell(
+    String text, {
+    required int flex,
+    bool header = false,
+    bool bold = false,
+    bool muted = false,
+    bool selected = false,
+  }) {
+    TextStyle style;
+    if (header) {
+      style = AppTypography.label.copyWith(color: AppColors.textMutedFor(context));
+    } else {
+      style = AppTypography.body.copyWith(
+        fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+        color: selected
+            ? AppColors.primary
+            : muted
+                ? AppColors.textMutedFor(context)
+                : AppColors.textPrimaryFor(context),
+      );
+    }
     return Expanded(
       flex: flex,
       child: Text(text, overflow: TextOverflow.ellipsis, style: style),

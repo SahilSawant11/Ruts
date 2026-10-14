@@ -43,14 +43,28 @@ class CategoryBrowserController extends StateNotifier<CategoryBrowserState> {
       state = state.copyWith(categories: categories, index: -1);
       return;
     }
-    final clampedIndex = state.index < 0 ? -1 : state.index.clamp(0, categories.length - 1);
+    final int clampedIndex;
+    if (state.isNew && state.isEditing) {
+      clampedIndex = -1;
+    } else if (state.index < 0) {
+      clampedIndex = 0;
+    } else {
+      clampedIndex = state.index.clamp(0, categories.length - 1);
+    }
     state = state.copyWith(categories: categories, index: clampedIndex);
   }
 
-  void selectByName(String name) {
-    final index = state.categories.indexWhere((category) => category.name == name);
+  void selectByName(String name, [List<CategoryDto>? currentList]) {
+    final list = (currentList != null && currentList.isNotEmpty)
+        ? currentList
+        : state.categories;
+    final index = list.indexWhere((category) => category.name.toLowerCase() == name.toLowerCase());
     if (index != -1) {
-      state = state.copyWith(index: index, isEditing: false);
+      state = state.copyWith(
+        categories: list,
+        index: index,
+        isEditing: false,
+      );
     }
   }
 

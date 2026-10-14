@@ -44,8 +44,14 @@ class PackagingBrowserController extends StateNotifier<PackagingBrowserState> {
       state = state.copyWith(packings: packings, index: -1);
       return;
     }
-    final clampedIndex =
-        state.index < 0 ? -1 : state.index.clamp(0, packings.length - 1);
+    final int clampedIndex;
+    if (state.isNew && state.isEditing) {
+      clampedIndex = -1;
+    } else if (state.index < 0) {
+      clampedIndex = 0;
+    } else {
+      clampedIndex = state.index.clamp(0, packings.length - 1);
+    }
     state = state.copyWith(packings: packings, index: clampedIndex);
   }
 

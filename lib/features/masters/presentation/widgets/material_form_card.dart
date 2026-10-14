@@ -13,14 +13,14 @@ import '../../data/masters_providers.dart';
 import '../../data/models/save_material_request.dart';
 import '../material_browser_controller.dart';
 
-/// Single-record material form: Prev/Next browses the real material
-/// list, Modify unlocks editing, Save creates a new record (when
-/// browsing "New") or updates the current one.
-///
-/// SCM Code is the real primary key from the client's system —
-/// editable only while creating a new record, locked forever after.
+/// Single-record material inspector & editor form.
+/// In split-view mode, it docks as an Apple-style inspector pane with
+/// visual grouping (Identification, Classification, Pricing) and
+/// sticky action controls.
 class MaterialFormCard extends ConsumerStatefulWidget {
-  const MaterialFormCard({super.key});
+  const MaterialFormCard({super.key, this.isSplitView = false});
+
+  final bool isSplitView;
 
   @override
   ConsumerState<MaterialFormCard> createState() => _MaterialFormCardState();
@@ -98,7 +98,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
       ref.invalidate(materialsListProvider);
 
       if (!mounted) return;
-      _showSnack('Material saved.');
+      _showSnack('Material saved successfully.');
     } on ApiException catch (e) {
       ref.read(materialBrowserProvider.notifier).setSaving(false);
       if (!mounted) return;
@@ -108,7 +108,10 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
 
   void _showSnack(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: isError ? AppColors.danger : AppColors.success),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? AppColors.danger : AppColors.success,
+      ),
     );
   }
 
@@ -132,7 +135,8 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
     }
 
     final editable = browser.isEditing || browser.isNew;
-    final idEditable = browser.isNew; // code can only be set at creation
+    final idEditable = browser.isNew; // SCM Code can only be set during creation
+
     final manufacturers = manufacturersAsync.maybeWhen(
       data: (items) => items.map((item) => item.name).toList(),
       orElse: () => const <String>[],
@@ -145,6 +149,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
       data: (items) => items.map((item) => item.name).toList(),
       orElse: () => const <String>[],
     );
+
     final manufacturerValue = _manufacturer.isNotEmpty
         ? _manufacturer
         : manufacturers.isNotEmpty
@@ -153,6 +158,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
     if (_manufacturer != manufacturerValue) {
       _manufacturer = manufacturerValue;
     }
+
     final categoryValue = _category.isNotEmpty
         ? _category
         : categories.isNotEmpty
@@ -161,6 +167,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
     if (_category != categoryValue) {
       _category = categoryValue;
     }
+
     final packingValue = _packing.isNotEmpty
         ? _packing
         : packings.isNotEmpty
@@ -169,223 +176,382 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
     if (_packing != packingValue) {
       _packing = packingValue;
     }
+
     final dropdownPackings = (_packing.isNotEmpty && !packings.contains(_packing))
         ? [_packing, ...packings]
         : packings;
 
     return materialsAsync.when(
-      loading: () => const AppCard(child: Padding(
-        padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
-        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-      )),
+      loading: () => const AppCard(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
+          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        ),
+      ),
       error: (error, _) => AppCard(
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-          child: Center(child: Text('Could not load materials: $error')),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+          child: Center(child: Text('Could not load materials: $error', style: AppTypography.bodyMuted)),
         ),
       ),
       data: (materials) {
+        final cardContent = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Inspector Header
+            _buildHeader(context, browser, materials, editable),
+            const SizedBox(height: AppSpacing.sm),
+            Divider(height: 1, color: AppColors.borderFor(context)),
+            const SizedBox(height: AppSpacing.sm),
+
+            // Form Content
+            if (widget.isSplitView)
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: _buildFormSections(
+                    context,
+                    browser,
+                    editable,
+                    idEditable,
+                    manufacturers,
+                    categories,
+                    dropdownPackings,
+                  ),
+                ),
+              )
+            else
+              _buildFormSections(
+                context,
+                browser,
+                editable,
+                idEditable,
+                manufacturers,
+                categories,
+                dropdownPackings,
+              ),
+
+            // Sticky Bottom Action Bar
+            const SizedBox(height: AppSpacing.sm),
+            Divider(height: 1, color: AppColors.borderFor(context)),
+            const SizedBox(height: AppSpacing.sm),
+            _buildActionBar(context, browser, materials, editable),
+          ],
+        );
+
         return AppCard(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: widget.isSplitView
+              ? SizedBox(height: double.infinity, child: cardContent)
+              : cardContent,
+        );
+      },
+    );
+  }
+
+  Widget _buildHeader(
+    BuildContext context,
+    MaterialBrowserState browser,
+    List<MaterialDto> materials,
+    bool editable,
+  ) {
+    return Row(
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: browser.isNew
+                ? AppColors.success.withValues(alpha: 0.15)
+                : AppColors.primary.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
+          child: Icon(
+            browser.isNew ? Icons.add_circle_outline_rounded : Icons.liquor_rounded,
+            size: 20,
+            color: browser.isNew ? AppColors.success : AppColors.primary,
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: SectionHeader(
-                      title: 'Material Details',
-                      subtitle: browser.isNew
-                          ? 'New material — type the SCM Code from the client sheet'
-                          : 'Record ${browser.index + 1} of ${materials.length}',
-                    ),
-                  ),
-                  InkWell(
-                    onTap: editable ? () => setState(() => _isActive = !_isActive) : null,
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: _isActive
-                            ? AppColors.success.withValues(alpha: 0.12)
-                            : AppColors.danger.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                        border: Border.all(
-                          color: _isActive ? AppColors.success : AppColors.danger,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            _isActive ? Icons.check_circle_outline_rounded : Icons.block_rounded,
-                            size: 16,
-                            color: _isActive ? AppColors.success : AppColors.danger,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            _isActive ? 'Active Material' : 'Inactive Material',
-                            style: AppTypography.caption.copyWith(
-                              color: _isActive ? AppColors.success : AppColors.danger,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          if (editable) ...[
-                            const SizedBox(width: 4),
-                            Icon(
-                              Icons.touch_app_outlined,
-                              size: 14,
-                              color: _isActive ? AppColors.success : AppColors.danger,
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  SecondaryButton(
-                    label: 'New',
-                    icon: Icons.add_rounded,
-                    dense: true,
-                    onPressed: () => ref.read(materialBrowserProvider.notifier).startNew(),
-                  ),
-                ],
+              Text(
+                browser.isNew ? 'New Material Record' : (_name.text.isEmpty ? 'Material Inspector' : _name.text),
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.sectionTitle.copyWith(fontWeight: FontWeight.w700),
               ),
-              const SizedBox(height: AppSpacing.md),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: AppTextField(
-                      label: 'SCM CODE *',
-                      controller: _id,
-                      enabled: idEditable,
-                      selectAllOnFocus: true,
-                      showPasteButton: true,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    flex: 3,
-                    child: AppTextField(
-                      label: 'BARCODE',
-                      controller: _barcode,
-                      enabled: editable,
-                      hint: 'Same as SCM code if blank',
-                      selectAllOnFocus: true,
-                      showPasteButton: true,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    flex: 5,
-                    child: AppTextField(label: 'NAME *', controller: _name, enabled: editable),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: editable
-                        ? AppDropdown<String>(
-                            label: 'MANUFACTURER',
-                            items: manufacturers,
-                            itemLabel: (v) => v,
-                            value: manufacturers.contains(_manufacturer) ? _manufacturer : null,
-                            hint: manufacturers.isEmpty ? 'Create manufacturers in Manufacturer Master' : null,
-                            onChanged: manufacturers.isEmpty ? null : (v) => setState(() => _manufacturer = v ?? _manufacturer),
-                          )
-                        : AppTextField(label: 'MANUFACTURER', hint: _manufacturer, enabled: false),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    flex: 3,
-                    child: editable
-                        ? AppDropdown<String>(
-                            label: 'CATEGORY',
-                            items: categories,
-                            itemLabel: (v) => v,
-                            value: categories.contains(_category) ? _category : null,
-                            hint: categories.isEmpty ? 'Create categories in Category Master' : null,
-                            onChanged: categories.isEmpty ? null : (v) => setState(() => _category = v ?? _category),
-                          )
-                        : AppTextField(label: 'CATEGORY', hint: _category, enabled: false),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    flex: 3,
-                    child: editable
-                        ? AppDropdown<String>(
-                            label: 'PACKING',
-                            items: dropdownPackings,
-                            itemLabel: (v) => v,
-                            value: dropdownPackings.contains(_packing) ? _packing : null,
-                            hint: dropdownPackings.isEmpty ? 'Create packaging in Packaging Master' : null,
-                            onChanged: dropdownPackings.isEmpty ? null : (v) => setState(() => _packing = v ?? _packing),
-                          )
-                        : AppTextField(label: 'PACKING', hint: _packing, enabled: false),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(flex: 2, child: AppTextField(label: 'SALE RATE (₹)', controller: _saleRate, enabled: editable)),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(flex: 2, child: AppTextField(label: 'GST %', controller: _taxPercent, enabled: editable)),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    flex: 2,
-                    child: AppTextField(
-                      label: 'STOCK (LEGACY)',
-                      hint: browser.current?.stockQty.toString() ?? '—',
-                      enabled: false,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              Divider(height: 1, color: AppColors.borderFor(context)),
-              const SizedBox(height: AppSpacing.md),
-              Wrap(
-                spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.sm,
-                children: [
-                  SecondaryButton(
-                    label: browser.isEditing ? 'Lock' : 'Modify',
-                    icon: browser.isEditing ? Icons.lock_outline_rounded : Icons.edit_outlined,
-                    onPressed: browser.isNew
-                        ? null
-                        : () => ref.read(materialBrowserProvider.notifier).toggleEditing(),
-                  ),
-                  SecondaryButton(
-                    label: 'Prev',
-                    icon: Icons.chevron_left_rounded,
-                    onPressed: browser.hasPrev ? () => ref.read(materialBrowserProvider.notifier).prev() : null,
-                  ),
-                  SecondaryButton(
-                    label: 'Next',
-                    icon: Icons.chevron_right_rounded,
-                    onPressed: browser.hasNext ? () => ref.read(materialBrowserProvider.notifier).next() : null,
-                  ),
-                  PrimaryButton(
-                    label: browser.isSaving ? 'Saving…' : 'Save',
-                    icon: Icons.save_outlined,
-                    onPressed: browser.isSaving ? null : _save,
-                  ),
-                  SecondaryButton(
-                    label: 'Close',
-                    icon: Icons.close_rounded,
-                    onPressed: () {
-                      ref.read(materialBrowserProvider.notifier).syncList(materials);
-                      _populateFrom(browser.isNew ? (materials.isEmpty ? null : materials.first) : browser.current);
-                    },
-                  ),
-                ],
+              const SizedBox(height: 2),
+              Text(
+                browser.isNew
+                    ? 'Fill in SCM code from client sheet'
+                    : 'SCM Code: ${_id.text.isEmpty ? '—' : _id.text} · ${browser.index + 1} of ${materials.length}',
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.caption.copyWith(color: AppColors.textMutedFor(context)),
               ),
             ],
           ),
-        );
-      },
+        ),
+        const SizedBox(width: AppSpacing.xs),
+        // Active / Inactive Pill Toggle
+        InkWell(
+          onTap: editable ? () => setState(() => _isActive = !_isActive) : null,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: _isActive
+                  ? AppColors.success.withValues(alpha: 0.12)
+                  : AppColors.danger.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              border: Border.all(
+                color: _isActive ? AppColors.success : AppColors.danger,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _isActive ? Icons.check_circle_rounded : Icons.block_rounded,
+                  size: 14,
+                  color: _isActive ? AppColors.success : AppColors.danger,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  _isActive ? 'Active' : 'Inactive',
+                  style: AppTypography.caption.copyWith(
+                    color: _isActive ? AppColors.success : AppColors.danger,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                if (editable) ...[
+                  const SizedBox(width: 3),
+                  Icon(
+                    Icons.edit_outlined,
+                    size: 12,
+                    color: _isActive ? AppColors.success : AppColors.danger,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        if (!browser.isNew) ...[
+          const SizedBox(width: AppSpacing.xs),
+          IconButton(
+            tooltip: 'Previous Material',
+            icon: const Icon(Icons.chevron_left_rounded),
+            iconSize: 20,
+            visualDensity: VisualDensity.compact,
+            onPressed: browser.hasPrev ? () => ref.read(materialBrowserProvider.notifier).prev() : null,
+          ),
+          IconButton(
+            tooltip: 'Next Material',
+            icon: const Icon(Icons.chevron_right_rounded),
+            iconSize: 20,
+            visualDensity: VisualDensity.compact,
+            onPressed: browser.hasNext ? () => ref.read(materialBrowserProvider.notifier).next() : null,
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildFormSections(
+    BuildContext context,
+    MaterialBrowserState browser,
+    bool editable,
+    bool idEditable,
+    List<String> manufacturers,
+    List<String> categories,
+    List<String> dropdownPackings,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section 1: Identification
+        _sectionLabel(context, '1. Identification & Codes', Icons.qr_code_rounded),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              flex: 4,
+              child: AppTextField(
+                label: 'SCM CODE *',
+                controller: _id,
+                enabled: idEditable,
+                selectAllOnFocus: true,
+                showPasteButton: idEditable,
+                hint: idEditable ? 'e.g. SCM-10029' : null,
+                suffix: idEditable
+                    ? null
+                    : Icon(Icons.lock_outline_rounded, size: 16, color: AppColors.textMutedFor(context)),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              flex: 4,
+              child: AppTextField(
+                label: 'BARCODE',
+                controller: _barcode,
+                enabled: editable,
+                hint: 'Same as SCM code if blank',
+                selectAllOnFocus: true,
+                showPasteButton: true,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        AppTextField(
+          label: 'DISPLAY NAME *',
+          controller: _name,
+          enabled: editable,
+          hint: 'e.g. Jack Daniel\'s Old No. 7 Tennessee Whiskey',
+        ),
+
+        const SizedBox(height: AppSpacing.md),
+
+        // Section 2: Classification
+        _sectionLabel(context, '2. Classification & Packaging', Icons.category_outlined),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              flex: 4,
+              child: editable
+                  ? AppDropdown<String>(
+                      label: 'CATEGORY',
+                      items: categories,
+                      itemLabel: (v) => v,
+                      value: categories.contains(_category) ? _category : null,
+                      hint: categories.isEmpty ? 'Add categories' : null,
+                      onChanged: categories.isEmpty ? null : (v) => setState(() => _category = v ?? _category),
+                    )
+                  : AppTextField(label: 'CATEGORY', hint: _category, enabled: false),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              flex: 4,
+              child: editable
+                  ? AppDropdown<String>(
+                      label: 'PACKING',
+                      items: dropdownPackings,
+                      itemLabel: (v) => v,
+                      value: dropdownPackings.contains(_packing) ? _packing : null,
+                      hint: dropdownPackings.isEmpty ? 'Add packings' : null,
+                      onChanged: dropdownPackings.isEmpty ? null : (v) => setState(() => _packing = v ?? _packing),
+                    )
+                  : AppTextField(label: 'PACKING', hint: _packing, enabled: false),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        editable
+            ? AppDropdown<String>(
+                label: 'MANUFACTURER / BRAND HOUSE',
+                items: manufacturers,
+                itemLabel: (v) => v,
+                value: manufacturers.contains(_manufacturer) ? _manufacturer : null,
+                hint: manufacturers.isEmpty ? 'Add manufacturer' : null,
+                onChanged: manufacturers.isEmpty ? null : (v) => setState(() => _manufacturer = v ?? _manufacturer),
+              )
+            : AppTextField(label: 'MANUFACTURER', hint: _manufacturer, enabled: false),
+
+        const SizedBox(height: AppSpacing.md),
+
+        // Section 3: Pricing & Inventory
+        _sectionLabel(context, '3. Pricing & Stock Rates', Icons.currency_rupee_rounded),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              flex: 3,
+              child: AppTextField(
+                label: 'SALE RATE (₹)',
+                controller: _saleRate,
+                enabled: editable,
+                hint: '0.00',
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              flex: 3,
+              child: AppTextField(
+                label: 'GST SLAB %',
+                controller: _taxPercent,
+                enabled: editable,
+                hint: '5',
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              flex: 3,
+              child: AppTextField(
+                label: 'CURRENT STOCK',
+                hint: browser.current != null ? '${browser.current!.stockQty} units' : '—',
+                enabled: false,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _sectionLabel(BuildContext context, String text, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: AppColors.primary),
+        const SizedBox(width: 6),
+        Text(
+          text,
+          style: AppTypography.label.copyWith(
+            color: AppColors.primary,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionBar(
+    BuildContext context,
+    MaterialBrowserState browser,
+    List<MaterialDto> materials,
+    bool editable,
+  ) {
+    return Row(
+      children: [
+        SecondaryButton(
+          label: 'New Record',
+          icon: Icons.add_rounded,
+          onPressed: () => ref.read(materialBrowserProvider.notifier).startNew(),
+        ),
+        const Spacer(),
+        if (!browser.isNew) ...[
+          SecondaryButton(
+            label: browser.isEditing ? 'Cancel / Lock' : 'Modify',
+            icon: browser.isEditing ? Icons.lock_outline_rounded : Icons.edit_outlined,
+            onPressed: () {
+              if (browser.isEditing) {
+                // Revert
+                _populateFrom(browser.current);
+              }
+              ref.read(materialBrowserProvider.notifier).toggleEditing();
+            },
+          ),
+          const SizedBox(width: AppSpacing.sm),
+        ],
+        PrimaryButton(
+          label: browser.isSaving ? 'Saving…' : (browser.isNew ? 'Create Material' : 'Save Changes'),
+          icon: Icons.check_circle_outline_rounded,
+          onPressed: editable && !browser.isSaving ? _save : null,
+        ),
+      ],
     );
   }
 }
