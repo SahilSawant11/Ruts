@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/badges/status_chip.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
 import '../../../sales/data/sales_providers.dart';
@@ -91,28 +89,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'SCM Daily Sale Report',
-                      style: AppTypography.h1.copyWith(
-                        color: AppColors.textPrimaryFor(context),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Day-wise, monthly and custom analysis across sales.',
-                      style: AppTypography.bodyMuted.copyWith(
-                        color: AppColors.textSecondaryFor(context),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              ReportTabs(selected: _tab, onChanged: _onTabChanged),
+              const Spacer(),
               pendingSyncAsync.when(
                 loading: () => const SizedBox.shrink(),
                 error: (_, __) => const SizedBox.shrink(),
@@ -130,8 +109,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.lg),
-          ReportTabs(selected: _tab, onChanged: _onTabChanged),
           const SizedBox(height: AppSpacing.lg),
           const ReportFiltersCard(),
           const SizedBox(height: AppSpacing.lg),

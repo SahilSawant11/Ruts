@@ -49,28 +49,8 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Sync Center',
-                      style: AppTypography.h1.copyWith(
-                        color: AppColors.textPrimaryFor(context),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Review queued offline work, failures, and replay sync on demand.',
-                      style: AppTypography.bodyMuted.copyWith(
-                        color: AppColors.textSecondaryFor(context),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
               PrimaryButton(
                 label: _isSyncing ? 'Syncing…' : 'Sync Now',
                 icon: Icons.sync_rounded,
@@ -78,7 +58,7 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.md),
           overviewAsync.when(
             loading: () => const _OverviewSkeleton(),
             error: (error, _) => AppCard(child: Text('Could not load sync status: $error')),

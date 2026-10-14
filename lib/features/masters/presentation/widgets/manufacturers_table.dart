@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../shared/widgets/badges/status_chip.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
 import '../../data/masters_providers.dart';
@@ -48,6 +49,13 @@ class _ManufacturersTableState extends ConsumerState<ManufacturersTable> {
                   title: 'All Manufacturers',
                   subtitle: 'Tap a row to load it below',
                 ),
+              ),
+              manufacturersAsync.maybeWhen(
+                data: (manufacturers) => Padding(
+                  padding: const EdgeInsets.only(right: AppSpacing.sm),
+                  child: StatusChip(label: '${manufacturers.length} manufacturer${manufacturers.length == 1 ? '' : 's'}'),
+                ),
+                orElse: () => const SizedBox.shrink(),
               ),
               SizedBox(
                 width: 240,

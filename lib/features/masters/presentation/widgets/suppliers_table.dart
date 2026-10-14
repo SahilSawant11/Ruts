@@ -3,9 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../shared/widgets/badges/status_chip.dart';
 import '../../../../shared/widgets/badges/tag_pill.dart';
+import '../../../../shared/widgets/buttons/named_buttons.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
+import '../../data/master_import_service.dart';
 import '../../data/masters_providers.dart';
 import '../../data/models/supplier_dto.dart';
 import '../supplier_browser_controller.dart';
@@ -19,6 +22,7 @@ class SuppliersTable extends ConsumerStatefulWidget {
 
 class _SuppliersTableState extends ConsumerState<SuppliersTable> {
   final _search = TextEditingController();
+  bool _isImporting = false;
 
   @override
   void initState() {
@@ -32,10 +36,40 @@ class _SuppliersTableState extends ConsumerState<SuppliersTable> {
     super.dispose();
   }
 
+  Future<void> _import() async {
+    setState(() => _isImporting = true);
+    try {
+      final summary = await ref.read(masterImportServiceProvider).pickAndImport(MasterImportTarget.suppliers);
+      if (!mounted || summary == null) return;
+
+      ref.invalidate(suppliersListProvider);
+
+      final firstError = summary.errors.isEmpty ? null : summary.errors.first;
+      final isError = summary.failed > 0;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(firstError == null ? summary.message : '${summary.message}\n$firstError'),
+          backgroundColor: isError ? AppColors.danger : AppColors.success,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isImporting = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final suppliersAsync = ref.watch(suppliersListProvider);
     final browser = ref.watch(supplierBrowserProvider);
+    final pendingSyncAsync = ref.watch(pendingMastersSyncCountProvider);
 
     return AppCard(
       padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.sm),
@@ -50,6 +84,29 @@ class _SuppliersTableState extends ConsumerState<SuppliersTable> {
                   subtitle: 'Tap a row to load it below',
                 ),
               ),
+              suppliersAsync.maybeWhen(
+                data: (suppliers) => Padding(
+                  padding: const EdgeInsets.only(right: AppSpacing.sm),
+                  child: StatusChip(label: '${suppliers.length} supplier${suppliers.length == 1 ? '' : 's'}'),
+                ),
+                orElse: () => const SizedBox.shrink(),
+              ),
+              pendingSyncAsync.maybeWhen(
+                data: (count) => count > 0
+                    ? const Padding(
+                        padding: EdgeInsets.only(right: AppSpacing.sm),
+                        child: StatusChip(label: 'Pending sync', tone: StatusChipTone.neutral),
+                      )
+                    : const SizedBox.shrink(),
+                orElse: () => const SizedBox.shrink(),
+              ),
+              SecondaryButton(
+                label: _isImporting ? 'Importing…' : 'Import Excel',
+                icon: Icons.upload_file_rounded,
+                dense: true,
+                onPressed: _isImporting ? null : _import,
+              ),
+              const SizedBox(width: AppSpacing.sm),
               SizedBox(
                 width: 240,
                 child: AppTextField(

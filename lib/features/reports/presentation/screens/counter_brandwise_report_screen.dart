@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
 import '../../data/counter_brandwise_report_provider.dart';
 import '../widgets/counter_brandwise_filters_card.dart';
@@ -61,37 +59,14 @@ class _CounterBrandwiseReportScreenState extends ConsumerState<CounterBrandwiseR
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Header ──
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Counter Brandwise Report',
-                      style: AppTypography.h1.copyWith(color: AppColors.textPrimaryFor(context)),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Daily stock register by manufacturer — Opening, Purchase, Sale, Closing.',
-                      style: AppTypography.bodyMuted.copyWith(color: AppColors.textSecondaryFor(context)),
-                    ),
-                  ],
-                ),
-              ),
-              SecondaryButton(
-                label: _isExporting ? 'Exporting…' : 'Export Excel',
-                icon: Icons.download_rounded,
-                onPressed: _isExporting ? null : _exportExcel,
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.lg),
-
           // ── Filters ──
-          const CounterBrandwiseFiltersCard(),
+          CounterBrandwiseFiltersCard(
+            trailingAction: SecondaryButton(
+              label: _isExporting ? 'Exporting…' : 'Export Excel',
+              icon: Icons.download_rounded,
+              onPressed: _isExporting ? null : _exportExcel,
+            ),
+          ),
           const SizedBox(height: AppSpacing.lg),
 
           // ── KPIs ──

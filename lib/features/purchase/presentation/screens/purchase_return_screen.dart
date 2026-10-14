@@ -224,7 +224,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(context),
+          _buildToolbar(context),
           const SizedBox(height: AppSpacing.md),
           Expanded(
             child: Row(
@@ -246,30 +246,10 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildToolbar(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Purchase Return',
-                style: AppTypography.h1.copyWith(
-                  color: AppColors.textPrimaryFor(context),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Look up supplier inward bills by number or date to process soft-delete returns and deduct stock.',
-                style: AppTypography.bodyMuted.copyWith(
-                  color: AppColors.textSecondaryFor(context),
-                ),
-              ),
-            ],
-          ),
-        ),
         // Date Picker Button
         InkWell(
           onTap: _pickDate,
@@ -332,7 +312,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                 : const Icon(Icons.search_rounded, size: 18),
           ),
         ),
-        const SizedBox(width: AppSpacing.sm),
+        const Spacer(),
         SecondaryButton(
           label: 'Refresh',
           icon: Icons.refresh_rounded,

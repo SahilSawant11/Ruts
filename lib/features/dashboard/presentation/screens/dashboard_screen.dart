@@ -44,7 +44,7 @@ class DashboardScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _DashboardHeader(),
+          _DashboardActionsRow(),
           SizedBox(height: AppSpacing.md),
           DashboardKpiRow(),
           SizedBox(height: AppSpacing.lg),
@@ -62,8 +62,8 @@ class DashboardScreen extends StatelessWidget {
   }
 }
 
-class _DashboardHeader extends ConsumerWidget {
-  const _DashboardHeader();
+class _DashboardActionsRow extends ConsumerWidget {
+  const _DashboardActionsRow();
 
   String _formatToday() {
     const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -77,28 +77,15 @@ class _DashboardHeader extends ConsumerWidget {
     final pendingSyncAsync = ref.watch(pendingSalesSyncCountProvider);
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Dashboard',
-                style: AppTypography.h1.copyWith(
-                  color: AppColors.textPrimaryFor(context),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Store performance at a glance — ${_formatToday()}.',
-                style: AppTypography.bodyMuted.copyWith(
-                  color: AppColors.textSecondaryFor(context),
-                ),
-              ),
-            ],
+        Text(
+          _formatToday(),
+          style: AppTypography.bodyMuted.copyWith(
+            color: AppColors.textSecondaryFor(context),
+            fontWeight: FontWeight.w500,
           ),
         ),
+        const Spacer(),
         pendingSyncAsync.when(
           loading: () => const SizedBox.shrink(),
           error: (_, __) => const SizedBox.shrink(),

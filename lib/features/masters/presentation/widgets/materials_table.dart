@@ -3,10 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../shared/widgets/badges/status_chip.dart';
 import '../../../../shared/widgets/badges/tag_pill.dart';
+import '../../../../shared/widgets/buttons/named_buttons.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
 import '../../../sales/data/models/material_dto.dart';
+import '../../data/master_import_service.dart';
 import '../../data/masters_providers.dart';
 import '../material_browser_controller.dart';
 
@@ -23,6 +26,7 @@ class MaterialsTable extends ConsumerStatefulWidget {
 
 class _MaterialsTableState extends ConsumerState<MaterialsTable> {
   final _search = TextEditingController();
+  bool _isImporting = false;
 
   @override
   void initState() {
@@ -36,10 +40,40 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
     super.dispose();
   }
 
+  Future<void> _import() async {
+    setState(() => _isImporting = true);
+    try {
+      final summary = await ref.read(masterImportServiceProvider).pickAndImport(MasterImportTarget.materials);
+      if (!mounted || summary == null) return;
+
+      ref.invalidate(materialsListProvider);
+
+      final firstError = summary.errors.isEmpty ? null : summary.errors.first;
+      final isError = summary.failed > 0;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(firstError == null ? summary.message : '${summary.message}\n$firstError'),
+          backgroundColor: isError ? AppColors.danger : AppColors.success,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isImporting = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final materialsAsync = ref.watch(materialsListProvider);
     final browser = ref.watch(materialBrowserProvider);
+    final pendingSyncAsync = ref.watch(pendingMastersSyncCountProvider);
 
     return AppCard(
       padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.sm),
@@ -51,6 +85,29 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
               const Expanded(
                 child: SectionHeader(title: 'All Materials', subtitle: 'Tap a row to load it below'),
               ),
+              materialsAsync.maybeWhen(
+                data: (materials) => Padding(
+                  padding: const EdgeInsets.only(right: AppSpacing.sm),
+                  child: StatusChip(label: '${materials.length} material${materials.length == 1 ? '' : 's'}'),
+                ),
+                orElse: () => const SizedBox.shrink(),
+              ),
+              pendingSyncAsync.maybeWhen(
+                data: (count) => count > 0
+                    ? const Padding(
+                        padding: EdgeInsets.only(right: AppSpacing.sm),
+                        child: StatusChip(label: 'Pending sync', tone: StatusChipTone.neutral),
+                      )
+                    : const SizedBox.shrink(),
+                orElse: () => const SizedBox.shrink(),
+              ),
+              SecondaryButton(
+                label: _isImporting ? 'Importing…' : 'Import Excel',
+                icon: Icons.upload_file_rounded,
+                dense: true,
+                onPressed: _isImporting ? null : _import,
+              ),
+              const SizedBox(width: AppSpacing.sm),
               SizedBox(
                 width: 240,
                 child: AppTextField(label: '', hint: 'Search name or SCM code', controller: _search, suffix: const Icon(Icons.search_rounded, size: 18)),

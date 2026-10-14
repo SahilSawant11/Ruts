@@ -9,7 +9,9 @@ import '../../data/brandwise_report_provider.dart';
 
 /// Single date picker + Generate button for the brandwise report.
 class BrandwiseFiltersCard extends ConsumerStatefulWidget {
-  const BrandwiseFiltersCard({super.key});
+  const BrandwiseFiltersCard({super.key, this.trailingAction});
+
+  final Widget? trailingAction;
 
   @override
   ConsumerState<BrandwiseFiltersCard> createState() => _BrandwiseFiltersCardState();
@@ -63,6 +65,10 @@ class _BrandwiseFiltersCardState extends ConsumerState<BrandwiseFiltersCard> {
               // Spacers so the Generate button isn't stretched across the full width
               const Expanded(flex: 2, child: SizedBox.shrink()),
               PrimaryButton(label: 'Generate', icon: Icons.search_rounded, onPressed: _generate),
+              if (widget.trailingAction != null) ...[
+                const SizedBox(width: AppSpacing.sm),
+                widget.trailingAction!,
+              ],
             ],
           ),
         ],

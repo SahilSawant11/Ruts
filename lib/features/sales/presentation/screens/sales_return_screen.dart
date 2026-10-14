@@ -221,7 +221,7 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(context),
+          _buildToolbar(context),
           const SizedBox(height: AppSpacing.md),
           Expanded(
             child: Row(
@@ -243,30 +243,10 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildToolbar(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Sales Return',
-                style: AppTypography.h1.copyWith(
-                  color: AppColors.textPrimaryFor(context),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Look up customer sales bills by number or date to process soft-delete returns and restore stock.',
-                style: AppTypography.bodyMuted.copyWith(
-                  color: AppColors.textSecondaryFor(context),
-                ),
-              ),
-            ],
-          ),
-        ),
         // Date Picker Button
         InkWell(
           onTap: _pickDate,
@@ -329,7 +309,7 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
                 : const Icon(Icons.search_rounded, size: 18),
           ),
         ),
-        const SizedBox(width: AppSpacing.sm),
+        const Spacer(),
         SecondaryButton(
           label: 'Refresh',
           icon: Icons.refresh_rounded,
