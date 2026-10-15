@@ -70,7 +70,10 @@ class _CategoryFormCardState extends ConsumerState<CategoryFormCard> {
 
   void _showSnack(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: isError ? AppColors.danger : AppColors.success),
+      SnackBar(
+        content: Text(message, style: const TextStyle(color: Colors.white)),
+        backgroundColor: isError ? AppColors.danger : AppColors.success,
+      ),
     );
   }
 
@@ -139,7 +142,10 @@ class _CategoryFormCardState extends ConsumerState<CategoryFormCard> {
                       Text(
                         browser.isNew ? 'New Category Record' : (_name.text.isEmpty ? 'Category Details' : _name.text),
                         overflow: TextOverflow.ellipsis,
-                        style: AppTypography.sectionTitle.copyWith(fontWeight: FontWeight.w700),
+                        style: AppTypography.sectionTitle.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimaryFor(context),
+                        ),
                       ),
                       const SizedBox(height: 2),
                       Text(

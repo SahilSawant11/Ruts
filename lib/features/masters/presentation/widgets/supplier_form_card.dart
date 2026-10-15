@@ -106,7 +106,7 @@ class _SupplierFormCardState extends ConsumerState<SupplierFormCard> {
   void _showSnack(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Text(message, style: const TextStyle(color: Colors.white)),
         backgroundColor: isError ? AppColors.danger : AppColors.success,
       ),
     );
@@ -213,7 +213,10 @@ class _SupplierFormCardState extends ConsumerState<SupplierFormCard> {
               Text(
                 browser.isNew ? 'New Supplier Record' : (_name.text.isEmpty ? 'Supplier Inspector' : _name.text),
                 overflow: TextOverflow.ellipsis,
-                style: AppTypography.sectionTitle.copyWith(fontWeight: FontWeight.w700),
+                style: AppTypography.sectionTitle.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimaryFor(context),
+                ),
               ),
               const SizedBox(height: 2),
               Text(

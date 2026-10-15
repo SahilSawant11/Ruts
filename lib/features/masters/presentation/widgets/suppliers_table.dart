@@ -54,7 +54,10 @@ class _SuppliersTableState extends ConsumerState<SuppliersTable> {
       final isError = summary.failed > 0;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(firstError == null ? summary.message : '${summary.message}\n$firstError'),
+          content: Text(
+            firstError == null ? summary.message : '${summary.message}\n$firstError',
+            style: const TextStyle(color: Colors.white),
+          ),
           backgroundColor: isError ? AppColors.danger : AppColors.success,
         ),
       );
@@ -62,7 +65,10 @@ class _SuppliersTableState extends ConsumerState<SuppliersTable> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          content: Text(
+            e.toString().replaceFirst('Exception: ', ''),
+            style: const TextStyle(color: Colors.white),
+          ),
           backgroundColor: AppColors.danger,
         ),
       );

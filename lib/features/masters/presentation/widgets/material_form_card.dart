@@ -109,7 +109,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
   void _showSnack(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Text(message, style: const TextStyle(color: Colors.white)),
         backgroundColor: isError ? AppColors.danger : AppColors.success,
       ),
     );
@@ -280,7 +280,10 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
               Text(
                 browser.isNew ? 'New Material Record' : (_name.text.isEmpty ? 'Material Inspector' : _name.text),
                 overflow: TextOverflow.ellipsis,
-                style: AppTypography.sectionTitle.copyWith(fontWeight: FontWeight.w700),
+                style: AppTypography.sectionTitle.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimaryFor(context),
+                ),
               ),
               const SizedBox(height: 2),
               Text(
