@@ -402,8 +402,8 @@ class LocalSalesRepository {
     required String status,
     required String billNo,
   }) async {
-    final now = DateTime.now().toUtc();
-    final billDate = DateTime(now.year, now.month, now.day);
+    final now = DateTime.now();
+    final billDate = now;
 
     await _db.transaction(() async {
       await (_db.delete(_db.cachedSaleLineItems)..where((tbl) => tbl.salesBillId.equals(saleId))).go();

@@ -54,10 +54,14 @@ class ManufacturerBrowserController extends StateNotifier<ManufacturerBrowserSta
     state = state.copyWith(manufacturers: manufacturers, index: clampedIndex);
   }
 
-  void selectByName(String name) {
-    final index = state.manufacturers.indexWhere((manufacturer) => manufacturer.name == name);
+  void selectByName(String name, [List<ManufacturerDto>? currentList]) {
+    final list = (currentList != null && currentList.isNotEmpty) ? currentList : state.manufacturers;
+    final normalizedName = name.trim().toLowerCase();
+    final index = list.indexWhere((m) => m.name.trim().toLowerCase() == normalizedName);
     if (index != -1) {
-      state = state.copyWith(index: index, isEditing: false);
+      state = state.copyWith(manufacturers: list, index: index, isEditing: false);
+    } else if (list.isNotEmpty) {
+      state = state.copyWith(manufacturers: list);
     }
   }
 

@@ -52,13 +52,16 @@ class LocalReportsRepository {
     String? category,
     String? manufacturer,
   }) async {
-    final start = DateTime(from.year, from.month, from.day);
-    final endExclusive = DateTime(to.year, to.month, to.day).add(const Duration(days: 1));
+    final start = DateTime(from.year, from.month, from.day, from.hour, from.minute, from.second);
+    final hasToTime = to.hour != 0 || to.minute != 0 || to.second != 0;
+    final end = hasToTime
+        ? DateTime(to.year, to.month, to.day, to.hour, to.minute, to.second, 999)
+        : DateTime(to.year, to.month, to.day, 23, 59, 59, 999);
     final normalizedCategory = category?.trim();
     final normalizedManufacturer = manufacturer?.trim();
 
     final bills = await (_db.select(_db.cachedSalesBills)
-          ..where((tbl) => tbl.billDate.isBiggerOrEqualValue(start) & tbl.billDate.isSmallerThanValue(endExclusive)))
+          ..where((tbl) => tbl.billDate.isBiggerOrEqualValue(start) & tbl.billDate.isSmallerOrEqualValue(end)))
         .get();
 
     if (bills.isEmpty) {

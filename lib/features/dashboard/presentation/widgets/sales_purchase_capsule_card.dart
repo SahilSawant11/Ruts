@@ -198,11 +198,10 @@ class _SalesPurchaseCapsuleCardState
                             ),
                           ),
 
-                          // Side-by-side Capsule Columns
+                          // Side-by-side Capsule Columns (Expanded for responsive width)
                           Padding(
                             padding: const EdgeInsets.only(top: 6, bottom: 20),
                             child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: List.generate(
                                 comparisonPoints.length,
@@ -210,19 +209,22 @@ class _SalesPurchaseCapsuleCardState
                                   final point = comparisonPoints[idx];
                                   final isHovered = _hoveredIndex == idx;
 
-                                  return MouseRegion(
-                                    onEnter: (_) =>
-                                        setState(() => _hoveredIndex = idx),
-                                    onExit: (_) =>
-                                        setState(() => _hoveredIndex = null),
-                                    child: _SideBySideCapsuleColumn(
-                                      label: point.month,
-                                      purchaseAmount: point.purchaseAmount,
-                                      salesAmount: point.salesAmount,
-                                      maxScale: maxObserved,
-                                      purchaseColor: purchaseColor,
-                                      saleColor: saleColor,
-                                      isHovered: isHovered,
+                                  return Expanded(
+                                    child: MouseRegion(
+                                      onEnter: (_) =>
+                                          setState(() => _hoveredIndex = idx),
+                                      onExit: (_) =>
+                                          setState(() => _hoveredIndex = null),
+                                      child: _SideBySideCapsuleColumn(
+                                        label: point.month,
+                                        purchaseAmount: point.purchaseAmount,
+                                        salesAmount: point.salesAmount,
+                                        maxScale: maxObserved,
+                                        purchaseColor: purchaseColor,
+                                        saleColor: saleColor,
+                                        isHovered: isHovered,
+                                        isDark: isDark,
+                                      ),
                                     ),
                                   );
                                 },
@@ -358,6 +360,7 @@ class _SideBySideCapsuleColumn extends StatelessWidget {
     required this.purchaseColor,
     required this.saleColor,
     required this.isHovered,
+    required this.isDark,
   });
 
   final String label;
@@ -367,19 +370,84 @@ class _SideBySideCapsuleColumn extends StatelessWidget {
   final Color purchaseColor;
   final Color saleColor;
   final bool isHovered;
+  final bool isDark;
+
+  static const double beadWidth = 22.0;
+  static const double beadHeight = 11.0;
 
   @override
   Widget build(BuildContext context) {
-    // 10 beads corresponds to 100% of maxScale
-    final purchaseBeads = maxScale > 0
-        ? ((purchaseAmount / maxScale) * 10).clamp(1, 10).toInt()
-        : 1;
-    final saleBeads = maxScale > 0
-        ? ((salesAmount / maxScale) * 10).clamp(1, 10).toInt()
-        : 1;
+    // 0 value records must have 0 beads so they sit on 0K baseline
+    final purchaseBeads = (purchaseAmount > 0 && maxScale > 0)
+        ? ((purchaseAmount / maxScale) * 10).round().clamp(1, 10)
+        : 0;
+    final saleBeads = (salesAmount > 0 && maxScale > 0)
+        ? ((salesAmount / maxScale) * 10).round().clamp(1, 10)
+        : 0;
 
     return Tooltip(
-      message: '$label\nTotal Purchase: ₹ ${purchaseAmount.toStringAsFixed(0)}\nTotal Sale: ₹ ${salesAmount.toStringAsFixed(0)}',
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E212E) : const Color(0xFF161822),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x40000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      richMessage: TextSpan(
+        children: [
+          TextSpan(
+            text: '$label\n',
+            style: const TextStyle(
+              color: Colors.white70,
+              fontWeight: FontWeight.w600,
+              fontSize: 11.5,
+              height: 1.5,
+            ),
+          ),
+          TextSpan(
+            text: '● Total Purchase: ',
+            style: TextStyle(
+              color: purchaseColor,
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+              height: 1.5,
+            ),
+          ),
+          TextSpan(
+            text: '₹ ${_formatRupeeCommas(purchaseAmount)}\n',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+              height: 1.5,
+            ),
+          ),
+          const TextSpan(
+            text: '● Total Sale: ',
+            style: TextStyle(
+              color: Color(0xFFC7BFF8),
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+              height: 1.5,
+            ),
+          ),
+          TextSpan(
+            text: '₹ ${_formatRupeeCommas(salesAmount)}',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
@@ -405,20 +473,24 @@ class _SideBySideCapsuleColumn extends StatelessWidget {
                 // Left Column: Total Purchase (Purple beads)
                 Column(
                   mainAxisSize: MainAxisSize.min,
-                  children: List.generate(
-                    purchaseBeads,
-                    (_) => _bead(purchaseColor),
-                  ),
+                  children: purchaseBeads > 0
+                      ? List.generate(
+                          purchaseBeads,
+                          (_) => _bead(purchaseColor),
+                        )
+                      : [_emptyBase(purchaseColor)],
                 ),
                 const SizedBox(width: 3.5),
 
                 // Right Column: Total Sale (Lavender beads)
                 Column(
                   mainAxisSize: MainAxisSize.min,
-                  children: List.generate(
-                    saleBeads,
-                    (_) => _bead(saleColor),
-                  ),
+                  children: saleBeads > 0
+                      ? List.generate(
+                          saleBeads,
+                          (_) => _bead(saleColor),
+                        )
+                      : [_emptyBase(saleColor)],
                 ),
               ],
             ),
@@ -443,14 +515,36 @@ class _SideBySideCapsuleColumn extends StatelessWidget {
 
   Widget _bead(Color color) {
     return Container(
-      width: 17,
-      height: 11,
+      width: beadWidth,
+      height: beadHeight,
       margin: const EdgeInsets.symmetric(vertical: 1.5),
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(6),
       ),
     );
+  }
+
+  Widget _emptyBase(Color color) {
+    return Container(
+      width: beadWidth,
+      height: 2.5,
+      margin: const EdgeInsets.symmetric(vertical: 1.5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.25),
+        borderRadius: BorderRadius.circular(2),
+      ),
+    );
+  }
+
+  static String _formatRupeeCommas(double v) {
+    if (v >= 1000) {
+      final s = v.toInt().toString();
+      final last3 = s.substring(s.length - 3);
+      final rest = s.substring(0, s.length - 3);
+      return '$rest,$last3';
+    }
+    return v.toStringAsFixed(0);
   }
 }
 

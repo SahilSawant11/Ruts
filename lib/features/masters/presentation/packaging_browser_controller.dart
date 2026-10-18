@@ -55,10 +55,14 @@ class PackagingBrowserController extends StateNotifier<PackagingBrowserState> {
     state = state.copyWith(packings: packings, index: clampedIndex);
   }
 
-  void selectByName(String name) {
-    final index = state.packings.indexWhere((p) => p.name == name);
+  void selectByName(String name, [List<PackagingDto>? currentList]) {
+    final list = (currentList != null && currentList.isNotEmpty) ? currentList : state.packings;
+    final normalizedName = name.trim().toLowerCase();
+    final index = list.indexWhere((p) => p.name.trim().toLowerCase() == normalizedName);
     if (index != -1) {
-      state = state.copyWith(index: index, isEditing: false);
+      state = state.copyWith(packings: list, index: index, isEditing: false);
+    } else if (list.isNotEmpty) {
+      state = state.copyWith(packings: list);
     }
   }
 

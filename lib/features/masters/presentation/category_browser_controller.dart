@@ -58,13 +58,16 @@ class CategoryBrowserController extends StateNotifier<CategoryBrowserState> {
     final list = (currentList != null && currentList.isNotEmpty)
         ? currentList
         : state.categories;
-    final index = list.indexWhere((category) => category.name.toLowerCase() == name.toLowerCase());
+    final normalizedName = name.trim().toLowerCase();
+    final index = list.indexWhere((category) => category.name.trim().toLowerCase() == normalizedName);
     if (index != -1) {
       state = state.copyWith(
         categories: list,
         index: index,
         isEditing: false,
       );
+    } else if (list.isNotEmpty) {
+      state = state.copyWith(categories: list);
     }
   }
 

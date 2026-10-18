@@ -8,6 +8,7 @@ import '../../../../shared/widgets/buttons/named_buttons.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
 import '../../data/masters_providers.dart';
+import '../../data/models/packaging_dto.dart';
 import '../packaging_browser_controller.dart';
 
 class PackagingsTable extends ConsumerStatefulWidget {
@@ -95,6 +96,14 @@ class _PackagingsTableState extends ConsumerState<PackagingsTable> {
             ),
           ),
           data: (packings) {
+            if (packings.isNotEmpty &&
+                (browser.packings.isEmpty || browser.packings.length != packings.length)) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                ref.read(packagingBrowserProvider.notifier).syncList(packings);
+              });
+            }
+
             final query = _search.text.trim().toLowerCase();
             var filtered = query.isEmpty
                 ? packings
@@ -133,10 +142,13 @@ class _PackagingsTableState extends ConsumerState<PackagingsTable> {
               ),
               itemBuilder: (context, index) {
                 final p = filtered[index];
-                final isSelected = browser.current?.name == p.name && !browser.isNew;
+                final isSelected = browser.current != null &&
+                    browser.current!.name.trim().toLowerCase() == p.name.trim().toLowerCase() &&
+                    !browser.isNew;
                 return _dataRow(
                   p.name,
                   p.description ?? '—',
+                  packings,
                   isSelected: isSelected,
                 );
               },
@@ -195,7 +207,7 @@ class _PackagingsTableState extends ConsumerState<PackagingsTable> {
     );
   }
 
-  Widget _dataRow(String name, String description, {required bool isSelected}) {
+  Widget _dataRow(String name, String description, List<PackagingDto> allPackings, {required bool isSelected}) {
     final isDark = AppColors.isDark(context);
     final selectedBg = isDark
         ? AppColors.primary.withValues(alpha: 0.18)
@@ -204,7 +216,7 @@ class _PackagingsTableState extends ConsumerState<PackagingsTable> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       child: InkWell(
-        onTap: () => ref.read(packagingBrowserProvider.notifier).selectByName(name),
+        onTap: () => ref.read(packagingBrowserProvider.notifier).selectByName(name, allPackings),
         borderRadius: BorderRadius.circular(6),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 100),

@@ -83,18 +83,22 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
 
   bool _handleGlobalKeyEvent(KeyEvent event) {
     if (event is! KeyDownEvent) return false;
-    if (event.logicalKey == LogicalKeyboardKey.f1) {
+    final isF1 = event.logicalKey == LogicalKeyboardKey.f1 || event.physicalKey == PhysicalKeyboardKey.f1;
+    final isF2 = event.logicalKey == LogicalKeyboardKey.f2 || event.physicalKey == PhysicalKeyboardKey.f2;
+    final isF4 = event.logicalKey == LogicalKeyboardKey.f4 || event.physicalKey == PhysicalKeyboardKey.f4;
+
+    if (isF1) {
       _searchFocusNode.requestFocus();
       _searchController.selection = TextSelection(
         baseOffset: 0,
         extentOffset: _searchController.text.length,
       );
       return true;
-    } else if (event.logicalKey == LogicalKeyboardKey.f2) {
+    } else if (isF2) {
       if (_portalController.isShowing) _portalController.hide();
       showAddMaterialLineDialog(context);
       return true;
-    } else if (event.logicalKey == LogicalKeyboardKey.f4) {
+    } else if (isF4) {
       _qtyFocusNode.requestFocus();
       _qtyController.selection = TextSelection(
         baseOffset: 0,

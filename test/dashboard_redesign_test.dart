@@ -81,6 +81,7 @@ void main() {
         payMode: 'Cash',
         totalAmount: 3200,
         status: 'synced',
+        itemDetail: 'Royal Challenge (2)',
       ),
     ],
   );
@@ -137,7 +138,7 @@ void main() {
       expect(find.text('Sales Return'), findsOneWidget);
       expect(find.text('Total Purchase'), findsOneWidget);
       expect(find.text('Purchase Return'), findsOneWidget);
-      expect(find.text('View all'), findsNWidgets(4));
+      expect(find.text('View all'), findsNothing);
     });
 
     testWidgets('OverallInformationCard renders Suppliers, SCM Codes, and Low Stock', (tester) async {
@@ -182,7 +183,6 @@ void main() {
       expect(find.text('Top Categories'), findsOneWidget);
       expect(find.text('IMFL Spirits'), findsOneWidget);
       expect(find.text('Beer & Cider'), findsOneWidget);
-      expect(find.text('Country Liquor'), findsOneWidget);
     });
 
     testWidgets('SalesPurchaseCapsuleCard renders side-by-side columns and time pills', (tester) async {
@@ -244,13 +244,13 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Recent Transaction'), findsOneWidget);
-      expect(find.text('ID Transaction'), findsOneWidget);
-      expect(find.text('Product / Detail'), findsOneWidget);
+      expect(find.text('Recent Transactions'), findsOneWidget);
+      expect(find.text('Item / Material (Qty)'), findsOneWidget);
+      expect(find.text('Date & Time'), findsOneWidget);
+      expect(find.text('Mode'), findsOneWidget);
       expect(find.text('Amount'), findsOneWidget);
-      expect(find.text('TXN-9081'), findsOneWidget);
-      expect(find.text('Counter Cash Customer'), findsOneWidget);
-      expect(find.text('Success'), findsOneWidget);
+      expect(find.text('Cash'), findsOneWidget);
+      expect(find.text('Royal Challenge (2)'), findsOneWidget);
     });
 
     testWidgets('DashboardScreen renders complete assembled hierarchy without overflow', (tester) async {

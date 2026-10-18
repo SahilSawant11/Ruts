@@ -138,7 +138,9 @@ class _CategoriesTableState extends ConsumerState<CategoriesTable> {
               itemCount: filtered.length,
               itemBuilder: (context, index) {
                 final category = filtered[index];
-                final isSelected = browser.current?.name == category.name && !browser.isNew;
+                final isSelected = browser.current != null &&
+                    browser.current!.name.trim().toLowerCase() == category.name.trim().toLowerCase() &&
+                    !browser.isNew;
                 return _dataRow(
                   category,
                   categories,

@@ -47,21 +47,25 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
 
   bool _handleKeyEvent(KeyEvent event) {
     if (event is! KeyDownEvent) return false;
-    if (event.logicalKey == LogicalKeyboardKey.f1) {
+    final isF1 = event.logicalKey == LogicalKeyboardKey.f1 || event.physicalKey == PhysicalKeyboardKey.f1;
+    final isF4 = event.logicalKey == LogicalKeyboardKey.f4 || event.physicalKey == PhysicalKeyboardKey.f4;
+    final isEscape = event.logicalKey == LogicalKeyboardKey.escape || event.physicalKey == PhysicalKeyboardKey.escape;
+
+    if (isF1) {
       _barcodeFocusNode.requestFocus();
       _barcodeController.selection = TextSelection(
         baseOffset: 0,
         extentOffset: _barcodeController.text.length,
       );
       return true;
-    } else if (event.logicalKey == LogicalKeyboardKey.f4) {
+    } else if (isF4) {
       _qtyFocusNode.requestFocus();
       _qtyController.selection = TextSelection(
         baseOffset: 0,
         extentOffset: _qtyController.text.length,
       );
       return true;
-    } else if (event.logicalKey == LogicalKeyboardKey.escape) {
+    } else if (isEscape) {
       _barcodeController.clear();
       _qtyController.text = '1';
       ref.read(cartControllerProvider.notifier).clear();
@@ -320,7 +324,7 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
                           const Icon(Icons.add_rounded, size: 17, color: Colors.white),
                           const SizedBox(width: 6),
                           Text(
-                            '+ Add',
+                            'Add',
                             style: AppTypography.body.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.w700,

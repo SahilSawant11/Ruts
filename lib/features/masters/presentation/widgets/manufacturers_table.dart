@@ -8,6 +8,7 @@ import '../../../../shared/widgets/buttons/named_buttons.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
 import '../../data/masters_providers.dart';
+import '../../data/models/manufacturer_dto.dart';
 import '../manufacturer_browser_controller.dart';
 
 class ManufacturersTable extends ConsumerStatefulWidget {
@@ -95,6 +96,14 @@ class _ManufacturersTableState extends ConsumerState<ManufacturersTable> {
             ),
           ),
           data: (manufacturers) {
+            if (manufacturers.isNotEmpty &&
+                (browser.manufacturers.isEmpty || browser.manufacturers.length != manufacturers.length)) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                ref.read(manufacturerBrowserProvider.notifier).syncList(manufacturers);
+              });
+            }
+
             final query = _search.text.trim().toLowerCase();
             var filtered = query.isEmpty
                 ? manufacturers
@@ -133,10 +142,13 @@ class _ManufacturersTableState extends ConsumerState<ManufacturersTable> {
               ),
               itemBuilder: (context, index) {
                 final manufacturer = filtered[index];
-                final isSelected = browser.current?.name == manufacturer.name && !browser.isNew;
+                final isSelected = browser.current != null &&
+                    browser.current!.name.trim().toLowerCase() == manufacturer.name.trim().toLowerCase() &&
+                    !browser.isNew;
                 return _dataRow(
                   manufacturer.name,
                   manufacturer.description ?? '—',
+                  manufacturers,
                   isSelected: isSelected,
                 );
               },
@@ -195,7 +207,7 @@ class _ManufacturersTableState extends ConsumerState<ManufacturersTable> {
     );
   }
 
-  Widget _dataRow(String name, String description, {required bool isSelected}) {
+  Widget _dataRow(String name, String description, List<ManufacturerDto> allManufacturers, {required bool isSelected}) {
     final isDark = AppColors.isDark(context);
     final selectedBg = isDark
         ? AppColors.primary.withValues(alpha: 0.18)
@@ -204,7 +216,7 @@ class _ManufacturersTableState extends ConsumerState<ManufacturersTable> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       child: InkWell(
-        onTap: () => ref.read(manufacturerBrowserProvider.notifier).selectByName(name),
+        onTap: () => ref.read(manufacturerBrowserProvider.notifier).selectByName(name, allManufacturers),
         borderRadius: BorderRadius.circular(6),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 100),

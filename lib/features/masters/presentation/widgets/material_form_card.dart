@@ -127,6 +127,12 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
     });
 
     final browser = ref.watch(materialBrowserProvider);
+    if (browser.materials.isEmpty && materialsAsync.hasValue && materialsAsync.value!.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref.read(materialBrowserProvider.notifier).syncList(materialsAsync.value!);
+      });
+    }
 
     if (_lastIndex != browser.index || _lastIsNew != browser.isNew) {
       _lastIndex = browser.index;

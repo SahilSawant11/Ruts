@@ -7,9 +7,12 @@ import '../../../../core/theme/app_typography.dart';
 import '../../data/dashboard_providers.dart';
 import '../../data/models/dashboard_summary_dto.dart';
 
-/// 'Recent Transaction' Card matching the mood board:
-///  - Header with amber receipt icon & filter button
-///  - Table columns: Checkbox · ID Transaction · Product / Detail · Status Pill · Amount
+/// 'Recent Transaction' Card matching user requirements:
+///  - Removed TXN ID column
+///  - Removed Status column
+///  - Shows Brand / Material Name with Quantity in brackets
+///  - Shows Transaction Date & Time
+///  - Pay Mode and Amount
 class RecentTransactionsCard extends ConsumerWidget {
   const RecentTransactionsCard({super.key});
 
@@ -52,7 +55,7 @@ class RecentTransactionsCard extends ConsumerWidget {
                   ),
                   const SizedBox(width: 10),
                   Text(
-                    'Recent Transaction',
+                    'Recent Transactions',
                     style: AppTypography.sectionTitle.copyWith(
                       fontWeight: FontWeight.w700,
                       fontSize: 16,
@@ -64,7 +67,7 @@ class RecentTransactionsCard extends ConsumerWidget {
 
               // Filter Icon Button
               InkWell(
-                onTap: () => context.go('/reports/brandwise'),
+                onTap: () => context.go('/reports'),
                 borderRadius: BorderRadius.circular(99),
                 child: Container(
                   width: 30,
@@ -90,64 +93,48 @@ class RecentTransactionsCard extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
             child: Row(
               children: [
-                // Selection Circle Placeholder
-                Container(
-                  width: 14,
-                  height: 14,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.borderFor(context),
-                      width: 1.5,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
                 Expanded(
-                  flex: 2,
+                  flex: 5,
                   child: Text(
-                    'ID Transaction',
+                    'Item / Material (Qty)',
                     style: AppTypography.caption.copyWith(
                       color: AppColors.textMutedFor(context),
                       fontSize: 11,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 4,
+                  child: Text(
+                    'Date & Time',
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.textMutedFor(context),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    'Mode',
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.textMutedFor(context),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
                 Expanded(
                   flex: 3,
                   child: Text(
-                    'Product / Detail',
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.textMutedFor(context),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Align(
-                    alignment: Alignment.center,
-                    child: Text(
-                      'Status',
-                      style: AppTypography.caption.copyWith(
-                        color: AppColors.textMutedFor(context),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Text(
                     'Amount',
                     textAlign: TextAlign.end,
                     style: AppTypography.caption.copyWith(
                       color: AppColors.textMutedFor(context),
                       fontSize: 11,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -186,7 +173,7 @@ class RecentTransactionsCard extends ConsumerWidget {
                 ),
                 itemBuilder: (context, index) {
                   final txn = txns[index];
-                  final isPending = index == 1;
+                  final displayName = txn.itemDetail ?? txn.customerName;
 
                   return Padding(
                     padding:
@@ -194,38 +181,9 @@ class RecentTransactionsCard extends ConsumerWidget {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // Checkbox circle
-                        Container(
-                          width: 14,
-                          height: 14,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: AppColors.borderFor(context),
-                              width: 1.5,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-
-                        // ID Transaction
+                        // Item / Material Name with (Qty)
                         Expanded(
-                          flex: 2,
-                          child: Text(
-                            txn.billNo,
-                            style: AppTypography.mono.copyWith(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimaryFor(context),
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-
-                        // Product / Customer Detail
-                        Expanded(
-                          flex: 3,
+                          flex: 5,
                           child: Row(
                             children: [
                               Container(
@@ -239,7 +197,7 @@ class RecentTransactionsCard extends ConsumerWidget {
                                 ),
                                 alignment: Alignment.center,
                                 child: const Icon(
-                                  Icons.receipt_outlined,
+                                  Icons.liquor_outlined,
                                   size: 14,
                                   color: AppColors.primary,
                                 ),
@@ -247,12 +205,12 @@ class RecentTransactionsCard extends ConsumerWidget {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  txn.customerName,
+                                  displayName,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: AppTypography.body.copyWith(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
                                     color: AppColors.textPrimaryFor(context),
                                   ),
                                 ),
@@ -261,36 +219,36 @@ class RecentTransactionsCard extends ConsumerWidget {
                           ),
                         ),
 
-                        // Status Pill (Solid Green for Success, Solid Orange for Pending)
+                        // Date & Time
+                        Expanded(
+                          flex: 4,
+                          child: Text(
+                            _formatDateTime(txn.billDate),
+                            style: AppTypography.mono.copyWith(
+                              fontSize: 11,
+                              color: AppColors.textSecondaryFor(context),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+
+                        // Pay Mode
                         Expanded(
                           flex: 2,
-                          child: Align(
-                            alignment: Alignment.center,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: isPending
-                                    ? const Color(0xFFF5A524)
-                                    : const Color(0xFF2EBD85),
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.pill),
-                              ),
-                              child: Text(
-                                isPending ? 'Pending' : 'Success',
-                                style: AppTypography.caption.copyWith(
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
-                              ),
+                          child: Text(
+                            txn.payMode,
+                            style: AppTypography.caption.copyWith(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondaryFor(context),
                             ),
                           ),
                         ),
 
                         // Amount
                         Expanded(
-                          flex: 2,
+                          flex: 3,
                           child: Text(
                             '₹ ${txn.totalAmount.toStringAsFixed(2)}',
                             textAlign: TextAlign.end,
@@ -313,30 +271,52 @@ class RecentTransactionsCard extends ConsumerWidget {
     );
   }
 
+  static String _formatDateTime(DateTime dt) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final day = dt.day.toString().padLeft(2, '0');
+    final month = months[dt.month - 1];
+    final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
+    final minute = dt.minute.toString().padLeft(2, '0');
+    final ampm = dt.hour >= 12 ? 'PM' : 'AM';
+    return '$day $month, ${hour.toString().padLeft(2, '0')}:$minute $ampm';
+  }
+
   static List<RecentTransactionDto> _fallbackTransactions() {
     return [
       RecentTransactionDto(
-        billNo: '476-893',
-        billDate: DateTime.now(),
-        customerName: 'Premium T-Shirt',
+        billNo: 'TXN-1001',
+        billDate: DateTime.now().subtract(const Duration(minutes: 15)),
+        customerName: 'Counter Sale',
+        itemDetail: 'Old Monk XXX Rum (2)',
         payMode: 'Cash',
-        totalAmount: 24.51,
+        totalAmount: 480.00,
         status: 'synced',
       ),
       RecentTransactionDto(
-        billNo: '476-894',
-        billDate: DateTime.now(),
-        customerName: 'KitchenAid Mixer',
+        billNo: 'TXN-1002',
+        billDate: DateTime.now().subtract(const Duration(minutes: 42)),
+        customerName: 'Counter Sale',
+        itemDetail: 'Royal Challenge (1)',
         payMode: 'UPI',
-        totalAmount: 24.51,
-        status: 'pending',
+        totalAmount: 720.00,
+        status: 'synced',
       ),
       RecentTransactionDto(
-        billNo: '476-895',
-        billDate: DateTime.now(),
-        customerName: 'Apple AirPods 2',
+        billNo: 'TXN-1003',
+        billDate: DateTime.now().subtract(const Duration(hours: 1, minutes: 20)),
+        customerName: 'Counter Sale',
+        itemDetail: 'Tuborg Premium (4)',
         payMode: 'Card',
-        totalAmount: 85.00,
+        totalAmount: 640.00,
+        status: 'synced',
+      ),
+      RecentTransactionDto(
+        billNo: 'TXN-1004',
+        billDate: DateTime.now().subtract(const Duration(hours: 2, minutes: 5)),
+        customerName: 'Counter Sale',
+        itemDetail: 'Blenders Pride (1)',
+        payMode: 'Cash',
+        totalAmount: 980.00,
         status: 'synced',
       ),
     ];

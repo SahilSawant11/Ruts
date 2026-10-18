@@ -121,6 +121,12 @@ class _SupplierFormCardState extends ConsumerState<SupplierFormCard> {
     });
 
     final browser = ref.watch(supplierBrowserProvider);
+    if (browser.suppliers.isEmpty && suppliersAsync.hasValue && suppliersAsync.value!.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref.read(supplierBrowserProvider.notifier).syncList(suppliersAsync.value!);
+      });
+    }
 
     if (_lastIndex != browser.index || _lastIsNew != browser.isNew) {
       _lastIndex = browser.index;

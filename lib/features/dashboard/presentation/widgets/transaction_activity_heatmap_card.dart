@@ -12,7 +12,6 @@ import '../../data/models/dashboard_summary_dto.dart';
 enum _HeatmapMode { count, amount }
 
 const double _heatmapCellSize = 12.0;
-const double _heatmapCellGap = 4.0;
 
 class TransactionActivityHeatmapCard extends ConsumerStatefulWidget {
   const TransactionActivityHeatmapCard({super.key});
@@ -29,26 +28,62 @@ class _TransactionActivityHeatmapCardState
   @override
   Widget build(BuildContext context) {
     final summaryAsync = ref.watch(dashboardSummaryProvider);
+    final points = summaryAsync.valueOrNull?.transactionActivity ?? const [];
+    final totalCount = points.fold<int>(0, (sum, point) => sum + point.billCount);
+    final totalAmount = points.fold<double>(0, (sum, point) => sum + point.amount);
 
     return AppCard(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.md,
-        AppSpacing.sm,
-        AppSpacing.md,
-        AppSpacing.md,
-      ),
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeader(
-            title: 'Transaction Activity',
-            subtitle: 'Last 12 months · ${_mode == _HeatmapMode.count ? 'bill count' : 'amount'}',
-            trailing: _ModeToggle(
-              mode: _mode,
-              onChanged: (mode) => setState(() => _mode = mode),
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Transaction Activity',
+                      style: AppTypography.sectionTitle.copyWith(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                        color: AppColors.textPrimaryFor(context),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _mode == _HeatmapMode.count
+                          ? '$totalCount transactions in the last year'
+                          : '₹${totalAmount.toStringAsFixed(0)} billed in the last year',
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.textSecondaryFor(context),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Wrap(
+                spacing: AppSpacing.xs,
+                runSpacing: AppSpacing.xs,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  _MetricChip(label: 'Transactions', value: '$totalCount'),
+                  _MetricChip(label: 'Amount', value: '₹${totalAmount.toStringAsFixed(0)}'),
+                  const SizedBox(width: 4),
+                  _ModeToggle(
+                    mode: _mode,
+                    onChanged: (mode) => setState(() => _mode = mode),
+                  ),
+                ],
+              ),
+            ],
           ),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: AppSpacing.md),
           summaryAsync.when(
             loading: () => const Padding(
               padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
@@ -197,111 +232,98 @@ class _Heatmap extends StatelessWidget {
   Widget build(BuildContext context) {
     final weeks = _buildWeeks();
     final maxValue = _maxMetric();
-    final totalCount = points.fold<int>(0, (sum, point) => sum + point.billCount);
-    final totalAmount = points.fold<double>(0, (sum, point) => sum + point.amount);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Text(
-                mode == _HeatmapMode.count
-                    ? '$totalCount transactions in the last year'
-                    : '₹${totalAmount.toStringAsFixed(0)} billed in the last year',
-                style: AppTypography.body.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimaryFor(context),
-                ),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Wrap(
-              spacing: AppSpacing.xs,
-              runSpacing: AppSpacing.xs,
-              children: [
-                _MetricChip(label: 'Transactions', value: '$totalCount'),
-                _MetricChip(label: 'Amount', value: '₹${totalAmount.toStringAsFixed(0)}'),
-              ],
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.sm),
         LayoutBuilder(
           builder: (context, constraints) {
-            const rowLabelWidth = 40.0;
+            const rowLabelWidth = 36.0;
             const frameHorizontalPadding = 20.0;
+            const cellGap = 4.0;
             final availableGridWidth = math.max(
               0.0,
               constraints.maxWidth - frameHorizontalPadding,
             );
-            final maxColumns = ((availableGridWidth - rowLabelWidth + _heatmapCellGap) /
-                    (_heatmapCellSize + _heatmapCellGap))
-                .floor()
-                .clamp(0, weeks.length);
-            final visibleWeeks = maxColumns > 0 && weeks.length > maxColumns
-                ? weeks.sublist(weeks.length - maxColumns)
-                : weeks;
+
+            final totalCols = math.max(1, weeks.length);
+            final idealCellSize = (availableGridWidth - rowLabelWidth - ((totalCols - 1) * cellGap)) / totalCols;
+
+            final double cellSize;
+            final List<List<TransactionActivityDayDto?>> visibleWeeks;
+            if (idealCellSize >= 12.0) {
+              cellSize = idealCellSize.clamp(12.0, 24.0);
+              visibleWeeks = weeks;
+            } else {
+              cellSize = 12.0;
+              final maxColumns = ((availableGridWidth - rowLabelWidth + cellGap) /
+                      (cellSize + cellGap))
+                  .floor()
+                  .clamp(0, weeks.length);
+              visibleWeeks = maxColumns > 0 && weeks.length > maxColumns
+                  ? weeks.sublist(weeks.length - maxColumns)
+                  : weeks;
+            }
+
             final monthMarkers = _monthMarkers(visibleWeeks);
             final gridWidth = rowLabelWidth +
-                (visibleWeeks.length * _heatmapCellSize) +
-                ((visibleWeeks.length - 1).clamp(0, 999) * _heatmapCellGap);
-            final safeRowWidth = math.max(0.0, gridWidth - 2);
+                (visibleWeeks.length * cellSize) +
+                ((visibleWeeks.length - 1).clamp(0, 999) * cellGap);
 
-            return Align(
-              alignment: Alignment.centerLeft,
-              child: Container(
-                width: gridWidth + frameHorizontalPadding,
-                padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceFor(context),
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: Border.all(color: AppColors.borderFor(context)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      height: 18,
-                      width: gridWidth,
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: rowLabelWidth),
-                        child: Stack(
-                          children: [
-                            for (final marker in monthMarkers)
-                              Positioned(
-                                left: marker.column * (_heatmapCellSize + _heatmapCellGap),
-                                child: Text(
-                                  marker.label,
-                                  style: AppTypography.caption.copyWith(
-                                    color: AppColors.textMutedFor(context),
-                                    fontWeight: FontWeight.w600,
+            return Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceFor(context),
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(color: AppColors.borderFor(context)),
+              ),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: math.max(gridWidth, availableGridWidth),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        height: 20,
+                        width: gridWidth,
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: rowLabelWidth),
+                          child: Stack(
+                            children: [
+                              for (final marker in monthMarkers)
+                                Positioned(
+                                  left: marker.column * (cellSize + cellGap),
+                                  child: Text(
+                                    marker.label,
+                                    style: AppTypography.caption.copyWith(
+                                      color: AppColors.textMutedFor(context),
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 11,
+                                    ),
                                   ),
                                 ),
-                              ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    for (var weekday = DateTime.monday;
-                        weekday <= DateTime.sunday;
-                        weekday++)
-                      Padding(
-                        padding: EdgeInsets.only(bottom: weekday == DateTime.sunday ? 0 : 4),
-                        child: ClipRect(
+                      const SizedBox(height: 6),
+                      for (var weekday = DateTime.monday;
+                          weekday <= DateTime.sunday;
+                          weekday++)
+                        Padding(
+                          padding: EdgeInsets.only(bottom: weekday == DateTime.sunday ? 0 : 4),
                           child: SizedBox(
-                            width: safeRowWidth,
-                            height: _heatmapCellSize,
+                            width: gridWidth,
+                            height: cellSize,
                             child: Stack(
                               children: [
                                 Positioned(
                                   left: 0,
                                   top: 0,
                                   width: rowLabelWidth,
-                                  height: _heatmapCellSize,
+                                  height: cellSize,
                                   child: Align(
                                     alignment: Alignment.centerLeft,
                                     child: Text(
@@ -309,6 +331,7 @@ class _Heatmap extends StatelessWidget {
                                       style: AppTypography.caption.copyWith(
                                         color: AppColors.textMutedFor(context),
                                         fontWeight: FontWeight.w700,
+                                        fontSize: 11,
                                       ),
                                     ),
                                   ),
@@ -318,14 +341,15 @@ class _Heatmap extends StatelessWidget {
                                     final index = entry.key;
                                     final week = entry.value;
                                     return Positioned(
-                                      left: rowLabelWidth + index * (_heatmapCellSize + _heatmapCellGap),
+                                      left: rowLabelWidth + index * (cellSize + cellGap),
                                       top: 0,
-                                      width: _heatmapCellSize,
-                                      height: _heatmapCellSize,
+                                      width: cellSize,
+                                      height: cellSize,
                                       child: _DayCell(
                                         point: week[weekday - 1],
                                         intensity: _intensity(week[weekday - 1], maxValue),
                                         mode: mode,
+                                        cellSize: cellSize,
                                       ),
                                     );
                                   },
@@ -334,8 +358,8 @@ class _Heatmap extends StatelessWidget {
                             ),
                           ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             );
@@ -489,11 +513,13 @@ class _DayCell extends StatelessWidget {
     required this.point,
     required this.intensity,
     required this.mode,
+    this.cellSize = _heatmapCellSize,
   });
 
   final TransactionActivityDayDto? point;
   final double intensity;
   final _HeatmapMode mode;
+  final double cellSize;
 
   @override
   Widget build(BuildContext context) {
@@ -508,11 +534,11 @@ class _DayCell extends StatelessWidget {
           ? valueText
           : '${_formatDate(point!.date)}\n$valueText',
       child: Container(
-        width: _heatmapCellSize,
-        height: _heatmapCellSize,
+        width: cellSize,
+        height: cellSize,
         decoration: BoxDecoration(
           color: _heatColor(context, intensity),
-          borderRadius: BorderRadius.circular(3),
+          borderRadius: BorderRadius.circular(math.max(2, (cellSize * 0.2).roundToDouble())),
           border: Border.all(
             color: AppColors.borderFor(context),
             width: 0.7,

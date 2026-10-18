@@ -71,9 +71,19 @@ class SupplierBrowserController extends StateNotifier<SupplierBrowserState> {
   }
 
   /// Jumps directly to a specific supplier from the list/table view.
-  void selectById(String id) {
-    final idx = state.suppliers.indexWhere((s) => s.id == id);
-    if (idx != -1) state = state.copyWith(index: idx, isEditing: false);
+  void selectById(String id, [List<SupplierDto>? currentList]) {
+    final list = (currentList != null && currentList.isNotEmpty) ? currentList : state.suppliers;
+    final normalizedId = id.trim().toLowerCase();
+    final idx = list.indexWhere((s) => s.id.trim().toLowerCase() == normalizedId);
+    if (idx != -1) {
+      state = state.copyWith(suppliers: list, index: idx, isEditing: false);
+    } else if (list.isNotEmpty) {
+      state = state.copyWith(suppliers: list);
+    }
+  }
+
+  void selectSupplier(SupplierDto supplier, [List<SupplierDto>? currentList]) {
+    selectById(supplier.id, currentList);
   }
 
   void startNew() => state = state.copyWith(index: -1, isEditing: true);

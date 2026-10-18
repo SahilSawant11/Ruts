@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../reports/data/reports_providers.dart';
 import '../data/models/create_sale_request.dart';
 import '../data/sales_providers.dart';
 import 'cart_controller.dart';
@@ -67,6 +68,7 @@ class SalesCheckoutService {
       ref.read(billNoProvider.notifier).state = generateBillNo();
       ref.read(selectedCustomerIdProvider.notifier).state = null;
       ref.invalidate(todaysBillsProvider);
+      ref.invalidate(salesReportProvider);
 
       return result;
     } finally {

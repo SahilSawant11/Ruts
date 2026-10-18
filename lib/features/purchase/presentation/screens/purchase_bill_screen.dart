@@ -40,7 +40,8 @@ class _PurchaseBillScreenState extends State<PurchaseBillScreen> {
 
   bool _handleKeyEvent(KeyEvent event) {
     if (event is! KeyDownEvent) return false;
-    if (event.logicalKey == LogicalKeyboardKey.f2) {
+    final isF2 = event.logicalKey == LogicalKeyboardKey.f2 || event.physicalKey == PhysicalKeyboardKey.f2;
+    if (isF2) {
       showAddMaterialLineDialog(context);
       return true;
     }

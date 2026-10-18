@@ -81,6 +81,10 @@ class _ManufacturerFormCardState extends ConsumerState<ManufacturerFormCard> {
   Widget build(BuildContext context) {
     final manufacturersAsync = ref.watch(manufacturersListProvider);
     final browser = ref.watch(manufacturerBrowserProvider);
+    ref.listen(manufacturersListProvider, (previous, next) {
+      next.whenData((manufacturers) => ref.read(manufacturerBrowserProvider.notifier).syncList(manufacturers));
+    });
+
     manufacturersAsync.whenData((manufacturers) {
       if (manufacturers.isNotEmpty && browser.manufacturers.isEmpty) {
         WidgetsBinding.instance.addPostFrameCallback((_) {

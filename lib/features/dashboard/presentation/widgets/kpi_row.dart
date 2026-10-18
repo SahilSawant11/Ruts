@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -61,12 +60,11 @@ class _DashboardKpiRowState extends ConsumerState<DashboardKpiRow> {
                 trendPercent: summary.salesDeltaPercent ?? 0.0,
                 isTrendUp: (summary.salesDeltaPercent ?? 0.0) >= 0,
                 subtitle: 'Sales vs last period',
-                icon: Icons.monetization_on_outlined,
+                icon: Icons.trending_up_rounded,
                 iconColor: AppColors.primary,
                 selectedTimeframe: _timeframe,
                 onTimeframeChanged: (v) =>
                     setState(() => _timeframe = v),
-                onViewAll: () => context.go('/sales'),
               ),
             ),
             const SizedBox(width: AppSpacing.md),
@@ -84,7 +82,6 @@ class _DashboardKpiRowState extends ConsumerState<DashboardKpiRow> {
                 selectedTimeframe: _timeframe,
                 onTimeframeChanged: (v) =>
                     setState(() => _timeframe = v),
-                onViewAll: () => context.go('/sales-return'),
               ),
             ),
             const SizedBox(width: AppSpacing.md),
@@ -102,7 +99,6 @@ class _DashboardKpiRowState extends ConsumerState<DashboardKpiRow> {
                 selectedTimeframe: _timeframe,
                 onTimeframeChanged: (v) =>
                     setState(() => _timeframe = v),
-                onViewAll: () => context.go('/purchase'),
               ),
             ),
             const SizedBox(width: AppSpacing.md),
@@ -120,7 +116,6 @@ class _DashboardKpiRowState extends ConsumerState<DashboardKpiRow> {
                 selectedTimeframe: _timeframe,
                 onTimeframeChanged: (v) =>
                     setState(() => _timeframe = v),
-                onViewAll: () => context.go('/purchase-return'),
               ),
             ),
           ],
@@ -155,7 +150,6 @@ class _MetricCard extends StatelessWidget {
     required this.iconColor,
     required this.selectedTimeframe,
     required this.onTimeframeChanged,
-    required this.onViewAll,
   });
 
   final String title;
@@ -167,7 +161,6 @@ class _MetricCard extends StatelessWidget {
   final Color iconColor;
   final String selectedTimeframe;
   final ValueChanged<String> onTimeframeChanged;
-  final VoidCallback onViewAll;
 
   @override
   Widget build(BuildContext context) {
@@ -284,49 +277,15 @@ class _MetricCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
 
-          // Bottom Row: Subtitle + 'View all ↗'
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.caption.copyWith(
-                    color: AppColors.textMutedFor(context),
-                    fontSize: 11,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 4),
-              InkWell(
-                onTap: onViewAll,
-                borderRadius: BorderRadius.circular(4),
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-                  child: Row(
-                    children: [
-                      Text(
-                        'View all',
-                        style: AppTypography.label.copyWith(
-                          color: AppColors.primary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(width: 2),
-                      const Icon(
-                        Icons.north_east_rounded,
-                        size: 12,
-                        color: AppColors.primary,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+          // Bottom Row: Subtitle only (View all removed)
+          Text(
+            subtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.caption.copyWith(
+              color: AppColors.textMutedFor(context),
+              fontSize: 11,
+            ),
           ),
         ],
       ),

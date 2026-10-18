@@ -24,17 +24,20 @@ final reportExcelExporterProvider = Provider<ReportExcelExporter>((ref) {
   return ReportExcelExporter();
 });
 
-DateTime _today() {
-  final now = DateTime.now();
-  return DateTime(now.year, now.month, now.day);
+DateTime _startOfDay([DateTime? d]) {
+  final now = d ?? DateTime.now();
+  return DateTime(now.year, now.month, now.day, 0, 0, 0);
 }
 
-/// The date range currently selected in the Reports screen. Defaults
-/// to "today only" (Day-wise). Switching tabs or picking dates in the
-/// filter card both just update this one provider.
+DateTime _endOfDay([DateTime? d]) {
+  final now = d ?? DateTime.now();
+  return DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
+}
+
+/// The date & time range currently selected in the Reports screen. Defaults
+/// to "today full day" (00:00:00 to 23:59:59).
 final reportDateRangeProvider = StateProvider<DateTimeRange>((ref) {
-  final today = _today();
-  return DateTimeRange(start: today, end: today);
+  return DateTimeRange(start: _startOfDay(), end: _endOfDay());
 });
 
 final reportCategoryFilterProvider = StateProvider<String?>((ref) => null);

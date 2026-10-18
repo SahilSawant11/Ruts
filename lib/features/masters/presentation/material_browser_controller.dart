@@ -70,9 +70,19 @@ class MaterialBrowserController extends StateNotifier<MaterialBrowserState> {
 
   /// Jumps directly to a specific material — used when a row in the
   /// materials table is tapped.
-  void selectById(String id) {
-    final idx = state.materials.indexWhere((m) => m.id == id);
-    if (idx != -1) state = state.copyWith(index: idx, isEditing: false);
+  void selectById(String id, [List<MaterialDto>? currentList]) {
+    final list = (currentList != null && currentList.isNotEmpty) ? currentList : state.materials;
+    final normalizedId = id.trim().toLowerCase();
+    final idx = list.indexWhere((m) => m.id.trim().toLowerCase() == normalizedId);
+    if (idx != -1) {
+      state = state.copyWith(materials: list, index: idx, isEditing: false);
+    } else if (list.isNotEmpty) {
+      state = state.copyWith(materials: list);
+    }
+  }
+
+  void selectMaterial(MaterialDto material, [List<MaterialDto>? currentList]) {
+    selectById(material.id, currentList);
   }
 
   void startNew() => state = state.copyWith(index: -1, isEditing: true);

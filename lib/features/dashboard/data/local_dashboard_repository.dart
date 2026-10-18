@@ -109,6 +109,14 @@ class LocalDashboardRepository {
       }
       paymentMap[bill.payMode] = (paymentMap[bill.payMode] ?? 0) + bill.totalAmount;
 
+      final billLines = linesByBill[bill.id] ?? const [];
+      final firstLine = billLines.isNotEmpty ? billLines.first : null;
+      final itemSummary = firstLine != null
+          ? (billLines.length > 1
+              ? '${firstLine.materialName} (${firstLine.quantity}) +${billLines.length - 1}'
+              : '${firstLine.materialName} (${firstLine.quantity})')
+          : null;
+
       recentTransactions.add(
         RecentTransactionDto(
           billNo: bill.billNo,
@@ -117,6 +125,7 @@ class LocalDashboardRepository {
           payMode: bill.payMode,
           totalAmount: bill.totalAmount,
           status: bill.syncStatus == 'synced' ? bill.status : 'pending sync',
+          itemDetail: itemSummary,
         ),
       );
 
@@ -126,7 +135,6 @@ class LocalDashboardRepository {
         agg.totalAmount += bill.totalAmount;
       }
 
-      final billLines = linesByBill[bill.id] ?? const [];
       for (final line in billLines) {
         categoryMap[line.materialType] = (categoryMap[line.materialType] ?? 0) + line.amount;
         final manufacturerName = manufacturerByMaterialId[line.materialId ?? ''] ??

@@ -64,70 +64,73 @@ class _AppShellState extends State<AppShell> {
     super.dispose();
   }
 
+  static bool _matches(KeyEvent event, LogicalKeyboardKey logical, PhysicalKeyboardKey physical) {
+    return event.logicalKey == logical || event.physicalKey == physical;
+  }
+
   bool _handleGlobalKey(KeyEvent event) {
     if (event is! KeyDownEvent) return false;
 
-    final key = event.logicalKey;
     final currentBranch = widget.navigationShell.currentIndex;
 
     // When on Sales Screen (branch 1):
-    // F1 -> focus Barcode
-    // F4 -> focus Qty
-    // F6 -> Hold Bill
-    // F8 -> Settle / Save Sale
-    // These keys are consumed by SalesBillingScreen widgets. The shell MUST NOT hijack them!
+    // F1 -> focus Barcode, F4 -> focus Qty, F6 -> Hold Bill, F8 -> Settle / Save Sale, Esc -> Clear
     if (currentBranch == 1) {
-      if (key == LogicalKeyboardKey.f1 ||
-          key == LogicalKeyboardKey.f4 ||
-          key == LogicalKeyboardKey.f6 ||
-          key == LogicalKeyboardKey.f8 ||
-          key == LogicalKeyboardKey.escape) {
+      if (_matches(event, LogicalKeyboardKey.f1, PhysicalKeyboardKey.f1) ||
+          _matches(event, LogicalKeyboardKey.f4, PhysicalKeyboardKey.f4) ||
+          _matches(event, LogicalKeyboardKey.f6, PhysicalKeyboardKey.f6) ||
+          _matches(event, LogicalKeyboardKey.f8, PhysicalKeyboardKey.f8) ||
+          _matches(event, LogicalKeyboardKey.escape, PhysicalKeyboardKey.escape)) {
         return false;
       }
     }
 
     // When on Purchase Screen (branch 2):
-    // F8 -> Save / Complete Purchase
+    // F1 -> search, F2 -> add line item dialog, F4 -> focus Qty, F8 -> save bill, Esc -> clear
     if (currentBranch == 2) {
-      if (key == LogicalKeyboardKey.f8 || key == LogicalKeyboardKey.escape) {
+      if (_matches(event, LogicalKeyboardKey.f1, PhysicalKeyboardKey.f1) ||
+          _matches(event, LogicalKeyboardKey.f2, PhysicalKeyboardKey.f2) ||
+          _matches(event, LogicalKeyboardKey.f4, PhysicalKeyboardKey.f4) ||
+          _matches(event, LogicalKeyboardKey.f8, PhysicalKeyboardKey.f8) ||
+          _matches(event, LogicalKeyboardKey.escape, PhysicalKeyboardKey.escape)) {
         return false;
       }
     }
 
-    if (key == LogicalKeyboardKey.f1) {
+    if (_matches(event, LogicalKeyboardKey.f1, PhysicalKeyboardKey.f1)) {
       widget.navigationShell.goBranch(0);
       return true;
-    } else if (key == LogicalKeyboardKey.f2) {
+    } else if (_matches(event, LogicalKeyboardKey.f2, PhysicalKeyboardKey.f2)) {
       widget.navigationShell.goBranch(2);
       return true;
-    } else if (key == LogicalKeyboardKey.f3) {
+    } else if (_matches(event, LogicalKeyboardKey.f3, PhysicalKeyboardKey.f3)) {
       widget.navigationShell.goBranch(1);
       return true;
-    } else if (key == LogicalKeyboardKey.f4) {
+    } else if (_matches(event, LogicalKeyboardKey.f4, PhysicalKeyboardKey.f4)) {
       widget.navigationShell.goBranch(4);
       return true;
-    } else if (key == LogicalKeyboardKey.f5) {
+    } else if (_matches(event, LogicalKeyboardKey.f5, PhysicalKeyboardKey.f5)) {
       widget.navigationShell.goBranch(8);
       return true;
-    } else if (key == LogicalKeyboardKey.f6) {
+    } else if (_matches(event, LogicalKeyboardKey.f6, PhysicalKeyboardKey.f6)) {
       widget.navigationShell.goBranch(9);
       return true;
-    } else if (key == LogicalKeyboardKey.f7) {
+    } else if (_matches(event, LogicalKeyboardKey.f7, PhysicalKeyboardKey.f7)) {
       widget.navigationShell.goBranch(3);
       return true;
-    } else if (key == LogicalKeyboardKey.f8) {
+    } else if (_matches(event, LogicalKeyboardKey.f8, PhysicalKeyboardKey.f8)) {
       widget.navigationShell.goBranch(12);
       return true;
-    } else if (key == LogicalKeyboardKey.f9) {
+    } else if (_matches(event, LogicalKeyboardKey.f9, PhysicalKeyboardKey.f9)) {
       widget.navigationShell.goBranch(7);
       return true;
-    } else if (key == LogicalKeyboardKey.f10) {
+    } else if (_matches(event, LogicalKeyboardKey.f10, PhysicalKeyboardKey.f10)) {
       widget.navigationShell.goBranch(10);
       return true;
-    } else if (key == LogicalKeyboardKey.f11) {
+    } else if (_matches(event, LogicalKeyboardKey.f11, PhysicalKeyboardKey.f11)) {
       widget.navigationShell.goBranch(5);
       return true;
-    } else if (key == LogicalKeyboardKey.f12) {
+    } else if (_matches(event, LogicalKeyboardKey.f12, PhysicalKeyboardKey.f12)) {
       widget.navigationShell.goBranch(11);
       return true;
     }
@@ -135,31 +138,64 @@ class _AppShellState extends State<AppShell> {
     return false;
   }
 
+  void _triggerBranch(int targetBranch) {
+    final currentBranch = widget.navigationShell.currentIndex;
+    if (currentBranch == targetBranch) return;
+    widget.navigationShell.goBranch(targetBranch);
+  }
+
   @override
   Widget build(BuildContext context) {
     final meta = _branchMeta[widget.navigationShell.currentIndex];
+    final currentBranch = widget.navigationShell.currentIndex;
 
-    return Scaffold(
-      body: DecoratedBox(
-        decoration: BoxDecoration(
-          color: AppColors.workspaceCanvasFor(context),
-        ),
-        child: Row(
-          children: [
-            const AppSidebar(),
-            Expanded(
-              child: Column(
-                children: [
-                  AppTopHeader(moduleTitle: meta.title, moduleShortcutLabel: meta.shortcut),
-                  Expanded(child: widget.navigationShell),
-                  AppStatusBar(
-                    moduleName: meta.statusName,
-                    branchIndex: widget.navigationShell.currentIndex,
-                  ),
-                ],
-              ),
+    final shortcutBindings = <ShortcutActivator, VoidCallback>{
+      if (currentBranch != 1 && currentBranch != 2)
+        const SingleActivator(LogicalKeyboardKey.f1): () => _triggerBranch(0),
+      if (currentBranch != 2)
+        const SingleActivator(LogicalKeyboardKey.f2): () => _triggerBranch(2),
+      const SingleActivator(LogicalKeyboardKey.f3): () => _triggerBranch(1),
+      if (currentBranch != 1 && currentBranch != 2)
+        const SingleActivator(LogicalKeyboardKey.f4): () => _triggerBranch(4),
+      const SingleActivator(LogicalKeyboardKey.f5): () => _triggerBranch(8),
+      if (currentBranch != 1)
+        const SingleActivator(LogicalKeyboardKey.f6): () => _triggerBranch(9),
+      const SingleActivator(LogicalKeyboardKey.f7): () => _triggerBranch(3),
+      if (currentBranch != 1 && currentBranch != 2)
+        const SingleActivator(LogicalKeyboardKey.f8): () => _triggerBranch(12),
+      const SingleActivator(LogicalKeyboardKey.f9): () => _triggerBranch(7),
+      const SingleActivator(LogicalKeyboardKey.f10): () => _triggerBranch(10),
+      const SingleActivator(LogicalKeyboardKey.f11): () => _triggerBranch(5),
+      const SingleActivator(LogicalKeyboardKey.f12): () => _triggerBranch(11),
+    };
+
+    return CallbackShortcuts(
+      bindings: shortcutBindings,
+      child: Focus(
+        autofocus: true,
+        child: Scaffold(
+          body: DecoratedBox(
+            decoration: BoxDecoration(
+              color: AppColors.workspaceCanvasFor(context),
             ),
-          ],
+            child: Row(
+              children: [
+                const AppSidebar(),
+                Expanded(
+                  child: Column(
+                    children: [
+                      AppTopHeader(moduleTitle: meta.title, moduleShortcutLabel: meta.shortcut),
+                      Expanded(child: widget.navigationShell),
+                      AppStatusBar(
+                        moduleName: meta.statusName,
+                        branchIndex: widget.navigationShell.currentIndex,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

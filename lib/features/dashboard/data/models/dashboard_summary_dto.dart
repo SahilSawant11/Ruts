@@ -83,6 +83,7 @@ class RecentTransactionDto {
     required this.payMode,
     required this.totalAmount,
     required this.status,
+    this.itemDetail,
   });
 
   final String billNo;
@@ -91,6 +92,7 @@ class RecentTransactionDto {
   final String payMode;
   final double totalAmount;
   final String status;
+  final String? itemDetail;
 
   factory RecentTransactionDto.fromJson(Map<String, dynamic> json) => RecentTransactionDto(
         billNo: json['billNo'] as String,
@@ -99,6 +101,7 @@ class RecentTransactionDto {
         payMode: json['payMode'] as String,
         totalAmount: (json['totalAmount'] as num).toDouble(),
         status: json['status'] as String,
+        itemDetail: json['itemDetail'] as String?,
       );
 }
 

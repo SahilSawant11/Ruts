@@ -35,14 +35,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     setState(() => _tab = tab);
 
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    final todayStart = DateTime(now.year, now.month, now.day, 0, 0, 0);
+    final todayEnd = DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
 
     switch (tab) {
       case ReportTab.dayWise:
-        ref.read(reportDateRangeProvider.notifier).state = DateTimeRange(start: today, end: today);
+        ref.read(reportDateRangeProvider.notifier).state = DateTimeRange(start: todayStart, end: todayEnd);
+        ref.invalidate(salesReportProvider);
       case ReportTab.monthly:
-        final firstOfMonth = DateTime(now.year, now.month, 1);
-        ref.read(reportDateRangeProvider.notifier).state = DateTimeRange(start: firstOfMonth, end: today);
+        final firstOfMonth = DateTime(now.year, now.month, 1, 0, 0, 0);
+        ref.read(reportDateRangeProvider.notifier).state = DateTimeRange(start: firstOfMonth, end: todayEnd);
+        ref.invalidate(salesReportProvider);
       case ReportTab.custom:
         // Leave whatever range is already selected — Custom is meant
         // for the person to pick their own via the filter card.

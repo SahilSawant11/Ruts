@@ -230,6 +230,14 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
             ),
           ),
           data: (materials) {
+            if (materials.isNotEmpty &&
+                (browser.materials.isEmpty || browser.materials.length != materials.length)) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                ref.read(materialBrowserProvider.notifier).syncList(materials);
+              });
+            }
+
             final query = _search.text.trim().toLowerCase();
             var filtered = materials.where((m) {
               final matchesQuery = query.isEmpty ||
@@ -289,9 +297,13 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
               ),
               itemBuilder: (context, index) {
                 final m = filtered[index];
+                final isSelected = browser.current != null &&
+                    browser.current!.id.trim().toLowerCase() == m.id.trim().toLowerCase() &&
+                    !browser.isNew;
                 return _dataRow(
                   m,
-                  isSelected: browser.current?.id == m.id && !browser.isNew,
+                  materials,
+                  isSelected: isSelected,
                 );
               },
             );
@@ -379,7 +391,7 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
     );
   }
 
-  Widget _dataRow(MaterialDto m, {required bool isSelected}) {
+  Widget _dataRow(MaterialDto m, List<MaterialDto> allMaterials, {required bool isSelected}) {
     final isDark = AppColors.isDark(context);
     final selectedBg = isDark
         ? AppColors.primary.withValues(alpha: 0.18)
@@ -388,7 +400,7 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
       child: InkWell(
-        onTap: () => ref.read(materialBrowserProvider.notifier).selectById(m.id),
+        onTap: () => ref.read(materialBrowserProvider.notifier).selectById(m.id, allMaterials),
         borderRadius: BorderRadius.circular(6),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 100),

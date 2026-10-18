@@ -123,6 +123,7 @@ class _TopSellingProductsCardState
               final items = summary.topSellingItems.isNotEmpty
                   ? summary.topSellingItems
                   : _fallbackItems();
+              final totalUnits = items.fold<int>(0, (sum, i) => sum + i.qty);
 
               return ListView.separated(
                 shrinkWrap: true,
@@ -131,15 +132,16 @@ class _TopSellingProductsCardState
                 separatorBuilder: (_, __) => const SizedBox(height: 14),
                 itemBuilder: (context, index) {
                   final item = items[index];
-                  final isPositive = index % 2 == 0;
-                  final trendVal = index == 0 ? 25 : (index == 1 ? 28 : 15);
+                  final sharePercent = totalUnits > 0
+                      ? ((item.qty / totalUnits) * 100).round()
+                      : 0;
 
                   return _ProductRow(
                     name: item.materialName,
                     price: (item.amount / (item.qty > 0 ? item.qty : 1)),
                     salesCount: item.qty,
-                    trendPercent: trendVal,
-                    isPositive: isPositive,
+                    trendPercent: sharePercent,
+                    isPositive: true,
                   );
                 },
               );
@@ -153,22 +155,22 @@ class _TopSellingProductsCardState
   static List<TopSellingItemDto> _fallbackItems() {
     return const [
       TopSellingItemDto(
-        materialName: 'Charger Cable - Lighting',
-        manufacturer: 'Apple',
-        qty: 247,
-        amount: 46189,
+        materialName: 'Johnnie Walker Black Label',
+        manufacturer: 'Diageo',
+        qty: 184,
+        amount: 552000,
       ),
       TopSellingItemDto(
-        materialName: 'Yves Saint Eau De Parfum',
-        manufacturer: 'YSL',
-        qty: 300,
-        amount: 43500,
+        materialName: 'Royal Challenge Whisky',
+        manufacturer: 'United Spirits',
+        qty: 142,
+        amount: 102240,
       ),
       TopSellingItemDto(
-        materialName: 'KitchenAid Stand Mixer',
-        manufacturer: 'KitchenAid',
-        qty: 180,
-        amount: 72000,
+        materialName: 'Kingfisher Premium Beer',
+        manufacturer: 'UBL',
+        qty: 110,
+        amount: 17600,
       ),
     ];
   }
@@ -273,7 +275,7 @@ class _ProductRow extends StatelessWidget {
               ),
               const SizedBox(width: 3),
               Text(
-                '$trendPercent%',
+                '$trendPercent% share',
                 style: AppTypography.mono.copyWith(
                   fontSize: 10.5,
                   fontWeight: FontWeight.w700,

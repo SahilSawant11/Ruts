@@ -51,12 +51,15 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
 
   bool _handleKeyEvent(KeyEvent event) {
     if (event is! KeyDownEvent) return false;
-    if (event.logicalKey == LogicalKeyboardKey.f8) {
+    final isF8 = event.logicalKey == LogicalKeyboardKey.f8 || event.physicalKey == PhysicalKeyboardKey.f8;
+    final isEscape = event.logicalKey == LogicalKeyboardKey.escape || event.physicalKey == PhysicalKeyboardKey.escape;
+
+    if (isF8) {
       if (!_isSaving) {
         _save();
       }
       return true;
-    } else if (event.logicalKey == LogicalKeyboardKey.escape) {
+    } else if (isEscape) {
       _clear();
       return true;
     }

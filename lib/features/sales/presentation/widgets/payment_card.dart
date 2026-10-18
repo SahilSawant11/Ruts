@@ -40,15 +40,19 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
 
   bool _handleKeyEvent(KeyEvent event) {
     if (event is! KeyDownEvent) return false;
-    if (event.logicalKey == LogicalKeyboardKey.f8) {
+    final isF8 = event.logicalKey == LogicalKeyboardKey.f8 || event.physicalKey == PhysicalKeyboardKey.f8;
+    final isF6 = event.logicalKey == LogicalKeyboardKey.f6 || event.physicalKey == PhysicalKeyboardKey.f6;
+    final isEscape = event.logicalKey == LogicalKeyboardKey.escape || event.physicalKey == PhysicalKeyboardKey.escape;
+
+    if (isF8) {
       if (!_isSaving) {
         _saveSale();
       }
       return true;
-    } else if (event.logicalKey == LogicalKeyboardKey.f6) {
+    } else if (isF6) {
       _holdBill();
       return true;
-    } else if (event.logicalKey == LogicalKeyboardKey.escape) {
+    } else if (isEscape) {
       _clearBill();
       return true;
     }

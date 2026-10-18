@@ -81,6 +81,10 @@ class _CategoryFormCardState extends ConsumerState<CategoryFormCard> {
   Widget build(BuildContext context) {
     final categoriesAsync = ref.watch(categoriesListProvider);
     final browser = ref.watch(categoryBrowserProvider);
+    ref.listen(categoriesListProvider, (previous, next) {
+      next.whenData((categories) => ref.read(categoryBrowserProvider.notifier).syncList(categories));
+    });
+
     categoriesAsync.whenData((categories) {
       if (categories.isNotEmpty && browser.categories.isEmpty) {
         WidgetsBinding.instance.addPostFrameCallback((_) {

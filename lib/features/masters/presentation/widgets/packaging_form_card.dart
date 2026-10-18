@@ -81,6 +81,10 @@ class _PackagingFormCardState extends ConsumerState<PackagingFormCard> {
   Widget build(BuildContext context) {
     final packingsAsync = ref.watch(packingsListProvider);
     final browser = ref.watch(packagingBrowserProvider);
+    ref.listen(packingsListProvider, (previous, next) {
+      next.whenData((packings) => ref.read(packagingBrowserProvider.notifier).syncList(packings));
+    });
+
     packingsAsync.whenData((packings) {
       if (packings.isNotEmpty && browser.packings.isEmpty) {
         WidgetsBinding.instance.addPostFrameCallback((_) {

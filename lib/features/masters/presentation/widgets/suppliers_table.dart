@@ -168,6 +168,14 @@ class _SuppliersTableState extends ConsumerState<SuppliersTable> {
             ),
           ),
           data: (suppliers) {
+            if (suppliers.isNotEmpty &&
+                (browser.suppliers.isEmpty || browser.suppliers.length != suppliers.length)) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                ref.read(supplierBrowserProvider.notifier).syncList(suppliers);
+              });
+            }
+
             final query = _search.text.trim().toLowerCase();
             var filtered = query.isEmpty
                 ? suppliers
@@ -220,7 +228,10 @@ class _SuppliersTableState extends ConsumerState<SuppliersTable> {
               ),
               itemBuilder: (context, index) {
                 final s = filtered[index];
-                return _dataRow(s, isSelected: browser.current?.id == s.id && !browser.isNew);
+                final isSelected = browser.current != null &&
+                    browser.current!.id.trim().toLowerCase() == s.id.trim().toLowerCase() &&
+                    !browser.isNew;
+                return _dataRow(s, suppliers, isSelected: isSelected);
               },
             );
 
@@ -303,7 +314,7 @@ class _SuppliersTableState extends ConsumerState<SuppliersTable> {
     );
   }
 
-  Widget _dataRow(SupplierDto s, {required bool isSelected}) {
+  Widget _dataRow(SupplierDto s, List<SupplierDto> allSuppliers, {required bool isSelected}) {
     final isDark = AppColors.isDark(context);
     final selectedBg = isDark
         ? AppColors.primary.withValues(alpha: 0.18)
@@ -312,7 +323,7 @@ class _SuppliersTableState extends ConsumerState<SuppliersTable> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
       child: InkWell(
-        onTap: () => ref.read(supplierBrowserProvider.notifier).selectById(s.id),
+        onTap: () => ref.read(supplierBrowserProvider.notifier).selectById(s.id, allSuppliers),
         borderRadius: BorderRadius.circular(6),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 100),

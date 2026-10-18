@@ -1,21 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../data/dashboard_providers.dart';
 import '../../data/models/dashboard_summary_dto.dart';
 
-/// 'Top Categories' Card — replaces the static customers overview:
-/// Shows dynamic category sales revenue, share percentages, and progress indicators
-/// aggregated directly from sales line items in SQLite.
-class TopCategoriesCard extends ConsumerWidget {
+/// 'Top Categories' Card matching the visual composition of the mood board:
+///  - Header with Category icon & Timeframe dropdown
+///  - Dual visual vertical pillar cards (Green/Teal for Top Category vs Coral for 2nd Category)
+///  - Right metrics column with revenue amounts, growth/share pill (↗ 65%), and category labels
+class TopCategoriesCard extends StatefulWidget {
   const TopCategoriesCard({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final summaryAsync = ref.watch(dashboardSummaryProvider);
+  State<TopCategoriesCard> createState() => _TopCategoriesCardState();
+}
+
+class _TopCategoriesCardState extends State<TopCategoriesCard> {
+  String _timeframe = 'Weekly';
+
+  @override
+  Widget build(BuildContext context) {
     final isDark = AppColors.isDark(context);
 
     return Container(
@@ -29,7 +35,7 @@ class TopCategoriesCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header: Category Icon + Title + 'View all' link
+          // Header: Category Icon + Title + Timeframe Dropdown
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -40,14 +46,14 @@ class TopCategoriesCard extends ConsumerWidget {
                     height: 32,
                     decoration: BoxDecoration(
                       color: isDark
-                          ? AppColors.chartTeal.withValues(alpha: 0.20)
-                          : AppColors.chartTeal.withValues(alpha: 0.12),
+                          ? const Color(0xFF2EBD85).withValues(alpha: 0.20)
+                          : const Color(0xFFE8F8F1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(
                       Icons.category_outlined,
                       size: 16,
-                      color: AppColors.chartTeal,
+                      color: Color(0xFF2EBD85),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -61,140 +67,266 @@ class TopCategoriesCard extends ConsumerWidget {
                   ),
                 ],
               ),
-              InkWell(
-                onTap: () => context.go('/category'),
-                borderRadius: BorderRadius.circular(4),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                  child: Row(
-                    children: [
-                      Text(
-                        'View all',
-                        style: AppTypography.caption.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 11.5,
-                        ),
-                      ),
-                      const SizedBox(width: 2),
-                      const Icon(
-                        Icons.north_east_rounded,
-                        size: 12,
-                        color: AppColors.primary,
-                      ),
+
+              // Timeframe dropdown
+              Container(
+                height: 26,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceFor(context),
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  border: Border.all(color: AppColors.borderFor(context)),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: _timeframe,
+                    isDense: true,
+                    dropdownColor: AppColors.surfaceFor(context),
+                    style: AppTypography.body.copyWith(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondaryFor(context),
+                    ),
+                    icon: Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 15,
+                      color: AppColors.textMutedFor(context),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'Today', child: Text('Today')),
+                      DropdownMenuItem(value: 'Weekly', child: Text('Weekly')),
+                      DropdownMenuItem(value: 'Monthly', child: Text('Monthly')),
                     ],
+                    onChanged: (v) {
+                      if (v != null) setState(() => _timeframe = v);
+                    },
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
 
-          // Categories List
-          summaryAsync.when(
-            loading: () => const SizedBox(
-              height: 120,
-              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-            ),
-            error: (_, __) => const SizedBox(
-              height: 120,
-              child: Center(child: Text('—')),
-            ),
-            data: (summary) {
-              final categories = summary.categoryBreakdown.isNotEmpty
-                  ? summary.categoryBreakdown
-                  : _fallbackCategories();
+          // Visual Pillar Cards + Metrics Row (Mood board visual composition)
+          Consumer(
+            builder: (context, ref, _) {
+              final summaryAsync = ref.watch(dashboardSummaryProvider);
 
-              final total = categories.fold<double>(0, (s, c) => s + c.amount);
+              return summaryAsync.when(
+                loading: () => const SizedBox(
+                  height: 110,
+                  child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                ),
+                error: (_, __) => const SizedBox(
+                  height: 110,
+                  child: Center(child: Text('—')),
+                ),
+                data: (summary) {
+                  final categories = summary.categoryBreakdown.isNotEmpty
+                      ? summary.categoryBreakdown
+                      : _fallbackCategories();
 
-              const colors = [
-                Color(0xFF6E56CF), // Purple
-                Color(0xFF2EBD85), // Teal/Green
-                Color(0xFFF5A524), // Amber
-                Color(0xFF388BFD), // Blue
-              ];
+                  final firstCat = categories.isNotEmpty
+                      ? categories[0]
+                      : const CategoryBreakdownItemDto(category: 'IMFL Spirits', amount: 54000);
+                  final secondCat = categories.length > 1
+                      ? categories[1]
+                      : const CategoryBreakdownItemDto(category: 'Beer & Cider', amount: 28500);
 
-              return ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: categories.take(3).length,
-                separatorBuilder: (_, __) => const SizedBox(height: 10),
-                itemBuilder: (context, idx) {
-                  final cat = categories[idx];
-                  final percent = total > 0 ? (cat.amount / total) : 0.0;
-                  final color = colors[idx % colors.length];
+                  final total = firstCat.amount + secondCat.amount;
+                  final firstPercent = total > 0 ? ((firstCat.amount / total) * 100).round() : 65;
+                  final secondPercent = 100 - firstPercent;
 
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  final secondHeight = (100.0 * (secondCat.amount / (firstCat.amount > 0 ? firstCat.amount : 1)))
+                      .clamp(45.0, 85.0);
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
+                      // Visual Blocks (Green for Top Category & Coral for 2nd)
+                      Expanded(
+                        flex: 5,
+                        child: SizedBox(
+                          height: 110,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: color,
-                                  shape: BoxShape.circle,
+                              // 1st Category Pillar Card (Green)
+                              Expanded(
+                                child: Container(
+                                  height: 100,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF2EBD85),
+                                    borderRadius: BorderRadius.circular(AppRadius.md),
+                                  ),
+                                  child: Stack(
+                                    alignment: Alignment.topCenter,
+                                    children: [
+                                      Positioned(
+                                        top: 12,
+                                        child: Container(
+                                          width: 10,
+                                          height: 10,
+                                          decoration: const BoxDecoration(
+                                            color: Colors.white,
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                      ),
+                                      Positioned(
+                                        top: 22,
+                                        bottom: 0,
+                                        child: Container(
+                                          width: 1,
+                                          color: Colors.white.withValues(alpha: 0.35),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                cat.category.isNotEmpty ? cat.category : 'General',
-                                style: AppTypography.body.copyWith(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimaryFor(context),
-                                ),
-                              ),
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              Text(
-                                '₹ ${_formatRupee(cat.amount)}',
-                                style: AppTypography.mono.copyWith(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textPrimaryFor(context),
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: isDark
-                                      ? color.withValues(alpha: 0.20)
-                                      : color.withValues(alpha: 0.12),
-                                  borderRadius:
-                                      BorderRadius.circular(AppRadius.pill),
-                                ),
-                                child: Text(
-                                  '${(percent * 100).toStringAsFixed(0)}%',
-                                  style: AppTypography.mono.copyWith(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                    color: color,
+                              const SizedBox(width: 12),
+
+                              // 2nd Category Pillar Card (Coral/Rose)
+                              Expanded(
+                                child: Container(
+                                  height: secondHeight,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE96560),
+                                    borderRadius: BorderRadius.circular(AppRadius.md),
+                                  ),
+                                  child: Stack(
+                                    alignment: Alignment.topCenter,
+                                    children: [
+                                      Positioned(
+                                        top: 10,
+                                        child: Container(
+                                          width: 8,
+                                          height: 8,
+                                          decoration: const BoxDecoration(
+                                            color: Colors.white,
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                      ),
+                                      Positioned(
+                                        top: 18,
+                                        bottom: 0,
+                                        child: Container(
+                                          width: 1,
+                                          color: Colors.white.withValues(alpha: 0.35),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
                             ],
                           ),
-                        ],
+                        ),
                       ),
-                      const SizedBox(height: 6),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(99),
-                        child: LinearProgressIndicator(
-                          value: percent.clamp(0.05, 1.0),
-                          minHeight: 5,
-                          backgroundColor: isDark
-                              ? Colors.white.withValues(alpha: 0.06)
-                              : const Color(0xFFEEEEF4),
-                          valueColor: AlwaysStoppedAnimation<Color>(color),
+                      const SizedBox(width: AppSpacing.md),
+
+                      // Metrics Column (Right side)
+                      Expanded(
+                        flex: 5,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // 1st Category Metric
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  _formatRupee(firstCat.amount),
+                                  style: AppTypography.h2.copyWith(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.textPrimaryFor(context),
+                                  ),
+                                ),
+                                // Share Pill
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF2EBD85),
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.pill),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.north_east_rounded,
+                                        size: 10,
+                                        color: Colors.white,
+                                      ),
+                                      const SizedBox(width: 2),
+                                      Text(
+                                        '$firstPercent%',
+                                        style: AppTypography.mono.copyWith(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Text(
+                              firstCat.category.isNotEmpty ? firstCat.category : 'Top Category',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.caption.copyWith(
+                                color: AppColors.textMutedFor(context),
+                                fontSize: 11,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+
+                            // 2nd Category Metric
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  _formatRupee(secondCat.amount),
+                                  style: AppTypography.h2.copyWith(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.textPrimaryFor(context),
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE96560),
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.pill),
+                                  ),
+                                  child: Text(
+                                    '$secondPercent%',
+                                    style: AppTypography.mono.copyWith(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Text(
+                              secondCat.category.isNotEmpty ? secondCat.category : 'Secondary Category',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.caption.copyWith(
+                                color: AppColors.textMutedFor(context),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -209,9 +341,9 @@ class TopCategoriesCard extends ConsumerWidget {
   }
 
   static String _formatRupee(double v) {
-    if (v >= 100000) return '${(v / 100000).toStringAsFixed(1)} L';
-    if (v >= 1000) return '${(v / 1000).toStringAsFixed(1)} K';
-    return v.toStringAsFixed(0);
+    if (v >= 100000) return '₹ ${(v / 100000).toStringAsFixed(1)}L';
+    if (v >= 1000) return '₹ ${(v / 1000).toStringAsFixed(1)}K';
+    return '₹ ${v.toStringAsFixed(0)}';
   }
 
   static List<CategoryBreakdownItemDto> _fallbackCategories() {
