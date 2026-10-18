@@ -228,7 +228,7 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 6) {
             await m.createTable(cachedManufacturers);
-            await m.addColumn(cachedMaterials, cachedMaterials.manufacturer);
+            await _ensureColumn('cached_materials', 'manufacturer', "TEXT NOT NULL DEFAULT ''");
             await _backfillManufacturers();
           }
           if (from < 7) {
@@ -247,14 +247,17 @@ class AppDatabase extends _$AppDatabase {
             await _createIndexes();
           }
           if (from < 11) {
-            await m.addColumn(cachedMaterials, cachedMaterials.isActive);
+            await _ensureColumn('cached_materials', 'is_active', 'INTEGER NOT NULL DEFAULT 1');
           }
+          await _healMaterialsTable();
         },
         beforeOpen: (details) async {
           // PRAGMAs must be set per-connection, before any queries.
           await customStatement('PRAGMA journal_mode=WAL');
           await customStatement('PRAGMA synchronous=NORMAL');
           await customStatement('PRAGMA cache_size=-8000'); // 8 MB
+
+          await _healMaterialsTable();
         },
       );
 
@@ -393,6 +396,7 @@ class AppDatabase extends _$AppDatabase {
                 saleRate: material.saleRate,
                 taxPercent: material.taxPercent,
                 stockQty: Value(material.stockQty),
+                isActive: const Value(true),
                 createdAt: Value(now),
                 updatedAt: Value(now),
                 lastSyncedAt: Value(now),
@@ -479,19 +483,44 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<bool> _tableHasRows(String tableName) async {
-    final result = await customSelect(
-      'SELECT EXISTS(SELECT 1 FROM $tableName LIMIT 1) AS present',
-    ).getSingle();
-    return result.read<int>('present') == 1;
+    try {
+      final result = await customSelect(
+        'SELECT 1 FROM $tableName LIMIT 1',
+      ).get();
+      return result.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _ensureColumn(String table, String column, String definition) async {
+    try {
+      final cols = await customSelect("PRAGMA table_info('$table')").get();
+      final names = cols.map((r) => (r.readNullable<String>('name') ?? '').toLowerCase()).toSet();
+      if (!names.contains(column.toLowerCase())) {
+        await customStatement('ALTER TABLE $table ADD COLUMN $column $definition');
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _healMaterialsTable() async {
+    try {
+      await _ensureColumn('cached_materials', 'is_active', 'INTEGER NOT NULL DEFAULT 1');
+      await _ensureColumn('cached_materials', 'manufacturer', "TEXT NOT NULL DEFAULT ''");
+      await customStatement('UPDATE cached_materials SET is_active = 1 WHERE is_active IS NULL');
+      await customStatement("UPDATE cached_materials SET manufacturer = '' WHERE manufacturer IS NULL");
+      await customStatement("UPDATE cached_materials SET sync_status = 'synced' WHERE sync_status IS NULL");
+      await customStatement("UPDATE cached_materials SET stock_qty = 0 WHERE stock_qty IS NULL");
+    } catch (_) {}
   }
 
   Future<void> _backfillPackings() async {
-    final rows = await select(cachedMaterials).get();
+    final rows = await customSelect('SELECT packing FROM cached_materials').get();
     final now = DateTime.now().toUtc();
     final packings = <String>{};
 
     for (final row in rows) {
-      final p = row.packing.trim();
+      final p = (row.readNullable<String>('packing') ?? '').trim();
       if (p.isNotEmpty) {
         packings.add(p);
       }
@@ -521,19 +550,20 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> _backfillManufacturers() async {
-    final rows = await select(cachedMaterials).get();
+    final rows = await customSelect('SELECT id, name FROM cached_materials').get();
     if (rows.isEmpty) return;
 
     final now = DateTime.now().toUtc();
     final manufacturers = <String>{};
     for (final row in rows) {
-      final manufacturerName = _deriveManufacturer(row.name);
+      final id = row.readNullable<String>('id');
+      final name = row.readNullable<String>('name') ?? '';
+      if (id == null) continue;
+      final manufacturerName = _deriveManufacturer(name);
       manufacturers.add(manufacturerName);
-      await (update(cachedMaterials)..where((tbl) => tbl.id.equals(row.id))).write(
-        CachedMaterialsCompanion(
-          manufacturer: Value(manufacturerName),
-          updatedAt: Value(now),
-        ),
+      await customStatement(
+        'UPDATE cached_materials SET manufacturer = ?, updated_at = ? WHERE id = ?',
+        [manufacturerName, now.millisecondsSinceEpoch ~/ 1000, id],
       );
     }
 
