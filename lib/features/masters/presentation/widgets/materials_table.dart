@@ -116,7 +116,7 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
             materialsAsync.maybeWhen(
               data: (materials) => Padding(
                 padding: const EdgeInsets.only(right: AppSpacing.xs),
-                child: StatusChip(label: '${materials.length} SKUs'),
+                child: StatusChip(label: '${materials.length} SCM codes'),
               ),
               orElse: () => const SizedBox.shrink(),
             ),

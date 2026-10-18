@@ -135,7 +135,7 @@ void main() {
       // Simulate sale: deduct 3
       await (db.update(db.cachedInventoryStocks)
             ..where((t) => t.materialId.equals('SKU-4')))
-          .write(CachedInventoryStocksCompanion(qtyOnHand: const Value(5)));
+          .write(const CachedInventoryStocksCompanion(qtyOnHand: Value(5)));
       expect(await readStockQty('SKU-4'), 5);
 
       // Simulate return: add 3 back
@@ -238,7 +238,7 @@ void main() {
         await db.transaction(() async {
           await (db.update(db.cachedInventoryStocks)
                 ..where((t) => t.materialId.equals('SKU-8')))
-              .write(CachedInventoryStocksCompanion(qtyOnHand: const Value(7)));
+              .write(const CachedInventoryStocksCompanion(qtyOnHand: Value(7)));
 
           throw Exception('Simulated line item failure');
         });

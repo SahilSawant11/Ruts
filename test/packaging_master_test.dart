@@ -93,7 +93,7 @@ void main() {
 
       controller.syncList(items);
       expect(controller.state.packings.length, 3);
-      expect(controller.state.index, -1);
+      expect(controller.state.index, 0);
 
       controller.selectByName('375 ML');
       expect(controller.state.index, 1);

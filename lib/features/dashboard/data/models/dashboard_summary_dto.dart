@@ -115,6 +115,25 @@ class TopCustomerDto {
       );
 }
 
+class MonthlyComparisonPointDto {
+  const MonthlyComparisonPointDto({
+    required this.month,
+    required this.salesAmount,
+    required this.purchaseAmount,
+  });
+
+  final String month;
+  final double salesAmount;
+  final double purchaseAmount;
+
+  factory MonthlyComparisonPointDto.fromJson(Map<String, dynamic> json) =>
+      MonthlyComparisonPointDto(
+        month: json['month'] as String,
+        salesAmount: (json['salesAmount'] as num).toDouble(),
+        purchaseAmount: (json['purchaseAmount'] as num).toDouble(),
+      );
+}
+
 /// Full GET /api/dashboard/summary response.
 class DashboardSummaryDto {
   const DashboardSummaryDto({
@@ -131,6 +150,21 @@ class DashboardSummaryDto {
     required this.recentTransactions,
     required this.topCustomers,
     required this.transactionActivity,
+    this.totalSalesWeek = 0,
+    this.totalSalesMonth = 0,
+    this.totalPurchase = 0,
+    this.purchaseDeltaPercent,
+    this.salesReturnAmount = 0,
+    this.salesReturnDeltaPercent,
+    this.purchaseReturnAmount = 0,
+    this.purchaseReturnDeltaPercent,
+    this.supplierCount = 0,
+    this.customerCount = 0,
+    this.materialCount = 0,
+    this.lowStockCount = 0,
+    this.monthlyComparison = const [],
+    this.dailyComparison = const [],
+    this.weeklyComparison = const [],
   });
 
   final double todaySales;
@@ -146,6 +180,23 @@ class DashboardSummaryDto {
   final List<RecentTransactionDto> recentTransactions;
   final List<TopCustomerDto> topCustomers;
   final List<TransactionActivityDayDto> transactionActivity;
+
+  // Extended dashboard fields matching mood board
+  final double totalSalesWeek;
+  final double totalSalesMonth;
+  final double totalPurchase;
+  final double? purchaseDeltaPercent;
+  final double salesReturnAmount;
+  final double? salesReturnDeltaPercent;
+  final double purchaseReturnAmount;
+  final double? purchaseReturnDeltaPercent;
+  final int supplierCount;
+  final int customerCount;
+  final int materialCount;
+  final int lowStockCount;
+  final List<MonthlyComparisonPointDto> monthlyComparison;
+  final List<MonthlyComparisonPointDto> dailyComparison;
+  final List<MonthlyComparisonPointDto> weeklyComparison;
 
   factory DashboardSummaryDto.fromJson(Map<String, dynamic> json) {
     List<T> parseList<T>(String key, T Function(Map<String, dynamic>) fromJson) {
@@ -167,6 +218,21 @@ class DashboardSummaryDto {
       recentTransactions: parseList('recentTransactions', RecentTransactionDto.fromJson),
       topCustomers: parseList('topCustomers', TopCustomerDto.fromJson),
       transactionActivity: parseList('transactionActivity', TransactionActivityDayDto.fromJson),
+      totalSalesWeek: (json['totalSalesWeek'] as num?)?.toDouble() ?? 0,
+      totalSalesMonth: (json['totalSalesMonth'] as num?)?.toDouble() ?? 0,
+      totalPurchase: (json['totalPurchase'] as num?)?.toDouble() ?? 0,
+      purchaseDeltaPercent: (json['purchaseDeltaPercent'] as num?)?.toDouble(),
+      salesReturnAmount: (json['salesReturnAmount'] as num?)?.toDouble() ?? 0,
+      salesReturnDeltaPercent: (json['salesReturnDeltaPercent'] as num?)?.toDouble(),
+      purchaseReturnAmount: (json['purchaseReturnAmount'] as num?)?.toDouble() ?? 0,
+      purchaseReturnDeltaPercent: (json['purchaseReturnDeltaPercent'] as num?)?.toDouble(),
+      supplierCount: (json['supplierCount'] as num?)?.toInt() ?? 0,
+      customerCount: (json['customerCount'] as num?)?.toInt() ?? 0,
+      materialCount: (json['materialCount'] as num?)?.toInt() ?? 0,
+      lowStockCount: (json['lowStockCount'] as num?)?.toInt() ?? 0,
+      monthlyComparison: parseList('monthlyComparison', MonthlyComparisonPointDto.fromJson),
+      dailyComparison: parseList('dailyComparison', MonthlyComparisonPointDto.fromJson),
+      weeklyComparison: parseList('weeklyComparison', MonthlyComparisonPointDto.fromJson),
     );
   }
 }

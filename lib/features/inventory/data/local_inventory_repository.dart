@@ -44,6 +44,7 @@ class LocalInventoryRepository {
         packing: m.packing,
         qtyOnHand: s?.qtyOnHand ?? 0,
         reorderLevel: s?.reorderLevel ?? 10,
+        saleRate: m.saleRate,
       );
     }).toList();
   }

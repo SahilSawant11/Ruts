@@ -14,6 +14,7 @@ class InventoryOverviewItem {
     required this.packing,
     required this.qtyOnHand,
     required this.reorderLevel,
+    required this.saleRate,
   });
 
   final String materialId;
@@ -25,7 +26,18 @@ class InventoryOverviewItem {
   final int qtyOnHand;
   final int reorderLevel;
 
+  /// Sale rate from the Material Master (₹ per unit).
+  final double saleRate;
+
+  /// Current on-hand stock value at sale rate.
+  double get onHandValue => saleRate * qtyOnHand;
+
   bool get isOutOfStock => qtyOnHand <= 0;
-  bool get isLowStock => !isOutOfStock && qtyOnHand <= reorderLevel;
-  bool get isInStock => !isOutOfStock && !isLowStock;
+  bool get isLowStock => qtyOnHand > 0 && qtyOnHand <= reorderLevel;
+  bool get isAtRisk => qtyOnHand <= reorderLevel;
+  bool get isInStock => qtyOnHand > reorderLevel;
+
+  bool isLowStockFor(int threshold) => qtyOnHand > 0 && qtyOnHand <= threshold;
+  bool isAtRiskFor(int threshold) => qtyOnHand <= threshold;
+  bool isInStockFor(int threshold) => qtyOnHand > threshold;
 }

@@ -67,6 +67,15 @@ final inventoryManufacturerFilterProvider = StateProvider<String?>((ref) => null
 final inventoryStatusFilterProvider = StateProvider<String?>((ref) => null);
 final inventorySearchFilterProvider = StateProvider<String>((ref) => '');
 
+/// Toggled by tapping KPI Card 3 ("Low Stock"). When true the table
+/// is pinned to show only low-stock items regardless of the status
+/// dropdown. Cleared automatically whenever another status is chosen.
+final inventoryLowStockPinProvider = StateProvider<bool>((ref) => false);
+
+/// Configurable threshold for low stock (default: 10 units).
+/// Configured via the info/settings button on KPI Card 3.
+final inventoryLowStockThresholdProvider = StateProvider<int>((ref) => 10);
+
 final inventoryManufacturerOptionsProvider = FutureProvider<List<String>>((ref) async {
   final items = await ref.watch(manufacturersListProvider.future);
   return items.map((item) => item.name).toList()..sort();
@@ -77,18 +86,23 @@ final filteredInventoryOverviewProvider = FutureProvider<List<InventoryOverviewI
   final category = ref.watch(inventoryCategoryFilterProvider);
   final manufacturer = ref.watch(inventoryManufacturerFilterProvider);
   final status = ref.watch(inventoryStatusFilterProvider);
+  final lowStockPinned = ref.watch(inventoryLowStockPinProvider);
+  final lowStockThreshold = ref.watch(inventoryLowStockThresholdProvider);
   final search = ref.watch(inventorySearchFilterProvider).trim().toLowerCase();
+
+  // KPI card 3 tap overrides the status dropdown with 'Low Stock'.
+  final effectiveStatus = lowStockPinned ? 'Low Stock' : status;
 
   return items.where((item) {
     final categoryMatch = category == null || category.isEmpty || item.category == category;
     final manufacturerMatch = manufacturer == null ||
         manufacturer.isEmpty ||
         item.manufacturer == manufacturer;
-    final statusMatch = switch (status) {
-      null || '' => true,
-      'In Stock' => item.qtyOnHand > item.reorderLevel,
-      'Low Stock' => item.qtyOnHand > 0 && item.qtyOnHand <= item.reorderLevel,
-      'Out of Stock' => item.qtyOnHand <= 0,
+    final statusMatch = switch (effectiveStatus) {
+      null || '' || 'All' => true,
+      'In Stock' => item.isInStockFor(lowStockThreshold),
+      'Low Stock' => item.isAtRiskFor(lowStockThreshold),
+      'Out of Stock' => item.isOutOfStock,
       _ => true,
     };
     final searchMatch = search.isEmpty ||
