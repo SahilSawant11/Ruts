@@ -1,12 +1,19 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/theme_mode_provider.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../features/sync/data/sync_providers.dart';
+import '../../../features/dashboard/data/dashboard_providers.dart';
+import '../../../features/inventory/data/inventory_providers.dart';
+import '../../../features/masters/data/masters_providers.dart';
+import '../../../features/purchase/data/purchase_providers.dart';
+import '../../../features/reports/data/brandwise_report_provider.dart';
+import '../../../features/reports/data/counter_brandwise_report_provider.dart';
+import '../../../features/reports/data/reports_providers.dart';
+import '../../../features/sales/data/sales_providers.dart';
+// import '../../../features/sync/data/sync_providers.dart';
 
 /// A docked Apple macOS window toolbar that connects flush with the sidebar.
 ///
@@ -14,7 +21,7 @@ import '../../../features/sync/data/sync_providers.dart';
 ///   • Docked 60px height with continuous 1px bottom border.
 ///   • Zero duplicates (no redundant avatar, logout, or date chips).
 ///   • High-utility tools: Quick Calculator, Notes, POS Shortcuts Dialog, Theme Switcher.
-///   • Interactive Sync status pill with 1-click drilldown to Sync Center.
+///   • Universal Screen Refresh button to reload active screen data.
 class AppTopHeader extends ConsumerWidget {
   const AppTopHeader({
     super.key,
@@ -40,9 +47,44 @@ class AppTopHeader extends ConsumerWidget {
     );
   }
 
+  void _handleRefresh(BuildContext context, WidgetRef ref) {
+    ref.invalidate(dashboardSummaryProvider);
+    ref.invalidate(inventoryOverviewProvider);
+    ref.invalidate(inventoryListProvider);
+    ref.invalidate(filteredInventoryOverviewProvider);
+    ref.invalidate(salesReportProvider);
+    ref.invalidate(brandwiseReportProvider);
+    ref.invalidate(counterBrandwiseReportProvider);
+    ref.invalidate(categoriesListProvider);
+    ref.invalidate(suppliersListProvider);
+    ref.invalidate(manufacturersListProvider);
+    ref.invalidate(materialsListProvider);
+    ref.invalidate(packingsListProvider);
+    ref.invalidate(materialLookupCacheProvider);
+    ref.invalidate(todaysBillsProvider);
+    ref.invalidate(purchaseBillsListProvider);
+
+    ScaffoldMessenger.of(context).removeCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.check_circle_outline_rounded, color: Colors.white, size: 16),
+            SizedBox(width: 8),
+            Text('Data refreshed successfully', style: TextStyle(fontWeight: FontWeight.w600)),
+          ],
+        ),
+        backgroundColor: AppColors.primary,
+        duration: Duration(milliseconds: 1500),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final syncOverviewAsync = ref.watch(syncOverviewProvider);
+    // Sync Center commented out for offline-first MVP
+    // final syncOverviewAsync = ref.watch(syncOverviewProvider);
     final themeMode = ref.watch(appThemeModeProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -83,8 +125,15 @@ class AppTopHeader extends ConsumerWidget {
 
           const Spacer(),
 
-          // ── Sync & Connectivity Status Pill (Clickable) ────────────────
-          _buildSyncStatusPill(context, syncOverviewAsync, isDark),
+          // ── Universal Screen Refresh Action ─────────────────────────────
+          _HeaderIconButton(
+            icon: Icons.refresh_rounded,
+            tooltip: 'Refresh Screen Data',
+            onTap: () => _handleRefresh(context, ref),
+          ),
+
+          // ── Sync & Connectivity Status Pill (Commented out for offline MVP) ─
+          // _buildSyncStatusPill(context, syncOverviewAsync, isDark),
 
           const SizedBox(width: 12),
           _divider(context),
@@ -151,109 +200,8 @@ class AppTopHeader extends ConsumerWidget {
     );
   }
 
-  Widget _buildSyncStatusPill(
-    BuildContext context,
-    AsyncValue syncOverviewAsync,
-    bool isDark,
-  ) {
-    return syncOverviewAsync.when(
-      loading: () => _syncPillContainer(
-        context,
-        dotColor: AppColors.textMutedFor(context),
-        label: 'Checking sync…',
-        onTap: () => context.go('/sync'),
-        isDark: isDark,
-      ),
-      error: (_, __) => _syncPillContainer(
-        context,
-        dotColor: AppColors.warning,
-        label: 'Sync diagnostics',
-        onTap: () => context.go('/sync'),
-        isDark: isDark,
-      ),
-      data: (overview) {
-        if (overview.failed > 0) {
-          return _syncPillContainer(
-            context,
-            dotColor: AppColors.danger,
-            label: '${overview.failed} failed',
-            onTap: () => context.go('/sync'),
-            isDark: isDark,
-          );
-        }
-        if (overview.total > 0) {
-          return _syncPillContainer(
-            context,
-            dotColor: AppColors.warning,
-            label: '${overview.total} queued offline',
-            onTap: () => context.go('/sync'),
-            isDark: isDark,
-          );
-        }
-        return _syncPillContainer(
-          context,
-          dotColor: AppColors.success,
-          label: 'Sync clean',
-          onTap: () => context.go('/sync'),
-          isDark: isDark,
-        );
-      },
-    );
-  }
-
-  Widget _syncPillContainer(
-    BuildContext context, {
-    required Color dotColor,
-    required String label,
-    required VoidCallback onTap,
-    required bool isDark,
-  }) {
-    return Tooltip(
-      message: 'Click to open Sync Center',
-      waitDuration: const Duration(milliseconds: 400),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          decoration: BoxDecoration(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.05)
-                : Colors.black.withValues(alpha: 0.04),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.08)
-                  : Colors.black.withValues(alpha: 0.06),
-              width: 0.8,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 7,
-                height: 7,
-                decoration: BoxDecoration(
-                  color: dotColor,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondaryFor(context),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  // Sync Center pill commented out for offline MVP
+  // Widget _buildSyncStatusPill(...) { ... }
 
   Widget _divider(BuildContext context) {
     return Container(

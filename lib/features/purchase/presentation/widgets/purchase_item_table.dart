@@ -169,7 +169,7 @@ class PurchaseItemTable extends ConsumerWidget {
   }
 }
 
-class _PurchaseTableRow extends StatefulWidget {
+class _PurchaseTableRow extends ConsumerStatefulWidget {
   const _PurchaseTableRow({
     required this.index,
     required this.item,
@@ -181,10 +181,10 @@ class _PurchaseTableRow extends StatefulWidget {
   final VoidCallback onDelete;
 
   @override
-  State<_PurchaseTableRow> createState() => _PurchaseTableRowState();
+  ConsumerState<_PurchaseTableRow> createState() => _PurchaseTableRowState();
 }
 
-class _PurchaseTableRowState extends State<_PurchaseTableRow> {
+class _PurchaseTableRowState extends ConsumerState<_PurchaseTableRow> {
   bool _isHovered = false;
 
   @override
@@ -192,175 +192,185 @@ class _PurchaseTableRowState extends State<_PurchaseTableRow> {
     final item = widget.item;
     final rowBg = _isHovered ? AppColors.surfaceFor(context) : Colors.transparent;
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 100),
-        height: 38,
-        color: rowBg,
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-        child: Row(
-          children: [
-            // Index
-            Expanded(
-              flex: 1,
-              child: Text(
-                '${widget.index + 1}',
-                style: AppTypography.mono.copyWith(
-                  fontSize: 11,
-                  color: AppColors.textSecondaryFor(context),
-                ),
-              ),
-            ),
-
-            // Make / Manufacturer
-            Expanded(
-              flex: 3,
-              child: Text(
-                item.manufacturer,
-                style: AppTypography.caption.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimaryFor(context),
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-
-            // Material Name
-            Expanded(
-              flex: 6,
-              child: Text(
-                item.material,
-                style: AppTypography.body.copyWith(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimaryFor(context),
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-
-            // Batch
-            Expanded(
-              flex: 2,
-              child: Text(
-                item.batch.isEmpty ? '—' : item.batch,
-                style: AppTypography.mono.copyWith(
-                  fontSize: 11,
-                  color: AppColors.textSecondaryFor(context),
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-
-            // Packing
-            Expanded(
-              flex: 2,
-              child: Text(
-                item.packing,
-                style: AppTypography.caption.copyWith(
-                  fontSize: 11,
-                  color: AppColors.textSecondaryFor(context),
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-
-            // Qty
-            Expanded(
-              flex: 2,
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  '${item.qty}',
-                  style: AppTypography.mono.copyWith(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimaryFor(context),
+    return Tooltip(
+      message: 'Double-click to edit in quick add bar',
+      waitDuration: const Duration(milliseconds: 500),
+      child: GestureDetector(
+        onDoubleTap: () {
+          ref.read(purchaseCartControllerProvider.notifier).removeAt(widget.index);
+          ref.read(purchaseEditingLineProvider.notifier).state = item;
+        },
+        child: MouseRegion(
+          onEnter: (_) => setState(() => _isHovered = true),
+          onExit: (_) => setState(() => _isHovered = false),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 100),
+            height: 38,
+            color: rowBg,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: Row(
+              children: [
+                // Index
+                Expanded(
+                  flex: 1,
+                  child: Text(
+                    '${widget.index + 1}',
+                    style: AppTypography.mono.copyWith(
+                      fontSize: 11,
+                      color: AppColors.textSecondaryFor(context),
+                    ),
                   ),
                 ),
-              ),
-            ),
 
-            // Rate
-            Expanded(
-              flex: 2,
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  '₹${item.rate.toStringAsFixed(2)}',
-                  style: AppTypography.mono.copyWith(
-                    fontSize: 12,
-                    color: AppColors.textPrimaryFor(context),
+                // Make / Manufacturer
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    item.manufacturer,
+                    style: AppTypography.caption.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimaryFor(context),
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              ),
-            ),
 
-            // Discount
-            Expanded(
-              flex: 2,
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  item.discountAmount > 0 ? '₹${item.discountAmount.toStringAsFixed(2)}' : '—',
-                  style: AppTypography.mono.copyWith(
-                    fontSize: 11,
-                    color: item.discountAmount > 0 ? AppColors.success : AppColors.textMutedFor(context),
+                // Material Name
+                Expanded(
+                  flex: 6,
+                  child: Text(
+                    item.material,
+                    style: AppTypography.body.copyWith(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimaryFor(context),
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              ),
-            ),
 
-            // Tax %
-            Expanded(
-              flex: 2,
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  '${item.taxPercent.toStringAsFixed(0)}%',
-                  style: AppTypography.mono.copyWith(
-                    fontSize: 11,
-                    color: AppColors.textSecondaryFor(context),
+                // Batch
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    item.batch.isEmpty ? '—' : item.batch,
+                    style: AppTypography.mono.copyWith(
+                      fontSize: 11,
+                      color: AppColors.textSecondaryFor(context),
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              ),
-            ),
 
-            // Total Amount
-            Expanded(
-              flex: 3,
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  '₹${item.amount.toStringAsFixed(2)}',
-                  style: AppTypography.mono.copyWith(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimaryFor(context),
+                // Packing
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    item.packing,
+                    style: AppTypography.caption.copyWith(
+                      fontSize: 11,
+                      color: AppColors.textSecondaryFor(context),
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              ),
-            ),
 
-            // Delete Action
-            SizedBox(
-              width: 36,
-              child: Center(
-                child: IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded, size: 16),
-                  color: AppColors.danger.withValues(alpha: 0.8),
-                  hoverColor: AppColors.danger.withValues(alpha: 0.1),
-                  splashRadius: 16,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  tooltip: 'Remove Line',
-                  onPressed: widget.onDelete,
+                // Qty
+                Expanded(
+                  flex: 2,
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      '${item.qty}',
+                      style: AppTypography.mono.copyWith(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimaryFor(context),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+
+                // Rate
+                Expanded(
+                  flex: 2,
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      '₹${item.rate.toStringAsFixed(2)}',
+                      style: AppTypography.mono.copyWith(
+                        fontSize: 12,
+                        color: AppColors.textPrimaryFor(context),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Discount
+                Expanded(
+                  flex: 2,
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      item.discountAmount > 0 ? '₹${item.discountAmount.toStringAsFixed(2)}' : '—',
+                      style: AppTypography.mono.copyWith(
+                        fontSize: 11,
+                        color: item.discountAmount > 0 ? AppColors.success : AppColors.textMutedFor(context),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Tax %
+                Expanded(
+                  flex: 2,
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      '${item.taxPercent.toStringAsFixed(0)}%',
+                      style: AppTypography.mono.copyWith(
+                        fontSize: 11,
+                        color: AppColors.textSecondaryFor(context),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Total Amount
+                Expanded(
+                  flex: 3,
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      '₹${item.amount.toStringAsFixed(2)}',
+                      style: AppTypography.mono.copyWith(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimaryFor(context),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Actions: Delete
+                SizedBox(
+                  width: 36,
+                  child: Center(
+                    child: IconButton(
+                      icon: const Icon(Icons.delete_outline_rounded, size: 16),
+                      color: AppColors.danger.withValues(alpha: 0.8),
+                      hoverColor: AppColors.danger.withValues(alpha: 0.1),
+                      splashRadius: 16,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      tooltip: 'Remove Line',
+                      onPressed: widget.onDelete,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

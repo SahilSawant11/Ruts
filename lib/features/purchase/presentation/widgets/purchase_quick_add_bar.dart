@@ -320,6 +320,45 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
     final borderColor = AppColors.borderFor(context);
     final liveTotal = _computeLiveTotal();
 
+    ref.listen<PurchaseLineItem?>(purchaseEditingLineProvider, (previous, next) {
+      if (next != null) {
+        final match = materials.cast<MaterialDto?>().firstWhere(
+          (m) => m?.id == next.materialId || m?.name.toLowerCase() == next.material.toLowerCase(),
+          orElse: () => null,
+        );
+
+        setState(() {
+          _selectedMaterial = match ??
+              MaterialDto(
+                id: next.materialId,
+                barcode: '',
+                name: next.material,
+                manufacturer: next.manufacturer,
+                category: 'General',
+                packing: next.packing,
+                saleRate: next.rate,
+                taxPercent: next.taxPercent,
+                stockQty: next.qty,
+              );
+          _searchController.text = next.material;
+          _packingController.text = next.packing;
+          _batchController.text = next.batch;
+          _qtyController.text = next.qty.toString();
+          _rateController.text = next.rate.toStringAsFixed(2);
+          _discountController.text = next.discountPercent.toStringAsFixed(1);
+          _taxController.text = next.taxPercent.toStringAsFixed(1);
+          _inlineError = null;
+        });
+
+        _qtyFocusNode.requestFocus();
+        _qtyController.selection = TextSelection(
+          baseOffset: 0,
+          extentOffset: _qtyController.text.length,
+        );
+        ref.read(purchaseEditingLineProvider.notifier).state = null;
+      }
+    });
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 8),
       decoration: BoxDecoration(

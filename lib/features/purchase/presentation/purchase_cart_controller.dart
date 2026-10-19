@@ -25,6 +25,13 @@ class PurchaseCartController extends StateNotifier<PurchaseCartState> {
     state = state.copyWith(items: [...state.items, item.copyWith(index: state.items.length + 1)]);
   }
 
+  void updateLine(int index, PurchaseLineItem item) {
+    if (index < 0 || index >= state.items.length) return;
+    final updated = [...state.items];
+    updated[index] = item.copyWith(index: index + 1);
+    state = state.copyWith(items: updated);
+  }
+
   void removeAt(int index) {
     final updated = [...state.items]..removeAt(index);
     final reindexed = [for (var i = 0; i < updated.length; i++) updated[i].copyWith(index: i + 1)];
@@ -36,3 +43,6 @@ class PurchaseCartController extends StateNotifier<PurchaseCartState> {
 
 final purchaseCartControllerProvider =
     StateNotifierProvider<PurchaseCartController, PurchaseCartState>((ref) => PurchaseCartController());
+
+/// Holds the purchase line item currently moved up into the quick add bar for editing.
+final purchaseEditingLineProvider = StateProvider<PurchaseLineItem?>((ref) => null);

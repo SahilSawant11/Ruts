@@ -172,32 +172,41 @@ class LocalSalesRepository {
     });
   }
 
-  Future<void> returnSalesBill(String billId, {List<int>? lineNumbers}) async {
+  Future<void> returnSalesBill(
+    String billId, {
+    List<int>? lineNumbers,
+    Map<int, int>? lineQuantities,
+  }) async {
     await _db.transaction(() async {
       final allLineItems = await (_db.select(_db.cachedSaleLineItems)
             ..where((tbl) => tbl.salesBillId.equals(billId)))
           .get();
 
-      final returningItems = (lineNumbers == null || lineNumbers.isEmpty)
-          ? allLineItems
-          : allLineItems.where((li) => lineNumbers.contains(li.lineNumber)).toList();
+      if (allLineItems.isEmpty) return;
 
-      final isFullReturn = returningItems.length >= allLineItems.length;
+      final selectedLineNumbers = lineQuantities != null
+          ? lineQuantities.keys.toSet()
+          : (lineNumbers != null ? lineNumbers.toSet() : allLineItems.map((e) => e.lineNumber).toSet());
 
-      var remoteSucceeded = false;
-      if (!AppConfig.offlineOnly && isFullReturn) {
-        try {
-          await _remote.returnSalesBill(billId);
-          remoteSucceeded = true;
-        } on ApiException catch (e) {
-          if (e.statusCode != null && e.statusCode != 404) {
-            rethrow;
-          }
-        }
-      }
+      final returningItems = allLineItems.where((li) => selectedLineNumbers.contains(li.lineNumber)).toList();
+      if (returningItems.isEmpty) return;
 
-      // Restore stock for returned sale items
+      var allItemsFullyReturned = returningItems.length >= allLineItems.length;
+      final fullyReturnedLineNumbers = <int>[];
+
+      // Restore stock and handle partial vs full line returns
       for (final item in returningItems) {
+        final returnQty = (lineQuantities != null && lineQuantities.containsKey(item.lineNumber))
+            ? lineQuantities[item.lineNumber]!.clamp(1, item.quantity)
+            : item.quantity;
+
+        if (returnQty < item.quantity) {
+          allItemsFullyReturned = false;
+        } else {
+          fullyReturnedLineNumbers.add(item.lineNumber);
+        }
+
+        // Restore stock by exact returnQty
         if (item.materialId != null) {
           final stock = await (_db.select(_db.cachedInventoryStocks)
                 ..where((tbl) => tbl.materialId.equals(item.materialId!)))
@@ -208,10 +217,45 @@ class LocalSalesRepository {
                   ..where((tbl) => tbl.materialId.equals(item.materialId!)))
                 .write(
               CachedInventoryStocksCompanion(
-                qtyOnHand: Value(stock.qtyOnHand + item.quantity),
+                qtyOnHand: Value(stock.qtyOnHand + returnQty),
                 updatedAt: Value(DateTime.now().toUtc()),
               ),
             );
+          }
+        }
+
+        // If line is partially returned, update the line item in DB
+        if (returnQty < item.quantity) {
+          final remainingQty = item.quantity - returnQty;
+          final base = remainingQty * item.rate;
+          final discAmt = base * (item.discountPercent / 100.0);
+          final taxable = base - discAmt;
+          final taxAmt = taxable * (item.taxPercent / 100.0);
+          final lineAmt = taxable + taxAmt;
+
+          await (_db.update(_db.cachedSaleLineItems)
+                ..where((tbl) => tbl.salesBillId.equals(billId) & tbl.lineNumber.equals(item.lineNumber)))
+              .write(
+            CachedSaleLineItemsCompanion(
+              quantity: Value(remainingQty),
+              discountAmount: Value(discAmt),
+              taxAmount: Value(taxAmt),
+              amount: Value(lineAmt),
+            ),
+          );
+        }
+      }
+
+      final isFullReturn = allItemsFullyReturned && fullyReturnedLineNumbers.length == allLineItems.length;
+
+      var remoteSucceeded = false;
+      if (!AppConfig.offlineOnly && isFullReturn) {
+        try {
+          await _remote.returnSalesBill(billId);
+          remoteSucceeded = true;
+        } on ApiException catch (e) {
+          if (e.statusCode != null && e.statusCode != 404) {
+            rethrow;
           }
         }
       }
@@ -234,17 +278,23 @@ class LocalSalesRepository {
               );
         }
       } else {
-        final returningLineNumbers = returningItems.map((e) => e.lineNumber).toList();
-        await (_db.delete(_db.cachedSaleLineItems)
-              ..where((tbl) => tbl.salesBillId.equals(billId) & tbl.lineNumber.isIn(returningLineNumbers)))
-            .go();
+        if (fullyReturnedLineNumbers.isNotEmpty) {
+          await (_db.delete(_db.cachedSaleLineItems)
+                ..where((tbl) => tbl.salesBillId.equals(billId) & tbl.lineNumber.isIn(fullyReturnedLineNumbers)))
+              .go();
+        }
 
-        final remainingLineItems = allLineItems.where((li) => !lineNumbers!.contains(li.lineNumber)).toList();
+        final remainingLineItems = await (_db.select(_db.cachedSaleLineItems)
+              ..where((tbl) => tbl.salesBillId.equals(billId)))
+            .get();
+
         final newTotalAmount = remainingLineItems.fold<double>(0.0, (sum, i) => sum + i.amount);
+        final newTotalTax = remainingLineItems.fold<double>(0.0, (sum, i) => sum + i.taxAmount);
 
         await (_db.update(_db.cachedSalesBills)..where((tbl) => tbl.id.equals(billId))).write(
           CachedSalesBillsCompanion(
             totalAmount: Value(newTotalAmount),
+            totalTax: Value(newTotalTax),
             updatedAt: Value(DateTime.now().toUtc()),
           ),
         );

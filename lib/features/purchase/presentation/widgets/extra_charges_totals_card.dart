@@ -7,6 +7,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
+import '../../../dashboard/data/dashboard_providers.dart';
 import '../../../inventory/data/inventory_providers.dart';
 import '../../../masters/data/masters_providers.dart';
 import '../../data/models/create_purchase_request.dart';
@@ -166,6 +167,7 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
       ref.invalidate(inventoryOverviewProvider);
       ref.invalidate(inventoryManufacturerOptionsProvider);
       ref.invalidate(filteredInventoryOverviewProvider);
+      ref.invalidate(dashboardSummaryProvider);
 
       ref.read(purchaseCartControllerProvider.notifier).clear();
       ref.read(purchaseFormControllerProvider.notifier).reset();
@@ -175,9 +177,7 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
 
       if (!mounted) return;
       _showSnack(
-        result.isPendingSync
-            ? 'Purchase queued offline · ${result.lineItemCount} item(s) will sync when back online.'
-            : 'Purchase saved · ${result.lineItemCount} item(s) added to inventory.',
+        'Purchase saved successfully · ${result.lineItemCount} item(s) added to inventory.',
       );
     } on ApiException catch (e) {
       if (!mounted) return;

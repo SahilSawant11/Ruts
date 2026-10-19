@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../../../../shared/widgets/badges/status_chip.dart';
+// import '../../../../shared/widgets/badges/status_chip.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
 import '../../../masters/data/models/supplier_dto.dart';
@@ -63,8 +63,8 @@ class _BillDetailsCardState extends ConsumerState<BillDetailsCard> {
             mainAxisSize: MainAxisSize.min,
             children: [
               AppTextField(
-                label: 'NOTE NO.',
-                hint: 'e.g. GRN-019',
+                label: 'Remark',
+                hint: '',
                 controller: noteController,
               ),
               const SizedBox(height: AppSpacing.sm),
@@ -75,8 +75,8 @@ class _BillDetailsCardState extends ConsumerState<BillDetailsCard> {
               ),
               const SizedBox(height: AppSpacing.sm),
               AppTextField(
-                label: 'ST NO.',
-                hint: 'e.g. ST-MH07',
+                label: 'Vehicle NO.',
+                hint: 'e.g. MH12-PS-0211',
                 controller: stController,
               ),
             ],
@@ -101,7 +101,7 @@ class _BillDetailsCardState extends ConsumerState<BillDetailsCard> {
   Widget build(BuildContext context) {
     final form = ref.read(purchaseFormControllerProvider.notifier);
     final formState = ref.watch(purchaseFormControllerProvider);
-    final pendingSyncAsync = ref.watch(pendingPurchaseSyncCountProvider);
+    // final pendingSyncAsync = ref.watch(pendingPurchaseSyncCountProvider);
 
     final isDark = AppColors.isDark(context);
     final stripBg = isDark ? AppColors.surfaceFor(context) : AppColors.surfaceAltFor(context);
@@ -149,7 +149,7 @@ class _BillDetailsCardState extends ConsumerState<BillDetailsCard> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'CHALLAN NO',
+                  'INVOICE NO',
                   style: AppTypography.label.copyWith(
                     fontSize: 9.5,
                     letterSpacing: 0.5,
@@ -294,13 +294,13 @@ class _BillDetailsCardState extends ConsumerState<BillDetailsCard> {
           ),
           _divider(borderColor),
 
-          // Trailing: Offline status badge if queued
-          pendingSyncAsync.maybeWhen(
-            data: (count) => count > 0
-                ? const StatusChip(label: 'Queued offline', tone: StatusChipTone.neutral)
-                : const SizedBox.shrink(),
-            orElse: () => const SizedBox.shrink(),
-          ),
+          // Trailing: Offline status badge if queued (commented out for offline MVP)
+          // pendingSyncAsync.maybeWhen(
+          //   data: (count) => count > 0
+          //       ? const StatusChip(label: 'Queued offline', tone: StatusChipTone.neutral)
+          //       : const SizedBox.shrink(),
+          //   orElse: () => const SizedBox.shrink(),
+          // ),
         ],
       ),
     );

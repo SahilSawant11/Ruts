@@ -33,18 +33,29 @@ class PurchaseLineItem {
   double get taxAmount => taxableAmount * taxPercent / 100;
   double get amount => taxableAmount + taxAmount;
 
-  PurchaseLineItem copyWith({int? index}) {
+  PurchaseLineItem copyWith({
+    int? index,
+    String? materialId,
+    String? manufacturer,
+    String? material,
+    String? batch,
+    String? packing,
+    int? qty,
+    double? rate,
+    double? discountPercent,
+    double? taxPercent,
+  }) {
     return PurchaseLineItem(
       index: index ?? this.index,
-      materialId: materialId,
-      manufacturer: manufacturer,
-      material: material,
-      batch: batch,
-      packing: packing,
-      qty: qty,
-      rate: rate,
-      discountPercent: discountPercent,
-      taxPercent: taxPercent,
+      materialId: materialId ?? this.materialId,
+      manufacturer: manufacturer ?? this.manufacturer,
+      material: material ?? this.material,
+      batch: batch ?? this.batch,
+      packing: packing ?? this.packing,
+      qty: qty ?? this.qty,
+      rate: rate ?? this.rate,
+      discountPercent: discountPercent ?? this.discountPercent,
+      taxPercent: taxPercent ?? this.taxPercent,
     );
   }
 }

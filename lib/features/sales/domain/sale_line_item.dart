@@ -64,7 +64,15 @@ class SaleLineItem {
     );
   }
 
-  SaleLineItem copyWith({int? index, int? qty}) {
+  SaleLineItem copyWith({
+    int? index,
+    int? qty,
+    double? rate,
+    double? discountPercent,
+    double? taxPercent,
+    String? batch,
+    String? pack,
+  }) {
     return SaleLineItem(
       index: index ?? this.index,
       materialId: materialId,
@@ -72,12 +80,12 @@ class SaleLineItem {
       type: type,
       manufacturer: manufacturer,
       material: material,
-      batch: batch,
-      pack: pack,
+      batch: batch ?? this.batch,
+      pack: pack ?? this.pack,
       qty: qty ?? this.qty,
-      rate: rate,
-      discountPercent: discountPercent,
-      taxPercent: taxPercent,
+      rate: rate ?? this.rate,
+      discountPercent: discountPercent ?? this.discountPercent,
+      taxPercent: taxPercent ?? this.taxPercent,
     );
   }
 }

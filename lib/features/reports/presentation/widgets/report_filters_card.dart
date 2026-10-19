@@ -111,9 +111,12 @@ class _ReportFiltersCardState extends ConsumerState<ReportFiltersCard> {
       999,
     );
 
+    final selectedCategory = (_category == null || _category == 'ALL') ? null : _category;
+    final selectedManufacturer = (_manufacturer == null || _manufacturer == 'ALL') ? null : _manufacturer;
+
     ref.read(reportDateRangeProvider.notifier).state = DateTimeRange(start: from, end: to);
-    ref.read(reportCategoryFilterProvider.notifier).state = _category;
-    ref.read(reportManufacturerFilterProvider.notifier).state = _manufacturer;
+    ref.read(reportCategoryFilterProvider.notifier).state = selectedCategory;
+    ref.read(reportManufacturerFilterProvider.notifier).state = selectedManufacturer;
     ref.invalidate(salesReportProvider);
   }
 
@@ -160,7 +163,7 @@ class _ReportFiltersCardState extends ConsumerState<ReportFiltersCard> {
                     children: [
                       if (widget.tabs != null) widget.tabs!,
                       if (widget.trailingAction != null) ...[
-                        const SizedBox(width: AppSpacing.sm),
+                        const SizedBox(width: AppSpacing.md),
                         widget.trailingAction!,
                       ],
                     ],
@@ -170,7 +173,7 @@ class _ReportFiltersCardState extends ConsumerState<ReportFiltersCard> {
           const SizedBox(height: AppSpacing.md),
           LayoutBuilder(
             builder: (context, constraints) {
-              final isWide = constraints.maxWidth >= 1050;
+              final isWide = constraints.maxWidth >= 900;
 
               final fromDateWidget = _pickerField(
                 label: 'FROM DATE',
@@ -205,11 +208,11 @@ class _ReportFiltersCardState extends ConsumerState<ReportFiltersCard> {
                 error: (_, __) => const SizedBox.shrink(),
                 data: (categories) => AppDropdown<String>(
                   label: 'CATEGORY',
-                  items: categories.map((category) => category.name).toList(),
+                  items: ['ALL', ...categories.map((category) => category.name)],
                   itemLabel: (value) => value,
-                  value: _category,
+                  value: (_category == null || _category == 'ALL') ? 'ALL' : _category,
                   hint: 'All categories',
-                  onChanged: (value) => setState(() => _category = value),
+                  onChanged: (value) => setState(() => _category = (value == 'ALL' ? null : value)),
                 ),
               );
 
@@ -218,11 +221,11 @@ class _ReportFiltersCardState extends ConsumerState<ReportFiltersCard> {
                 error: (_, __) => const SizedBox.shrink(),
                 data: (manufacturers) => AppDropdown<String>(
                   label: 'MANUFACTURER',
-                  items: manufacturers.map((manufacturer) => manufacturer.name).toList(),
+                  items: ['ALL', ...manufacturers.map((manufacturer) => manufacturer.name)],
                   itemLabel: (value) => value,
-                  value: _manufacturer,
+                  value: (_manufacturer == null || _manufacturer == 'ALL') ? 'ALL' : _manufacturer,
                   hint: 'All manufacturers',
-                  onChanged: (value) => setState(() => _manufacturer = value),
+                  onChanged: (value) => setState(() => _manufacturer = (value == 'ALL' ? null : value)),
                 ),
               );
 

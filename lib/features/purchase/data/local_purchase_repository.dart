@@ -176,7 +176,11 @@ class LocalPurchaseRepository {
     return result;
   }
 
-  Future<void> returnPurchaseBill(String billId, {List<int>? lineNumbers}) async {
+  Future<void> returnPurchaseBill(
+    String billId, {
+    List<int>? lineNumbers,
+    Map<int, int>? lineQuantities,
+  }) async {
     await _db.transaction(() async {
       final allLineItems = await (_db.select(_db.cachedPurchaseLineItems)
             ..where((tbl) => tbl.purchaseBillId.equals(billId)))
@@ -184,11 +188,60 @@ class LocalPurchaseRepository {
 
       if (allLineItems.isEmpty) return;
 
-      final returningItems = (lineNumbers == null || lineNumbers.isEmpty)
-          ? allLineItems
-          : allLineItems.where((li) => lineNumbers.contains(li.lineNumber)).toList();
+      final selectedLineNumbers = lineQuantities != null
+          ? lineQuantities.keys.toSet()
+          : (lineNumbers != null ? lineNumbers.toSet() : allLineItems.map((e) => e.lineNumber).toSet());
 
-      final isFullReturn = returningItems.length >= allLineItems.length;
+      final returningItems = allLineItems.where((li) => selectedLineNumbers.contains(li.lineNumber)).toList();
+      if (returningItems.isEmpty) return;
+
+      var allItemsFullyReturned = returningItems.length >= allLineItems.length;
+      final fullyReturnedLineNumbers = <int>[];
+
+      // Deduct stock for returned purchase items and update line items
+      for (final item in returningItems) {
+        final returnQty = (lineQuantities != null && lineQuantities.containsKey(item.lineNumber))
+            ? lineQuantities[item.lineNumber]!.clamp(1, item.qty)
+            : item.qty;
+
+        if (returnQty < item.qty) {
+          allItemsFullyReturned = false;
+        } else {
+          fullyReturnedLineNumbers.add(item.lineNumber);
+        }
+
+        final stock = await (_db.select(_db.cachedInventoryStocks)
+              ..where((tbl) => tbl.materialId.equals(item.materialId)))
+            .getSingleOrNull();
+
+        if (stock != null) {
+          await (_db.update(_db.cachedInventoryStocks)
+                ..where((tbl) => tbl.materialId.equals(item.materialId)))
+              .write(
+            CachedInventoryStocksCompanion(
+              qtyOnHand: Value(stock.qtyOnHand - returnQty),
+              updatedAt: Value(DateTime.now().toUtc()),
+            ),
+          );
+        }
+
+        // If line is partially returned, update quantity and amount in DB
+        if (returnQty < item.qty) {
+          final remainingQty = item.qty - returnQty;
+          final newAmount = remainingQty * item.rate;
+
+          await (_db.update(_db.cachedPurchaseLineItems)
+                ..where((tbl) => tbl.purchaseBillId.equals(billId) & tbl.lineNumber.equals(item.lineNumber)))
+              .write(
+            CachedPurchaseLineItemsCompanion(
+              qty: Value(remainingQty),
+              amount: Value(newAmount),
+            ),
+          );
+        }
+      }
+
+      final isFullReturn = allItemsFullyReturned && fullyReturnedLineNumbers.length == allLineItems.length;
 
       var remoteSucceeded = false;
       if (!AppConfig.offlineOnly && isFullReturn) {
@@ -199,24 +252,6 @@ class LocalPurchaseRepository {
           if (e.statusCode != null && e.statusCode != 404) {
             rethrow;
           }
-        }
-      }
-
-      // Deduct stock for returned purchase items
-      for (final item in returningItems) {
-        final stock = await (_db.select(_db.cachedInventoryStocks)
-              ..where((tbl) => tbl.materialId.equals(item.materialId)))
-            .getSingleOrNull();
-
-        if (stock != null) {
-          await (_db.update(_db.cachedInventoryStocks)
-                ..where((tbl) => tbl.materialId.equals(item.materialId)))
-              .write(
-            CachedInventoryStocksCompanion(
-              qtyOnHand: Value(stock.qtyOnHand - item.qty),
-              updatedAt: Value(DateTime.now().toUtc()),
-            ),
-          );
         }
       }
 
@@ -238,12 +273,16 @@ class LocalPurchaseRepository {
               );
         }
       } else {
-        final returningLineNumbers = returningItems.map((e) => e.lineNumber).toList();
-        await (_db.delete(_db.cachedPurchaseLineItems)
-              ..where((tbl) => tbl.purchaseBillId.equals(billId) & tbl.lineNumber.isIn(returningLineNumbers)))
-            .go();
+        if (fullyReturnedLineNumbers.isNotEmpty) {
+          await (_db.delete(_db.cachedPurchaseLineItems)
+                ..where((tbl) => tbl.purchaseBillId.equals(billId) & tbl.lineNumber.isIn(fullyReturnedLineNumbers)))
+              .go();
+        }
 
-        final remainingLineItems = allLineItems.where((li) => !lineNumbers!.contains(li.lineNumber)).toList();
+        final remainingLineItems = await (_db.select(_db.cachedPurchaseLineItems)
+              ..where((tbl) => tbl.purchaseBillId.equals(billId)))
+            .get();
+
         final newTotalAmount = remainingLineItems.fold<double>(0.0, (sum, i) => sum + i.amount);
 
         final bill = await (_db.select(_db.cachedPurchaseBills)..where((tbl) => tbl.id.equals(billId))).getSingleOrNull();

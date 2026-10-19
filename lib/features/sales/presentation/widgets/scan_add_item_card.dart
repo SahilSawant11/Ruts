@@ -5,6 +5,9 @@ import '../../../../core/network/api_exception.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../masters/data/masters_providers.dart';
+import '../../data/models/material_dto.dart';
+import '../../domain/sale_line_item.dart';
 import '../cart_controller.dart';
 import '../sales_checkout_service.dart';
 
@@ -12,6 +15,7 @@ import '../sales_checkout_service.dart';
 /// Features the brand's pebble-like styling, purple accent tokens,
 /// auto-focus barcode input, Qty field, and "+ Add" button.
 /// Supports F1 (focus scan) and F4 (focus qty) hotkeys.
+/// Features instant autocomplete suggestions dropdown on typing.
 class ScanAddItemCard extends ConsumerStatefulWidget {
   const ScanAddItemCard({super.key, this.compact = true});
 
@@ -27,6 +31,11 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
   final _barcodeFocusNode = FocusNode();
   final _qtyFocusNode = FocusNode();
   bool _isSubmitting = false;
+
+  final _portalController = OverlayPortalController();
+  final _layerLink = LayerLink();
+  List<MaterialDto> _suggestions = [];
+  int _highlightedSuggestionIndex = 0;
 
   @override
   void initState() {
@@ -66,6 +75,11 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
       );
       return true;
     } else if (isEscape) {
+      if (_portalController.isShowing) {
+        _portalController.hide();
+        setState(() => _suggestions = []);
+        return true;
+      }
       _barcodeController.clear();
       _qtyController.text = '1';
       ref.read(cartControllerProvider.notifier).clear();
@@ -75,10 +89,91 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
     return false;
   }
 
+  KeyEventResult _handleBarcodeKey(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+
+    if (_portalController.isShowing && _suggestions.isNotEmpty) {
+      if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+        setState(() {
+          _highlightedSuggestionIndex =
+              (_highlightedSuggestionIndex + 1) % _suggestions.length;
+        });
+        return KeyEventResult.handled;
+      }
+      if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+        setState(() {
+          _highlightedSuggestionIndex =
+              (_highlightedSuggestionIndex - 1 + _suggestions.length) % _suggestions.length;
+        });
+        return KeyEventResult.handled;
+      }
+      if (event.logicalKey == LogicalKeyboardKey.enter ||
+          event.logicalKey == LogicalKeyboardKey.numpadEnter) {
+        if (_highlightedSuggestionIndex < _suggestions.length) {
+          _onSuggestionSelected(_suggestions[_highlightedSuggestionIndex]);
+          return KeyEventResult.handled;
+        }
+      }
+      if (event.logicalKey == LogicalKeyboardKey.escape) {
+        _portalController.hide();
+        setState(() => _suggestions = []);
+        return KeyEventResult.handled;
+      }
+    }
+
+    if (event.logicalKey == LogicalKeyboardKey.enter ||
+        event.logicalKey == LogicalKeyboardKey.numpadEnter) {
+      if (_qtyController.text.trim() == '1') {
+        _submit();
+      } else {
+        _qtyFocusNode.requestFocus();
+      }
+      return KeyEventResult.handled;
+    }
+
+    return KeyEventResult.ignored;
+  }
+
+  void _onBarcodeChanged(String query, List<MaterialDto> allMaterials) {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      if (_portalController.isShowing) _portalController.hide();
+      setState(() => _suggestions = []);
+      return;
+    }
+
+    final q = trimmed.toLowerCase();
+    final matches = allMaterials.where((m) =>
+        m.id.toLowerCase().contains(q) ||
+        m.barcode.toLowerCase().contains(q) ||
+        m.name.toLowerCase().contains(q) ||
+        m.packing.toLowerCase().contains(q)).take(8).toList();
+
+    setState(() {
+      _suggestions = matches;
+      _highlightedSuggestionIndex = 0;
+    });
+
+    if (!_portalController.isShowing && matches.isNotEmpty) {
+      _portalController.show();
+    } else if (matches.isEmpty && _portalController.isShowing) {
+      _portalController.hide();
+    }
+  }
+
+  Future<void> _onSuggestionSelected(MaterialDto material) async {
+    if (_portalController.isShowing) _portalController.hide();
+    setState(() => _suggestions = []);
+    _barcodeController.text = material.barcode;
+    await _submit();
+  }
+
   Future<void> _submit() async {
     if (_isSubmitting) return;
     final barcode = _barcodeController.text.trim();
     if (barcode.isEmpty) return;
+
+    if (_portalController.isShowing) _portalController.hide();
 
     _isSubmitting = true;
     try {
@@ -115,9 +210,7 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  result.isPendingSync
-                      ? '12-bottle limit reached · Bill ${result.billNo} auto-checked out and queued offline.'
-                      : '12-bottle limit reached · Auto checkout completed for Bill ${result.billNo}!',
+                  '12-bottle limit reached · Auto checkout completed for Bill ${result.billNo}!',
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
@@ -138,12 +231,26 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
       );
     }
   }
-
   @override
   Widget build(BuildContext context) {
     final isScanning = ref.watch(cartControllerProvider.select((s) => s.isScanning));
     final scanError = ref.watch(cartControllerProvider.select((s) => s.scanError));
+    final materialsAsync = ref.watch(materialsListProvider);
+    final materials = materialsAsync.asData?.value ?? [];
     final isDark = AppColors.isDark(context);
+
+    ref.listen<SaleLineItem?>(salesEditingLineProvider, (previous, next) {
+      if (next != null) {
+        _barcodeController.text = next.barcode;
+        _qtyController.text = next.qty.toString();
+        _qtyFocusNode.requestFocus();
+        _qtyController.selection = TextSelection(
+          baseOffset: 0,
+          extentOffset: _qtyController.text.length,
+        );
+        ref.read(salesEditingLineProvider.notifier).state = null;
+      }
+    });
 
     final barBg = isDark ? AppColors.surfaceFor(context) : AppColors.surfaceFor(context);
     final borderColor = AppColors.borderFor(context);
@@ -159,107 +266,112 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
         children: [
           Row(
             children: [
-              // Pebble Barcode Input Container
+              // Pebble Barcode Input Container with Autocomplete Suggestions
               Expanded(
-                child: Container(
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: AppColors.backgroundFor(context),
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Row(
-                    children: [
-                      // Purple BARCODE Pill Badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(AppRadius.sm),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.qr_code_scanner_rounded, size: 15, color: Colors.white),
-                            SizedBox(width: 5),
-                            Text(
-                              'BARCODE',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 11,
-                                letterSpacing: 0.3,
+                child: CompositedTransformTarget(
+                  link: _layerLink,
+                  child: OverlayPortal(
+                    controller: _portalController,
+                    overlayChildBuilder: (context) => _buildSuggestionsOverlay(context),
+                    child: Container(
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: AppColors.backgroundFor(context),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Row(
+                        children: [
+                          // Purple BARCODE Pill Badge
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(AppRadius.sm),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.qr_code_scanner_rounded, size: 15, color: Colors.white),
+                                SizedBox(width: 5),
+                                Text(
+                                  'BARCODE',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 11,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+
+                          // Input Text Field with Focus & Autocomplete listener
+                          Expanded(
+                            child: Focus(
+                              onKeyEvent: _handleBarcodeKey,
+                              child: TextField(
+                                controller: _barcodeController,
+                                focusNode: _barcodeFocusNode,
+                                onChanged: (val) => _onBarcodeChanged(val, materials),
+                                textInputAction: TextInputAction.next,
+                                style: AppTypography.mono.copyWith(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimaryFor(context),
+                                ),
+                                decoration: InputDecoration(
+                                  isDense: true,
+                                  filled: false,
+                                  border: InputBorder.none,
+                                  enabledBorder: InputBorder.none,
+                                  focusedBorder: InputBorder.none,
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                                  hintText: 'Scan barcode, type SCM code or item name...',
+                                  hintStyle: AppTypography.bodyMuted.copyWith(
+                                    fontSize: 12,
+                                    color: AppColors.textMutedFor(context),
+                                  ),
+                                ),
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-
-                      // Input Text Field
-                      Expanded(
-                        child: TextField(
-                          controller: _barcodeController,
-                          focusNode: _barcodeFocusNode,
-                          textInputAction: TextInputAction.next,
-                          onSubmitted: (_) {
-                            if (_qtyController.text.trim() == '1') {
-                              _submit();
-                            } else {
-                              _qtyFocusNode.requestFocus();
-                            }
-                          },
-                          style: AppTypography.mono.copyWith(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimaryFor(context),
                           ),
-                          decoration: InputDecoration(
-                            isDense: true,
-                            filled: false,
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                            hintText: 'Scan barcode or type SCM code, then press Enter...',
-                            hintStyle: AppTypography.bodyMuted.copyWith(
-                              fontSize: 12,
-                              color: AppColors.textMutedFor(context),
+
+                          // Trailing Actions (Scanner progress or paste)
+                          if (isScanning)
+                            const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 8),
+                              child: SizedBox(
+                                width: 15,
+                                height: 15,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                              ),
+                            )
+                          else
+                            IconButton(
+                              icon: Icon(
+                                Icons.content_paste_rounded,
+                                size: 16,
+                                color: AppColors.textSecondaryFor(context),
+                              ),
+                              tooltip: 'Paste barcode',
+                              onPressed: () async {
+                                final data = await Clipboard.getData(Clipboard.kTextPlain);
+                                final text = data?.text?.trim();
+                                if (text != null && text.isNotEmpty) {
+                                  _barcodeController.text = text;
+                                  _barcodeController.selection = TextSelection.collapsed(offset: text.length);
+                                  _barcodeFocusNode.requestFocus();
+                                  _onBarcodeChanged(text, materials);
+                                }
+                              },
                             ),
-                          ),
-                        ),
+                        ],
                       ),
-
-                      // Trailing Actions (Scanner progress or paste)
-                      if (isScanning)
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 8),
-                          child: SizedBox(
-                            width: 15,
-                            height: 15,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
-                          ),
-                        )
-                      else
-                        IconButton(
-                          icon: Icon(
-                            Icons.content_paste_rounded,
-                            size: 16,
-                            color: AppColors.textSecondaryFor(context),
-                          ),
-                          tooltip: 'Paste barcode',
-                          onPressed: () async {
-                            final data = await Clipboard.getData(Clipboard.kTextPlain);
-                            final text = data?.text?.trim();
-                            if (text != null && text.isNotEmpty) {
-                              _barcodeController.text = text;
-                              _barcodeController.selection = TextSelection.collapsed(offset: text.length);
-                              _barcodeFocusNode.requestFocus();
-                            }
-                          },
-                        ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -361,6 +473,133 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildSuggestionsOverlay(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+    return Positioned(
+      width: 480,
+      child: CompositedTransformFollower(
+        link: _layerLink,
+        targetAnchor: Alignment.bottomLeft,
+        followerAnchor: Alignment.topLeft,
+        offset: const Offset(0, 4),
+        child: Material(
+          elevation: 8,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          color: isDark ? AppColors.surfaceFor(context) : Colors.white,
+          shadowColor: Colors.black.withValues(alpha: 0.25),
+          child: Container(
+            constraints: const BoxConstraints(maxHeight: 280),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.35),
+                width: 1.5,
+              ),
+            ),
+            child: _suggestions.isEmpty
+                ? const SizedBox.shrink()
+                : ListView.separated(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    shrinkWrap: true,
+                    itemCount: _suggestions.length,
+                    separatorBuilder: (_, __) => Divider(
+                      height: 1,
+                      thickness: 0.5,
+                      color: AppColors.borderFor(context).withValues(alpha: 0.4),
+                    ),
+                    itemBuilder: (context, index) {
+                      final item = _suggestions[index];
+                      final isHighlighted = index == _highlightedSuggestionIndex;
+
+                      return InkWell(
+                        onTap: () => _onSuggestionSelected(item),
+                        child: Container(
+                          color: isHighlighted
+                              ? AppColors.primarySoftFor(context)
+                              : Colors.transparent,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                                ),
+                                child: Text(
+                                  item.id,
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      item.name,
+                                      style: AppTypography.body.copyWith(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.textPrimaryFor(context),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      [
+                                        if (item.packing.isNotEmpty) item.packing,
+                                        if (item.manufacturer.isNotEmpty) item.manufacturer,
+                                        if (item.barcode.isNotEmpty) 'BC: ${item.barcode}',
+                                      ].join(' · '),
+                                      style: AppTypography.caption.copyWith(
+                                        fontSize: 10.5,
+                                        color: AppColors.textSecondaryFor(context),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    '₹${item.saleRate.toStringAsFixed(2)}',
+                                    style: AppTypography.mono.copyWith(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                  if (item.taxPercent > 0)
+                                    Text(
+                                      'GST ${item.taxPercent.toStringAsFixed(0)}%',
+                                      style: AppTypography.caption.copyWith(
+                                        fontSize: 9.5,
+                                        color: AppColors.textMutedFor(context),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ),
       ),
     );
   }

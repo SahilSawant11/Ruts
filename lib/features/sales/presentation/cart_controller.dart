@@ -107,24 +107,43 @@ class CartController extends StateNotifier<CartState> {
   }
 
   void updateQty(int index, int newQty) {
-    if (index < 0 || index >= state.items.length) return;
+    updateLineItem(index, qty: newQty);
+  }
+
+  bool updateLineItem(
+    int index, {
+    int? qty,
+    double? rate,
+    double? taxPercent,
+    double? discountPercent,
+    String? batch,
+  }) {
+    if (index < 0 || index >= state.items.length) return false;
+    final currentItem = state.items[index];
+    final newQty = qty ?? currentItem.qty;
     if (newQty <= 0) {
       removeAt(index);
-      return;
+      return true;
     }
 
-    final currentItemQty = state.items[index].qty;
-    final newTotalQty = state.totalQty - currentItemQty + newQty;
+    final newTotalQty = state.totalQty - currentItem.qty + newQty;
     if (newTotalQty > maxBottlesLimit) {
       state = state.copyWith(
         scanError: 'Cannot exceed $maxBottlesLimit bottles per customer under excise regulations.',
       );
-      return;
+      return false;
     }
 
     final updated = [...state.items];
-    updated[index] = updated[index].copyWith(qty: newQty);
+    updated[index] = currentItem.copyWith(
+      qty: newQty,
+      rate: rate ?? currentItem.rate,
+      taxPercent: taxPercent ?? currentItem.taxPercent,
+      discountPercent: discountPercent ?? currentItem.discountPercent,
+      batch: batch ?? currentItem.batch,
+    );
     state = state.copyWith(items: updated, clearError: true);
+    return true;
   }
 
   void removeAt(int index) {
@@ -141,3 +160,6 @@ final cartControllerProvider = StateNotifierProvider<CartController, CartState>(
     return ref.read(materialLookupCacheProvider)?.findByBarcodeOrId(code);
   });
 });
+
+/// Holds the line item currently moved up into the scan input row for editing.
+final salesEditingLineProvider = StateProvider<SaleLineItem?>((ref) => null);

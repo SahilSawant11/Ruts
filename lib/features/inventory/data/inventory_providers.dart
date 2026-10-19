@@ -72,9 +72,55 @@ final inventorySearchFilterProvider = StateProvider<String>((ref) => '');
 /// dropdown. Cleared automatically whenever another status is chosen.
 final inventoryLowStockPinProvider = StateProvider<bool>((ref) => false);
 
-/// Configurable threshold for low stock (default: 10 units).
-/// Configured via the info/settings button on KPI Card 3.
-final inventoryLowStockThresholdProvider = StateProvider<int>((ref) => 10);
+/// Configurable threshold for low stock with default, category-wise, and packaging-wise rules.
+class LowStockThresholdConfig {
+  const LowStockThresholdConfig({
+    this.defaultThreshold = 10,
+    this.categoryThresholds = const {},
+    this.packagingThresholds = const {},
+  });
+
+  final int defaultThreshold;
+  final Map<String, int> categoryThresholds; // category name (case-insensitive) -> threshold
+  final Map<String, int> packagingThresholds; // size / packaging (case-insensitive) -> threshold
+
+  int getThresholdFor(String? category, String? packaging) {
+    if (packaging != null && packaging.trim().isNotEmpty) {
+      final key = packaging.trim().toUpperCase();
+      if (packagingThresholds.containsKey(key)) {
+        return packagingThresholds[key]!;
+      }
+    }
+    if (category != null && category.trim().isNotEmpty) {
+      final key = category.trim().toUpperCase();
+      if (categoryThresholds.containsKey(key)) {
+        return categoryThresholds[key]!;
+      }
+    }
+    return defaultThreshold;
+  }
+
+  LowStockThresholdConfig copyWith({
+    int? defaultThreshold,
+    Map<String, int>? categoryThresholds,
+    Map<String, int>? packagingThresholds,
+  }) {
+    return LowStockThresholdConfig(
+      defaultThreshold: defaultThreshold ?? this.defaultThreshold,
+      categoryThresholds: categoryThresholds ?? this.categoryThresholds,
+      packagingThresholds: packagingThresholds ?? this.packagingThresholds,
+    );
+  }
+}
+
+final lowStockThresholdConfigProvider = StateProvider<LowStockThresholdConfig>(
+  (ref) => const LowStockThresholdConfig(),
+);
+
+/// Default threshold integer provider (used for legacy or global default queries).
+final inventoryLowStockThresholdProvider = Provider<int>((ref) {
+  return ref.watch(lowStockThresholdConfigProvider).defaultThreshold;
+});
 
 final inventoryManufacturerOptionsProvider = FutureProvider<List<String>>((ref) async {
   final items = await ref.watch(manufacturersListProvider.future);
@@ -87,7 +133,7 @@ final filteredInventoryOverviewProvider = FutureProvider<List<InventoryOverviewI
   final manufacturer = ref.watch(inventoryManufacturerFilterProvider);
   final status = ref.watch(inventoryStatusFilterProvider);
   final lowStockPinned = ref.watch(inventoryLowStockPinProvider);
-  final lowStockThreshold = ref.watch(inventoryLowStockThresholdProvider);
+  final thresholdConfig = ref.watch(lowStockThresholdConfigProvider);
   final search = ref.watch(inventorySearchFilterProvider).trim().toLowerCase();
 
   // KPI card 3 tap overrides the status dropdown with 'Low Stock'.
@@ -98,10 +144,11 @@ final filteredInventoryOverviewProvider = FutureProvider<List<InventoryOverviewI
     final manufacturerMatch = manufacturer == null ||
         manufacturer.isEmpty ||
         item.manufacturer == manufacturer;
+    final itemThreshold = thresholdConfig.getThresholdFor(item.category, item.packing);
     final statusMatch = switch (effectiveStatus) {
       null || '' || 'All' => true,
-      'In Stock' => item.isInStockFor(lowStockThreshold),
-      'Low Stock' => item.isAtRiskFor(lowStockThreshold),
+      'In Stock' => item.isInStockFor(itemThreshold),
+      'Low Stock' => item.isAtRiskFor(itemThreshold),
       'Out of Stock' => item.isOutOfStock,
       _ => true,
     };

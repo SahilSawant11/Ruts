@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/auth/auth_controller.dart';
-import '../../../core/config/app_config.dart';
+// import '../../../core/config/app_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../features/dashboard/data/dashboard_providers.dart';
 import 'sidebar_item.dart';
 
 /// Apple Music macOS-style navigation sidebar.
@@ -76,6 +77,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                     active: location == '/dashboard',
                     collapsed: collapsed,
                     onTap: () {
+                      ref.invalidate(dashboardSummaryProvider);
                       context.go('/dashboard');
                       setState(() => _isHovered = false);
                     },
@@ -227,21 +229,21 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                     },
                   ),
 
-                  // 4. SYSTEM
-                  if (!AppConfig.offlineOnly) ...[
-                    _SectionHeader(title: 'System', collapsed: collapsed),
-                    SidebarItem(
-                      icon: Icons.sync_alt_rounded,
-                      label: 'Sync Center',
-                      shortcut: 'F12',
-                      active: location == '/sync',
-                      collapsed: collapsed,
-                      onTap: () {
-                        context.go('/sync');
-                        setState(() => _isHovered = false);
-                      },
-                    ),
-                  ],
+                  // 4. SYSTEM (Sync Center commented out for offline MVP)
+                  // if (!AppConfig.offlineOnly) ...[
+                  //   _SectionHeader(title: 'System', collapsed: collapsed),
+                  //   SidebarItem(
+                  //     icon: Icons.sync_alt_rounded,
+                  //     label: 'Sync Center',
+                  //     shortcut: 'F12',
+                  //     active: location == '/sync',
+                  //     collapsed: collapsed,
+                  //     onTap: () {
+                  //       context.go('/sync');
+                  //       setState(() => _isHovered = false);
+                  //     },
+                  //   ),
+                  // ],
                 ],
               ),
             ),

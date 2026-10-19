@@ -50,7 +50,8 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
     final selectedManufacturer = ref.watch(inventoryManufacturerFilterProvider);
     final selectedStatus = ref.watch(inventoryStatusFilterProvider);
     final lowStockPinned = ref.watch(inventoryLowStockPinProvider);
-    final lowStockThreshold = ref.watch(inventoryLowStockThresholdProvider);
+    final thresholdConfig = ref.watch(lowStockThresholdConfigProvider);
+    final lowStockThreshold = thresholdConfig.defaultThreshold;
 
     final categoryItems = categoriesAsync.maybeWhen(
       data: (items) => items.map((i) => i.name).toList(),
@@ -121,10 +122,10 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
                   ..sort((a, b) {
                     final ar = a.isOutOfStock
                         ? 0
-                        : (a.isAtRiskFor(lowStockThreshold) ? 1 : 2);
+                        : (a.isAtRiskFor(thresholdConfig.getThresholdFor(a.category, a.packing)) ? 1 : 2);
                     final br = b.isOutOfStock
                         ? 0
-                        : (b.isAtRiskFor(lowStockThreshold) ? 1 : 2);
+                        : (b.isAtRiskFor(thresholdConfig.getThresholdFor(b.category, b.packing)) ? 1 : 2);
                     final rc = ar.compareTo(br);
                     return rc != 0 ? rc : a.qtyOnHand.compareTo(b.qtyOnHand);
                   });
@@ -137,11 +138,14 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
                     thickness: 1,
                     color: AppColors.borderFor(context),
                   ),
-                  itemBuilder: (context, index) => _dataRow(
-                    context,
-                    sorted[index],
-                    lowStockThreshold: lowStockThreshold,
-                  ),
+                  itemBuilder: (context, index) {
+                    final item = sorted[index];
+                    return _dataRow(
+                      context,
+                      item,
+                      lowStockThreshold: thresholdConfig.getThresholdFor(item.category, item.packing),
+                    );
+                  },
                 );
               },
             ),
@@ -159,7 +163,7 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
               final totalValue =
                   items.fold<double>(0, (s, i) => s + i.onHandValue);
               final lowStockCount =
-                  items.where((i) => i.isAtRiskFor(lowStockThreshold)).length;
+                  items.where((i) => i.isAtRiskFor(thresholdConfig.getThresholdFor(i.category, i.packing))).length;
               return _footer(context, items.length, totalValue, lowStockCount,
                   lowStockThreshold);
             },
@@ -342,6 +346,34 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
           ),
         ],
         const Spacer(),
+        Tooltip(
+          message: 'Refresh stock data',
+          child: Material(
+            color: isDark ? Colors.white.withValues(alpha: 0.06) : AppColors.surfaceAltFor(context),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            child: InkWell(
+              onTap: () {
+                ref.invalidate(inventoryOverviewProvider);
+                ref.invalidate(filteredInventoryOverviewProvider);
+                ref.invalidate(inventoryListProvider);
+              },
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              child: Container(
+                height: 40,
+                width: 40,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                  border: Border.all(color: AppColors.borderFor(context)),
+                ),
+                child: Icon(
+                  Icons.refresh_rounded,
+                  size: 18,
+                  color: AppColors.textPrimaryFor(context),
+                ),
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }

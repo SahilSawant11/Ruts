@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../features/dashboard/data/dashboard_providers.dart';
 import 'app_sidebar.dart';
 import 'app_status_bar.dart';
 import 'app_top_header.dart';
@@ -42,20 +44,29 @@ const _branchMeta = [
 /// Listens to global hardware function keys (F1 - F12) to immediately switch
 /// between screens from anywhere in the application, even when input fields
 /// are focused.
-class AppShell extends StatefulWidget {
+class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
   @override
-  State<AppShell> createState() => _AppShellState();
+  ConsumerState<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
+class _AppShellState extends ConsumerState<AppShell> {
   @override
   void initState() {
     super.initState();
     HardwareKeyboard.instance.addHandler(_handleGlobalKey);
+  }
+
+  @override
+  void didUpdateWidget(AppShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.navigationShell.currentIndex == 0 &&
+        oldWidget.navigationShell.currentIndex != 0) {
+      ref.invalidate(dashboardSummaryProvider);
+    }
   }
 
   @override
@@ -98,6 +109,7 @@ class _AppShellState extends State<AppShell> {
     }
 
     if (_matches(event, LogicalKeyboardKey.f1, PhysicalKeyboardKey.f1)) {
+      ref.invalidate(dashboardSummaryProvider);
       widget.navigationShell.goBranch(0);
       return true;
     } else if (_matches(event, LogicalKeyboardKey.f2, PhysicalKeyboardKey.f2)) {
@@ -139,6 +151,9 @@ class _AppShellState extends State<AppShell> {
   }
 
   void _triggerBranch(int targetBranch) {
+    if (targetBranch == 0) {
+      ref.invalidate(dashboardSummaryProvider);
+    }
     final currentBranch = widget.navigationShell.currentIndex;
     if (currentBranch == targetBranch) return;
     widget.navigationShell.goBranch(targetBranch);

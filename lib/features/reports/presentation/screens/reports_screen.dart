@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../../../../shared/widgets/badges/status_chip.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
-import '../../../sales/data/sales_providers.dart';
+import '../../../masters/data/masters_providers.dart';
 import '../../data/reports_providers.dart';
 import '../widgets/daily_sale_report_table.dart';
 import '../widgets/report_filters_card.dart';
@@ -84,8 +83,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final pendingSyncAsync = ref.watch(pendingSalesSyncCountProvider);
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
@@ -96,16 +93,27 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             trailingAction: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                pendingSyncAsync.when(
-                  loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
-                  data: (count) => count > 0
-                      ? const Padding(
-                          padding: EdgeInsets.only(right: AppSpacing.sm),
-                          child: StatusChip(label: 'Queued offline', tone: StatusChipTone.neutral),
-                        )
-                      : const SizedBox.shrink(),
+                // Offline MVP: Queued offline chip commented out
+                // pendingSyncAsync.when(
+                //   loading: () => const SizedBox.shrink(),
+                //   error: (_, __) => const SizedBox.shrink(),
+                //   data: (count) => count > 0
+                //       ? const Padding(
+                //           padding: EdgeInsets.only(right: AppSpacing.sm),
+                //           child: StatusChip(label: 'Queued offline', tone: StatusChipTone.neutral),
+                //         )
+                //       : const SizedBox.shrink(),
+                // ),
+                SecondaryButton(
+                  label: 'Refresh',
+                  icon: Icons.refresh_rounded,
+                  onPressed: () {
+                    ref.invalidate(salesReportProvider);
+                    ref.invalidate(categoriesListProvider);
+                    ref.invalidate(manufacturersListProvider);
+                  },
                 ),
+                const SizedBox(width: AppSpacing.sm),
                 SecondaryButton(
                   label: _isExporting ? 'Exporting…' : 'Export Excel',
                   icon: Icons.download_rounded,

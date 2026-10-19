@@ -288,194 +288,233 @@ class _TableRowState extends ConsumerState<_TableRow> {
   @override
   Widget build(BuildContext context) {
     final item = widget.item;
+    final rowBg = _isHovered ? AppColors.primarySoftFor(context) : Colors.transparent;
 
-    final rowBg = _isHovered
-        ? AppColors.primarySoftFor(context)
-        : Colors.transparent;
-
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: Container(
-        height: 36,
-        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-        decoration: BoxDecoration(
-          color: rowBg,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-        ),
-        child: Row(
-          children: [
-            // #
-            _cell(
-              '${item.index}',
-              flex: 1,
-              alignment: Alignment.centerLeft,
-              textStyle: AppTypography.caption.copyWith(color: AppColors.textMutedFor(context)),
+    return Tooltip(
+      message: 'Double-click to edit in scan bar',
+      waitDuration: const Duration(milliseconds: 500),
+      child: GestureDetector(
+        onDoubleTap: () {
+          ref.read(cartControllerProvider.notifier).removeAt(widget.index);
+          ref.read(salesEditingLineProvider.notifier).state = item;
+        },
+        child: MouseRegion(
+          onEnter: (_) => setState(() => _isHovered = true),
+          onExit: (_) => setState(() => _isHovered = false),
+          child: Container(
+            height: 36,
+            margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: rowBg,
+              borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
-
-            // Barcode
-            _cell(
-              item.barcode,
-              flex: 3,
-              alignment: Alignment.centerLeft,
-              textStyle: AppTypography.mono.copyWith(
-                fontSize: 11.5,
-                color: AppColors.textSecondaryFor(context),
-              ),
-            ),
-
-            // Material / Item Name
-            Expanded(
-              flex: 6,
-              child: Align(
+            child: Row(
+            children: [
+              // #
+              _cell(
+                '${item.index}',
+                flex: 1,
                 alignment: Alignment.centerLeft,
-                child: Text(
-                  item.material,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.body.copyWith(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimaryFor(context),
-                  ),
+                textStyle: AppTypography.caption.copyWith(color: AppColors.textMutedFor(context)),
+              ),
+
+              // Barcode
+              _cell(
+                item.barcode,
+                flex: 3,
+                alignment: Alignment.centerLeft,
+                textStyle: AppTypography.mono.copyWith(
+                  fontSize: 11.5,
+                  color: AppColors.textSecondaryFor(context),
                 ),
               ),
-            ),
 
-            // Batch
-            _cell(
-              item.batch,
-              flex: 2,
-              alignment: Alignment.centerLeft,
-              textStyle: AppTypography.mono.copyWith(fontSize: 11, color: AppColors.textSecondaryFor(context)),
-            ),
-
-            // Pack
-            _cell(
-              item.pack,
-              flex: 2,
-              alignment: Alignment.centerLeft,
-              textStyle: AppTypography.bodyMuted.copyWith(fontSize: 11, color: AppColors.textSecondaryFor(context)),
-            ),
-
-            // Qty (Interactive pebble adjustment)
-            Expanded(
-              flex: 2,
-              child: Align(
-                alignment: Alignment.centerRight,
+              // Material / Item Name
+              Expanded(
+                flex: 6,
                 child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    if (_isHovered)
-                      InkWell(
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                        onTap: () {
-                          if (item.qty > 1) {
-                            ref.read(cartControllerProvider.notifier).updateQty(widget.index, item.qty - 1);
-                          } else {
-                            ref.read(cartControllerProvider.notifier).removeAt(widget.index);
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(2),
-                          decoration: BoxDecoration(
-                            color: AppColors.backgroundFor(context),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.remove_rounded, size: 12, color: AppColors.primary),
-                        ),
-                      ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                    Expanded(
                       child: Text(
-                        '${item.qty}',
-                        style: AppTypography.mono.copyWith(
+                        item.material,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.body.copyWith(
                           fontSize: 12,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                           color: AppColors.textPrimaryFor(context),
                         ),
                       ),
                     ),
                     if (_isHovered)
-                      InkWell(
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                        onTap: () {
-                          ref.read(cartControllerProvider.notifier).updateQty(widget.index, item.qty + 1);
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(2),
-                          decoration: BoxDecoration(
-                            color: AppColors.backgroundFor(context),
-                            shape: BoxShape.circle,
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                        margin: const EdgeInsets.only(left: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.primarySoftFor(context),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'Double-click to edit',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary,
                           ),
-                          child: const Icon(Icons.add_rounded, size: 12, color: AppColors.primary),
                         ),
                       ),
                   ],
                 ),
               ),
-            ),
 
-            // Rate
-            _cell(
-              item.rate.toStringAsFixed(2),
-              flex: 2,
-              alignment: Alignment.centerRight,
-              textStyle: AppTypography.mono.copyWith(
-                fontSize: 11.5,
-                color: AppColors.textPrimaryFor(context),
+              // Batch
+              _cell(
+                item.batch,
+                flex: 2,
+                alignment: Alignment.centerLeft,
+                textStyle: AppTypography.mono.copyWith(fontSize: 11, color: AppColors.textSecondaryFor(context)),
               ),
-            ),
 
-            // Tax %
-            _cell(
-              '${item.taxPercent.toStringAsFixed(0)}%',
-              flex: 2,
-              alignment: Alignment.centerRight,
-              textStyle: AppTypography.mono.copyWith(fontSize: 11, color: AppColors.textMutedFor(context)),
-            ),
-
-            // Tax Amt
-            _cell(
-              item.taxAmount.toStringAsFixed(2),
-              flex: 2,
-              alignment: Alignment.centerRight,
-              textStyle: AppTypography.mono.copyWith(fontSize: 11, color: AppColors.textMutedFor(context)),
-            ),
-
-            // Total
-            _cell(
-              item.amount.toStringAsFixed(2),
-              flex: 3,
-              alignment: Alignment.centerRight,
-              textStyle: AppTypography.mono.copyWith(
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimaryFor(context),
+              // Pack
+              _cell(
+                item.pack,
+                flex: 2,
+                alignment: Alignment.centerLeft,
+                textStyle: AppTypography.bodyMuted.copyWith(fontSize: 11, color: AppColors.textSecondaryFor(context)),
               ),
-            ),
 
-            // Del Action
-            SizedBox(
-              width: 36,
-              child: Center(
-                child: IconButton(
-                  icon: const Icon(Icons.close_rounded, size: 16),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                  color: _isHovered ? AppColors.danger : AppColors.textMutedFor(context),
-                  tooltip: 'Remove line',
-                  onPressed: () {
-                    ref.read(cartControllerProvider.notifier).removeAt(widget.index);
-                  },
+              // Qty
+              Expanded(
+                flex: 2,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      if (_isHovered)
+                        InkWell(
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          onTap: () {
+                            if (item.qty > 1) {
+                              ref.read(cartControllerProvider.notifier).updateQty(widget.index, item.qty - 1);
+                            } else {
+                              ref.read(cartControllerProvider.notifier).removeAt(widget.index);
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: AppColors.backgroundFor(context),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.remove_rounded, size: 12, color: AppColors.primary),
+                          ),
+                        ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Text(
+                          '${item.qty}',
+                          style: AppTypography.mono.copyWith(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textPrimaryFor(context),
+                          ),
+                        ),
+                      ),
+                      if (_isHovered)
+                        InkWell(
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          onTap: () {
+                            ref.read(cartControllerProvider.notifier).updateQty(widget.index, item.qty + 1);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: AppColors.backgroundFor(context),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.add_rounded, size: 12, color: AppColors.primary),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+
+              // Rate
+              Expanded(
+                flex: 2,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    item.rate.toStringAsFixed(2),
+                    style: AppTypography.mono.copyWith(
+                      fontSize: 11.5,
+                      color: AppColors.textPrimaryFor(context),
+                    ),
+                  ),
+                ),
+              ),
+
+              // Tax %
+              Expanded(
+                flex: 2,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    '${item.taxPercent.toStringAsFixed(0)}%',
+                    style: AppTypography.mono.copyWith(fontSize: 11, color: AppColors.textMutedFor(context)),
+                  ),
+                ),
+              ),
+
+              // Tax Amt
+              _cell(
+                item.taxAmount.toStringAsFixed(2),
+                flex: 2,
+                alignment: Alignment.centerRight,
+                textStyle: AppTypography.mono.copyWith(fontSize: 11, color: AppColors.textMutedFor(context)),
+              ),
+
+              // Total
+              Expanded(
+                flex: 3,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    item.amount.toStringAsFixed(2),
+                    style: AppTypography.mono.copyWith(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimaryFor(context),
+                    ),
+                  ),
+                ),
+              ),
+
+              // Actions: Del
+              SizedBox(
+                width: 36,
+                child: Center(
+                  child: IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 16),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                    color: _isHovered ? AppColors.danger : AppColors.textMutedFor(context),
+                    tooltip: 'Remove line',
+                    onPressed: () {
+                      ref.read(cartControllerProvider.notifier).removeAt(widget.index);
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
+    ),
     );
   }
 

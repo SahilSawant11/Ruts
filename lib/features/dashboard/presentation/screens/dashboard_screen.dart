@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../data/dashboard_providers.dart';
 import '../widgets/kpi_row.dart';
 import '../widgets/overall_information_card.dart';
 import '../widgets/recent_transactions_card.dart';
@@ -13,8 +15,21 @@ import '../widgets/transaction_activity_heatmap_card.dart';
 ///  - Middle Grid: Sales & Purchase Side-by-Side Capsule Chart (flex 7) + Overall Info & Top Categories Stack (flex 5)
 ///  - Bottom Grid: Top Selling Products (1/2) + Recent Transactions Mini Table (1/2)
 ///  - Collapsible / anchored Transaction Activity Heatmap
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.invalidate(dashboardSummaryProvider);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

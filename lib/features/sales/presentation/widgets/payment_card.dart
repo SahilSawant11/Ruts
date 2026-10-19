@@ -92,9 +92,7 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
 
       if (!mounted || result == null) return;
       _showSnack(
-        result.isPendingSync
-            ? 'Bill ${result.billNo} queued offline · ${result.lineItemCount} item(s) will sync later.'
-            : 'Bill ${result.billNo} saved · ${result.lineItemCount} item(s).',
+        'Bill ${result.billNo} saved successfully · ${result.lineItemCount} item(s).',
       );
     } on ApiException catch (e) {
       if (!mounted) return;

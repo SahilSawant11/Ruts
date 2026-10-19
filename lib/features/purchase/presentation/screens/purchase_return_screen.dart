@@ -8,6 +8,7 @@ import '../../../../shared/widgets/badges/tag_pill.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
+import '../../../dashboard/data/dashboard_providers.dart';
 import '../../../inventory/data/inventory_providers.dart';
 import '../../../masters/data/masters_providers.dart';
 import '../../data/models/purchase_return_models.dart';
@@ -26,6 +27,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
   DateTime? _selectedDate;
   bool _isProcessing = false;
   Set<int> _selectedLineNumbers = {};
+  Map<int, int> _returnQuantities = {};
   String? _lastSelectedBillId;
 
   static const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -76,9 +78,17 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
     if (_selectedLineNumbers.isEmpty) return;
 
     final selectedItems = bill.lineItems.where((li) => _selectedLineNumbers.contains(li.lineNumber)).toList();
-    final isFullReturn = selectedItems.length == bill.lineItems.length;
-    final totalItemAmount = selectedItems.fold<double>(0.0, (sum, i) => sum + i.amount);
-    final totalQty = selectedItems.fold<int>(0, (sum, i) => sum + i.qty);
+    final isFullReturn = selectedItems.length == bill.lineItems.length &&
+        selectedItems.every((i) => (_returnQuantities[i.lineNumber] ?? i.qty) == i.qty);
+
+    final totalItemAmount = selectedItems.fold<double>(
+      0.0,
+      (sum, i) => sum + ((_returnQuantities[i.lineNumber] ?? i.qty) * i.rate),
+    );
+    final totalQty = selectedItems.fold<int>(
+      0,
+      (sum, i) => sum + (_returnQuantities[i.lineNumber] ?? i.qty),
+    );
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -109,7 +119,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
             Text(
               isFullReturn
                   ? 'Are you sure you want to return purchase bill from ${bill.supplierName}?'
-                  : 'Are you sure you want to return ${selectedItems.length} selected item(s) from ${bill.supplierName}?',
+                  : 'Are you sure you want to return $totalQty bottle(s) across ${selectedItems.length} selected item(s) from ${bill.supplierName}?',
               style: AppTypography.body.copyWith(
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimaryFor(ctx),
@@ -119,7 +129,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
             Text(
               isFullReturn
                   ? 'Bill No: ${bill.billNo ?? bill.challanNo ?? 'N/A'} · Net Amount: ₹${bill.netAmount.toStringAsFixed(2)}'
-                  : 'Bill No: ${bill.billNo ?? bill.challanNo ?? 'N/A'} · Selected Items Amount: ₹${totalItemAmount.toStringAsFixed(2)}',
+                  : 'Bill No: ${bill.billNo ?? bill.challanNo ?? 'N/A'} · Selected Return Amount: ₹${totalItemAmount.toStringAsFixed(2)}',
               style: AppTypography.body.copyWith(color: AppColors.danger, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -143,7 +153,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                         child: Text(
                           isFullReturn
                               ? 'Soft-deletes the purchase bill record'
-                              : 'Removes selected item(s) from the purchase bill',
+                              : 'Adjusts item quantities and amounts on the purchase bill',
                           style: AppTypography.caption.copyWith(color: AppColors.textSecondaryFor(ctx)),
                         ),
                       ),
@@ -156,7 +166,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          'Deducts $totalQty item(s) from inventory stock',
+                          'Deducts $totalQty bottle(s) from inventory stock',
                           style: AppTypography.caption.copyWith(color: AppColors.textSecondaryFor(ctx)),
                         ),
                       ),
@@ -185,15 +195,21 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
 
     setState(() => _isProcessing = true);
     try {
+      final quantitiesToReturn = <int, int>{};
+      for (final li in selectedItems) {
+        quantitiesToReturn[li.lineNumber] = _returnQuantities[li.lineNumber] ?? li.qty;
+      }
+
       await ref.read(purchaseRepositoryProvider).returnPurchaseBill(
             bill.id,
-            lineNumbers: _selectedLineNumbers.toList(),
+            lineQuantities: quantitiesToReturn,
           );
 
       ref.invalidate(purchaseBillsListProvider);
       ref.invalidate(inventoryListProvider);
       ref.invalidate(inventoryOverviewProvider);
       ref.invalidate(filteredInventoryOverviewProvider);
+      ref.invalidate(dashboardSummaryProvider);
       ref.invalidate(materialsListProvider);
 
       ref.read(selectedPurchaseBillProvider.notifier).state = null;
@@ -203,7 +219,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
         SnackBar(
           content: Text(isFullReturn
               ? 'Purchase Bill ${bill.billNo ?? ''} returned successfully. Stock deducted.'
-              : 'Selected item(s) from Purchase Bill ${bill.billNo ?? ''} returned successfully. Stock deducted.'),
+              : '$totalQty bottle(s) from Purchase Bill ${bill.billNo ?? ''} returned successfully. Stock deducted.'),
           backgroundColor: AppColors.success,
         ),
       );
@@ -230,9 +246,11 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
     if (selectedBill != null && _lastSelectedBillId != selectedBill.id) {
       _lastSelectedBillId = selectedBill.id;
       _selectedLineNumbers = selectedBill.lineItems.map((e) => e.lineNumber).toSet();
+      _returnQuantities = {for (final e in selectedBill.lineItems) e.lineNumber: e.qty};
     } else if (selectedBill == null) {
       _lastSelectedBillId = null;
       _selectedLineNumbers = {};
+      _returnQuantities = {};
     }
 
     return Padding(
@@ -532,8 +550,17 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
     }
 
     final selectedItems = bill.lineItems.where((li) => _selectedLineNumbers.contains(li.lineNumber)).toList();
-    final allSelected = bill.lineItems.isNotEmpty && _selectedLineNumbers.length == bill.lineItems.length;
-    final selectedItemAmount = selectedItems.fold<double>(0.0, (sum, i) => sum + i.amount);
+    final totalReturnBottles = selectedItems.fold<int>(
+      0,
+      (sum, i) => sum + (_returnQuantities[i.lineNumber] ?? i.qty),
+    );
+    final selectedItemAmount = selectedItems.fold<double>(
+      0.0,
+      (sum, i) => sum + ((_returnQuantities[i.lineNumber] ?? i.qty) * i.rate),
+    );
+    final allSelected = bill.lineItems.isNotEmpty &&
+        _selectedLineNumbers.length == bill.lineItems.length &&
+        selectedItems.every((i) => (_returnQuantities[i.lineNumber] ?? i.qty) == i.qty);
 
     return AppCard(
       padding: EdgeInsets.zero,
@@ -585,7 +612,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                     Text(
                       allSelected
                           ? 'Net Invoice Amount'
-                          : 'Selected Return Amount (${selectedItems.length}/${bill.lineItems.length})',
+                          : 'Selected Return Amount ($totalReturnBottles bottles · ${selectedItems.length}/${bill.lineItems.length} items)',
                       style: AppTypography.caption.copyWith(color: AppColors.textSecondaryFor(context)),
                     ),
                     Text(
@@ -616,7 +643,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                         ),
                       ),
                       Text(
-                        '${selectedItems.length} of ${bill.lineItems.length} selected for return',
+                        '${selectedItems.length} of ${bill.lineItems.length} items selected ($totalReturnBottles bottles)',
                         style: AppTypography.caption.copyWith(
                           color: selectedItems.isEmpty ? AppColors.danger : AppColors.primary,
                           fontWeight: FontWeight.w600,
@@ -637,13 +664,14 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                       columnWidths: const {
                         0: FixedColumnWidth(46),
                         1: FixedColumnWidth(34),
-                        2: FlexColumnWidth(3),
-                        3: FixedColumnWidth(100),
-                        4: FixedColumnWidth(80),
-                        5: FixedColumnWidth(60),
-                        6: FixedColumnWidth(80),
-                        7: FixedColumnWidth(70),
-                        8: FixedColumnWidth(90),
+                        2: FlexColumnWidth(2.8),
+                        3: FixedColumnWidth(90),
+                        4: FixedColumnWidth(70),
+                        5: FixedColumnWidth(55),
+                        6: FixedColumnWidth(105),
+                        7: FixedColumnWidth(75),
+                        8: FixedColumnWidth(55),
+                        9: FixedColumnWidth(85),
                       },
                       children: [
                         TableRow(
@@ -669,6 +697,9 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                                   setState(() {
                                     if (val == true || _selectedLineNumbers.length < bill.lineItems.length) {
                                       _selectedLineNumbers = bill.lineItems.map((e) => e.lineNumber).toSet();
+                                      for (final e in bill.lineItems) {
+                                        _returnQuantities.putIfAbsent(e.lineNumber, () => e.qty);
+                                      }
                                     } else {
                                       _selectedLineNumbers.clear();
                                     }
@@ -680,15 +711,19 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                             _th(context, 'Material'),
                             _th(context, 'Batch'),
                             _th(context, 'Pack'),
-                            _th(context, 'Qty'),
+                            _th(context, 'Bill Qty'),
+                            _th(context, 'Return Qty', align: TextAlign.center),
                             _th(context, 'Rate'),
                             _th(context, 'Tax %'),
-                            _th(context, 'Amount', align: TextAlign.right),
+                            _th(context, 'Return Amt', align: TextAlign.right),
                           ],
                         ),
                         ...bill.lineItems.map(
                           (item) {
                             final isSelected = _selectedLineNumbers.contains(item.lineNumber);
+                            final currentReturnQty = _returnQuantities[item.lineNumber] ?? item.qty;
+                            final lineReturnAmount = currentReturnQty * item.rate;
+
                             return TableRow(
                               decoration: BoxDecoration(
                                 color: isSelected
@@ -713,6 +748,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                                       setState(() {
                                         if (val == true) {
                                           _selectedLineNumbers.add(item.lineNumber);
+                                          _returnQuantities[item.lineNumber] = item.qty;
                                         } else {
                                           _selectedLineNumbers.remove(item.lineNumber);
                                         }
@@ -725,9 +761,72 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                                 _td(context, item.batchNo, mono: true),
                                 _td(context, item.packing ?? '-'),
                                 _td(context, item.qty.toString(), bold: true),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                                  child: isSelected
+                                      ? Center(
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              color: AppColors.surfaceFor(context),
+                                              borderRadius: BorderRadius.circular(AppRadius.sm),
+                                              border: Border.all(color: AppColors.borderStrongFor(context)),
+                                            ),
+                                            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                InkWell(
+                                                  onTap: currentReturnQty > 1
+                                                      ? () => setState(() => _returnQuantities[item.lineNumber] = currentReturnQty - 1)
+                                                      : null,
+                                                  borderRadius: BorderRadius.circular(3),
+                                                  child: Padding(
+                                                    padding: const EdgeInsets.all(2),
+                                                    child: Icon(
+                                                      Icons.remove_rounded,
+                                                      size: 14,
+                                                      color: currentReturnQty > 1 ? AppColors.primary : AppColors.textMutedFor(context),
+                                                    ),
+                                                  ),
+                                                ),
+                                                Padding(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                                                  child: Text(
+                                                    '$currentReturnQty',
+                                                    style: AppTypography.caption.copyWith(
+                                                      fontWeight: FontWeight.bold,
+                                                      color: AppColors.primary,
+                                                    ),
+                                                  ),
+                                                ),
+                                                InkWell(
+                                                  onTap: currentReturnQty < item.qty
+                                                      ? () => setState(() => _returnQuantities[item.lineNumber] = currentReturnQty + 1)
+                                                      : null,
+                                                  borderRadius: BorderRadius.circular(3),
+                                                  child: Padding(
+                                                    padding: const EdgeInsets.all(2),
+                                                    child: Icon(
+                                                      Icons.add_rounded,
+                                                      size: 14,
+                                                      color: currentReturnQty < item.qty ? AppColors.primary : AppColors.textMutedFor(context),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        )
+                                      : Center(
+                                          child: Text(
+                                            '-',
+                                            style: TextStyle(color: AppColors.textMutedFor(context)),
+                                          ),
+                                        ),
+                                ),
                                 _td(context, '₹${item.rate.toStringAsFixed(2)}'),
                                 _td(context, '${item.taxPercent}%'),
-                                _td(context, '₹${item.amount.toStringAsFixed(2)}', align: TextAlign.right, bold: true),
+                                _td(context, '₹${(isSelected ? lineReturnAmount : item.amount).toStringAsFixed(2)}', align: TextAlign.right, bold: isSelected),
                               ],
                             );
                           },
@@ -786,8 +885,8 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                   label: _isProcessing
                       ? 'Processing…'
                       : (allSelected
-                          ? 'Process Purchase Return'
-                          : 'Process Return (${_selectedLineNumbers.length} items)'),
+                          ? 'Process Full Return'
+                          : 'Process Return ($totalReturnBottles bottle${totalReturnBottles == 1 ? '' : 's'})'),
                   icon: Icons.assignment_return_rounded,
                   onPressed: (_isProcessing || _selectedLineNumbers.isEmpty) ? null : () => _processReturn(bill),
                 ),
