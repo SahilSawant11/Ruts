@@ -871,26 +871,40 @@ class LocalMastersRepository {
   }
 
   Future<List<MaterialDto>> _getCachedMaterials() async {
-    final rows = await (_db.select(_db.cachedMaterials)
-          ..orderBy([(tbl) => OrderingTerm.asc(tbl.name)]))
-        .get();
-    return rows
-        .map(
-          (row) => MaterialDto(
-            id: row.id,
-            barcode: row.barcode,
-            name: row.name,
-            manufacturer: row.manufacturer,
-            category: row.category,
-            packing: row.packing,
-            saleRate: row.saleRate,
-            taxPercent: row.taxPercent,
-            stockQty: row.stockQty,
-            isActive: row.isActive,
-            isPendingSync: row.syncStatus != 'synced',
-          ),
-        )
-        .toList();
+    final rows = await _db.customSelect('''
+      SELECT 
+        m.id,
+        m.barcode,
+        m.name,
+        COALESCE(m.manufacturer, '') AS manufacturer,
+        COALESCE(m.category, '') AS category,
+        COALESCE(m.packing, '') AS packing,
+        COALESCE(m.sale_rate, 0.0) AS sale_rate,
+        COALESCE(m.tax_percent, 0.0) AS tax_percent,
+        COALESCE(s.qty_on_hand, 0) AS stock_qty,
+        COALESCE(m.is_active, 1) AS is_active,
+        COALESCE(m.sync_status, 'synced') AS sync_status
+      FROM cached_materials m
+      LEFT JOIN cached_inventory_stocks s ON (s.material_id = m.id OR (s.barcode = m.barcode AND m.barcode != ''))
+      ORDER BY m.name ASC
+    ''').get();
+
+    return rows.map((row) {
+      final rawStock = row.readNullable<int>('stock_qty') ?? 0;
+      return MaterialDto(
+        id: row.readNullable<String>('id') ?? '',
+        barcode: row.readNullable<String>('barcode') ?? '',
+        name: row.readNullable<String>('name') ?? '',
+        manufacturer: row.readNullable<String>('manufacturer') ?? '',
+        category: row.readNullable<String>('category') ?? '',
+        packing: row.readNullable<String>('packing') ?? '',
+        saleRate: row.readNullable<double>('sale_rate') ?? 0.0,
+        taxPercent: row.readNullable<double>('tax_percent') ?? 0.0,
+        stockQty: rawStock < 0 ? 0 : rawStock,
+        isActive: (row.readNullable<bool>('is_active') ?? (row.readNullable<int>('is_active') == 1)),
+        isPendingSync: (row.readNullable<String>('sync_status') ?? 'synced') != 'synced',
+      );
+    }).toList();
   }
 
   Future<void> _cacheSuppliers(List<SupplierDto> suppliers) async {

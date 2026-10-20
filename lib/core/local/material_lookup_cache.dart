@@ -33,7 +33,7 @@ class MaterialLookupCache {
       'COALESCE(m.is_active, 1) AS is_active, '
       'COALESCE(m.sync_status, \'synced\') AS sync_status '
       'FROM cached_materials m '
-      'LEFT JOIN cached_inventory_stocks s ON s.material_id = m.id',
+      'LEFT JOIN cached_inventory_stocks s ON (s.material_id = m.id OR (s.barcode = m.barcode AND m.barcode != \'\'))',
     ).get();
 
     final byBarcode = <String, MaterialDto>{};
@@ -44,6 +44,7 @@ class MaterialLookupCache {
       final barcode = row.readNullable<String>('barcode') ?? '';
       if (id.isEmpty || barcode.isEmpty) continue;
 
+      final rawStock = row.readNullable<int>('stock_qty') ?? 0;
       final dto = MaterialDto(
         id: id,
         barcode: barcode,
@@ -53,7 +54,7 @@ class MaterialLookupCache {
         packing: row.readNullable<String>('packing') ?? '',
         saleRate: row.readNullable<double>('sale_rate') ?? 0.0,
         taxPercent: row.readNullable<double>('tax_percent') ?? 0.0,
-        stockQty: row.readNullable<int>('stock_qty') ?? 0,
+        stockQty: rawStock < 0 ? 0 : rawStock,
         isActive: (row.readNullable<bool>('is_active') ?? (row.readNullable<int>('is_active') == 1)),
         isPendingSync: (row.readNullable<String>('sync_status') ?? 'synced') != 'synced',
       );

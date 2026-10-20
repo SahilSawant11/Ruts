@@ -592,6 +592,7 @@ class AppDatabase extends _$AppDatabase {
       await customStatement("UPDATE cached_materials SET manufacturer = '' WHERE manufacturer IS NULL");
       await customStatement("UPDATE cached_materials SET sync_status = 'synced' WHERE sync_status IS NULL");
       await customStatement("UPDATE cached_materials SET stock_qty = 0 WHERE stock_qty IS NULL");
+      await customStatement('UPDATE cached_inventory_stocks SET qty_on_hand = 0 WHERE qty_on_hand < 0');
     } catch (_) {}
   }
 

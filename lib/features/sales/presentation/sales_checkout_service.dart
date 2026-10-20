@@ -97,6 +97,7 @@ class SalesCheckoutService {
       ref.invalidate(dashboardSummaryProvider);
       ref.invalidate(inventoryListProvider);
       ref.invalidate(inventoryOverviewProvider);
+      ref.invalidate(materialsListProvider);
 
       return result;
     } finally {

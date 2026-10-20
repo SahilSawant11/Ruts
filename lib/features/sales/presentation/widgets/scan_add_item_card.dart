@@ -164,7 +164,37 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
   Future<void> _onSuggestionSelected(MaterialDto material) async {
     if (_portalController.isShowing) _portalController.hide();
     setState(() => _suggestions = []);
-    _barcodeController.text = material.barcode;
+
+    if (material.stockQty <= 0) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.block_rounded, color: Colors.white, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Cannot sell "${material.name}": Out of stock / 0 on hand in inventory.',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.danger,
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      _barcodeController.clear();
+      _qtyController.text = '1';
+      _barcodeFocusNode.requestFocus();
+      return;
+    }
+
+    _barcodeController.text = material.barcode.isNotEmpty ? material.barcode : material.id;
     await _submit();
   }
 
@@ -184,7 +214,31 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
       _qtyController.text = '1';
       _barcodeFocusNode.requestFocus();
 
-      if (added && mounted) {
+      if (!added && mounted) {
+        final err = ref.read(cartControllerProvider).scanError;
+        if (err != null && err.isNotEmpty) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      err,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: AppColors.danger,
+              duration: const Duration(seconds: 3),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } else if (added && mounted) {
         final cart = ref.read(cartControllerProvider);
         if (cart.isLimitReached) {
           await _triggerAutoCheckout();
@@ -515,94 +569,110 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
                       final item = _suggestions[index];
                       final isHighlighted = index == _highlightedSuggestionIndex;
 
+                      final isOutOfStock = item.stockQty <= 0;
+
                       return InkWell(
                         onTap: () => _onSuggestionSelected(item),
-                        child: Container(
-                          color: isHighlighted
-                              ? AppColors.primarySoftFor(context)
-                              : Colors.transparent,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                                ),
-                                child: Text(
-                                  item.id,
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.primary,
+                        child: Opacity(
+                          opacity: isOutOfStock ? 0.6 : 1.0,
+                          child: Container(
+                            color: isHighlighted
+                                ? AppColors.primarySoftFor(context)
+                                : Colors.transparent,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: isOutOfStock
+                                        ? AppColors.danger.withValues(alpha: 0.12)
+                                        : AppColors.primary.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                                  ),
+                                  child: Text(
+                                    item.id,
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color: isOutOfStock ? AppColors.danger : AppColors.primary,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        item.name,
+                                        style: AppTypography.body.copyWith(
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.textPrimaryFor(context),
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      Text(
+                                        [
+                                          if (item.packing.isNotEmpty) item.packing,
+                                          if (item.manufacturer.isNotEmpty) item.manufacturer,
+                                          if (item.barcode.isNotEmpty) 'BC: ${item.barcode}',
+                                        ].join(' · '),
+                                        style: AppTypography.caption.copyWith(
+                                          fontSize: 10.5,
+                                          color: AppColors.textSecondaryFor(context),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Text(
-                                      item.name,
-                                      style: AppTypography.body.copyWith(
+                                      '₹${item.saleRate.toStringAsFixed(2)}',
+                                      style: AppTypography.mono.copyWith(
                                         fontSize: 12.5,
                                         fontWeight: FontWeight.w700,
-                                        color: AppColors.textPrimaryFor(context),
+                                        color: isOutOfStock ? AppColors.textMutedFor(context) : AppColors.primary,
                                       ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                    Text(
-                                      [
-                                        if (item.packing.isNotEmpty) item.packing,
-                                        if (item.manufacturer.isNotEmpty) item.manufacturer,
-                                        if (item.barcode.isNotEmpty) 'BC: ${item.barcode}',
-                                      ].join(' · '),
-                                      style: AppTypography.caption.copyWith(
-                                        fontSize: 10.5,
-                                        color: AppColors.textSecondaryFor(context),
+                                    const SizedBox(height: 2),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                      decoration: BoxDecoration(
+                                        color: item.stockQty > 0
+                                            ? AppColors.success.withValues(alpha: 0.12)
+                                            : AppColors.danger.withValues(alpha: 0.14),
+                                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          if (isOutOfStock) ...[
+                                            const Icon(Icons.block_rounded, size: 9, color: AppColors.danger),
+                                            const SizedBox(width: 3),
+                                          ],
+                                          Text(
+                                            item.stockQty > 0 ? '${item.stockQty} in stock' : 'Out of stock',
+                                            style: TextStyle(
+                                              fontSize: 9.5,
+                                              fontWeight: FontWeight.w700,
+                                              color: item.stockQty > 0 ? AppColors.success : AppColors.danger,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    '₹${item.saleRate.toStringAsFixed(2)}',
-                                    style: AppTypography.mono.copyWith(
-                                      fontSize: 12.5,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.primary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                    decoration: BoxDecoration(
-                                      color: item.stockQty > 0
-                                          ? AppColors.success.withValues(alpha: 0.12)
-                                          : AppColors.danger.withValues(alpha: 0.12),
-                                      borderRadius: BorderRadius.circular(AppRadius.pill),
-                                    ),
-                                    child: Text(
-                                      item.stockQty > 0 ? '${item.stockQty} in stock' : 'Out of stock',
-                                      style: TextStyle(
-                                        fontSize: 9.5,
-                                        fontWeight: FontWeight.w700,
-                                        color: item.stockQty > 0 ? AppColors.success : AppColors.danger,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       );

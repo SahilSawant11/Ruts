@@ -509,14 +509,22 @@ class LocalSalesRepository {
       // Verify stock exists and is sufficient for all items.
       // Prevents negative values in the inventory.
       for (final item in request.lineItems) {
-        if (item.materialId == null) continue;
-        final stock = await (_db.select(_db.cachedInventoryStocks)
-              ..where((tbl) => tbl.materialId.equals(item.materialId!)))
-            .getSingleOrNull();
+        final query = _db.select(_db.cachedInventoryStocks);
+        if (item.materialId != null && item.materialId!.isNotEmpty) {
+          query.where((tbl) => tbl.materialId.equals(item.materialId!));
+        } else {
+          query.where((tbl) => tbl.barcode.equals(item.barcodeNo));
+        }
+        final stock = await query.getSingleOrNull();
 
         if (stock == null) {
           throw ApiException(
             'Cannot sell "${item.materialName}": Item is not present in inventory.',
+          );
+        }
+        if (stock.qtyOnHand <= 0) {
+          throw ApiException(
+            'Cannot sell "${item.materialName}": Item is out of stock (0 on hand in inventory).',
           );
         }
         if (stock.qtyOnHand < item.quantity) {
@@ -528,17 +536,21 @@ class LocalSalesRepository {
 
       // Stock deduction: sale deducts stock (inside same transaction).
       for (final item in request.lineItems) {
-        if (item.materialId == null) continue;
-        final stock = await (_db.select(_db.cachedInventoryStocks)
-              ..where((tbl) => tbl.materialId.equals(item.materialId!)))
-            .getSingleOrNull();
+        final query = _db.select(_db.cachedInventoryStocks);
+        if (item.materialId != null && item.materialId!.isNotEmpty) {
+          query.where((tbl) => tbl.materialId.equals(item.materialId!));
+        } else {
+          query.where((tbl) => tbl.barcode.equals(item.barcodeNo));
+        }
+        final stock = await query.getSingleOrNull();
 
         if (stock != null) {
+          final newQty = (stock.qtyOnHand - item.quantity).clamp(0, 999999);
           await (_db.update(_db.cachedInventoryStocks)
-                ..where((tbl) => tbl.materialId.equals(item.materialId!)))
+                ..where((tbl) => tbl.materialId.equals(stock.materialId)))
               .write(
             CachedInventoryStocksCompanion(
-              qtyOnHand: Value(stock.qtyOnHand - item.quantity),
+              qtyOnHand: Value(newQty),
               updatedAt: Value(now),
             ),
           );
