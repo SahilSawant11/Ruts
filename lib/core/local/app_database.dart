@@ -74,6 +74,19 @@ class CachedPackings extends Table {
   Set<Column<Object>> get primaryKey => {name};
 }
 
+class CachedLicenseHolders extends Table {
+  TextColumn get id => text()();
+  TextColumn get permitNo => text()();
+  TextColumn get name => text()();
+  TextColumn get issuedDate => text().nullable()();
+  TextColumn get whereGranted => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
 class SyncQueueItems extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get entityType => text()();
@@ -103,6 +116,8 @@ class CachedSalesBills extends Table {
   TextColumn get id => text()();
   TextColumn get billNo => text()();
   TextColumn get customerId => text().nullable()();
+  TextColumn get permitNo => text().nullable()();
+  TextColumn get permitHolderName => text().nullable()();
   TextColumn get payMode => text()();
   TextColumn get status => text()();
   RealColumn get totalAmount => real()();
@@ -197,6 +212,7 @@ class CachedSaleLineItems extends Table {
   CachedPurchaseBills,
   CachedPurchaseLineItems,
   CachedSaleLineItems,
+  CachedLicenseHolders,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
@@ -204,7 +220,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.defaults() : super(driftDatabase(name: 'pos_app.sqlite'));
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -249,6 +265,12 @@ class AppDatabase extends _$AppDatabase {
           if (from < 11) {
             await _ensureColumn('cached_materials', 'is_active', 'INTEGER NOT NULL DEFAULT 1');
           }
+          if (from < 12) {
+            await m.createTable(cachedLicenseHolders);
+            await _ensureColumn('cached_sales_bills', 'permit_no', 'TEXT');
+            await _ensureColumn('cached_sales_bills', 'permit_holder_name', 'TEXT');
+            await _createIndexes();
+          }
           await _healMaterialsTable();
         },
         beforeOpen: (details) async {
@@ -261,22 +283,59 @@ class AppDatabase extends _$AppDatabase {
         },
       );
 
+  Future<bool> _tableExists(String tableName) async {
+    try {
+      final result = await customSelect(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name = ?",
+        variables: [Variable.withString(tableName)],
+      ).get();
+      return result.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<void> _createIndexes() async {
-    const indexes = [
-      'CREATE INDEX IF NOT EXISTS idx_materials_barcode ON cached_materials(barcode)',
-      'CREATE INDEX IF NOT EXISTS idx_materials_sync ON cached_materials(sync_status)',
-      'CREATE INDEX IF NOT EXISTS idx_suppliers_sync ON cached_suppliers(sync_status)',
-      'CREATE INDEX IF NOT EXISTS idx_sales_bills_date ON cached_sales_bills(bill_date)',
-      'CREATE INDEX IF NOT EXISTS idx_sales_bills_sync ON cached_sales_bills(sync_status)',
-      'CREATE INDEX IF NOT EXISTS idx_sale_lines_bill ON cached_sale_line_items(sales_bill_id)',
-      'CREATE INDEX IF NOT EXISTS idx_purchase_bills_supplier ON cached_purchase_bills(supplier_id)',
-      'CREATE INDEX IF NOT EXISTS idx_purchase_bills_date ON cached_purchase_bills(bill_date)',
-      'CREATE INDEX IF NOT EXISTS idx_purchase_lines_bill ON cached_purchase_line_items(purchase_bill_id)',
-      'CREATE INDEX IF NOT EXISTS idx_sync_queue_type_status ON sync_queue_items(entity_type, status)',
-      'CREATE INDEX IF NOT EXISTS idx_inventory_barcode ON cached_inventory_stocks(barcode)',
-    ];
-    for (final sql in indexes) {
-      await customStatement(sql);
+    const tableIndexes = <String, List<String>>{
+      'cached_materials': [
+        'CREATE INDEX IF NOT EXISTS idx_materials_barcode ON cached_materials(barcode)',
+        'CREATE INDEX IF NOT EXISTS idx_materials_sync ON cached_materials(sync_status)',
+      ],
+      'cached_suppliers': [
+        'CREATE INDEX IF NOT EXISTS idx_suppliers_sync ON cached_suppliers(sync_status)',
+      ],
+      'cached_sales_bills': [
+        'CREATE INDEX IF NOT EXISTS idx_sales_bills_date ON cached_sales_bills(bill_date)',
+        'CREATE INDEX IF NOT EXISTS idx_sales_bills_sync ON cached_sales_bills(sync_status)',
+      ],
+      'cached_sale_line_items': [
+        'CREATE INDEX IF NOT EXISTS idx_sale_lines_bill ON cached_sale_line_items(sales_bill_id)',
+      ],
+      'cached_purchase_bills': [
+        'CREATE INDEX IF NOT EXISTS idx_purchase_bills_supplier ON cached_purchase_bills(supplier_id)',
+        'CREATE INDEX IF NOT EXISTS idx_purchase_bills_date ON cached_purchase_bills(bill_date)',
+      ],
+      'cached_purchase_line_items': [
+        'CREATE INDEX IF NOT EXISTS idx_purchase_lines_bill ON cached_purchase_line_items(purchase_bill_id)',
+      ],
+      'sync_queue_items': [
+        'CREATE INDEX IF NOT EXISTS idx_sync_queue_type_status ON sync_queue_items(entity_type, status)',
+      ],
+      'cached_inventory_stocks': [
+        'CREATE INDEX IF NOT EXISTS idx_inventory_barcode ON cached_inventory_stocks(barcode)',
+      ],
+      'cached_license_holders': [
+        'CREATE INDEX IF NOT EXISTS idx_license_holders_permit ON cached_license_holders(permit_no)',
+        'CREATE INDEX IF NOT EXISTS idx_license_holders_name ON cached_license_holders(name)',
+      ],
+    };
+
+    for (final entry in tableIndexes.entries) {
+      if (await _tableExists(entry.key)) {
+        for (final indexSql in entry.value) {
+          await customStatement(indexSql);
+        }
+      }
     }
   }
 
@@ -290,6 +349,7 @@ class AppDatabase extends _$AppDatabase {
     final hasInventory = await _tableHasRows('cached_inventory_stocks');
     final hasSalesBills = await _tableHasRows('cached_sales_bills');
     final hasSaleLines = await _tableHasRows('cached_sale_line_items');
+    final hasLicenseHolders = await _tableHasRows('cached_license_holders');
 
     if (hasMaterials &&
         hasSuppliers &&
@@ -298,7 +358,8 @@ class AppDatabase extends _$AppDatabase {
         hasPackings &&
         hasInventory &&
         hasSalesBills &&
-        hasSaleLines) {
+        hasSaleLines &&
+        hasLicenseHolders) {
       return;
     }
 
@@ -475,6 +536,26 @@ class AppDatabase extends _$AppDatabase {
                 amount: line.amount,
                 lineNumber: line.lineNumber,
               ),
+            );
+          }
+        });
+      }
+
+      if (!hasLicenseHolders) {
+        await batch((batch) {
+          for (final lh in _starterLicenseHolders) {
+            batch.insert(
+              cachedLicenseHolders,
+              CachedLicenseHoldersCompanion.insert(
+                id: lh.permitNo,
+                permitNo: lh.permitNo,
+                name: lh.name,
+                issuedDate: Value(lh.issuedDate),
+                whereGranted: Value(lh.whereGranted),
+                createdAt: Value(now),
+                updatedAt: Value(now),
+              ),
+              mode: InsertMode.insertOrIgnore,
             );
           }
         });
@@ -1106,4 +1187,35 @@ const _starterInventory = <_StarterInventoryStock>[
     qtyOnHand: 60,
     reorderLevel: 24,
   ),
+];
+
+class _StarterLicenseHolder {
+  const _StarterLicenseHolder({
+    required this.permitNo,
+    required this.name,
+    required this.issuedDate,
+    required this.whereGranted,
+  });
+
+  final String permitNo;
+  final String name;
+  final String issuedDate;
+  final String whereGranted;
+}
+
+const _starterLicenseHolders = [
+  _StarterLicenseHolder(permitNo: '20598', name: 'B J RAMA', issuedDate: '24-Mar-2017', whereGranted: 'Life Time'),
+  _StarterLicenseHolder(permitNo: '181620', name: 'V.G.PAVLE', issuedDate: '24-Mar-2017', whereGranted: 'Life Time'),
+  _StarterLicenseHolder(permitNo: '0169550', name: 'S.B.MHATRE', issuedDate: '24-Mar-2017', whereGranted: 'Life Time'),
+  _StarterLicenseHolder(permitNo: '193809', name: 'SHETTY KUSHANATH', issuedDate: '24-Mar-2017', whereGranted: 'Life Time'),
+  _StarterLicenseHolder(permitNo: '223708', name: 'DEEPAK ANANT JADHAV', issuedDate: '24-Mar-2017', whereGranted: 'Life Time'),
+  _StarterLicenseHolder(permitNo: '193102', name: 'R.S.LONARE', issuedDate: '24-Mar-2017', whereGranted: 'Life Time'),
+  _StarterLicenseHolder(permitNo: '223828', name: 'MHASKAR MADHUKAR', issuedDate: '24-Mar-2017', whereGranted: 'Life Time'),
+  _StarterLicenseHolder(permitNo: '181373', name: 'M.B.GONDALI', issuedDate: '24-Mar-2017', whereGranted: 'Life Time'),
+  _StarterLicenseHolder(permitNo: '003099', name: 'C.B.GUPTA', issuedDate: '24-Mar-2017', whereGranted: 'Life Time'),
+  _StarterLicenseHolder(permitNo: '1192592', name: 'L.K.BOLKE', issuedDate: '24-Mar-2017', whereGranted: 'Life Time'),
+  _StarterLicenseHolder(permitNo: '58370', name: 'V.J.KUBAL', issuedDate: '24-Mar-2017', whereGranted: 'Life Time'),
+  _StarterLicenseHolder(permitNo: '32423', name: 'SHEREKAR GAJANAN', issuedDate: '24-Mar-2017', whereGranted: 'Life Time'),
+  _StarterLicenseHolder(permitNo: '196247', name: 'SANJEEV THAKUR', issuedDate: '24-Mar-2017', whereGranted: 'Life Time'),
+  _StarterLicenseHolder(permitNo: '0048681', name: 'PAWAR.R.M', issuedDate: '16-Apr-2017', whereGranted: 'Life Time'),
 ];

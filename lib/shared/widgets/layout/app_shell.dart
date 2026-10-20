@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../features/dashboard/data/dashboard_providers.dart';
 import 'app_sidebar.dart';
 import 'app_status_bar.dart';
@@ -35,6 +36,7 @@ const _branchMeta = [
   _BranchMeta('Sales Return', 'F8 · Sales Return', 'Sales Return'),
   _BranchMeta('Purchase Return', 'Purchase · Return', 'Purchase Return'),
   _BranchMeta('Packaging', 'Master · Packaging', 'Packaging'),
+  _BranchMeta('License Holder', 'Master · License Holder', 'License Holder'),
 ];
 
 /// The persistent app chrome: fixed left sidebar, fixed top header,
@@ -161,6 +163,7 @@ class _AppShellState extends ConsumerState<AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    AppTypography.currentBrightness = Theme.of(context).brightness;
     final meta = _branchMeta[widget.navigationShell.currentIndex];
     final currentBranch = widget.navigationShell.currentIndex;
 

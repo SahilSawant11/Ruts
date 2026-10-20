@@ -4,6 +4,8 @@ class CreateSaleRequest {
   const CreateSaleRequest({
     required this.billNo,
     this.customerId,
+    this.permitNo,
+    this.permitHolderName,
     required this.payMode,
     required this.taxableValue,
     required this.totalDiscount,
@@ -15,6 +17,8 @@ class CreateSaleRequest {
 
   final String billNo;
   final String? customerId;
+  final String? permitNo;
+  final String? permitHolderName;
   final String payMode;
   final double taxableValue;
   final double totalDiscount;
@@ -26,6 +30,8 @@ class CreateSaleRequest {
   Map<String, dynamic> toJson() => {
         'billNo': billNo,
         'customerId': customerId,
+        'permitNo': permitNo,
+        'permitHolderName': permitHolderName,
         'payMode': payMode,
         'taxableValue': taxableValue,
         'totalDiscount': totalDiscount,

@@ -81,9 +81,29 @@ class CartController extends StateNotifier<CartState> {
       return false;
     }
 
+    // Check inventory stock availability — do not allow selling items not present in inventory.
+    final availableStock = material.stockQty;
+    if (availableStock <= 0) {
+      state = state.copyWith(
+        scanError: 'Cannot sell "${material.name}": Out of stock / not present in inventory.',
+      );
+      return false;
+    }
+
     // If it's already in the cart, bump the quantity instead of adding
-    // a duplicate row.
+    // a duplicate row, checking stock limits.
     final existingIndex = state.items.indexWhere((i) => i.barcode == material.barcode);
+    final currentInCart = existingIndex != -1 ? state.items[existingIndex].qty : 0;
+    if (currentInCart + addQty > availableStock) {
+      final remaining = availableStock - currentInCart;
+      state = state.copyWith(
+        scanError: remaining <= 0
+            ? 'Cannot add more. All $availableStock unit(s) of "${material.name}" are already in the cart.'
+            : 'Cannot add $addQty. Only $remaining unit(s) available in inventory for "${material.name}".',
+      );
+      return false;
+    }
+
     if (existingIndex != -1) {
       final updated = [...state.items];
       updated[existingIndex] = updated[existingIndex].copyWith(qty: updated[existingIndex].qty + addQty);
@@ -124,6 +144,15 @@ class CartController extends StateNotifier<CartState> {
     if (newQty <= 0) {
       removeAt(index);
       return true;
+    }
+
+    final material = _findMaterial(currentItem.barcode);
+    final availableStock = material?.stockQty ?? 0;
+    if (newQty > currentItem.qty && newQty > availableStock) {
+      state = state.copyWith(
+        scanError: 'Cannot increase quantity. Only $availableStock unit(s) available in inventory for "${currentItem.material}".',
+      );
+      return false;
     }
 
     final newTotalQty = state.totalQty - currentItem.qty + newQty;

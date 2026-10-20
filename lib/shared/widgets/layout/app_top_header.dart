@@ -282,11 +282,12 @@ class _KeyboardShortcutsDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = AppColors.isDark(context);
-
     return Dialog(
-      backgroundColor: isDark ? const Color(0xFF1B1E28) : Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: AppColors.surfaceFor(context),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: AppColors.borderFor(context)),
+      ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560),
         child: Padding(
@@ -304,7 +305,7 @@ class _KeyboardShortcutsDialog extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: AppColors.primarySoft,
+                          color: AppColors.primarySoftFor(context),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Icon(

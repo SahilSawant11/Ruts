@@ -179,11 +179,15 @@ class _CategoriesTableState extends ConsumerState<CategoriesTable> {
               onTap: () => setState(() => _sortAscending = !_sortAscending),
               child: Row(
                 children: [
-                  Text(
-                    'CATEGORY NAME',
-                    style: AppTypography.label.copyWith(
-                      color: AppColors.textMutedFor(context),
-                      fontWeight: FontWeight.w700,
+                  Flexible(
+                    child: Text(
+                      'CATEGORY NAME',
+                      style: AppTypography.label.copyWith(
+                        color: AppColors.textMutedFor(context),
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   const SizedBox(width: 3),

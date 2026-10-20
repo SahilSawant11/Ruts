@@ -293,11 +293,15 @@ class _SuppliersTableState extends ConsumerState<SuppliersTable> {
         child: Row(
           mainAxisAlignment: alignEnd ? MainAxisAlignment.end : MainAxisAlignment.start,
           children: [
-            Text(
-              label,
-              style: AppTypography.label.copyWith(
-                color: isCurrent ? AppColors.primary : AppColors.textMutedFor(context),
-                fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w600,
+            Flexible(
+              child: Text(
+                label,
+                style: AppTypography.label.copyWith(
+                  color: isCurrent ? AppColors.primary : AppColors.textMutedFor(context),
+                  fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w600,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             if (isCurrent) ...[

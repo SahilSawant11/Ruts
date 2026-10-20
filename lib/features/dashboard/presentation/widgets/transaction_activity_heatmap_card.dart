@@ -182,7 +182,7 @@ class _ToggleButton extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primarySoft : Colors.transparent,
+          color: selected ? AppColors.primarySoftFor(context) : Colors.transparent,
           borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
         child: Text(
@@ -553,7 +553,7 @@ class _DayCell extends StatelessWidget {
       return AppColors.surfaceAltFor(context);
     }
     if (level < 0.25) {
-      return AppColors.primarySoft;
+      return AppColors.primarySoftFor(context);
     }
     if (level < 0.5) {
       return AppColors.primary.withValues(alpha: 0.45);
@@ -581,7 +581,7 @@ class _LegendCell extends StatelessWidget {
     if (level <= 0) {
       color = AppColors.surfaceAltFor(context);
     } else if (level < 0.25) {
-      color = AppColors.primarySoft;
+      color = AppColors.primarySoftFor(context);
     } else if (level < 0.5) {
       color = AppColors.primary.withValues(alpha: 0.45);
     } else if (level < 0.75) {

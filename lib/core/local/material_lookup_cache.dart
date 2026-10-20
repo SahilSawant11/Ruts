@@ -23,16 +23,17 @@ class MaterialLookupCache {
   /// Build the cache from the local SQLite table.
   static Future<MaterialLookupCache> load(AppDatabase db) async {
     final rows = await db.customSelect(
-      'SELECT id, barcode, name, '
-      'COALESCE(manufacturer, \'\') AS manufacturer, '
-      'COALESCE(category, \'\') AS category, '
-      'COALESCE(packing, \'\') AS packing, '
-      'COALESCE(sale_rate, 0.0) AS sale_rate, '
-      'COALESCE(tax_percent, 0.0) AS tax_percent, '
-      'COALESCE(stock_qty, 0) AS stock_qty, '
-      'COALESCE(is_active, 1) AS is_active, '
-      'COALESCE(sync_status, \'synced\') AS sync_status '
-      'FROM cached_materials',
+      'SELECT m.id, m.barcode, m.name, '
+      'COALESCE(m.manufacturer, \'\') AS manufacturer, '
+      'COALESCE(m.category, \'\') AS category, '
+      'COALESCE(m.packing, \'\') AS packing, '
+      'COALESCE(m.sale_rate, 0.0) AS sale_rate, '
+      'COALESCE(m.tax_percent, 0.0) AS tax_percent, '
+      'COALESCE(s.qty_on_hand, 0) AS stock_qty, '
+      'COALESCE(m.is_active, 1) AS is_active, '
+      'COALESCE(m.sync_status, \'synced\') AS sync_status '
+      'FROM cached_materials m '
+      'LEFT JOIN cached_inventory_stocks s ON s.material_id = m.id',
     ).get();
 
     final byBarcode = <String, MaterialDto>{};

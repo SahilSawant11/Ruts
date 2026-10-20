@@ -182,6 +182,16 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                     },
                   ),
                   SidebarItem(
+                    icon: Icons.badge_outlined,
+                    label: 'License Holder',
+                    active: location == '/license-holder',
+                    collapsed: collapsed,
+                    onTap: () {
+                      context.go('/license-holder');
+                      setState(() => _isHovered = false);
+                    },
+                  ),
+                  SidebarItem(
                     icon: Icons.dashboard_customize_outlined,
                     label: 'All Masters',
                     shortcut: 'F9',
@@ -347,7 +357,7 @@ class _CocktailMark extends StatelessWidget {
       width: 36,
       height: 36,
       decoration: BoxDecoration(
-        color: AppColors.primarySoft,
+        color: AppColors.primarySoftFor(context),
         borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(color: AppColors.borderFor(context)),
       ),

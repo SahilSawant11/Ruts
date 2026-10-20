@@ -16,7 +16,7 @@ class InventoryItemProfile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final spec = _specFor(item);
+    final spec = _specFor(context, item);
 
     return Container(
       width: size,
@@ -65,41 +65,54 @@ class InventoryItemProfile extends StatelessWidget {
     );
   }
 
-  _ProfileSpec _specFor(InventoryOverviewItem item) {
+  _ProfileSpec _specFor(BuildContext context, InventoryOverviewItem item) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final packing = item.packing.toLowerCase();
     final category = item.category.toLowerCase();
 
     if (category.contains('beer')) {
       if (packing.contains('can')) {
-        return const _ProfileSpec(
+        return _ProfileSpec(
           icon: Icons.local_drink_rounded,
           badge: '',
           foreground: AppColors.chartBlue,
-          background: Color(0xFFEAF6FE),
-          border: Color(0xFFC8E7FB),
+          background: isDark
+              ? AppColors.chartBlue.withValues(alpha: 0.18)
+              : const Color(0xFFEAF6FE),
+          border: isDark
+              ? AppColors.chartBlue.withValues(alpha: 0.38)
+              : const Color(0xFFC8E7FB),
           iconSize: 20,
         );
       }
-      return const _ProfileSpec(
+      return _ProfileSpec(
         icon: Icons.liquor_rounded,
         badge: '',
         foreground: AppColors.warning,
-        background: AppColors.warningSoft,
-        border: Color(0xFFF4D6A8),
+        background: isDark
+            ? AppColors.warning.withValues(alpha: 0.18)
+            : AppColors.warningSoft,
+        border: isDark
+            ? AppColors.warning.withValues(alpha: 0.38)
+            : const Color(0xFFF4D6A8),
         iconSize: 20,
       );
     }
 
     if (category.contains('whisk')) {
-      return _whiskySpec(packing);
+      return _whiskySpec(isDark, packing);
     }
 
     if (category.contains('rum')) {
       return _spiritSpec(
         packing,
         foreground: AppColors.chartTeal,
-        background: const Color(0xFFE8FAF7),
-        border: const Color(0xFFBEEFE6),
+        background: isDark
+            ? AppColors.chartTeal.withValues(alpha: 0.18)
+            : const Color(0xFFE8FAF7),
+        border: isDark
+            ? AppColors.chartTeal.withValues(alpha: 0.38)
+            : const Color(0xFFBEEFE6),
       );
     }
 
@@ -107,18 +120,26 @@ class InventoryItemProfile extends StatelessWidget {
       return _spiritSpec(
         packing,
         foreground: AppColors.info,
-        background: const Color(0xFFEAF3FF),
-        border: const Color(0xFFC9DCFF),
+        background: isDark
+            ? AppColors.info.withValues(alpha: 0.18)
+            : const Color(0xFFEAF3FF),
+        border: isDark
+            ? AppColors.info.withValues(alpha: 0.38)
+            : const Color(0xFFC9DCFF),
       );
     }
 
     if (category.contains('wine')) {
-      return const _ProfileSpec(
+      return _ProfileSpec(
         icon: Icons.wine_bar_rounded,
         badge: 'WNE',
         foreground: AppColors.danger,
-        background: AppColors.dangerSoft,
-        border: Color(0xFFF2C8CA),
+        background: isDark
+            ? AppColors.danger.withValues(alpha: 0.18)
+            : AppColors.dangerSoft,
+        border: isDark
+            ? AppColors.danger.withValues(alpha: 0.38)
+            : const Color(0xFFF2C8CA),
         iconSize: 20,
       );
     }
@@ -126,49 +147,59 @@ class InventoryItemProfile extends StatelessWidget {
     return _spiritSpec(
       packing,
       foreground: AppColors.primary,
-      background: AppColors.primarySoft,
-      border: const Color(0xFFD8D0FB),
+      background: isDark
+          ? AppColors.primary.withValues(alpha: 0.18)
+          : AppColors.primarySoftLight,
+      border: isDark
+          ? AppColors.primary.withValues(alpha: 0.38)
+          : const Color(0xFFD8D0FB),
     );
   }
 
-  _ProfileSpec _whiskySpec(String packing) {
+  _ProfileSpec _whiskySpec(bool isDark, String packing) {
+    final bg = isDark
+        ? AppColors.primary.withValues(alpha: 0.18)
+        : AppColors.primarySoftLight;
+    final bdr = isDark
+        ? AppColors.primary.withValues(alpha: 0.38)
+        : const Color(0xFFD8D0FB);
     final ml = _extractMl(packing);
     if (ml != null && ml <= 100) {
-      return const _ProfileSpec(
+      return _ProfileSpec(
         icon: Icons.local_bar_rounded,
         badge: '90',
         foreground: AppColors.primary,
-        background: AppColors.primarySoft,
-        border: Color(0xFFD8D0FB),
+        background: bg,
+        border: bdr,
         iconSize: 17,
       );
     }
     if (ml != null && ml <= 200) {
-      return const _ProfileSpec(
+      return _ProfileSpec(
         icon: Icons.local_bar_rounded,
         badge: '180',
         foreground: AppColors.primary,
-        background: AppColors.primarySoft,
-        border: Color(0xFFD8D0FB),
+        background: bg,
+        border: bdr,
         iconSize: 20,
       );
     }
     if (ml != null && ml <= 400) {
-      return const _ProfileSpec(
+      return _ProfileSpec(
         icon: Icons.sports_bar_rounded,
         badge: '375',
         foreground: AppColors.primary,
-        background: AppColors.primarySoft,
-        border: Color(0xFFD8D0FB),
+        background: bg,
+        border: bdr,
         iconSize: 19,
       );
     }
-    return const _ProfileSpec(
+    return _ProfileSpec(
       icon: Icons.liquor_rounded,
       badge: '750',
       foreground: AppColors.primary,
-      background: AppColors.primarySoft,
-      border: Color(0xFFD8D0FB),
+      background: bg,
+      border: bdr,
       iconSize: 20,
     );
   }

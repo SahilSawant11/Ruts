@@ -9,6 +9,7 @@ import 'models/category_dto.dart';
 import 'models/manufacturer_dto.dart';
 import 'models/packaging_dto.dart';
 import 'models/supplier_dto.dart';
+import 'models/license_holder_dto.dart';
 import '../../../core/local/material_lookup_cache.dart';
 
 final appDatabaseProvider = Provider<AppDatabase>((ref) {
@@ -59,6 +60,10 @@ final manufacturersListProvider = FutureProvider<List<ManufacturerDto>>((ref) {
 
 final packingsListProvider = FutureProvider<List<PackagingDto>>((ref) {
   return ref.watch(mastersRepositoryProvider).getPackings();
+});
+
+final licenseHoldersListProvider = FutureProvider<List<LicenseHolderDto>>((ref) {
+  return ref.watch(mastersRepositoryProvider).getLicenseHolders();
 });
 
 final pendingMastersSyncCountProvider = StreamProvider<int>((ref) {

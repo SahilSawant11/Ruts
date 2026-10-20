@@ -7,6 +7,7 @@ import '../features/masters/presentation/screens/manufacturer_master_screen.dart
 import '../features/masters/presentation/screens/material_master_screen.dart';
 import '../features/masters/presentation/screens/packaging_master_screen.dart';
 import '../features/masters/presentation/screens/supplier_master_screen.dart';
+import '../features/masters/presentation/screens/license_holder_master_screen.dart';
 import '../features/purchase/presentation/screens/purchase_bill_screen.dart';
 import '../features/purchase/presentation/screens/purchase_return_screen.dart';
 import '../features/reports/presentation/screens/brandwise_report_screen.dart';
@@ -73,6 +74,9 @@ final appRouter = GoRouter(
         ]),
         StatefulShellBranch(routes: [
           GoRoute(path: '/packaging', builder: (context, state) => const PackagingMasterScreen()),
+        ]),
+        StatefulShellBranch(routes: [
+          GoRoute(path: '/license-holder', builder: (context, state) => const LicenseHolderMasterScreen()),
         ]),
       ],
     ),

@@ -7,8 +7,9 @@ import '../../../core/network/api_exception.dart';
 import 'local_masters_repository.dart';
 import 'models/save_material_request.dart';
 import 'models/save_supplier_request.dart';
+import 'models/save_license_holder_request.dart';
 
-enum MasterImportTarget { materials, suppliers }
+enum MasterImportTarget { materials, suppliers, licenseHolders }
 
 class MasterImportSummary {
   const MasterImportSummary({
@@ -27,7 +28,11 @@ class MasterImportSummary {
   final int failed;
   final List<String> errors;
 
-  String get entityLabel => target == MasterImportTarget.materials ? 'materials' : 'suppliers';
+  String get entityLabel => switch (target) {
+        MasterImportTarget.materials => 'materials',
+        MasterImportTarget.suppliers => 'suppliers',
+        MasterImportTarget.licenseHolders => 'license holders',
+      };
 
   String get message {
     final parts = <String>[
@@ -69,7 +74,85 @@ class MasterImportService {
     return switch (target) {
       MasterImportTarget.materials => _importMaterials(file.name, rows.skip(1).toList(), headerMap),
       MasterImportTarget.suppliers => _importSuppliers(file.name, rows.skip(1).toList(), headerMap),
+      MasterImportTarget.licenseHolders => _importLicenseHolders(file.name, rows.skip(1).toList(), headerMap),
     };
+  }
+
+  Future<MasterImportSummary> _importLicenseHolders(
+    String fileName,
+    List<List<String>> rows,
+    Map<String, int> headerMap,
+  ) async {
+    final permitIndex = _requiredIndex(headerMap, const [
+      'permitno',
+      'permitnumber',
+      'licenseno',
+      'licensenumber',
+      'permit',
+      'no',
+      'id'
+    ]);
+    final nameIndex = _requiredIndex(headerMap, const [
+      'permitholdername',
+      'permitholder',
+      'licenseholdername',
+      'licenseholder',
+      'holdername',
+      'name'
+    ]);
+    final dateIndex = _findIndex(headerMap, const ['issueddate', 'dateissued', 'date', 'issued', 'issue_date', 'issued_date']);
+    final whereIndex = _findIndex(headerMap, const ['wheregranted', 'type', 'validity', 'granted', 'where', 'where_granted']);
+
+    var imported = 0;
+    var skipped = 0;
+    var failed = 0;
+    final errors = <String>[];
+    final toUpsert = <SaveLicenseHolderRequest>[];
+
+    for (var rowNumber = 0; rowNumber < rows.length; rowNumber++) {
+      final row = rows[rowNumber];
+      if (_rowIsBlank(row)) continue;
+
+      final permitNo = _valueAt(row, permitIndex);
+      final name = _valueAt(row, nameIndex);
+
+      if (permitNo.isEmpty || name.isEmpty) {
+        skipped++;
+        continue;
+      }
+
+      final issuedDate = _nullable(_valueAt(row, dateIndex));
+      final whereGranted = _nullable(_valueAt(row, whereIndex));
+
+      toUpsert.add(
+        SaveLicenseHolderRequest(
+          permitNo: permitNo,
+          name: name,
+          issuedDate: issuedDate,
+          whereGranted: whereGranted,
+        ),
+      );
+      imported++;
+    }
+
+    if (toUpsert.isNotEmpty) {
+      try {
+        await _repo.batchUpsertLicenseHolders(toUpsert);
+      } catch (e) {
+        failed += toUpsert.length;
+        imported -= toUpsert.length;
+        errors.add('Failed to save imported records: $e');
+      }
+    }
+
+    return MasterImportSummary(
+      target: MasterImportTarget.licenseHolders,
+      fileName: fileName,
+      imported: imported,
+      skipped: skipped,
+      failed: failed,
+      errors: errors,
+    );
   }
 
   Future<MasterImportSummary> _importMaterials(

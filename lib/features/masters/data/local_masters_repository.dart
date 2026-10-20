@@ -16,6 +16,8 @@ import 'models/save_material_request.dart';
 import 'models/save_packaging_request.dart';
 import 'models/save_supplier_request.dart';
 import 'models/supplier_dto.dart';
+import 'models/license_holder_dto.dart';
+import 'models/save_license_holder_request.dart';
 
 class LocalMastersRepository {
   LocalMastersRepository(this._db, this._remote, {this.onMaterialsChanged});
@@ -205,6 +207,132 @@ class LocalMastersRepository {
       name: nextName,
       description: request.description?.trim().isEmpty ?? true ? null : request.description?.trim(),
     );
+  }
+
+  Future<List<LicenseHolderDto>> getLicenseHolders() async {
+    final rows = await (_db.select(_db.cachedLicenseHolders)
+          ..orderBy([(tbl) => OrderingTerm.asc(tbl.name)]))
+        .get();
+    return rows
+        .map((row) => LicenseHolderDto(
+              id: row.id,
+              permitNo: row.permitNo,
+              name: row.name,
+              issuedDate: row.issuedDate,
+              whereGranted: row.whereGranted,
+              createdAt: row.createdAt,
+              updatedAt: row.updatedAt,
+            ))
+        .toList();
+  }
+
+  Future<LicenseHolderDto> createLicenseHolder(SaveLicenseHolderRequest request) async {
+    final permitNo = request.permitNo.trim();
+    final name = request.name.trim();
+    if (permitNo.isEmpty) {
+      throw const ApiException('Permit Number is required.');
+    }
+    if (name.isEmpty) {
+      throw const ApiException('Permit Holder Name is required.');
+    }
+
+    final existing = await (_db.select(_db.cachedLicenseHolders)
+          ..where((tbl) => tbl.permitNo.lower().equals(permitNo.toLowerCase())))
+        .getSingleOrNull();
+    if (existing != null) {
+      throw const ApiException('A license holder with this permit number already exists.');
+    }
+
+    final now = DateTime.now().toUtc();
+    final id = permitNo;
+    await _db.into(_db.cachedLicenseHolders).insert(
+          CachedLicenseHoldersCompanion.insert(
+            id: id,
+            permitNo: permitNo,
+            name: name,
+            issuedDate: Value(request.issuedDate?.trim().isEmpty ?? true ? null : request.issuedDate?.trim()),
+            whereGranted: Value(request.whereGranted?.trim().isEmpty ?? true ? null : request.whereGranted?.trim()),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
+
+    return LicenseHolderDto(
+      id: id,
+      permitNo: permitNo,
+      name: name,
+      issuedDate: request.issuedDate?.trim().isEmpty ?? true ? null : request.issuedDate?.trim(),
+      whereGranted: request.whereGranted?.trim().isEmpty ?? true ? null : request.whereGranted?.trim(),
+      createdAt: now,
+      updatedAt: now,
+    );
+  }
+
+  Future<LicenseHolderDto> updateLicenseHolder(String id, SaveLicenseHolderRequest request) async {
+    final permitNo = request.permitNo.trim();
+    final name = request.name.trim();
+    if (permitNo.isEmpty) {
+      throw const ApiException('Permit Number is required.');
+    }
+    if (name.isEmpty) {
+      throw const ApiException('Permit Holder Name is required.');
+    }
+
+    final duplicate = await (_db.select(_db.cachedLicenseHolders)
+          ..where((tbl) => tbl.permitNo.lower().equals(permitNo.toLowerCase())))
+        .getSingleOrNull();
+    if (duplicate != null && duplicate.id != id) {
+      throw const ApiException('Another license holder already has this permit number.');
+    }
+
+    final now = DateTime.now().toUtc();
+    await (_db.update(_db.cachedLicenseHolders)..where((tbl) => tbl.id.equals(id))).write(
+      CachedLicenseHoldersCompanion(
+        permitNo: Value(permitNo),
+        name: Value(name),
+        issuedDate: Value(request.issuedDate?.trim().isEmpty ?? true ? null : request.issuedDate?.trim()),
+        whereGranted: Value(request.whereGranted?.trim().isEmpty ?? true ? null : request.whereGranted?.trim()),
+        updatedAt: Value(now),
+      ),
+    );
+
+    return LicenseHolderDto(
+      id: id,
+      permitNo: permitNo,
+      name: name,
+      issuedDate: request.issuedDate?.trim().isEmpty ?? true ? null : request.issuedDate?.trim(),
+      whereGranted: request.whereGranted?.trim().isEmpty ?? true ? null : request.whereGranted?.trim(),
+      updatedAt: now,
+    );
+  }
+
+  Future<void> deleteLicenseHolder(String id) async {
+    await (_db.delete(_db.cachedLicenseHolders)..where((tbl) => tbl.id.equals(id))).go();
+  }
+
+  Future<void> batchUpsertLicenseHolders(List<SaveLicenseHolderRequest> requests) async {
+    final now = DateTime.now().toUtc();
+    await _db.batch((batch) {
+      for (final req in requests) {
+        final permitNo = req.permitNo.trim();
+        final name = req.name.trim();
+        if (permitNo.isEmpty || name.isEmpty) continue;
+        batch.insert(
+          _db.cachedLicenseHolders,
+          CachedLicenseHoldersCompanion.insert(
+            id: permitNo,
+            permitNo: permitNo,
+            name: name,
+            issuedDate: Value(req.issuedDate?.trim().isEmpty ?? true ? null : req.issuedDate?.trim()),
+            whereGranted: Value(req.whereGranted?.trim().isEmpty ?? true ? null : req.whereGranted?.trim()),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
+      }
+    });
   }
 
   Future<List<CategoryDto>> _getCachedCategories() async {

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/auth/auth_controller.dart';
 import '../core/local/app_bootstrap_provider.dart';
 import '../core/theme/app_theme.dart';
+import '../core/theme/app_typography.dart';
 import '../core/theme/font_scale_provider.dart';
 import '../core/theme/theme_mode_provider.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
@@ -18,7 +19,17 @@ class PosApp extends ConsumerWidget {
     final themeMode = ref.watch(appThemeModeProvider);
     final fontScale = ref.watch(appFontScaleProvider);
 
+    final isPlatformDark =
+        WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+            Brightness.dark;
+    AppTypography.currentBrightness = switch (themeMode) {
+      ThemeMode.dark => Brightness.dark,
+      ThemeMode.light => Brightness.light,
+      ThemeMode.system => isPlatformDark ? Brightness.dark : Brightness.light,
+    };
+
     Widget appBuilder(BuildContext context, Widget? child) {
+      AppTypography.currentBrightness = Theme.of(context).brightness;
       return MediaQuery(
         data: MediaQuery.of(context).copyWith(
           textScaler: TextScaler.linear(fontScale),

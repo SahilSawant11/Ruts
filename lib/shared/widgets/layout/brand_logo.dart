@@ -30,7 +30,7 @@ class BrandLogo extends StatelessWidget {
           width: markSize,
           height: markSize,
           decoration: BoxDecoration(
-            color: AppColors.primarySoft,
+            color: AppColors.primarySoftFor(context),
             borderRadius: BorderRadius.circular(AppRadius.sm),
             border: Border.all(color: borderColor),
           ),

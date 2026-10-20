@@ -582,14 +582,24 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
                                       color: AppColors.primary,
                                     ),
                                   ),
-                                  if (item.taxPercent > 0)
-                                    Text(
-                                      'GST ${item.taxPercent.toStringAsFixed(0)}%',
-                                      style: AppTypography.caption.copyWith(
+                                  const SizedBox(height: 2),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                    decoration: BoxDecoration(
+                                      color: item.stockQty > 0
+                                          ? AppColors.success.withValues(alpha: 0.12)
+                                          : AppColors.danger.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                                    ),
+                                    child: Text(
+                                      item.stockQty > 0 ? '${item.stockQty} in stock' : 'Out of stock',
+                                      style: TextStyle(
                                         fontSize: 9.5,
-                                        color: AppColors.textMutedFor(context),
+                                        fontWeight: FontWeight.w700,
+                                        color: item.stockQty > 0 ? AppColors.success : AppColors.danger,
                                       ),
                                     ),
+                                  ),
                                 ],
                               ),
                             ],

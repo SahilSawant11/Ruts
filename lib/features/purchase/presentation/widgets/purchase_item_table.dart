@@ -36,17 +36,17 @@ class PurchaseItemTable extends ConsumerWidget {
           ),
           child: Row(
             children: [
-              _colHeader('#', flex: 1, alignment: Alignment.centerLeft),
-              _colHeader('MAKE', flex: 3),
-              _colHeader('MATERIAL / ITEM NAME', flex: 6),
-              _colHeader('BATCH', flex: 2),
-              _colHeader('PACK', flex: 2),
-              _colHeader('QTY', flex: 2, alignment: Alignment.centerRight),
-              _colHeader('RATE', flex: 2, alignment: Alignment.centerRight),
-              _colHeader('DISC', flex: 2, alignment: Alignment.centerRight),
-              _colHeader('TAX %', flex: 2, alignment: Alignment.centerRight),
-              _colHeader('TOTAL', flex: 3, alignment: Alignment.centerRight),
-              _colHeader('DEL', width: 36, alignment: Alignment.center),
+              _colHeader(context, '#', flex: 1, alignment: Alignment.centerLeft),
+              _colHeader(context, 'MAKE', flex: 3),
+              _colHeader(context, 'MATERIAL / ITEM NAME', flex: 6),
+              _colHeader(context, 'BATCH', flex: 2),
+              _colHeader(context, 'PACK', flex: 2),
+              _colHeader(context, 'QTY', flex: 2, alignment: Alignment.centerRight),
+              _colHeader(context, 'RATE', flex: 2, alignment: Alignment.centerRight),
+              _colHeader(context, 'DISC', flex: 2, alignment: Alignment.centerRight),
+              _colHeader(context, 'TAX %', flex: 2, alignment: Alignment.centerRight),
+              _colHeader(context, 'TOTAL', flex: 3, alignment: Alignment.centerRight),
+              _colHeader(context, 'DEL', width: 36, alignment: Alignment.center),
             ],
           ),
         ),
@@ -80,6 +80,7 @@ class PurchaseItemTable extends ConsumerWidget {
   }
 
   Widget _colHeader(
+    BuildContext context,
     String label, {
     int? flex,
     double? width,
@@ -93,6 +94,7 @@ class PurchaseItemTable extends ConsumerWidget {
           fontSize: 10,
           fontWeight: FontWeight.w700,
           letterSpacing: 0.6,
+          color: AppColors.textMutedFor(context),
         ),
       ),
     );

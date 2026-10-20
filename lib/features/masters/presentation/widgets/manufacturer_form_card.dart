@@ -199,31 +199,40 @@ class _ManufacturerFormCardState extends ConsumerState<ManufacturerFormCard> {
             const SizedBox(height: AppSpacing.sm),
             Divider(height: 1, color: AppColors.borderFor(context)),
             const SizedBox(height: AppSpacing.sm),
-            Row(
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              runAlignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.xs,
               children: [
                 SecondaryButton(
                   label: 'New Producer',
                   icon: Icons.add_rounded,
                   onPressed: () => ref.read(manufacturerBrowserProvider.notifier).startNew(),
                 ),
-                const Spacer(),
-                if (!browser.isNew) ...[
-                  SecondaryButton(
-                    label: browser.isEditing ? 'Cancel / Lock' : 'Modify',
-                    icon: browser.isEditing ? Icons.lock_outline_rounded : Icons.edit_outlined,
-                    onPressed: () {
-                      if (browser.isEditing) {
-                        _populate(browser.current?.name, browser.current?.description);
-                      }
-                      ref.read(manufacturerBrowserProvider.notifier).toggleEditing();
-                    },
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                ],
-                PrimaryButton(
-                  label: browser.isSaving ? 'Saving…' : (browser.isNew ? 'Create Manufacturer' : 'Save Changes'),
-                  icon: Icons.check_circle_outline_rounded,
-                  onPressed: editable && !browser.isSaving ? _save : null,
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.xs,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    if (!browser.isNew)
+                      SecondaryButton(
+                        label: browser.isEditing ? 'Cancel' : 'Modify',
+                        icon: browser.isEditing ? Icons.lock_outline_rounded : Icons.edit_outlined,
+                        onPressed: () {
+                          if (browser.isEditing) {
+                            _populate(browser.current?.name, browser.current?.description);
+                          }
+                          ref.read(manufacturerBrowserProvider.notifier).toggleEditing();
+                        },
+                      ),
+                    PrimaryButton(
+                      label: browser.isSaving ? 'Saving…' : (browser.isNew ? 'Create Manufacturer' : 'Save Changes'),
+                      icon: Icons.check_circle_outline_rounded,
+                      onPressed: editable && !browser.isSaving ? _save : null,
+                    ),
+                  ],
                 ),
               ],
             ),

@@ -59,14 +59,13 @@ class _BrandwiseFiltersCardState extends ConsumerState<BrandwiseFiltersCard> {
         children: [
           SectionHeader(
             title: 'Filters',
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
+            trailing: Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.xs,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 _modeToggle(context, mode),
-                if (widget.trailingAction != null) ...[
-                  const SizedBox(width: AppSpacing.sm),
-                  widget.trailingAction!,
-                ],
+                if (widget.trailingAction != null) widget.trailingAction!,
               ],
             ),
           ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'app_typography.dart';
 
 /// Centralized color tokens.
 /// Never hardcode a Color(...) inside a widget — add it here first.
@@ -8,8 +9,10 @@ class AppColors {
   // Brand
   static const Color primary = Color(0xFF6C5CE7);
   static const Color primaryDark = Color(0xFF5A46D6);
-  static const Color primarySoft = Color(0xFFEFECFE);
+  static const Color primarySoftLight = Color(0xFFEFECFE);
   static const Color primarySoftDark = Color(0xFF28233C);
+  static Color get primarySoft =>
+      AppTypography.isDark ? primarySoftDark : primarySoftLight;
 
   // Status
   static const Color success = Color(0xFF12A150);

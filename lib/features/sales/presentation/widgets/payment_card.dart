@@ -41,16 +41,12 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
   bool _handleKeyEvent(KeyEvent event) {
     if (event is! KeyDownEvent) return false;
     final isF8 = event.logicalKey == LogicalKeyboardKey.f8 || event.physicalKey == PhysicalKeyboardKey.f8;
-    final isF6 = event.logicalKey == LogicalKeyboardKey.f6 || event.physicalKey == PhysicalKeyboardKey.f6;
     final isEscape = event.logicalKey == LogicalKeyboardKey.escape || event.physicalKey == PhysicalKeyboardKey.escape;
 
     if (isF8) {
       if (!_isSaving) {
         _saveSale();
       }
-      return true;
-    } else if (isF6) {
-      _holdBill();
       return true;
     } else if (isEscape) {
       _clearBill();
@@ -67,15 +63,6 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
     ref.read(cartControllerProvider.notifier).clear();
     _receivedController.clear();
     _showSnack('All scanned sales records cleared (Esc).');
-  }
-
-  void _holdBill() {
-    final cart = ref.read(cartControllerProvider);
-    if (cart.isEmpty) {
-      _showSnack('Cart is empty. Nothing to hold.', isError: true);
-      return;
-    }
-    _showSnack('Bill held as pending draft (F6).');
   }
 
   Future<void> _saveSale() async {
@@ -260,29 +247,14 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
           ),
           const SizedBox(height: AppSpacing.xs),
 
-          // Sub Row: Hold Bill (F6) & Clear Bill
-          Row(
-            children: [
-              Expanded(
-                child: SecondaryButton(
-                  label: 'Hold',
-                  shortcut: 'F6',
-                  icon: Icons.pause_circle_outline_rounded,
-                  dense: true,
-                  onPressed: _holdBill,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.xs),
-              Expanded(
-                child: DangerButton(
-                  label: 'Clear Bill',
-                  shortcut: 'Esc',
-                  icon: Icons.close_rounded,
-                  outline: true,
-                  onPressed: _clearBill,
-                ),
-              ),
-            ],
+          // Clear Bill Button
+          DangerButton(
+            label: 'Clear Bill',
+            shortcut: 'Esc',
+            icon: Icons.close_rounded,
+            outline: true,
+            expand: true,
+            onPressed: _clearBill,
           ),
         ],
       ),

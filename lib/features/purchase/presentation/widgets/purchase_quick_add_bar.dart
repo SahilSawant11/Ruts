@@ -581,7 +581,7 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
                           fontWeight: FontWeight.w600,
                           color: AppColors.textPrimaryFor(context),
                         ),
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           isDense: true,
                           filled: false,
                           border: InputBorder.none,
@@ -589,12 +589,13 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
                           focusedBorder: InputBorder.none,
                           contentPadding: EdgeInsets.zero,
                           hintText: 'e.g. 12x750',
-                          hintStyle: TextStyle(fontSize: 10, color: Colors.grey),
+                          hintStyle: AppTypography.captionFor(context).copyWith(fontSize: 10),
                         ),
                       ),
                     ),
                     // Quick Packaging Menu
                     PopupMenuButton<String>(
+                      color: AppColors.surfaceFor(context),
                       tooltip: 'Select Packaging',
                       icon: Icon(
                         Icons.arrow_drop_down_rounded,
@@ -614,7 +615,13 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
                             .map((p) => PopupMenuItem<String>(
                                   value: p,
                                   height: 32,
-                                  child: Text(p, style: const TextStyle(fontSize: 12)),
+                                  child: Text(
+                                    p,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.textPrimaryFor(context),
+                                    ),
+                                  ),
                                 ))
                             .toList();
                       },

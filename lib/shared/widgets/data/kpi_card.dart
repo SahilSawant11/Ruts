@@ -74,13 +74,18 @@ class KpiCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                label.toUpperCase(),
-                style: AppTypography.label.copyWith(
-                  color: AppColors.textSecondaryFor(context),
+              Expanded(
+                child: Text(
+                  label.toUpperCase(),
+                  style: AppTypography.label.copyWith(
+                    color: AppColors.textSecondaryFor(context),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              if (icon != null)
+              if (icon != null) ...[
+                const SizedBox(width: 6),
                 Container(
                   width: 40,
                   height: 40,
@@ -105,31 +110,34 @@ class KpiCard extends StatelessWidget {
                   alignment: Alignment.center,
                   child: Icon(icon, size: 18, color: _iconFg(context)),
                 ),
+              ],
             ],
           ),
           const SizedBox(height: AppSpacing.xs),
-          Text(
-            value,
-            style: AppTypography.h1.copyWith(
-              fontSize: 29,
-              height: 1.05,
-              color: AppColors.textPrimaryFor(context),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: AppTypography.h1.copyWith(
+                fontSize: 29,
+                height: 1.05,
+                color: AppColors.textPrimaryFor(context),
+              ),
             ),
           ),
           if (trendText != null) ...[
             const SizedBox(height: 6),
-            Row(
-              children: [
-                Text(
-                  trendText!,
-                  style: AppTypography.bodyMuted.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: trendUp == null
-                        ? AppColors.textSecondaryFor(context)
-                        : (trendUp! ? AppColors.success : AppColors.danger),
-                  ),
-                ),
-              ],
+            Text(
+              trendText!,
+              style: AppTypography.bodyMuted.copyWith(
+                fontWeight: FontWeight.w700,
+                color: trendUp == null
+                    ? AppColors.textSecondaryFor(context)
+                    : (trendUp! ? AppColors.success : AppColors.danger),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
           if (progress != null) ...[

@@ -155,20 +155,44 @@ class _ReportFiltersCardState extends ConsumerState<ReportFiltersCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeader(
-            title: 'Filters',
-            trailing: (widget.tabs != null || widget.trailingAction != null)
-                ? Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (widget.tabs != null) widget.tabs!,
-                      if (widget.trailingAction != null) ...[
-                        const SizedBox(width: AppSpacing.md),
-                        widget.trailingAction!,
-                      ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isTight = constraints.maxWidth < 700;
+              if (isTight) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SectionHeader(title: 'Filters'),
+                    if (widget.tabs != null || widget.trailingAction != null) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      Wrap(
+                        spacing: AppSpacing.sm,
+                        runSpacing: AppSpacing.xs,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          if (widget.tabs != null) widget.tabs!,
+                          if (widget.trailingAction != null) widget.trailingAction!,
+                        ],
+                      ),
                     ],
-                  )
-                : null,
+                  ],
+                );
+              }
+              return SectionHeader(
+                title: 'Filters',
+                trailing: (widget.tabs != null || widget.trailingAction != null)
+                    ? Wrap(
+                        spacing: AppSpacing.md,
+                        runSpacing: AppSpacing.xs,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          if (widget.tabs != null) widget.tabs!,
+                          if (widget.trailingAction != null) widget.trailingAction!,
+                        ],
+                      )
+                    : null,
+              );
+            },
           ),
           const SizedBox(height: AppSpacing.md),
           LayoutBuilder(

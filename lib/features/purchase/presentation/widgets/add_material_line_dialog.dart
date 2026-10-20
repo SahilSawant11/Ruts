@@ -295,7 +295,11 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
     }
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+      backgroundColor: AppColors.surfaceFor(context),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        side: BorderSide(color: AppColors.borderFor(context)),
+      ),
       child: Container(
         width: 520,
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -303,7 +307,7 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Add Purchase Line', style: AppTypography.h2),
+            Text('Add Purchase Line', style: AppTypography.h2For(context)),
             const SizedBox(height: AppSpacing.md),
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -416,7 +420,7 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
               Container(
                 padding: const EdgeInsets.all(AppSpacing.sm),
                 decoration: BoxDecoration(
-                  color: AppColors.primarySoft,
+                  color: AppColors.primarySoftFor(context),
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Text(
@@ -505,7 +509,7 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
               Container(
                 padding: const EdgeInsets.all(AppSpacing.sm),
                 decoration: BoxDecoration(
-                  color: AppColors.primarySoft,
+                  color: AppColors.primarySoftFor(context),
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Text(

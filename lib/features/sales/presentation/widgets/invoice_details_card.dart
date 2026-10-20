@@ -5,6 +5,8 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../data/models/customer_dto.dart';
 import '../../data/sales_providers.dart';
+import '../../../masters/data/masters_providers.dart';
+import '../../../masters/data/models/license_holder_dto.dart';
 import '../cart_controller.dart';
 import '../sales_providers.dart';
 
@@ -63,21 +65,18 @@ class InvoiceDetailsCard extends ConsumerWidget {
           _divider(borderColor),
 
           // License
-          const Expanded(
+          Expanded(
             flex: 3,
-            child: _MetaField(
-              label: 'LICENSE',
-              value: '223115 · J.R. TOLARAM',
-            ),
+            child: _LicenseHolderField(ref: ref),
           ),
           _divider(borderColor),
 
           // Type
-          const Expanded(
+          Expanded(
             flex: 2,
             child: _MetaField(
               label: 'TYPE',
-              value: 'Life Time',
+              value: ref.watch(activeLicenseHolderProvider)?.whereGranted ?? 'Life Time',
             ),
           ),
           _divider(borderColor),
@@ -283,6 +282,135 @@ class _CustomerField extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+class _LicenseHolderField extends StatelessWidget {
+  const _LicenseHolderField({required this.ref});
+
+  final WidgetRef ref;
+
+  @override
+  Widget build(BuildContext context) {
+    final activeHolder = ref.watch(activeLicenseHolderProvider);
+    final holdersAsync = ref.watch(licenseHoldersListProvider);
+
+    final displayValue = activeHolder != null
+        ? '${activeHolder.permitNo} · ${activeHolder.name}'
+        : 'No Permit Selected';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'LICENSE',
+          style: AppTypography.label.copyWith(
+            fontSize: 9.5,
+            letterSpacing: 0.5,
+            color: AppColors.textSecondaryFor(context),
+          ),
+        ),
+        const SizedBox(height: 2),
+        holdersAsync.maybeWhen(
+          data: (holders) {
+            if (holders.isEmpty) {
+              return Text(
+                'No Permits Added',
+                style: AppTypography.bodyMutedFor(context).copyWith(fontSize: 11),
+                overflow: TextOverflow.ellipsis,
+              );
+            }
+
+            return PopupMenuButton<LicenseHolderDto>(
+              tooltip: 'Change License Holder (Auto-rotates each bill)',
+              initialValue: activeHolder,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                side: BorderSide(color: AppColors.borderFor(context)),
+              ),
+              color: AppColors.backgroundFor(context),
+              onSelected: (holder) {
+                ref.read(selectedLicenseHolderProvider.notifier).state = holder;
+              },
+              itemBuilder: (context) => [
+                ...holders.map(
+                  (h) => PopupMenuItem<LicenseHolderDto>(
+                    value: h,
+                    child: Row(
+                      children: [
+                        Text(
+                          h.permitNo,
+                          style: AppTypography.mono.copyWith(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            h.name,
+                            style: AppTypography.body.copyWith(
+                              fontSize: 12,
+                              fontWeight: h.id == activeHolder?.id
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (h.id == activeHolder?.id)
+                          const Icon(Icons.check_rounded, size: 16, color: AppColors.primary),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.backgroundFor(context),
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  border: Border.all(color: AppColors.borderFor(context)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        displayValue,
+                        style: AppTypography.body.copyWith(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimaryFor(context),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.arrow_drop_down_rounded,
+                      size: 16,
+                      color: AppColors.primary,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+          orElse: () => Text(
+            displayValue,
+            style: AppTypography.body.copyWith(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimaryFor(context),
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 }

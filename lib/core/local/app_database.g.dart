@@ -3070,6 +3070,18 @@ class $CachedSalesBillsTable extends CachedSalesBills
   late final GeneratedColumn<String> customerId = GeneratedColumn<String>(
       'customer_id', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _permitNoMeta =
+      const VerificationMeta('permitNo');
+  @override
+  late final GeneratedColumn<String> permitNo = GeneratedColumn<String>(
+      'permit_no', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _permitHolderNameMeta =
+      const VerificationMeta('permitHolderName');
+  @override
+  late final GeneratedColumn<String> permitHolderName = GeneratedColumn<String>(
+      'permit_holder_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _payModeMeta =
       const VerificationMeta('payMode');
   @override
@@ -3134,6 +3146,8 @@ class $CachedSalesBillsTable extends CachedSalesBills
         id,
         billNo,
         customerId,
+        permitNo,
+        permitHolderName,
         payMode,
         status,
         totalAmount,
@@ -3170,6 +3184,16 @@ class $CachedSalesBillsTable extends CachedSalesBills
           _customerIdMeta,
           customerId.isAcceptableOrUnknown(
               data['customer_id']!, _customerIdMeta));
+    }
+    if (data.containsKey('permit_no')) {
+      context.handle(_permitNoMeta,
+          permitNo.isAcceptableOrUnknown(data['permit_no']!, _permitNoMeta));
+    }
+    if (data.containsKey('permit_holder_name')) {
+      context.handle(
+          _permitHolderNameMeta,
+          permitHolderName.isAcceptableOrUnknown(
+              data['permit_holder_name']!, _permitHolderNameMeta));
     }
     if (data.containsKey('pay_mode')) {
       context.handle(_payModeMeta,
@@ -3240,6 +3264,10 @@ class $CachedSalesBillsTable extends CachedSalesBills
           .read(DriftSqlType.string, data['${effectivePrefix}bill_no'])!,
       customerId: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}customer_id']),
+      permitNo: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}permit_no']),
+      permitHolderName: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}permit_holder_name']),
       payMode: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}pay_mode'])!,
       status: attachedDatabase.typeMapping
@@ -3271,6 +3299,8 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
   final String id;
   final String billNo;
   final String? customerId;
+  final String? permitNo;
+  final String? permitHolderName;
   final String payMode;
   final String status;
   final double totalAmount;
@@ -3284,6 +3314,8 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
       {required this.id,
       required this.billNo,
       this.customerId,
+      this.permitNo,
+      this.permitHolderName,
       required this.payMode,
       required this.status,
       required this.totalAmount,
@@ -3300,6 +3332,12 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
     map['bill_no'] = Variable<String>(billNo);
     if (!nullToAbsent || customerId != null) {
       map['customer_id'] = Variable<String>(customerId);
+    }
+    if (!nullToAbsent || permitNo != null) {
+      map['permit_no'] = Variable<String>(permitNo);
+    }
+    if (!nullToAbsent || permitHolderName != null) {
+      map['permit_holder_name'] = Variable<String>(permitHolderName);
     }
     map['pay_mode'] = Variable<String>(payMode);
     map['status'] = Variable<String>(status);
@@ -3320,6 +3358,12 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
       customerId: customerId == null && nullToAbsent
           ? const Value.absent()
           : Value(customerId),
+      permitNo: permitNo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(permitNo),
+      permitHolderName: permitHolderName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(permitHolderName),
       payMode: Value(payMode),
       status: Value(status),
       totalAmount: Value(totalAmount),
@@ -3339,6 +3383,8 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
       id: serializer.fromJson<String>(json['id']),
       billNo: serializer.fromJson<String>(json['billNo']),
       customerId: serializer.fromJson<String?>(json['customerId']),
+      permitNo: serializer.fromJson<String?>(json['permitNo']),
+      permitHolderName: serializer.fromJson<String?>(json['permitHolderName']),
       payMode: serializer.fromJson<String>(json['payMode']),
       status: serializer.fromJson<String>(json['status']),
       totalAmount: serializer.fromJson<double>(json['totalAmount']),
@@ -3357,6 +3403,8 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
       'id': serializer.toJson<String>(id),
       'billNo': serializer.toJson<String>(billNo),
       'customerId': serializer.toJson<String?>(customerId),
+      'permitNo': serializer.toJson<String?>(permitNo),
+      'permitHolderName': serializer.toJson<String?>(permitHolderName),
       'payMode': serializer.toJson<String>(payMode),
       'status': serializer.toJson<String>(status),
       'totalAmount': serializer.toJson<double>(totalAmount),
@@ -3373,6 +3421,8 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
           {String? id,
           String? billNo,
           Value<String?> customerId = const Value.absent(),
+          Value<String?> permitNo = const Value.absent(),
+          Value<String?> permitHolderName = const Value.absent(),
           String? payMode,
           String? status,
           double? totalAmount,
@@ -3386,6 +3436,10 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
         id: id ?? this.id,
         billNo: billNo ?? this.billNo,
         customerId: customerId.present ? customerId.value : this.customerId,
+        permitNo: permitNo.present ? permitNo.value : this.permitNo,
+        permitHolderName: permitHolderName.present
+            ? permitHolderName.value
+            : this.permitHolderName,
         payMode: payMode ?? this.payMode,
         status: status ?? this.status,
         totalAmount: totalAmount ?? this.totalAmount,
@@ -3402,6 +3456,10 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
       billNo: data.billNo.present ? data.billNo.value : this.billNo,
       customerId:
           data.customerId.present ? data.customerId.value : this.customerId,
+      permitNo: data.permitNo.present ? data.permitNo.value : this.permitNo,
+      permitHolderName: data.permitHolderName.present
+          ? data.permitHolderName.value
+          : this.permitHolderName,
       payMode: data.payMode.present ? data.payMode.value : this.payMode,
       status: data.status.present ? data.status.value : this.status,
       totalAmount:
@@ -3423,6 +3481,8 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
           ..write('id: $id, ')
           ..write('billNo: $billNo, ')
           ..write('customerId: $customerId, ')
+          ..write('permitNo: $permitNo, ')
+          ..write('permitHolderName: $permitHolderName, ')
           ..write('payMode: $payMode, ')
           ..write('status: $status, ')
           ..write('totalAmount: $totalAmount, ')
@@ -3441,6 +3501,8 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
       id,
       billNo,
       customerId,
+      permitNo,
+      permitHolderName,
       payMode,
       status,
       totalAmount,
@@ -3457,6 +3519,8 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
           other.id == this.id &&
           other.billNo == this.billNo &&
           other.customerId == this.customerId &&
+          other.permitNo == this.permitNo &&
+          other.permitHolderName == this.permitHolderName &&
           other.payMode == this.payMode &&
           other.status == this.status &&
           other.totalAmount == this.totalAmount &&
@@ -3472,6 +3536,8 @@ class CachedSalesBillsCompanion extends UpdateCompanion<CachedSalesBill> {
   final Value<String> id;
   final Value<String> billNo;
   final Value<String?> customerId;
+  final Value<String?> permitNo;
+  final Value<String?> permitHolderName;
   final Value<String> payMode;
   final Value<String> status;
   final Value<double> totalAmount;
@@ -3486,6 +3552,8 @@ class CachedSalesBillsCompanion extends UpdateCompanion<CachedSalesBill> {
     this.id = const Value.absent(),
     this.billNo = const Value.absent(),
     this.customerId = const Value.absent(),
+    this.permitNo = const Value.absent(),
+    this.permitHolderName = const Value.absent(),
     this.payMode = const Value.absent(),
     this.status = const Value.absent(),
     this.totalAmount = const Value.absent(),
@@ -3501,6 +3569,8 @@ class CachedSalesBillsCompanion extends UpdateCompanion<CachedSalesBill> {
     required String id,
     required String billNo,
     this.customerId = const Value.absent(),
+    this.permitNo = const Value.absent(),
+    this.permitHolderName = const Value.absent(),
     required String payMode,
     required String status,
     required double totalAmount,
@@ -3523,6 +3593,8 @@ class CachedSalesBillsCompanion extends UpdateCompanion<CachedSalesBill> {
     Expression<String>? id,
     Expression<String>? billNo,
     Expression<String>? customerId,
+    Expression<String>? permitNo,
+    Expression<String>? permitHolderName,
     Expression<String>? payMode,
     Expression<String>? status,
     Expression<double>? totalAmount,
@@ -3538,6 +3610,8 @@ class CachedSalesBillsCompanion extends UpdateCompanion<CachedSalesBill> {
       if (id != null) 'id': id,
       if (billNo != null) 'bill_no': billNo,
       if (customerId != null) 'customer_id': customerId,
+      if (permitNo != null) 'permit_no': permitNo,
+      if (permitHolderName != null) 'permit_holder_name': permitHolderName,
       if (payMode != null) 'pay_mode': payMode,
       if (status != null) 'status': status,
       if (totalAmount != null) 'total_amount': totalAmount,
@@ -3555,6 +3629,8 @@ class CachedSalesBillsCompanion extends UpdateCompanion<CachedSalesBill> {
       {Value<String>? id,
       Value<String>? billNo,
       Value<String?>? customerId,
+      Value<String?>? permitNo,
+      Value<String?>? permitHolderName,
       Value<String>? payMode,
       Value<String>? status,
       Value<double>? totalAmount,
@@ -3569,6 +3645,8 @@ class CachedSalesBillsCompanion extends UpdateCompanion<CachedSalesBill> {
       id: id ?? this.id,
       billNo: billNo ?? this.billNo,
       customerId: customerId ?? this.customerId,
+      permitNo: permitNo ?? this.permitNo,
+      permitHolderName: permitHolderName ?? this.permitHolderName,
       payMode: payMode ?? this.payMode,
       status: status ?? this.status,
       totalAmount: totalAmount ?? this.totalAmount,
@@ -3593,6 +3671,12 @@ class CachedSalesBillsCompanion extends UpdateCompanion<CachedSalesBill> {
     }
     if (customerId.present) {
       map['customer_id'] = Variable<String>(customerId.value);
+    }
+    if (permitNo.present) {
+      map['permit_no'] = Variable<String>(permitNo.value);
+    }
+    if (permitHolderName.present) {
+      map['permit_holder_name'] = Variable<String>(permitHolderName.value);
     }
     if (payMode.present) {
       map['pay_mode'] = Variable<String>(payMode.value);
@@ -3633,6 +3717,8 @@ class CachedSalesBillsCompanion extends UpdateCompanion<CachedSalesBill> {
           ..write('id: $id, ')
           ..write('billNo: $billNo, ')
           ..write('customerId: $customerId, ')
+          ..write('permitNo: $permitNo, ')
+          ..write('permitHolderName: $permitHolderName, ')
           ..write('payMode: $payMode, ')
           ..write('status: $status, ')
           ..write('totalAmount: $totalAmount, ')
@@ -6019,6 +6105,400 @@ class CachedSaleLineItemsCompanion extends UpdateCompanion<CachedSaleLineItem> {
   }
 }
 
+class $CachedLicenseHoldersTable extends CachedLicenseHolders
+    with TableInfo<$CachedLicenseHoldersTable, CachedLicenseHolder> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CachedLicenseHoldersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _permitNoMeta =
+      const VerificationMeta('permitNo');
+  @override
+  late final GeneratedColumn<String> permitNo = GeneratedColumn<String>(
+      'permit_no', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _issuedDateMeta =
+      const VerificationMeta('issuedDate');
+  @override
+  late final GeneratedColumn<String> issuedDate = GeneratedColumn<String>(
+      'issued_date', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _whereGrantedMeta =
+      const VerificationMeta('whereGranted');
+  @override
+  late final GeneratedColumn<String> whereGranted = GeneratedColumn<String>(
+      'where_granted', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, permitNo, name, issuedDate, whereGranted, createdAt, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'cached_license_holders';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<CachedLicenseHolder> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('permit_no')) {
+      context.handle(_permitNoMeta,
+          permitNo.isAcceptableOrUnknown(data['permit_no']!, _permitNoMeta));
+    } else if (isInserting) {
+      context.missing(_permitNoMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('issued_date')) {
+      context.handle(
+          _issuedDateMeta,
+          issuedDate.isAcceptableOrUnknown(
+              data['issued_date']!, _issuedDateMeta));
+    }
+    if (data.containsKey('where_granted')) {
+      context.handle(
+          _whereGrantedMeta,
+          whereGranted.isAcceptableOrUnknown(
+              data['where_granted']!, _whereGrantedMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CachedLicenseHolder map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CachedLicenseHolder(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      permitNo: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}permit_no'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      issuedDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}issued_date']),
+      whereGranted: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}where_granted']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $CachedLicenseHoldersTable createAlias(String alias) {
+    return $CachedLicenseHoldersTable(attachedDatabase, alias);
+  }
+}
+
+class CachedLicenseHolder extends DataClass
+    implements Insertable<CachedLicenseHolder> {
+  final String id;
+  final String permitNo;
+  final String name;
+  final String? issuedDate;
+  final String? whereGranted;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const CachedLicenseHolder(
+      {required this.id,
+      required this.permitNo,
+      required this.name,
+      this.issuedDate,
+      this.whereGranted,
+      required this.createdAt,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['permit_no'] = Variable<String>(permitNo);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || issuedDate != null) {
+      map['issued_date'] = Variable<String>(issuedDate);
+    }
+    if (!nullToAbsent || whereGranted != null) {
+      map['where_granted'] = Variable<String>(whereGranted);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  CachedLicenseHoldersCompanion toCompanion(bool nullToAbsent) {
+    return CachedLicenseHoldersCompanion(
+      id: Value(id),
+      permitNo: Value(permitNo),
+      name: Value(name),
+      issuedDate: issuedDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(issuedDate),
+      whereGranted: whereGranted == null && nullToAbsent
+          ? const Value.absent()
+          : Value(whereGranted),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory CachedLicenseHolder.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CachedLicenseHolder(
+      id: serializer.fromJson<String>(json['id']),
+      permitNo: serializer.fromJson<String>(json['permitNo']),
+      name: serializer.fromJson<String>(json['name']),
+      issuedDate: serializer.fromJson<String?>(json['issuedDate']),
+      whereGranted: serializer.fromJson<String?>(json['whereGranted']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'permitNo': serializer.toJson<String>(permitNo),
+      'name': serializer.toJson<String>(name),
+      'issuedDate': serializer.toJson<String?>(issuedDate),
+      'whereGranted': serializer.toJson<String?>(whereGranted),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  CachedLicenseHolder copyWith(
+          {String? id,
+          String? permitNo,
+          String? name,
+          Value<String?> issuedDate = const Value.absent(),
+          Value<String?> whereGranted = const Value.absent(),
+          DateTime? createdAt,
+          DateTime? updatedAt}) =>
+      CachedLicenseHolder(
+        id: id ?? this.id,
+        permitNo: permitNo ?? this.permitNo,
+        name: name ?? this.name,
+        issuedDate: issuedDate.present ? issuedDate.value : this.issuedDate,
+        whereGranted:
+            whereGranted.present ? whereGranted.value : this.whereGranted,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  CachedLicenseHolder copyWithCompanion(CachedLicenseHoldersCompanion data) {
+    return CachedLicenseHolder(
+      id: data.id.present ? data.id.value : this.id,
+      permitNo: data.permitNo.present ? data.permitNo.value : this.permitNo,
+      name: data.name.present ? data.name.value : this.name,
+      issuedDate:
+          data.issuedDate.present ? data.issuedDate.value : this.issuedDate,
+      whereGranted: data.whereGranted.present
+          ? data.whereGranted.value
+          : this.whereGranted,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CachedLicenseHolder(')
+          ..write('id: $id, ')
+          ..write('permitNo: $permitNo, ')
+          ..write('name: $name, ')
+          ..write('issuedDate: $issuedDate, ')
+          ..write('whereGranted: $whereGranted, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id, permitNo, name, issuedDate, whereGranted, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CachedLicenseHolder &&
+          other.id == this.id &&
+          other.permitNo == this.permitNo &&
+          other.name == this.name &&
+          other.issuedDate == this.issuedDate &&
+          other.whereGranted == this.whereGranted &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class CachedLicenseHoldersCompanion
+    extends UpdateCompanion<CachedLicenseHolder> {
+  final Value<String> id;
+  final Value<String> permitNo;
+  final Value<String> name;
+  final Value<String?> issuedDate;
+  final Value<String?> whereGranted;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const CachedLicenseHoldersCompanion({
+    this.id = const Value.absent(),
+    this.permitNo = const Value.absent(),
+    this.name = const Value.absent(),
+    this.issuedDate = const Value.absent(),
+    this.whereGranted = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CachedLicenseHoldersCompanion.insert({
+    required String id,
+    required String permitNo,
+    required String name,
+    this.issuedDate = const Value.absent(),
+    this.whereGranted = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        permitNo = Value(permitNo),
+        name = Value(name);
+  static Insertable<CachedLicenseHolder> custom({
+    Expression<String>? id,
+    Expression<String>? permitNo,
+    Expression<String>? name,
+    Expression<String>? issuedDate,
+    Expression<String>? whereGranted,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (permitNo != null) 'permit_no': permitNo,
+      if (name != null) 'name': name,
+      if (issuedDate != null) 'issued_date': issuedDate,
+      if (whereGranted != null) 'where_granted': whereGranted,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CachedLicenseHoldersCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? permitNo,
+      Value<String>? name,
+      Value<String?>? issuedDate,
+      Value<String?>? whereGranted,
+      Value<DateTime>? createdAt,
+      Value<DateTime>? updatedAt,
+      Value<int>? rowid}) {
+    return CachedLicenseHoldersCompanion(
+      id: id ?? this.id,
+      permitNo: permitNo ?? this.permitNo,
+      name: name ?? this.name,
+      issuedDate: issuedDate ?? this.issuedDate,
+      whereGranted: whereGranted ?? this.whereGranted,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (permitNo.present) {
+      map['permit_no'] = Variable<String>(permitNo.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (issuedDate.present) {
+      map['issued_date'] = Variable<String>(issuedDate.value);
+    }
+    if (whereGranted.present) {
+      map['where_granted'] = Variable<String>(whereGranted.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CachedLicenseHoldersCompanion(')
+          ..write('id: $id, ')
+          ..write('permitNo: $permitNo, ')
+          ..write('name: $name, ')
+          ..write('issuedDate: $issuedDate, ')
+          ..write('whereGranted: $whereGranted, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -6042,6 +6522,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $CachedPurchaseLineItemsTable(this);
   late final $CachedSaleLineItemsTable cachedSaleLineItems =
       $CachedSaleLineItemsTable(this);
+  late final $CachedLicenseHoldersTable cachedLicenseHolders =
+      $CachedLicenseHoldersTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -6057,7 +6539,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         cachedSalesBills,
         cachedPurchaseBills,
         cachedPurchaseLineItems,
-        cachedSaleLineItems
+        cachedSaleLineItems,
+        cachedLicenseHolders
       ];
 }
 
@@ -7609,6 +8092,8 @@ typedef $$CachedSalesBillsTableCreateCompanionBuilder
   required String id,
   required String billNo,
   Value<String?> customerId,
+  Value<String?> permitNo,
+  Value<String?> permitHolderName,
   required String payMode,
   required String status,
   required double totalAmount,
@@ -7625,6 +8110,8 @@ typedef $$CachedSalesBillsTableUpdateCompanionBuilder
   Value<String> id,
   Value<String> billNo,
   Value<String?> customerId,
+  Value<String?> permitNo,
+  Value<String?> permitHolderName,
   Value<String> payMode,
   Value<String> status,
   Value<double> totalAmount,
@@ -7654,6 +8141,13 @@ class $$CachedSalesBillsTableFilterComposer
 
   ColumnFilters<String> get customerId => $composableBuilder(
       column: $table.customerId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get permitNo => $composableBuilder(
+      column: $table.permitNo, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get permitHolderName => $composableBuilder(
+      column: $table.permitHolderName,
+      builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get payMode => $composableBuilder(
       column: $table.payMode, builder: (column) => ColumnFilters(column));
@@ -7701,6 +8195,13 @@ class $$CachedSalesBillsTableOrderingComposer
   ColumnOrderings<String> get customerId => $composableBuilder(
       column: $table.customerId, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get permitNo => $composableBuilder(
+      column: $table.permitNo, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get permitHolderName => $composableBuilder(
+      column: $table.permitHolderName,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get payMode => $composableBuilder(
       column: $table.payMode, builder: (column) => ColumnOrderings(column));
 
@@ -7746,6 +8247,12 @@ class $$CachedSalesBillsTableAnnotationComposer
 
   GeneratedColumn<String> get customerId => $composableBuilder(
       column: $table.customerId, builder: (column) => column);
+
+  GeneratedColumn<String> get permitNo =>
+      $composableBuilder(column: $table.permitNo, builder: (column) => column);
+
+  GeneratedColumn<String> get permitHolderName => $composableBuilder(
+      column: $table.permitHolderName, builder: (column) => column);
 
   GeneratedColumn<String> get payMode =>
       $composableBuilder(column: $table.payMode, builder: (column) => column);
@@ -7805,6 +8312,8 @@ class $$CachedSalesBillsTableTableManager extends RootTableManager<
             Value<String> id = const Value.absent(),
             Value<String> billNo = const Value.absent(),
             Value<String?> customerId = const Value.absent(),
+            Value<String?> permitNo = const Value.absent(),
+            Value<String?> permitHolderName = const Value.absent(),
             Value<String> payMode = const Value.absent(),
             Value<String> status = const Value.absent(),
             Value<double> totalAmount = const Value.absent(),
@@ -7820,6 +8329,8 @@ class $$CachedSalesBillsTableTableManager extends RootTableManager<
             id: id,
             billNo: billNo,
             customerId: customerId,
+            permitNo: permitNo,
+            permitHolderName: permitHolderName,
             payMode: payMode,
             status: status,
             totalAmount: totalAmount,
@@ -7835,6 +8346,8 @@ class $$CachedSalesBillsTableTableManager extends RootTableManager<
             required String id,
             required String billNo,
             Value<String?> customerId = const Value.absent(),
+            Value<String?> permitNo = const Value.absent(),
+            Value<String?> permitHolderName = const Value.absent(),
             required String payMode,
             required String status,
             required double totalAmount,
@@ -7850,6 +8363,8 @@ class $$CachedSalesBillsTableTableManager extends RootTableManager<
             id: id,
             billNo: billNo,
             customerId: customerId,
+            permitNo: permitNo,
+            permitHolderName: permitHolderName,
             payMode: payMode,
             status: status,
             totalAmount: totalAmount,
@@ -8954,6 +9469,216 @@ typedef $$CachedSaleLineItemsTableProcessedTableManager = ProcessedTableManager<
     ),
     CachedSaleLineItem,
     PrefetchHooks Function()>;
+typedef $$CachedLicenseHoldersTableCreateCompanionBuilder
+    = CachedLicenseHoldersCompanion Function({
+  required String id,
+  required String permitNo,
+  required String name,
+  Value<String?> issuedDate,
+  Value<String?> whereGranted,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+typedef $$CachedLicenseHoldersTableUpdateCompanionBuilder
+    = CachedLicenseHoldersCompanion Function({
+  Value<String> id,
+  Value<String> permitNo,
+  Value<String> name,
+  Value<String?> issuedDate,
+  Value<String?> whereGranted,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+
+class $$CachedLicenseHoldersTableFilterComposer
+    extends Composer<_$AppDatabase, $CachedLicenseHoldersTable> {
+  $$CachedLicenseHoldersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get permitNo => $composableBuilder(
+      column: $table.permitNo, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get issuedDate => $composableBuilder(
+      column: $table.issuedDate, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get whereGranted => $composableBuilder(
+      column: $table.whereGranted, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$CachedLicenseHoldersTableOrderingComposer
+    extends Composer<_$AppDatabase, $CachedLicenseHoldersTable> {
+  $$CachedLicenseHoldersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get permitNo => $composableBuilder(
+      column: $table.permitNo, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get issuedDate => $composableBuilder(
+      column: $table.issuedDate, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get whereGranted => $composableBuilder(
+      column: $table.whereGranted,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$CachedLicenseHoldersTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CachedLicenseHoldersTable> {
+  $$CachedLicenseHoldersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get permitNo =>
+      $composableBuilder(column: $table.permitNo, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get issuedDate => $composableBuilder(
+      column: $table.issuedDate, builder: (column) => column);
+
+  GeneratedColumn<String> get whereGranted => $composableBuilder(
+      column: $table.whereGranted, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$CachedLicenseHoldersTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $CachedLicenseHoldersTable,
+    CachedLicenseHolder,
+    $$CachedLicenseHoldersTableFilterComposer,
+    $$CachedLicenseHoldersTableOrderingComposer,
+    $$CachedLicenseHoldersTableAnnotationComposer,
+    $$CachedLicenseHoldersTableCreateCompanionBuilder,
+    $$CachedLicenseHoldersTableUpdateCompanionBuilder,
+    (
+      CachedLicenseHolder,
+      BaseReferences<_$AppDatabase, $CachedLicenseHoldersTable,
+          CachedLicenseHolder>
+    ),
+    CachedLicenseHolder,
+    PrefetchHooks Function()> {
+  $$CachedLicenseHoldersTableTableManager(
+      _$AppDatabase db, $CachedLicenseHoldersTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CachedLicenseHoldersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CachedLicenseHoldersTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CachedLicenseHoldersTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> permitNo = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<String?> issuedDate = const Value.absent(),
+            Value<String?> whereGranted = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              CachedLicenseHoldersCompanion(
+            id: id,
+            permitNo: permitNo,
+            name: name,
+            issuedDate: issuedDate,
+            whereGranted: whereGranted,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String permitNo,
+            required String name,
+            Value<String?> issuedDate = const Value.absent(),
+            Value<String?> whereGranted = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              CachedLicenseHoldersCompanion.insert(
+            id: id,
+            permitNo: permitNo,
+            name: name,
+            issuedDate: issuedDate,
+            whereGranted: whereGranted,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$CachedLicenseHoldersTableProcessedTableManager
+    = ProcessedTableManager<
+        _$AppDatabase,
+        $CachedLicenseHoldersTable,
+        CachedLicenseHolder,
+        $$CachedLicenseHoldersTableFilterComposer,
+        $$CachedLicenseHoldersTableOrderingComposer,
+        $$CachedLicenseHoldersTableAnnotationComposer,
+        $$CachedLicenseHoldersTableCreateCompanionBuilder,
+        $$CachedLicenseHoldersTableUpdateCompanionBuilder,
+        (
+          CachedLicenseHolder,
+          BaseReferences<_$AppDatabase, $CachedLicenseHoldersTable,
+              CachedLicenseHolder>
+        ),
+        CachedLicenseHolder,
+        PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -8981,4 +9706,6 @@ class $AppDatabaseManager {
           _db, _db.cachedPurchaseLineItems);
   $$CachedSaleLineItemsTableTableManager get cachedSaleLineItems =>
       $$CachedSaleLineItemsTableTableManager(_db, _db.cachedSaleLineItems);
+  $$CachedLicenseHoldersTableTableManager get cachedLicenseHolders =>
+      $$CachedLicenseHoldersTableTableManager(_db, _db.cachedLicenseHolders);
 }

@@ -18,6 +18,7 @@ class AllMastersScreen extends ConsumerWidget {
     final categoriesAsync = ref.watch(categoriesListProvider);
     final manufacturersAsync = ref.watch(manufacturersListProvider);
     final packingsAsync = ref.watch(packingsListProvider);
+    final licenseHoldersAsync = ref.watch(licenseHoldersListProvider);
 
     String countLabel(AsyncValue<List<dynamic>> async, String noun) {
       final plural = noun.endsWith('y') ? '${noun.substring(0, noun.length - 1)}ies' : '${noun}s';
@@ -86,11 +87,11 @@ class AllMastersScreen extends ConsumerWidget {
             subtitle: 'Slab configuration',
             comingSoon: true,
           ),
-          const MasterTile(
-            icon: Icons.store_outlined,
-            title: 'Store License',
-            subtitle: 'License no., validity',
-            comingSoon: true,
+          MasterTile(
+            icon: Icons.badge_outlined,
+            title: 'License Holder Master',
+            subtitle: countLabel(licenseHoldersAsync, 'permit'),
+            onTap: () => context.go('/license-holder'),
           ),
           MasterTile(
             icon: Icons.settings_outlined,

@@ -2,6 +2,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pos_app/core/local/app_database.dart';
 import 'package:pos_app/core/local/material_lookup_cache.dart';
+// ignore: depend_on_referenced_packages
 import 'package:sqlite3/sqlite3.dart' as sql;
 
 void main() {

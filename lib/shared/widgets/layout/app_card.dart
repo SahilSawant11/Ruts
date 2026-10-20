@@ -58,20 +58,25 @@ class SectionHeader extends StatelessWidget {
         Expanded(
           child: Row(
             children: [
-              Text(
-                title,
-                style: AppTypography.sectionTitle.copyWith(
-                  color: AppColors.textPrimaryFor(context),
+              Flexible(
+                child: Text(
+                  title,
+                  style: AppTypography.sectionTitle.copyWith(
+                    color: AppColors.textPrimaryFor(context),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               if (subtitle != null) ...[
                 const SizedBox(width: AppSpacing.xs),
-                Expanded(
+                Flexible(
                   child: Text(
                     subtitle!,
                     style: AppTypography.bodyMuted.copyWith(
                       color: AppColors.textSecondaryFor(context),
                     ),
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -79,7 +84,13 @@ class SectionHeader extends StatelessWidget {
             ],
           ),
         ),
-        if (trailing != null) trailing!,
+        if (trailing != null) ...[
+          const SizedBox(width: AppSpacing.xs),
+          Flexible(
+            fit: FlexFit.loose,
+            child: trailing!,
+          ),
+        ],
       ],
     );
   }
