@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/font_scale_provider.dart';
 import '../../../core/theme/theme_mode_provider.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../features/dashboard/data/dashboard_providers.dart';
@@ -157,7 +158,9 @@ class AppTopHeader extends ConsumerWidget {
             tooltip: 'Keyboard Shortcuts (F1–F12)',
             onTap: () => _showShortcutsDialog(context),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 8),
+          const _FontSizePillStepper(),
+          const SizedBox(width: 8),
           _HeaderIconButton(
             icon: themeMode == ThemeMode.dark
                 ? Icons.dark_mode_rounded
@@ -480,4 +483,238 @@ class _KeyboardShortcutsDialog extends StatelessWidget {
     );
   }
 }
+
+// ─── Minimal macOS Segmented Pill Stepper (Hover Expand/Collapse) ───────────
+
+class _FontSizePillStepper extends ConsumerStatefulWidget {
+  const _FontSizePillStepper();
+
+  @override
+  ConsumerState<_FontSizePillStepper> createState() =>
+      _FontSizePillStepperState();
+}
+
+class _FontSizePillStepperState extends ConsumerState<_FontSizePillStepper> {
+  bool _isHovered = false;
+  bool _isToggled = false;
+
+  bool get _isExpanded => _isHovered || _isToggled;
+
+  @override
+  Widget build(BuildContext context) {
+    final fontScale = ref.watch(appFontScaleProvider);
+    final notifier = ref.read(appFontScaleProvider.notifier);
+    final isDark = AppColors.isDark(context);
+    final isScaled = (fontScale - 1.00).abs() > 0.01;
+
+    final canDecrease =
+        fontScale > FontScaleNotifier.supportedScales.first + 0.01;
+    final canIncrease =
+        fontScale < FontScaleNotifier.supportedScales.last - 0.01;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() {
+        _isHovered = false;
+        _isToggled = false;
+      }),
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          height: 28,
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: _isExpanded
+                ? (isDark ? const Color(0xFF1B1E29) : const Color(0xFFEBEBF0))
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: _isExpanded
+                  ? (isScaled
+                      ? AppColors.primary.withValues(alpha: isDark ? 0.45 : 0.4)
+                      : AppColors.borderFor(context))
+                  : Colors.transparent,
+              width: 0.8,
+            ),
+          ),
+          child: _isExpanded
+              ? Row(
+                  key: const ValueKey('expanded'),
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Decrease button
+                    _PillSegmentButton(
+                      tooltip: canDecrease
+                          ? 'Decrease font size'
+                          : 'Minimum font size reached',
+                      enabled: canDecrease,
+                      borderRadius: const BorderRadius.horizontal(
+                        left: Radius.circular(5),
+                      ),
+                      onTap: canDecrease ? () => notifier.decrease() : null,
+                      child: Text(
+                        'A⁻',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          color: canDecrease
+                              ? AppColors.textPrimaryFor(context)
+                              : AppColors.textMutedFor(context)
+                                  .withValues(alpha: 0.35),
+                        ),
+                      ),
+                    ),
+
+                    _divider(context),
+
+                    // Percentage display & reset action
+                    _PillSegmentButton(
+                      tooltip: isScaled
+                          ? 'Click to reset to 100%'
+                          : 'Standard font size (100%)',
+                      enabled: isScaled,
+                      padding: const EdgeInsets.symmetric(horizontal: 7),
+                      onTap: isScaled ? () => notifier.reset() : null,
+                      child: Text(
+                        '${(fontScale * 100).round()}%',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight:
+                              isScaled ? FontWeight.w700 : FontWeight.w600,
+                          color: isScaled
+                              ? AppColors.primary
+                              : AppColors.textSecondaryFor(context),
+                        ),
+                      ),
+                    ),
+
+                    _divider(context),
+
+                    // Increase button
+                    _PillSegmentButton(
+                      tooltip: canIncrease
+                          ? 'Increase font size'
+                          : 'Maximum font size reached',
+                      enabled: canIncrease,
+                      borderRadius: const BorderRadius.horizontal(
+                        right: Radius.circular(5),
+                      ),
+                      onTap: canIncrease ? () => notifier.increase() : null,
+                      child: Text(
+                        'A⁺',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          color: canIncrease
+                              ? AppColors.textPrimaryFor(context)
+                              : AppColors.textMutedFor(context)
+                                  .withValues(alpha: 0.35),
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : Tooltip(
+                  message:
+                      'Text Size (${(fontScale * 100).round()}%) • Hover to adjust',
+                  waitDuration: const Duration(milliseconds: 300),
+                  child: GestureDetector(
+                    onTap: () => setState(() => _isToggled = true),
+                    behavior: HitTestBehavior.opaque,
+                    child: SizedBox(
+                      key: const ValueKey('collapsed'),
+                      width: 32,
+                      height: 28,
+                      child: Center(
+                        child: Icon(
+                          Icons.format_size_rounded,
+                          size: 17,
+                          color: isScaled
+                              ? AppColors.primary
+                              : AppColors.textSecondaryFor(context),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+        ),
+      ),
+    );
+  }
+
+  Widget _divider(BuildContext context) {
+    return Container(
+      width: 1,
+      height: 14,
+      color: AppColors.borderFor(context),
+    );
+  }
+}
+
+class _PillSegmentButton extends StatefulWidget {
+  const _PillSegmentButton({
+    required this.child,
+    required this.tooltip,
+    this.onTap,
+    this.enabled = true,
+    this.borderRadius = BorderRadius.zero,
+    this.padding = const EdgeInsets.symmetric(horizontal: 8),
+  });
+
+  final Widget child;
+  final String tooltip;
+  final VoidCallback? onTap;
+  final bool enabled;
+  final BorderRadius borderRadius;
+  final EdgeInsets padding;
+
+  @override
+  State<_PillSegmentButton> createState() => _PillSegmentButtonState();
+}
+
+class _PillSegmentButtonState extends State<_PillSegmentButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+
+    return Tooltip(
+      message: widget.tooltip,
+      waitDuration: const Duration(milliseconds: 350),
+      child: MouseRegion(
+        onEnter: (_) {
+          if (widget.enabled) setState(() => _hovered = true);
+        },
+        onExit: (_) {
+          if (widget.enabled) setState(() => _hovered = false);
+        },
+        cursor:
+            widget.enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
+        child: GestureDetector(
+          onTap: widget.onTap,
+          behavior: HitTestBehavior.opaque,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            height: 28,
+            padding: widget.padding,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: _hovered && widget.enabled
+                  ? (isDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : Colors.black.withValues(alpha: 0.06))
+                  : Colors.transparent,
+              borderRadius: widget.borderRadius,
+            ),
+            child: widget.child,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 

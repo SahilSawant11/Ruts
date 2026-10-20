@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/auth/auth_controller.dart';
 import '../core/local/app_bootstrap_provider.dart';
 import '../core/theme/app_theme.dart';
+import '../core/theme/font_scale_provider.dart';
 import '../core/theme/theme_mode_provider.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
 import 'router.dart';
@@ -15,6 +16,16 @@ class PosApp extends ConsumerWidget {
     final bootstrapAsync = ref.watch(appBootstrapProvider);
     final auth = ref.watch(authControllerProvider);
     final themeMode = ref.watch(appThemeModeProvider);
+    final fontScale = ref.watch(appFontScaleProvider);
+
+    Widget appBuilder(BuildContext context, Widget? child) {
+      return MediaQuery(
+        data: MediaQuery.of(context).copyWith(
+          textScaler: TextScaler.linear(fontScale),
+        ),
+        child: child ?? const SizedBox.shrink(),
+      );
+    }
 
     if (bootstrapAsync.isLoading || auth.isLoading) {
       return MaterialApp(
@@ -22,6 +33,7 @@ class PosApp extends ConsumerWidget {
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
         themeMode: themeMode,
+        builder: appBuilder,
         home: const _BootstrapScreen(),
       );
     }
@@ -32,6 +44,7 @@ class PosApp extends ConsumerWidget {
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
         themeMode: themeMode,
+        builder: appBuilder,
         home: Scaffold(
           body: Center(
             child: Padding(
@@ -53,6 +66,7 @@ class PosApp extends ConsumerWidget {
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
         themeMode: themeMode,
+        builder: appBuilder,
         home: const LoginScreen(),
       );
     }
@@ -63,6 +77,7 @@ class PosApp extends ConsumerWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: themeMode,
+      builder: appBuilder,
       routerConfig: appRouter,
     );
   }
