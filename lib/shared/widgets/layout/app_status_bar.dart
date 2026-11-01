@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/auth/auth_controller.dart';
+import '../../../core/config/app_config.dart';
 
 /// POS hardware keyboard command bar docked flush to the bottom of the shell.
 ///
@@ -67,7 +69,7 @@ class AppStatusBar extends ConsumerWidget {
                 _statusDot(),
                 const SizedBox(width: 6),
                 Text(
-                  'Counter #1 · Ready',
+                  '${ref.watch(currentUserProvider)?.displayName ?? 'Offline'} · Ready',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
@@ -78,7 +80,7 @@ class AppStatusBar extends ConsumerWidget {
               if (showVersion) ...[
                 const SizedBox(width: AppSpacing.sm),
                 Text(
-                  '· v8.4',
+                  '· v${AppConfig.version}',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w400,
@@ -104,11 +106,9 @@ class AppStatusBar extends ConsumerWidget {
           space,
           _HotkeyPill(keyLabel: 'F4', actionLabel: 'Qty'),
           space,
-          _HotkeyPill(keyLabel: 'F6', actionLabel: 'Hold Bill'),
+          _HotkeyPill(keyLabel: 'F8', actionLabel: 'Save Bill', isAccent: true),
           space,
-          _HotkeyPill(keyLabel: 'F8', actionLabel: 'Settle Bill', isAccent: true),
-          space,
-          _HotkeyPill(keyLabel: 'Esc', actionLabel: 'Clear'),
+          _HotkeyPill(keyLabel: 'Esc', actionLabel: 'Clear Bill'),
         ];
 
       // Branch 2: Purchase Billing

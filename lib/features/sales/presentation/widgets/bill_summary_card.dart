@@ -5,6 +5,7 @@ import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../cart_controller.dart';
+import '../../../../core/format/money.dart';
 
 /// Right-column summary panel: displays breakdown rows and a prominent
 /// high-contrast dark Payable Card with the total amount payable,
@@ -74,9 +75,9 @@ class BillSummaryCard extends ConsumerWidget {
 
               // Breakdown Rows
               _summaryRow('Total Qty', '$totalQty', context),
-              _summaryRow('Taxable Amount', '₹${taxableValue.toStringAsFixed(2)}', context),
-              _summaryRow('Total Tax', '₹${totalTax.toStringAsFixed(2)}', context),
-              _summaryRow('Discount', '₹${totalDiscount.toStringAsFixed(2)}', context),
+              _summaryRow('Taxable Amount', Money.inr(taxableValue), context),
+              _summaryRow('Total Tax', Money.inr(totalTax), context),
+              _summaryRow('Discount', Money.inr(totalDiscount), context),
 
               const SizedBox(height: AppSpacing.sm),
 
@@ -96,14 +97,14 @@ class BillSummaryCard extends ConsumerWidget {
                       style: AppTypography.label.copyWith(
                         fontSize: 9.5,
                         letterSpacing: 0.6,
-                        color: AppColors.textMutedDark,
+                        color: Colors.white.withValues(alpha: 0.65),
                       ),
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '₹${totalAmount.toStringAsFixed(2)}',
+                      Money.inr(totalAmount),
                       style: AppTypography.mono.copyWith(
-                        fontSize: 22,
+                        fontSize: 24,
                         fontWeight: FontWeight.w800,
                         color: Colors.white,
                       ),
@@ -112,32 +113,6 @@ class BillSummaryCard extends ConsumerWidget {
                 ),
               ),
 
-              const SizedBox(height: AppSpacing.xs),
-
-              // Balance Due Row
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Balance Due',
-                      style: AppTypography.bodyMuted.copyWith(
-                        fontSize: 11.5,
-                        color: AppColors.textSecondaryFor(context),
-                      ),
-                    ),
-                    Text(
-                      '₹${totalAmount.toStringAsFixed(2)}',
-                      style: AppTypography.mono.copyWith(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
-                        color: totalAmount > 0 ? AppColors.danger : AppColors.success,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
         );

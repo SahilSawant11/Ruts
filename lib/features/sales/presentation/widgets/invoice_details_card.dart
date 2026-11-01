@@ -8,7 +8,6 @@ import '../../data/models/customer_dto.dart';
 import '../../data/sales_providers.dart';
 import '../../../masters/data/masters_providers.dart';
 import '../../../masters/data/models/license_holder_dto.dart';
-import '../cart_controller.dart';
 import '../sales_providers.dart';
 
 /// Compact 1-row metadata strip at the top of the sales workbench.
@@ -22,14 +21,6 @@ class InvoiceDetailsCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final billNo = ref.watch(billNoProvider);
-    final payMode = ref.watch(paymentMethodProvider);
-    final totalAmount = ref.watch(cartControllerProvider.select((s) => s.totalAmount));
-
-    final payModeText = switch (payMode) {
-      PaymentMethod.cash => 'CASH',
-      PaymentMethod.card => 'CARD',
-      PaymentMethod.upi => 'UPI',
-    };
 
     final isDark = AppColors.isDark(context);
     final stripBg = isDark ? AppColors.surfaceFor(context) : AppColors.surfaceAltFor(context);
@@ -76,63 +67,8 @@ class InvoiceDetailsCard extends ConsumerWidget {
           Expanded(
             flex: 2,
             child: _MetaField(
-              label: 'TYPE',
+              label: 'PERMIT TYPE',
               value: ref.watch(activeLicenseHolderProvider)?.whereGranted ?? 'Life Time',
-            ),
-          ),
-          _divider(borderColor),
-
-          // Pay Mode
-          Expanded(
-            flex: 2,
-            child: _MetaField(
-              label: 'PAY MODE',
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.primarySoftFor(context),
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                ),
-                child: Text(
-                  payModeText,
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 10.5,
-                    fontFamily: AppTypography.mono.fontFamily,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          _divider(borderColor),
-
-          // Balance Due
-          Expanded(
-            flex: 2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'BALANCE DUE',
-                  style: AppTypography.label.copyWith(
-                    fontSize: 9.5,
-                    letterSpacing: 0.5,
-                    color: AppColors.textSecondaryFor(context),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '₹${totalAmount.toStringAsFixed(2)}',
-                  style: AppTypography.mono.copyWith(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: totalAmount > 0 ? AppColors.danger : AppColors.success,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
             ),
           ),
         ],

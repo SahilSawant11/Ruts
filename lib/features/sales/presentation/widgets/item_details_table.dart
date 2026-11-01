@@ -6,6 +6,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../domain/sale_line_item.dart';
 import '../cart_controller.dart';
+import '../../../../core/format/money.dart';
 
 /// High-density records table: starts immediately under the scan bar.
 /// Styled in the app's pebble aesthetic: soft rounded hovers,
@@ -86,18 +87,7 @@ class ItemDetailsTable extends ConsumerWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _hotkeyPill('F1', 'Focus Scan'),
-                  _hotkeyDivider(),
-                  _hotkeyPill('F4', 'Qty'),
-                  _hotkeyDivider(),
-                  _hotkeyPill('F8', 'Save & Print'),
-                  _hotkeyDivider(),
-                  _hotkeyPill('Del', 'Delete Row'),
-                ],
-              ),
+              const SizedBox.shrink(),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -176,59 +166,7 @@ class ItemDetailsTable extends ConsumerWidget {
     );
   }
 
-  Widget _hotkeyPill(String keyLabel, String actionLabel) {
-    return Builder(
-      builder: (context) {
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppColors.primarySoftFor(context),
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-              ),
-              child: Text(
-                keyLabel,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.primary,
-                  fontFamily: AppTypography.mono.fontFamily,
-                ),
-              ),
-            ),
-            const SizedBox(width: 4),
-            Text(
-              actionLabel,
-              style: AppTypography.caption.copyWith(
-                fontSize: 10.5,
-                color: AppColors.textSecondaryFor(context),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
 
-  Widget _hotkeyDivider() {
-    return Builder(
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Text(
-            '·',
-            style: TextStyle(
-              color: AppColors.textMutedFor(context),
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   Widget _buildEmptyState(BuildContext context) {
     return Center(
@@ -450,7 +388,7 @@ class _TableRowState extends ConsumerState<_TableRow> {
                 child: Align(
                   alignment: Alignment.centerRight,
                   child: Text(
-                    item.rate.toStringAsFixed(2),
+                    Money.plain(item.rate),
                     style: AppTypography.mono.copyWith(
                       fontSize: 11.5,
                       color: AppColors.textPrimaryFor(context),
@@ -473,7 +411,7 @@ class _TableRowState extends ConsumerState<_TableRow> {
 
               // Tax Amt
               _cell(
-                item.taxAmount.toStringAsFixed(2),
+                Money.plain(item.taxAmount),
                 flex: 2,
                 alignment: Alignment.centerRight,
                 textStyle: AppTypography.mono.copyWith(fontSize: 11, color: AppColors.textMutedFor(context)),
@@ -485,7 +423,7 @@ class _TableRowState extends ConsumerState<_TableRow> {
                 child: Align(
                   alignment: Alignment.centerRight,
                   child: Text(
-                    item.amount.toStringAsFixed(2),
+                    Money.plain(item.amount),
                     style: AppTypography.mono.copyWith(
                       fontSize: 12,
                       fontWeight: FontWeight.w800,

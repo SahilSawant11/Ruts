@@ -101,7 +101,7 @@ class AppColors {
       isDark(context) ? shellTextMuted : textSecondary;
 
   static Color totalSurfaceFor(BuildContext context) =>
-      isDark(context) ? backgroundDark : totalDark;
+      isDark(context) ? const Color(0xFF2E2660) : totalDark;
 
   static Color workspaceCanvasFor(BuildContext context) => isDark(context)
       ? const Color(0xFF11131A)

@@ -60,8 +60,7 @@ class AppButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = _colors(context);
-    final needsBorder = variant == AppButtonVariant.secondary ||
-        variant == AppButtonVariant.dangerOutline;
+    final needsBorder = variant == AppButtonVariant.secondary || variant == AppButtonVariant.dangerOutline;
     final vPad = dense ? 10.0 : 13.0;
 
     final child = Row(
@@ -86,33 +85,38 @@ class AppButton extends StatelessWidget {
           const SizedBox(width: AppSpacing.xs),
           KeyboardShortcutBadge(
             label: shortcut!,
-            onLight: variant == AppButtonVariant.secondary ||
-                variant == AppButtonVariant.dangerOutline,
+            onLight: variant == AppButtonVariant.secondary || variant == AppButtonVariant.dangerOutline,
           ),
         ],
       ],
     );
 
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(AppRadius.sm),
-      child: InkWell(
-        onTap: onPressed,
+    // Disabled buttons fade so they never look clickable.
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 150),
+      opacity: onPressed == null ? 0.45 : 1,
+      child: Material(
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(AppRadius.sm),
-        child: Container(
-          padding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: vPad),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            color: colors.bg,
-            border: needsBorder
-                ? Border.all(
-                    color: variant == AppButtonVariant.dangerOutline
-                        ? AppColors.danger.withValues(alpha: 0.28)
-                        : AppColors.glassBorderFor(context),
-                  )
-                : null,
+        child: InkWell(
+          onTap: onPressed,
+          mouseCursor: onPressed == null ? SystemMouseCursors.forbidden : SystemMouseCursors.click,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: vPad),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              color: colors.bg,
+              border: needsBorder
+                  ? Border.all(
+                      color: variant == AppButtonVariant.dangerOutline
+                          ? AppColors.danger.withValues(alpha: 0.28)
+                          : AppColors.glassBorderFor(context),
+                    )
+                  : null,
+            ),
+            child: child,
           ),
-          child: child,
         ),
       ),
     );

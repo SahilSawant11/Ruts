@@ -1,7 +1,7 @@
 name: pos_app
 description: Liquor Store POS - Desktop (UI-first phase)
 publish_to: 'none'
-version: 0.1.0
+version: 1.0.0+1
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -37,4 +37,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/icons/domain/
+    # Bundled so the UI looks identical offline (google_fonts loads these
+    # instead of downloading). OFL licensed; licences alongside.
+    - assets/fonts/
 

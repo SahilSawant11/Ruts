@@ -10,6 +10,8 @@ import '../../../../shared/widgets/buttons/named_buttons.dart';
 import '../cart_controller.dart';
 import '../sales_checkout_service.dart';
 import '../sales_providers.dart';
+import '../../../../core/format/money.dart';
+import '../../../../shared/keyboard/screen_key_guard.dart';
 
 /// Payment method selector, cash received input, and billing actions
 /// in the app's signature pebble card aesthetic and brand styling.
@@ -40,7 +42,7 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
   }
 
   bool _handleKeyEvent(KeyEvent event) {
-    if (event is! KeyDownEvent) return false;
+    if (event is! KeyDownEvent || !screenOwnsKeyboard(context)) return false;
     final isF8 = event.logicalKey == LogicalKeyboardKey.f8 || event.physicalKey == PhysicalKeyboardKey.f8;
     final isEscape = event.logicalKey == LogicalKeyboardKey.escape || event.physicalKey == PhysicalKeyboardKey.escape;
 
@@ -187,7 +189,7 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
               ),
               if (changeDue > 0)
                 Text(
-                  'Change: ₹${changeDue.toStringAsFixed(2)}',
+                  'Change: ${Money.inr(changeDue)}',
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -219,7 +221,7 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
                 fontSize: 14,
                 color: AppColors.textSecondaryFor(context),
               ),
-              hintText: totalAmount > 0 ? totalAmount.toStringAsFixed(2) : '0.00',
+              hintText: Money.plain(totalAmount),
               hintStyle: TextStyle(color: AppColors.textMutedFor(context), fontSize: 13),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -238,11 +240,11 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
 
           const SizedBox(height: AppSpacing.sm),
 
-          // Save & Print Button (Pebble styled SuccessButton)
+          // Save Bill button
           SuccessButton(
-            label: _isSaving ? 'Saving…' : 'Save & Print',
+            label: _isSaving ? 'Saving…' : 'Save Bill',
             shortcut: 'F8',
-            icon: AppIcons.print,
+            icon: AppIcons.checkCircle,
             expand: true,
             onPressed: _isSaving || isEmpty ? null : _saveSale,
           ),

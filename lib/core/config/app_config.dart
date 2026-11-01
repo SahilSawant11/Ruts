@@ -7,4 +7,8 @@ abstract final class AppConfig {
   /// exclusively.  Remote API calls, `syncPending*()`, and
   /// connectivity checks are all bypassed.
   static const bool offlineOnly = true;
+
+  /// Shown in the status bar and support screens. Keep in sync with
+  /// `version:` in pubspec.yaml (release builds may override it).
+  static const String version = String.fromEnvironment('CASKLY_VERSION', defaultValue: '1.0.0');
 }

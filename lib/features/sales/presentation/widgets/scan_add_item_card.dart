@@ -11,6 +11,8 @@ import '../../data/models/material_dto.dart';
 import '../../domain/sale_line_item.dart';
 import '../cart_controller.dart';
 import '../sales_checkout_service.dart';
+import '../../../../core/format/money.dart';
+import '../../../../shared/keyboard/screen_key_guard.dart';
 
 /// Inline Barcode Scan Row: directly touches the items table below.
 /// Features the brand's pebble-like styling, purple accent tokens,
@@ -56,7 +58,7 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
   }
 
   bool _handleKeyEvent(KeyEvent event) {
-    if (event is! KeyDownEvent) return false;
+    if (event is! KeyDownEvent || !screenOwnsKeyboard(context)) return false;
     final isF1 = event.logicalKey == LogicalKeyboardKey.f1 || event.physicalKey == PhysicalKeyboardKey.f1;
     final isF4 = event.logicalKey == LogicalKeyboardKey.f4 || event.physicalKey == PhysicalKeyboardKey.f4;
     final isEscape = event.logicalKey == LogicalKeyboardKey.escape || event.physicalKey == PhysicalKeyboardKey.escape;
@@ -636,7 +638,7 @@ Future<void> _triggerAutoCheckout() async {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Text(
-                                      '₹${item.saleRate.toStringAsFixed(2)}',
+                                      Money.inr(item.saleRate),
                                       style: AppTypography.mono.copyWith(
                                         fontSize: 12.5,
                                         fontWeight: FontWeight.w700,
