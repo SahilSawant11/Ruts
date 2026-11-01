@@ -190,7 +190,7 @@ class LocalDashboardRepository {
         .toList()
       ..sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
 
-    final purchases = await _db.select(_db.cachedPurchaseBills).get();
+    final purchases = await (_db.select(_db.cachedPurchaseBills)..where(_db.isActivePurchaseBill)).get();
     final suppliers = await _db.select(_db.cachedSuppliers).get();
     final stocks = await _db.select(_db.cachedInventoryStocks).get();
 

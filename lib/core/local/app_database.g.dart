@@ -3923,6 +3923,18 @@ class $CachedPurchaseBillsTable extends CachedPurchaseBills
   late final GeneratedColumn<String> deviceId = GeneratedColumn<String>(
       'device_id', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _returnedAtMeta =
+      const VerificationMeta('returnedAt');
+  @override
+  late final GeneratedColumn<DateTime> returnedAt = GeneratedColumn<DateTime>(
+      'returned_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _returnedByMeta =
+      const VerificationMeta('returnedBy');
+  @override
+  late final GeneratedColumn<String> returnedBy = GeneratedColumn<String>(
+      'returned_by', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _discountMeta =
       const VerificationMeta('discount');
   @override
@@ -4004,6 +4016,8 @@ class $CachedPurchaseBillsTable extends CachedPurchaseBills
         tpDate,
         stNo,
         deviceId,
+        returnedAt,
+        returnedBy,
         discount,
         vat,
         stamp,
@@ -4072,6 +4086,18 @@ class $CachedPurchaseBillsTable extends CachedPurchaseBills
     if (data.containsKey('device_id')) {
       context.handle(_deviceIdMeta,
           deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta));
+    }
+    if (data.containsKey('returned_at')) {
+      context.handle(
+          _returnedAtMeta,
+          returnedAt.isAcceptableOrUnknown(
+              data['returned_at']!, _returnedAtMeta));
+    }
+    if (data.containsKey('returned_by')) {
+      context.handle(
+          _returnedByMeta,
+          returnedBy.isAcceptableOrUnknown(
+              data['returned_by']!, _returnedByMeta));
     }
     if (data.containsKey('discount')) {
       context.handle(_discountMeta,
@@ -4168,6 +4194,10 @@ class $CachedPurchaseBillsTable extends CachedPurchaseBills
           .read(DriftSqlType.string, data['${effectivePrefix}st_no']),
       deviceId: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}device_id']),
+      returnedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}returned_at']),
+      returnedBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}returned_by']),
       discount: attachedDatabase.typeMapping
           .read(DriftSqlType.double, data['${effectivePrefix}discount'])!,
       vat: attachedDatabase.typeMapping
@@ -4211,6 +4241,11 @@ class CachedPurchaseBill extends DataClass
   final String? tpDate;
   final String? stNo;
   final String? deviceId;
+
+  /// Set when the whole purchase was returned to the supplier. The bill is
+  /// kept for the audit trail; reports and lists exclude it.
+  final DateTime? returnedAt;
+  final String? returnedBy;
   final double discount;
   final double vat;
   final double stamp;
@@ -4233,6 +4268,8 @@ class CachedPurchaseBill extends DataClass
       this.tpDate,
       this.stNo,
       this.deviceId,
+      this.returnedAt,
+      this.returnedBy,
       required this.discount,
       required this.vat,
       required this.stamp,
@@ -4271,6 +4308,12 @@ class CachedPurchaseBill extends DataClass
     if (!nullToAbsent || deviceId != null) {
       map['device_id'] = Variable<String>(deviceId);
     }
+    if (!nullToAbsent || returnedAt != null) {
+      map['returned_at'] = Variable<DateTime>(returnedAt);
+    }
+    if (!nullToAbsent || returnedBy != null) {
+      map['returned_by'] = Variable<String>(returnedBy);
+    }
     map['discount'] = Variable<double>(discount);
     map['vat'] = Variable<double>(vat);
     map['stamp'] = Variable<double>(stamp);
@@ -4304,6 +4347,12 @@ class CachedPurchaseBill extends DataClass
       deviceId: deviceId == null && nullToAbsent
           ? const Value.absent()
           : Value(deviceId),
+      returnedAt: returnedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(returnedAt),
+      returnedBy: returnedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(returnedBy),
       discount: Value(discount),
       vat: Value(vat),
       stamp: Value(stamp),
@@ -4332,6 +4381,8 @@ class CachedPurchaseBill extends DataClass
       tpDate: serializer.fromJson<String?>(json['tpDate']),
       stNo: serializer.fromJson<String?>(json['stNo']),
       deviceId: serializer.fromJson<String?>(json['deviceId']),
+      returnedAt: serializer.fromJson<DateTime?>(json['returnedAt']),
+      returnedBy: serializer.fromJson<String?>(json['returnedBy']),
       discount: serializer.fromJson<double>(json['discount']),
       vat: serializer.fromJson<double>(json['vat']),
       stamp: serializer.fromJson<double>(json['stamp']),
@@ -4359,6 +4410,8 @@ class CachedPurchaseBill extends DataClass
       'tpDate': serializer.toJson<String?>(tpDate),
       'stNo': serializer.toJson<String?>(stNo),
       'deviceId': serializer.toJson<String?>(deviceId),
+      'returnedAt': serializer.toJson<DateTime?>(returnedAt),
+      'returnedBy': serializer.toJson<String?>(returnedBy),
       'discount': serializer.toJson<double>(discount),
       'vat': serializer.toJson<double>(vat),
       'stamp': serializer.toJson<double>(stamp),
@@ -4384,6 +4437,8 @@ class CachedPurchaseBill extends DataClass
           Value<String?> tpDate = const Value.absent(),
           Value<String?> stNo = const Value.absent(),
           Value<String?> deviceId = const Value.absent(),
+          Value<DateTime?> returnedAt = const Value.absent(),
+          Value<String?> returnedBy = const Value.absent(),
           double? discount,
           double? vat,
           double? stamp,
@@ -4406,6 +4461,8 @@ class CachedPurchaseBill extends DataClass
         tpDate: tpDate.present ? tpDate.value : this.tpDate,
         stNo: stNo.present ? stNo.value : this.stNo,
         deviceId: deviceId.present ? deviceId.value : this.deviceId,
+        returnedAt: returnedAt.present ? returnedAt.value : this.returnedAt,
+        returnedBy: returnedBy.present ? returnedBy.value : this.returnedBy,
         discount: discount ?? this.discount,
         vat: vat ?? this.vat,
         stamp: stamp ?? this.stamp,
@@ -4431,6 +4488,10 @@ class CachedPurchaseBill extends DataClass
       tpDate: data.tpDate.present ? data.tpDate.value : this.tpDate,
       stNo: data.stNo.present ? data.stNo.value : this.stNo,
       deviceId: data.deviceId.present ? data.deviceId.value : this.deviceId,
+      returnedAt:
+          data.returnedAt.present ? data.returnedAt.value : this.returnedAt,
+      returnedBy:
+          data.returnedBy.present ? data.returnedBy.value : this.returnedBy,
       discount: data.discount.present ? data.discount.value : this.discount,
       vat: data.vat.present ? data.vat.value : this.vat,
       stamp: data.stamp.present ? data.stamp.value : this.stamp,
@@ -4462,6 +4523,8 @@ class CachedPurchaseBill extends DataClass
           ..write('tpDate: $tpDate, ')
           ..write('stNo: $stNo, ')
           ..write('deviceId: $deviceId, ')
+          ..write('returnedAt: $returnedAt, ')
+          ..write('returnedBy: $returnedBy, ')
           ..write('discount: $discount, ')
           ..write('vat: $vat, ')
           ..write('stamp: $stamp, ')
@@ -4489,6 +4552,8 @@ class CachedPurchaseBill extends DataClass
         tpDate,
         stNo,
         deviceId,
+        returnedAt,
+        returnedBy,
         discount,
         vat,
         stamp,
@@ -4515,6 +4580,8 @@ class CachedPurchaseBill extends DataClass
           other.tpDate == this.tpDate &&
           other.stNo == this.stNo &&
           other.deviceId == this.deviceId &&
+          other.returnedAt == this.returnedAt &&
+          other.returnedBy == this.returnedBy &&
           other.discount == this.discount &&
           other.vat == this.vat &&
           other.stamp == this.stamp &&
@@ -4539,6 +4606,8 @@ class CachedPurchaseBillsCompanion extends UpdateCompanion<CachedPurchaseBill> {
   final Value<String?> tpDate;
   final Value<String?> stNo;
   final Value<String?> deviceId;
+  final Value<DateTime?> returnedAt;
+  final Value<String?> returnedBy;
   final Value<double> discount;
   final Value<double> vat;
   final Value<double> stamp;
@@ -4562,6 +4631,8 @@ class CachedPurchaseBillsCompanion extends UpdateCompanion<CachedPurchaseBill> {
     this.tpDate = const Value.absent(),
     this.stNo = const Value.absent(),
     this.deviceId = const Value.absent(),
+    this.returnedAt = const Value.absent(),
+    this.returnedBy = const Value.absent(),
     this.discount = const Value.absent(),
     this.vat = const Value.absent(),
     this.stamp = const Value.absent(),
@@ -4586,6 +4657,8 @@ class CachedPurchaseBillsCompanion extends UpdateCompanion<CachedPurchaseBill> {
     this.tpDate = const Value.absent(),
     this.stNo = const Value.absent(),
     this.deviceId = const Value.absent(),
+    this.returnedAt = const Value.absent(),
+    this.returnedBy = const Value.absent(),
     required double discount,
     required double vat,
     required double stamp,
@@ -4620,6 +4693,8 @@ class CachedPurchaseBillsCompanion extends UpdateCompanion<CachedPurchaseBill> {
     Expression<String>? tpDate,
     Expression<String>? stNo,
     Expression<String>? deviceId,
+    Expression<DateTime>? returnedAt,
+    Expression<String>? returnedBy,
     Expression<double>? discount,
     Expression<double>? vat,
     Expression<double>? stamp,
@@ -4644,6 +4719,8 @@ class CachedPurchaseBillsCompanion extends UpdateCompanion<CachedPurchaseBill> {
       if (tpDate != null) 'tp_date': tpDate,
       if (stNo != null) 'st_no': stNo,
       if (deviceId != null) 'device_id': deviceId,
+      if (returnedAt != null) 'returned_at': returnedAt,
+      if (returnedBy != null) 'returned_by': returnedBy,
       if (discount != null) 'discount': discount,
       if (vat != null) 'vat': vat,
       if (stamp != null) 'stamp': stamp,
@@ -4670,6 +4747,8 @@ class CachedPurchaseBillsCompanion extends UpdateCompanion<CachedPurchaseBill> {
       Value<String?>? tpDate,
       Value<String?>? stNo,
       Value<String?>? deviceId,
+      Value<DateTime?>? returnedAt,
+      Value<String?>? returnedBy,
       Value<double>? discount,
       Value<double>? vat,
       Value<double>? stamp,
@@ -4693,6 +4772,8 @@ class CachedPurchaseBillsCompanion extends UpdateCompanion<CachedPurchaseBill> {
       tpDate: tpDate ?? this.tpDate,
       stNo: stNo ?? this.stNo,
       deviceId: deviceId ?? this.deviceId,
+      returnedAt: returnedAt ?? this.returnedAt,
+      returnedBy: returnedBy ?? this.returnedBy,
       discount: discount ?? this.discount,
       vat: vat ?? this.vat,
       stamp: stamp ?? this.stamp,
@@ -4740,6 +4821,12 @@ class CachedPurchaseBillsCompanion extends UpdateCompanion<CachedPurchaseBill> {
     }
     if (deviceId.present) {
       map['device_id'] = Variable<String>(deviceId.value);
+    }
+    if (returnedAt.present) {
+      map['returned_at'] = Variable<DateTime>(returnedAt.value);
+    }
+    if (returnedBy.present) {
+      map['returned_by'] = Variable<String>(returnedBy.value);
     }
     if (discount.present) {
       map['discount'] = Variable<double>(discount.value);
@@ -4793,6 +4880,8 @@ class CachedPurchaseBillsCompanion extends UpdateCompanion<CachedPurchaseBill> {
           ..write('tpDate: $tpDate, ')
           ..write('stNo: $stNo, ')
           ..write('deviceId: $deviceId, ')
+          ..write('returnedAt: $returnedAt, ')
+          ..write('returnedBy: $returnedBy, ')
           ..write('discount: $discount, ')
           ..write('vat: $vat, ')
           ..write('stamp: $stamp, ')
@@ -8116,6 +8205,702 @@ class SalesReturnEntriesCompanion extends UpdateCompanion<SalesReturnEntry> {
   }
 }
 
+class $PurchaseReturnEntriesTable extends PurchaseReturnEntries
+    with TableInfo<$PurchaseReturnEntriesTable, PurchaseReturnEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PurchaseReturnEntriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _purchaseBillIdMeta =
+      const VerificationMeta('purchaseBillId');
+  @override
+  late final GeneratedColumn<String> purchaseBillId = GeneratedColumn<String>(
+      'purchase_bill_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _billNoMeta = const VerificationMeta('billNo');
+  @override
+  late final GeneratedColumn<String> billNo = GeneratedColumn<String>(
+      'bill_no', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _supplierIdMeta =
+      const VerificationMeta('supplierId');
+  @override
+  late final GeneratedColumn<String> supplierId = GeneratedColumn<String>(
+      'supplier_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _lineNumberMeta =
+      const VerificationMeta('lineNumber');
+  @override
+  late final GeneratedColumn<int> lineNumber = GeneratedColumn<int>(
+      'line_number', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _materialIdMeta =
+      const VerificationMeta('materialId');
+  @override
+  late final GeneratedColumn<String> materialId = GeneratedColumn<String>(
+      'material_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _batchNoMeta =
+      const VerificationMeta('batchNo');
+  @override
+  late final GeneratedColumn<String> batchNo = GeneratedColumn<String>(
+      'batch_no', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _quantityMeta =
+      const VerificationMeta('quantity');
+  @override
+  late final GeneratedColumn<int> quantity = GeneratedColumn<int>(
+      'quantity', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _rateMeta = const VerificationMeta('rate');
+  @override
+  late final GeneratedColumn<double> rate = GeneratedColumn<double>(
+      'rate', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _amountMeta = const VerificationMeta('amount');
+  @override
+  late final GeneratedColumn<double> amount = GeneratedColumn<double>(
+      'amount', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _isFullBillReturnMeta =
+      const VerificationMeta('isFullBillReturn');
+  @override
+  late final GeneratedColumn<bool> isFullBillReturn = GeneratedColumn<bool>(
+      'is_full_bill_return', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("is_full_bill_return" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _returnedByMeta =
+      const VerificationMeta('returnedBy');
+  @override
+  late final GeneratedColumn<String> returnedBy = GeneratedColumn<String>(
+      'returned_by', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _deviceIdMeta =
+      const VerificationMeta('deviceId');
+  @override
+  late final GeneratedColumn<String> deviceId = GeneratedColumn<String>(
+      'device_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _returnedAtMeta =
+      const VerificationMeta('returnedAt');
+  @override
+  late final GeneratedColumn<DateTime> returnedAt = GeneratedColumn<DateTime>(
+      'returned_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        purchaseBillId,
+        billNo,
+        supplierId,
+        lineNumber,
+        materialId,
+        batchNo,
+        quantity,
+        rate,
+        amount,
+        isFullBillReturn,
+        returnedBy,
+        deviceId,
+        returnedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'purchase_return_entries';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<PurchaseReturnEntry> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('purchase_bill_id')) {
+      context.handle(
+          _purchaseBillIdMeta,
+          purchaseBillId.isAcceptableOrUnknown(
+              data['purchase_bill_id']!, _purchaseBillIdMeta));
+    } else if (isInserting) {
+      context.missing(_purchaseBillIdMeta);
+    }
+    if (data.containsKey('bill_no')) {
+      context.handle(_billNoMeta,
+          billNo.isAcceptableOrUnknown(data['bill_no']!, _billNoMeta));
+    }
+    if (data.containsKey('supplier_id')) {
+      context.handle(
+          _supplierIdMeta,
+          supplierId.isAcceptableOrUnknown(
+              data['supplier_id']!, _supplierIdMeta));
+    } else if (isInserting) {
+      context.missing(_supplierIdMeta);
+    }
+    if (data.containsKey('line_number')) {
+      context.handle(
+          _lineNumberMeta,
+          lineNumber.isAcceptableOrUnknown(
+              data['line_number']!, _lineNumberMeta));
+    } else if (isInserting) {
+      context.missing(_lineNumberMeta);
+    }
+    if (data.containsKey('material_id')) {
+      context.handle(
+          _materialIdMeta,
+          materialId.isAcceptableOrUnknown(
+              data['material_id']!, _materialIdMeta));
+    } else if (isInserting) {
+      context.missing(_materialIdMeta);
+    }
+    if (data.containsKey('batch_no')) {
+      context.handle(_batchNoMeta,
+          batchNo.isAcceptableOrUnknown(data['batch_no']!, _batchNoMeta));
+    } else if (isInserting) {
+      context.missing(_batchNoMeta);
+    }
+    if (data.containsKey('quantity')) {
+      context.handle(_quantityMeta,
+          quantity.isAcceptableOrUnknown(data['quantity']!, _quantityMeta));
+    } else if (isInserting) {
+      context.missing(_quantityMeta);
+    }
+    if (data.containsKey('rate')) {
+      context.handle(
+          _rateMeta, rate.isAcceptableOrUnknown(data['rate']!, _rateMeta));
+    } else if (isInserting) {
+      context.missing(_rateMeta);
+    }
+    if (data.containsKey('amount')) {
+      context.handle(_amountMeta,
+          amount.isAcceptableOrUnknown(data['amount']!, _amountMeta));
+    } else if (isInserting) {
+      context.missing(_amountMeta);
+    }
+    if (data.containsKey('is_full_bill_return')) {
+      context.handle(
+          _isFullBillReturnMeta,
+          isFullBillReturn.isAcceptableOrUnknown(
+              data['is_full_bill_return']!, _isFullBillReturnMeta));
+    }
+    if (data.containsKey('returned_by')) {
+      context.handle(
+          _returnedByMeta,
+          returnedBy.isAcceptableOrUnknown(
+              data['returned_by']!, _returnedByMeta));
+    }
+    if (data.containsKey('device_id')) {
+      context.handle(_deviceIdMeta,
+          deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta));
+    }
+    if (data.containsKey('returned_at')) {
+      context.handle(
+          _returnedAtMeta,
+          returnedAt.isAcceptableOrUnknown(
+              data['returned_at']!, _returnedAtMeta));
+    } else if (isInserting) {
+      context.missing(_returnedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PurchaseReturnEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PurchaseReturnEntry(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      purchaseBillId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}purchase_bill_id'])!,
+      billNo: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}bill_no']),
+      supplierId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}supplier_id'])!,
+      lineNumber: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}line_number'])!,
+      materialId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}material_id'])!,
+      batchNo: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}batch_no'])!,
+      quantity: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}quantity'])!,
+      rate: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}rate'])!,
+      amount: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}amount'])!,
+      isFullBillReturn: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool, data['${effectivePrefix}is_full_bill_return'])!,
+      returnedBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}returned_by']),
+      deviceId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}device_id']),
+      returnedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}returned_at'])!,
+    );
+  }
+
+  @override
+  $PurchaseReturnEntriesTable createAlias(String alias) {
+    return $PurchaseReturnEntriesTable(attachedDatabase, alias);
+  }
+}
+
+class PurchaseReturnEntry extends DataClass
+    implements Insertable<PurchaseReturnEntry> {
+  final String id;
+  final String purchaseBillId;
+  final String? billNo;
+  final String supplierId;
+  final int lineNumber;
+  final String materialId;
+  final String batchNo;
+  final int quantity;
+  final double rate;
+  final double amount;
+  final bool isFullBillReturn;
+  final String? returnedBy;
+  final String? deviceId;
+  final DateTime returnedAt;
+  const PurchaseReturnEntry(
+      {required this.id,
+      required this.purchaseBillId,
+      this.billNo,
+      required this.supplierId,
+      required this.lineNumber,
+      required this.materialId,
+      required this.batchNo,
+      required this.quantity,
+      required this.rate,
+      required this.amount,
+      required this.isFullBillReturn,
+      this.returnedBy,
+      this.deviceId,
+      required this.returnedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['purchase_bill_id'] = Variable<String>(purchaseBillId);
+    if (!nullToAbsent || billNo != null) {
+      map['bill_no'] = Variable<String>(billNo);
+    }
+    map['supplier_id'] = Variable<String>(supplierId);
+    map['line_number'] = Variable<int>(lineNumber);
+    map['material_id'] = Variable<String>(materialId);
+    map['batch_no'] = Variable<String>(batchNo);
+    map['quantity'] = Variable<int>(quantity);
+    map['rate'] = Variable<double>(rate);
+    map['amount'] = Variable<double>(amount);
+    map['is_full_bill_return'] = Variable<bool>(isFullBillReturn);
+    if (!nullToAbsent || returnedBy != null) {
+      map['returned_by'] = Variable<String>(returnedBy);
+    }
+    if (!nullToAbsent || deviceId != null) {
+      map['device_id'] = Variable<String>(deviceId);
+    }
+    map['returned_at'] = Variable<DateTime>(returnedAt);
+    return map;
+  }
+
+  PurchaseReturnEntriesCompanion toCompanion(bool nullToAbsent) {
+    return PurchaseReturnEntriesCompanion(
+      id: Value(id),
+      purchaseBillId: Value(purchaseBillId),
+      billNo:
+          billNo == null && nullToAbsent ? const Value.absent() : Value(billNo),
+      supplierId: Value(supplierId),
+      lineNumber: Value(lineNumber),
+      materialId: Value(materialId),
+      batchNo: Value(batchNo),
+      quantity: Value(quantity),
+      rate: Value(rate),
+      amount: Value(amount),
+      isFullBillReturn: Value(isFullBillReturn),
+      returnedBy: returnedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(returnedBy),
+      deviceId: deviceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deviceId),
+      returnedAt: Value(returnedAt),
+    );
+  }
+
+  factory PurchaseReturnEntry.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PurchaseReturnEntry(
+      id: serializer.fromJson<String>(json['id']),
+      purchaseBillId: serializer.fromJson<String>(json['purchaseBillId']),
+      billNo: serializer.fromJson<String?>(json['billNo']),
+      supplierId: serializer.fromJson<String>(json['supplierId']),
+      lineNumber: serializer.fromJson<int>(json['lineNumber']),
+      materialId: serializer.fromJson<String>(json['materialId']),
+      batchNo: serializer.fromJson<String>(json['batchNo']),
+      quantity: serializer.fromJson<int>(json['quantity']),
+      rate: serializer.fromJson<double>(json['rate']),
+      amount: serializer.fromJson<double>(json['amount']),
+      isFullBillReturn: serializer.fromJson<bool>(json['isFullBillReturn']),
+      returnedBy: serializer.fromJson<String?>(json['returnedBy']),
+      deviceId: serializer.fromJson<String?>(json['deviceId']),
+      returnedAt: serializer.fromJson<DateTime>(json['returnedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'purchaseBillId': serializer.toJson<String>(purchaseBillId),
+      'billNo': serializer.toJson<String?>(billNo),
+      'supplierId': serializer.toJson<String>(supplierId),
+      'lineNumber': serializer.toJson<int>(lineNumber),
+      'materialId': serializer.toJson<String>(materialId),
+      'batchNo': serializer.toJson<String>(batchNo),
+      'quantity': serializer.toJson<int>(quantity),
+      'rate': serializer.toJson<double>(rate),
+      'amount': serializer.toJson<double>(amount),
+      'isFullBillReturn': serializer.toJson<bool>(isFullBillReturn),
+      'returnedBy': serializer.toJson<String?>(returnedBy),
+      'deviceId': serializer.toJson<String?>(deviceId),
+      'returnedAt': serializer.toJson<DateTime>(returnedAt),
+    };
+  }
+
+  PurchaseReturnEntry copyWith(
+          {String? id,
+          String? purchaseBillId,
+          Value<String?> billNo = const Value.absent(),
+          String? supplierId,
+          int? lineNumber,
+          String? materialId,
+          String? batchNo,
+          int? quantity,
+          double? rate,
+          double? amount,
+          bool? isFullBillReturn,
+          Value<String?> returnedBy = const Value.absent(),
+          Value<String?> deviceId = const Value.absent(),
+          DateTime? returnedAt}) =>
+      PurchaseReturnEntry(
+        id: id ?? this.id,
+        purchaseBillId: purchaseBillId ?? this.purchaseBillId,
+        billNo: billNo.present ? billNo.value : this.billNo,
+        supplierId: supplierId ?? this.supplierId,
+        lineNumber: lineNumber ?? this.lineNumber,
+        materialId: materialId ?? this.materialId,
+        batchNo: batchNo ?? this.batchNo,
+        quantity: quantity ?? this.quantity,
+        rate: rate ?? this.rate,
+        amount: amount ?? this.amount,
+        isFullBillReturn: isFullBillReturn ?? this.isFullBillReturn,
+        returnedBy: returnedBy.present ? returnedBy.value : this.returnedBy,
+        deviceId: deviceId.present ? deviceId.value : this.deviceId,
+        returnedAt: returnedAt ?? this.returnedAt,
+      );
+  PurchaseReturnEntry copyWithCompanion(PurchaseReturnEntriesCompanion data) {
+    return PurchaseReturnEntry(
+      id: data.id.present ? data.id.value : this.id,
+      purchaseBillId: data.purchaseBillId.present
+          ? data.purchaseBillId.value
+          : this.purchaseBillId,
+      billNo: data.billNo.present ? data.billNo.value : this.billNo,
+      supplierId:
+          data.supplierId.present ? data.supplierId.value : this.supplierId,
+      lineNumber:
+          data.lineNumber.present ? data.lineNumber.value : this.lineNumber,
+      materialId:
+          data.materialId.present ? data.materialId.value : this.materialId,
+      batchNo: data.batchNo.present ? data.batchNo.value : this.batchNo,
+      quantity: data.quantity.present ? data.quantity.value : this.quantity,
+      rate: data.rate.present ? data.rate.value : this.rate,
+      amount: data.amount.present ? data.amount.value : this.amount,
+      isFullBillReturn: data.isFullBillReturn.present
+          ? data.isFullBillReturn.value
+          : this.isFullBillReturn,
+      returnedBy:
+          data.returnedBy.present ? data.returnedBy.value : this.returnedBy,
+      deviceId: data.deviceId.present ? data.deviceId.value : this.deviceId,
+      returnedAt:
+          data.returnedAt.present ? data.returnedAt.value : this.returnedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PurchaseReturnEntry(')
+          ..write('id: $id, ')
+          ..write('purchaseBillId: $purchaseBillId, ')
+          ..write('billNo: $billNo, ')
+          ..write('supplierId: $supplierId, ')
+          ..write('lineNumber: $lineNumber, ')
+          ..write('materialId: $materialId, ')
+          ..write('batchNo: $batchNo, ')
+          ..write('quantity: $quantity, ')
+          ..write('rate: $rate, ')
+          ..write('amount: $amount, ')
+          ..write('isFullBillReturn: $isFullBillReturn, ')
+          ..write('returnedBy: $returnedBy, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('returnedAt: $returnedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      purchaseBillId,
+      billNo,
+      supplierId,
+      lineNumber,
+      materialId,
+      batchNo,
+      quantity,
+      rate,
+      amount,
+      isFullBillReturn,
+      returnedBy,
+      deviceId,
+      returnedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PurchaseReturnEntry &&
+          other.id == this.id &&
+          other.purchaseBillId == this.purchaseBillId &&
+          other.billNo == this.billNo &&
+          other.supplierId == this.supplierId &&
+          other.lineNumber == this.lineNumber &&
+          other.materialId == this.materialId &&
+          other.batchNo == this.batchNo &&
+          other.quantity == this.quantity &&
+          other.rate == this.rate &&
+          other.amount == this.amount &&
+          other.isFullBillReturn == this.isFullBillReturn &&
+          other.returnedBy == this.returnedBy &&
+          other.deviceId == this.deviceId &&
+          other.returnedAt == this.returnedAt);
+}
+
+class PurchaseReturnEntriesCompanion
+    extends UpdateCompanion<PurchaseReturnEntry> {
+  final Value<String> id;
+  final Value<String> purchaseBillId;
+  final Value<String?> billNo;
+  final Value<String> supplierId;
+  final Value<int> lineNumber;
+  final Value<String> materialId;
+  final Value<String> batchNo;
+  final Value<int> quantity;
+  final Value<double> rate;
+  final Value<double> amount;
+  final Value<bool> isFullBillReturn;
+  final Value<String?> returnedBy;
+  final Value<String?> deviceId;
+  final Value<DateTime> returnedAt;
+  final Value<int> rowid;
+  const PurchaseReturnEntriesCompanion({
+    this.id = const Value.absent(),
+    this.purchaseBillId = const Value.absent(),
+    this.billNo = const Value.absent(),
+    this.supplierId = const Value.absent(),
+    this.lineNumber = const Value.absent(),
+    this.materialId = const Value.absent(),
+    this.batchNo = const Value.absent(),
+    this.quantity = const Value.absent(),
+    this.rate = const Value.absent(),
+    this.amount = const Value.absent(),
+    this.isFullBillReturn = const Value.absent(),
+    this.returnedBy = const Value.absent(),
+    this.deviceId = const Value.absent(),
+    this.returnedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PurchaseReturnEntriesCompanion.insert({
+    required String id,
+    required String purchaseBillId,
+    this.billNo = const Value.absent(),
+    required String supplierId,
+    required int lineNumber,
+    required String materialId,
+    required String batchNo,
+    required int quantity,
+    required double rate,
+    required double amount,
+    this.isFullBillReturn = const Value.absent(),
+    this.returnedBy = const Value.absent(),
+    this.deviceId = const Value.absent(),
+    required DateTime returnedAt,
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        purchaseBillId = Value(purchaseBillId),
+        supplierId = Value(supplierId),
+        lineNumber = Value(lineNumber),
+        materialId = Value(materialId),
+        batchNo = Value(batchNo),
+        quantity = Value(quantity),
+        rate = Value(rate),
+        amount = Value(amount),
+        returnedAt = Value(returnedAt);
+  static Insertable<PurchaseReturnEntry> custom({
+    Expression<String>? id,
+    Expression<String>? purchaseBillId,
+    Expression<String>? billNo,
+    Expression<String>? supplierId,
+    Expression<int>? lineNumber,
+    Expression<String>? materialId,
+    Expression<String>? batchNo,
+    Expression<int>? quantity,
+    Expression<double>? rate,
+    Expression<double>? amount,
+    Expression<bool>? isFullBillReturn,
+    Expression<String>? returnedBy,
+    Expression<String>? deviceId,
+    Expression<DateTime>? returnedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (purchaseBillId != null) 'purchase_bill_id': purchaseBillId,
+      if (billNo != null) 'bill_no': billNo,
+      if (supplierId != null) 'supplier_id': supplierId,
+      if (lineNumber != null) 'line_number': lineNumber,
+      if (materialId != null) 'material_id': materialId,
+      if (batchNo != null) 'batch_no': batchNo,
+      if (quantity != null) 'quantity': quantity,
+      if (rate != null) 'rate': rate,
+      if (amount != null) 'amount': amount,
+      if (isFullBillReturn != null) 'is_full_bill_return': isFullBillReturn,
+      if (returnedBy != null) 'returned_by': returnedBy,
+      if (deviceId != null) 'device_id': deviceId,
+      if (returnedAt != null) 'returned_at': returnedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PurchaseReturnEntriesCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? purchaseBillId,
+      Value<String?>? billNo,
+      Value<String>? supplierId,
+      Value<int>? lineNumber,
+      Value<String>? materialId,
+      Value<String>? batchNo,
+      Value<int>? quantity,
+      Value<double>? rate,
+      Value<double>? amount,
+      Value<bool>? isFullBillReturn,
+      Value<String?>? returnedBy,
+      Value<String?>? deviceId,
+      Value<DateTime>? returnedAt,
+      Value<int>? rowid}) {
+    return PurchaseReturnEntriesCompanion(
+      id: id ?? this.id,
+      purchaseBillId: purchaseBillId ?? this.purchaseBillId,
+      billNo: billNo ?? this.billNo,
+      supplierId: supplierId ?? this.supplierId,
+      lineNumber: lineNumber ?? this.lineNumber,
+      materialId: materialId ?? this.materialId,
+      batchNo: batchNo ?? this.batchNo,
+      quantity: quantity ?? this.quantity,
+      rate: rate ?? this.rate,
+      amount: amount ?? this.amount,
+      isFullBillReturn: isFullBillReturn ?? this.isFullBillReturn,
+      returnedBy: returnedBy ?? this.returnedBy,
+      deviceId: deviceId ?? this.deviceId,
+      returnedAt: returnedAt ?? this.returnedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (purchaseBillId.present) {
+      map['purchase_bill_id'] = Variable<String>(purchaseBillId.value);
+    }
+    if (billNo.present) {
+      map['bill_no'] = Variable<String>(billNo.value);
+    }
+    if (supplierId.present) {
+      map['supplier_id'] = Variable<String>(supplierId.value);
+    }
+    if (lineNumber.present) {
+      map['line_number'] = Variable<int>(lineNumber.value);
+    }
+    if (materialId.present) {
+      map['material_id'] = Variable<String>(materialId.value);
+    }
+    if (batchNo.present) {
+      map['batch_no'] = Variable<String>(batchNo.value);
+    }
+    if (quantity.present) {
+      map['quantity'] = Variable<int>(quantity.value);
+    }
+    if (rate.present) {
+      map['rate'] = Variable<double>(rate.value);
+    }
+    if (amount.present) {
+      map['amount'] = Variable<double>(amount.value);
+    }
+    if (isFullBillReturn.present) {
+      map['is_full_bill_return'] = Variable<bool>(isFullBillReturn.value);
+    }
+    if (returnedBy.present) {
+      map['returned_by'] = Variable<String>(returnedBy.value);
+    }
+    if (deviceId.present) {
+      map['device_id'] = Variable<String>(deviceId.value);
+    }
+    if (returnedAt.present) {
+      map['returned_at'] = Variable<DateTime>(returnedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PurchaseReturnEntriesCompanion(')
+          ..write('id: $id, ')
+          ..write('purchaseBillId: $purchaseBillId, ')
+          ..write('billNo: $billNo, ')
+          ..write('supplierId: $supplierId, ')
+          ..write('lineNumber: $lineNumber, ')
+          ..write('materialId: $materialId, ')
+          ..write('batchNo: $batchNo, ')
+          ..write('quantity: $quantity, ')
+          ..write('rate: $rate, ')
+          ..write('amount: $amount, ')
+          ..write('isFullBillReturn: $isFullBillReturn, ')
+          ..write('returnedBy: $returnedBy, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('returnedAt: $returnedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -8145,6 +8930,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $AppUsersTable appUsers = $AppUsersTable(this);
   late final $SalesReturnEntriesTable salesReturnEntries =
       $SalesReturnEntriesTable(this);
+  late final $PurchaseReturnEntriesTable purchaseReturnEntries =
+      $PurchaseReturnEntriesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -8164,7 +8951,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         cachedLicenseHolders,
         appSettings,
         appUsers,
-        salesReturnEntries
+        salesReturnEntries,
+        purchaseReturnEntries
       ];
 }
 
@@ -10079,6 +10867,8 @@ typedef $$CachedPurchaseBillsTableCreateCompanionBuilder
   Value<String?> tpDate,
   Value<String?> stNo,
   Value<String?> deviceId,
+  Value<DateTime?> returnedAt,
+  Value<String?> returnedBy,
   required double discount,
   required double vat,
   required double stamp,
@@ -10104,6 +10894,8 @@ typedef $$CachedPurchaseBillsTableUpdateCompanionBuilder
   Value<String?> tpDate,
   Value<String?> stNo,
   Value<String?> deviceId,
+  Value<DateTime?> returnedAt,
+  Value<String?> returnedBy,
   Value<double> discount,
   Value<double> vat,
   Value<double> stamp,
@@ -10156,6 +10948,12 @@ class $$CachedPurchaseBillsTableFilterComposer
 
   ColumnFilters<String> get deviceId => $composableBuilder(
       column: $table.deviceId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get returnedAt => $composableBuilder(
+      column: $table.returnedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get returnedBy => $composableBuilder(
+      column: $table.returnedBy, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<double> get discount => $composableBuilder(
       column: $table.discount, builder: (column) => ColumnFilters(column));
@@ -10231,6 +11029,12 @@ class $$CachedPurchaseBillsTableOrderingComposer
   ColumnOrderings<String> get deviceId => $composableBuilder(
       column: $table.deviceId, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<DateTime> get returnedAt => $composableBuilder(
+      column: $table.returnedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get returnedBy => $composableBuilder(
+      column: $table.returnedBy, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<double> get discount => $composableBuilder(
       column: $table.discount, builder: (column) => ColumnOrderings(column));
 
@@ -10304,6 +11108,12 @@ class $$CachedPurchaseBillsTableAnnotationComposer
 
   GeneratedColumn<String> get deviceId =>
       $composableBuilder(column: $table.deviceId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get returnedAt => $composableBuilder(
+      column: $table.returnedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get returnedBy => $composableBuilder(
+      column: $table.returnedBy, builder: (column) => column);
 
   GeneratedColumn<double> get discount =>
       $composableBuilder(column: $table.discount, builder: (column) => column);
@@ -10379,6 +11189,8 @@ class $$CachedPurchaseBillsTableTableManager extends RootTableManager<
             Value<String?> tpDate = const Value.absent(),
             Value<String?> stNo = const Value.absent(),
             Value<String?> deviceId = const Value.absent(),
+            Value<DateTime?> returnedAt = const Value.absent(),
+            Value<String?> returnedBy = const Value.absent(),
             Value<double> discount = const Value.absent(),
             Value<double> vat = const Value.absent(),
             Value<double> stamp = const Value.absent(),
@@ -10403,6 +11215,8 @@ class $$CachedPurchaseBillsTableTableManager extends RootTableManager<
             tpDate: tpDate,
             stNo: stNo,
             deviceId: deviceId,
+            returnedAt: returnedAt,
+            returnedBy: returnedBy,
             discount: discount,
             vat: vat,
             stamp: stamp,
@@ -10427,6 +11241,8 @@ class $$CachedPurchaseBillsTableTableManager extends RootTableManager<
             Value<String?> tpDate = const Value.absent(),
             Value<String?> stNo = const Value.absent(),
             Value<String?> deviceId = const Value.absent(),
+            Value<DateTime?> returnedAt = const Value.absent(),
+            Value<String?> returnedBy = const Value.absent(),
             required double discount,
             required double vat,
             required double stamp,
@@ -10451,6 +11267,8 @@ class $$CachedPurchaseBillsTableTableManager extends RootTableManager<
             tpDate: tpDate,
             stNo: stNo,
             deviceId: deviceId,
+            returnedAt: returnedAt,
+            returnedBy: returnedBy,
             discount: discount,
             vat: vat,
             stamp: stamp,
@@ -12056,6 +12874,325 @@ typedef $$SalesReturnEntriesTableProcessedTableManager = ProcessedTableManager<
     ),
     SalesReturnEntry,
     PrefetchHooks Function()>;
+typedef $$PurchaseReturnEntriesTableCreateCompanionBuilder
+    = PurchaseReturnEntriesCompanion Function({
+  required String id,
+  required String purchaseBillId,
+  Value<String?> billNo,
+  required String supplierId,
+  required int lineNumber,
+  required String materialId,
+  required String batchNo,
+  required int quantity,
+  required double rate,
+  required double amount,
+  Value<bool> isFullBillReturn,
+  Value<String?> returnedBy,
+  Value<String?> deviceId,
+  required DateTime returnedAt,
+  Value<int> rowid,
+});
+typedef $$PurchaseReturnEntriesTableUpdateCompanionBuilder
+    = PurchaseReturnEntriesCompanion Function({
+  Value<String> id,
+  Value<String> purchaseBillId,
+  Value<String?> billNo,
+  Value<String> supplierId,
+  Value<int> lineNumber,
+  Value<String> materialId,
+  Value<String> batchNo,
+  Value<int> quantity,
+  Value<double> rate,
+  Value<double> amount,
+  Value<bool> isFullBillReturn,
+  Value<String?> returnedBy,
+  Value<String?> deviceId,
+  Value<DateTime> returnedAt,
+  Value<int> rowid,
+});
+
+class $$PurchaseReturnEntriesTableFilterComposer
+    extends Composer<_$AppDatabase, $PurchaseReturnEntriesTable> {
+  $$PurchaseReturnEntriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get purchaseBillId => $composableBuilder(
+      column: $table.purchaseBillId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get billNo => $composableBuilder(
+      column: $table.billNo, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get supplierId => $composableBuilder(
+      column: $table.supplierId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get lineNumber => $composableBuilder(
+      column: $table.lineNumber, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get materialId => $composableBuilder(
+      column: $table.materialId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get batchNo => $composableBuilder(
+      column: $table.batchNo, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get quantity => $composableBuilder(
+      column: $table.quantity, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get rate => $composableBuilder(
+      column: $table.rate, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get amount => $composableBuilder(
+      column: $table.amount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isFullBillReturn => $composableBuilder(
+      column: $table.isFullBillReturn,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get returnedBy => $composableBuilder(
+      column: $table.returnedBy, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get deviceId => $composableBuilder(
+      column: $table.deviceId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get returnedAt => $composableBuilder(
+      column: $table.returnedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$PurchaseReturnEntriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $PurchaseReturnEntriesTable> {
+  $$PurchaseReturnEntriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get purchaseBillId => $composableBuilder(
+      column: $table.purchaseBillId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get billNo => $composableBuilder(
+      column: $table.billNo, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get supplierId => $composableBuilder(
+      column: $table.supplierId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get lineNumber => $composableBuilder(
+      column: $table.lineNumber, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get materialId => $composableBuilder(
+      column: $table.materialId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get batchNo => $composableBuilder(
+      column: $table.batchNo, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get quantity => $composableBuilder(
+      column: $table.quantity, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get rate => $composableBuilder(
+      column: $table.rate, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get amount => $composableBuilder(
+      column: $table.amount, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isFullBillReturn => $composableBuilder(
+      column: $table.isFullBillReturn,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get returnedBy => $composableBuilder(
+      column: $table.returnedBy, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get deviceId => $composableBuilder(
+      column: $table.deviceId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get returnedAt => $composableBuilder(
+      column: $table.returnedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$PurchaseReturnEntriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PurchaseReturnEntriesTable> {
+  $$PurchaseReturnEntriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get purchaseBillId => $composableBuilder(
+      column: $table.purchaseBillId, builder: (column) => column);
+
+  GeneratedColumn<String> get billNo =>
+      $composableBuilder(column: $table.billNo, builder: (column) => column);
+
+  GeneratedColumn<String> get supplierId => $composableBuilder(
+      column: $table.supplierId, builder: (column) => column);
+
+  GeneratedColumn<int> get lineNumber => $composableBuilder(
+      column: $table.lineNumber, builder: (column) => column);
+
+  GeneratedColumn<String> get materialId => $composableBuilder(
+      column: $table.materialId, builder: (column) => column);
+
+  GeneratedColumn<String> get batchNo =>
+      $composableBuilder(column: $table.batchNo, builder: (column) => column);
+
+  GeneratedColumn<int> get quantity =>
+      $composableBuilder(column: $table.quantity, builder: (column) => column);
+
+  GeneratedColumn<double> get rate =>
+      $composableBuilder(column: $table.rate, builder: (column) => column);
+
+  GeneratedColumn<double> get amount =>
+      $composableBuilder(column: $table.amount, builder: (column) => column);
+
+  GeneratedColumn<bool> get isFullBillReturn => $composableBuilder(
+      column: $table.isFullBillReturn, builder: (column) => column);
+
+  GeneratedColumn<String> get returnedBy => $composableBuilder(
+      column: $table.returnedBy, builder: (column) => column);
+
+  GeneratedColumn<String> get deviceId =>
+      $composableBuilder(column: $table.deviceId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get returnedAt => $composableBuilder(
+      column: $table.returnedAt, builder: (column) => column);
+}
+
+class $$PurchaseReturnEntriesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $PurchaseReturnEntriesTable,
+    PurchaseReturnEntry,
+    $$PurchaseReturnEntriesTableFilterComposer,
+    $$PurchaseReturnEntriesTableOrderingComposer,
+    $$PurchaseReturnEntriesTableAnnotationComposer,
+    $$PurchaseReturnEntriesTableCreateCompanionBuilder,
+    $$PurchaseReturnEntriesTableUpdateCompanionBuilder,
+    (
+      PurchaseReturnEntry,
+      BaseReferences<_$AppDatabase, $PurchaseReturnEntriesTable,
+          PurchaseReturnEntry>
+    ),
+    PurchaseReturnEntry,
+    PrefetchHooks Function()> {
+  $$PurchaseReturnEntriesTableTableManager(
+      _$AppDatabase db, $PurchaseReturnEntriesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PurchaseReturnEntriesTableFilterComposer(
+                  $db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PurchaseReturnEntriesTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PurchaseReturnEntriesTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> purchaseBillId = const Value.absent(),
+            Value<String?> billNo = const Value.absent(),
+            Value<String> supplierId = const Value.absent(),
+            Value<int> lineNumber = const Value.absent(),
+            Value<String> materialId = const Value.absent(),
+            Value<String> batchNo = const Value.absent(),
+            Value<int> quantity = const Value.absent(),
+            Value<double> rate = const Value.absent(),
+            Value<double> amount = const Value.absent(),
+            Value<bool> isFullBillReturn = const Value.absent(),
+            Value<String?> returnedBy = const Value.absent(),
+            Value<String?> deviceId = const Value.absent(),
+            Value<DateTime> returnedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              PurchaseReturnEntriesCompanion(
+            id: id,
+            purchaseBillId: purchaseBillId,
+            billNo: billNo,
+            supplierId: supplierId,
+            lineNumber: lineNumber,
+            materialId: materialId,
+            batchNo: batchNo,
+            quantity: quantity,
+            rate: rate,
+            amount: amount,
+            isFullBillReturn: isFullBillReturn,
+            returnedBy: returnedBy,
+            deviceId: deviceId,
+            returnedAt: returnedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String purchaseBillId,
+            Value<String?> billNo = const Value.absent(),
+            required String supplierId,
+            required int lineNumber,
+            required String materialId,
+            required String batchNo,
+            required int quantity,
+            required double rate,
+            required double amount,
+            Value<bool> isFullBillReturn = const Value.absent(),
+            Value<String?> returnedBy = const Value.absent(),
+            Value<String?> deviceId = const Value.absent(),
+            required DateTime returnedAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              PurchaseReturnEntriesCompanion.insert(
+            id: id,
+            purchaseBillId: purchaseBillId,
+            billNo: billNo,
+            supplierId: supplierId,
+            lineNumber: lineNumber,
+            materialId: materialId,
+            batchNo: batchNo,
+            quantity: quantity,
+            rate: rate,
+            amount: amount,
+            isFullBillReturn: isFullBillReturn,
+            returnedBy: returnedBy,
+            deviceId: deviceId,
+            returnedAt: returnedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$PurchaseReturnEntriesTableProcessedTableManager
+    = ProcessedTableManager<
+        _$AppDatabase,
+        $PurchaseReturnEntriesTable,
+        PurchaseReturnEntry,
+        $$PurchaseReturnEntriesTableFilterComposer,
+        $$PurchaseReturnEntriesTableOrderingComposer,
+        $$PurchaseReturnEntriesTableAnnotationComposer,
+        $$PurchaseReturnEntriesTableCreateCompanionBuilder,
+        $$PurchaseReturnEntriesTableUpdateCompanionBuilder,
+        (
+          PurchaseReturnEntry,
+          BaseReferences<_$AppDatabase, $PurchaseReturnEntriesTable,
+              PurchaseReturnEntry>
+        ),
+        PurchaseReturnEntry,
+        PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -12091,4 +13228,6 @@ class $AppDatabaseManager {
       $$AppUsersTableTableManager(_db, _db.appUsers);
   $$SalesReturnEntriesTableTableManager get salesReturnEntries =>
       $$SalesReturnEntriesTableTableManager(_db, _db.salesReturnEntries);
+  $$PurchaseReturnEntriesTableTableManager get purchaseReturnEntries =>
+      $$PurchaseReturnEntriesTableTableManager(_db, _db.purchaseReturnEntries);
 }

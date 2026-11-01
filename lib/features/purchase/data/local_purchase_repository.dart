@@ -106,6 +106,7 @@ class LocalPurchaseRepository {
       }
     }
     final query = _db.select(_db.cachedPurchaseBills)
+      ..where(_db.isActivePurchaseBill)
       ..orderBy([(tbl) => OrderingTerm.desc(tbl.createdAt)]);
     if (date != null) {
       final start = DateTime(date.year, date.month, date.day);
@@ -177,16 +178,30 @@ class LocalPurchaseRepository {
     return result;
   }
 
+  /// Returns some or all of a purchase to the supplier.
+  ///
+  /// Every returned quantity is logged in `purchase_return_entries` and
+  /// deducted from stock (refused if stock is too low — you can't send back
+  /// bottles you've already sold). A partial return reduces the bill's lines
+  /// as before; when nothing is left the bill is kept and marked returned
+  /// (never deleted), and every report and list excludes it.
   Future<void> returnPurchaseBill(
     String billId, {
     List<int>? lineNumbers,
     Map<int, int>? lineQuantities,
+    String? returnedBy,
   }) async {
+    final deviceId = await _db.deviceId();
     await _db.transaction(() async {
+      final bill = await (_db.select(_db.cachedPurchaseBills)..where((tbl) => tbl.id.equals(billId))).getSingleOrNull();
+      if (bill == null) return;
+      if (bill.returnedAt != null) {
+        throw ApiException('Purchase ${bill.billNo ?? ''} has already been fully returned.'.replaceAll('  ', ' '));
+      }
+
       final allLineItems = await (_db.select(_db.cachedPurchaseLineItems)
             ..where((tbl) => tbl.purchaseBillId.equals(billId)))
           .get();
-
       if (allLineItems.isEmpty) return;
 
       final selectedLineNumbers = lineQuantities != null
@@ -196,71 +211,97 @@ class LocalPurchaseRepository {
       final returningItems = allLineItems.where((li) => selectedLineNumbers.contains(li.lineNumber)).toList();
       if (returningItems.isEmpty) return;
 
-      var allItemsFullyReturned = returningItems.length >= allLineItems.length;
-      final fullyReturnedLineNumbers = <int>[];
+      final now = DateTime.now();
+      final returnedQty = <int, int>{
+        for (final item in returningItems)
+          item.lineNumber: (lineQuantities != null && lineQuantities.containsKey(item.lineNumber))
+              ? lineQuantities[item.lineNumber]!.clamp(1, item.qty)
+              : item.qty,
+      };
+      final isFullReturn = allLineItems.every((li) => (returnedQty[li.lineNumber] ?? 0) >= li.qty);
 
-      // Deduct stock for returned purchase items and update line items
+      // Check stock for every line first so a refusal changes nothing.
+      final needByMaterial = <String, int>{};
       for (final item in returningItems) {
-        final returnQty = (lineQuantities != null && lineQuantities.containsKey(item.lineNumber))
-            ? lineQuantities[item.lineNumber]!.clamp(1, item.qty)
-            : item.qty;
-
-        if (returnQty < item.qty) {
-          allItemsFullyReturned = false;
-        } else {
-          fullyReturnedLineNumbers.add(item.lineNumber);
-        }
-
-        final stock = await (_db.select(_db.cachedInventoryStocks)
-              ..where((tbl) => tbl.materialId.equals(item.materialId)))
+        needByMaterial[item.materialId] = (needByMaterial[item.materialId] ?? 0) + returnedQty[item.lineNumber]!;
+      }
+      for (final e in needByMaterial.entries) {
+        final stock = await (_db.select(_db.cachedInventoryStocks)..where((tbl) => tbl.materialId.equals(e.key)))
             .getSingleOrNull();
-
-        if (stock != null) {
-          await (_db.update(_db.cachedInventoryStocks)
-                ..where((tbl) => tbl.materialId.equals(item.materialId)))
-              .write(
-            CachedInventoryStocksCompanion(
-              qtyOnHand: Value(stock.qtyOnHand - returnQty),
-              updatedAt: Value(DateTime.now().toUtc()),
-            ),
-          );
-        }
-
-        // If line is partially returned, update quantity and amount in DB
-        if (returnQty < item.qty) {
-          final remainingQty = item.qty - returnQty;
-          final newAmount = remainingQty * item.rate;
-
-          await (_db.update(_db.cachedPurchaseLineItems)
-                ..where((tbl) => tbl.purchaseBillId.equals(billId) & tbl.lineNumber.equals(item.lineNumber)))
-              .write(
-            CachedPurchaseLineItemsCompanion(
-              qty: Value(remainingQty),
-              amount: Value(newAmount),
-            ),
-          );
+        final onHand = stock?.qtyOnHand ?? 0;
+        if (onHand < e.value) {
+          final name = stock?.name ?? e.key;
+          throw ApiException('Cannot return $name: only $onHand in stock, ${e.value} requested.');
         }
       }
 
-      final isFullReturn = allItemsFullyReturned && fullyReturnedLineNumbers.length == allLineItems.length;
+      for (final item in returningItems) {
+        final returnQty = returnedQty[item.lineNumber]!;
 
-      var remoteSucceeded = false;
-      if (!AppConfig.offlineOnly && isFullReturn) {
-        try {
-          await _remote.returnPurchaseBill(billId);
-          remoteSucceeded = true;
-        } on ApiException catch (e) {
-          if (e.statusCode != null && e.statusCode != 404) {
-            rethrow;
-          }
+        await _db.into(_db.purchaseReturnEntries).insert(PurchaseReturnEntriesCompanion.insert(
+              id: DbPaths.newId(),
+              purchaseBillId: billId,
+              billNo: Value(bill.billNo),
+              supplierId: bill.supplierId,
+              lineNumber: item.lineNumber,
+              materialId: item.materialId,
+              batchNo: item.batchNo,
+              quantity: returnQty,
+              rate: item.rate,
+              amount: item.qty == 0 ? 0 : item.amount * returnQty / item.qty,
+              isFullBillReturn: Value(isFullReturn),
+              returnedBy: Value(returnedBy),
+              deviceId: Value(deviceId),
+              returnedAt: now,
+            ));
+
+        final stock = await (_db.select(_db.cachedInventoryStocks)..where((tbl) => tbl.materialId.equals(item.materialId)))
+            .getSingle();
+        await (_db.update(_db.cachedInventoryStocks)..where((tbl) => tbl.materialId.equals(item.materialId))).write(
+          CachedInventoryStocksCompanion(
+            qtyOnHand: Value(stock.qtyOnHand - returnQty),
+            updatedAt: Value(now.toUtc()),
+          ),
+        );
+
+        // On a full return the lines stay exactly as purchased.
+        if (isFullReturn) continue;
+
+        if (returnQty < item.qty) {
+          final remainingQty = item.qty - returnQty;
+          await (_db.update(_db.cachedPurchaseLineItems)
+                ..where((tbl) => tbl.purchaseBillId.equals(billId) & tbl.lineNumber.equals(item.lineNumber)))
+              .write(CachedPurchaseLineItemsCompanion(
+            qty: Value(remainingQty),
+            amount: Value(remainingQty * item.rate),
+          ));
+        } else {
+          await (_db.delete(_db.cachedPurchaseLineItems)
+                ..where((tbl) => tbl.purchaseBillId.equals(billId) & tbl.lineNumber.equals(item.lineNumber)))
+              .go();
         }
       }
 
       if (isFullReturn) {
-        await (_db.delete(_db.cachedPurchaseLineItems)..where((tbl) => tbl.purchaseBillId.equals(billId))).go();
-        await (_db.delete(_db.cachedPurchaseBills)..where((tbl) => tbl.id.equals(billId))).go();
-        await (_db.delete(_db.syncQueueItems)..where((tbl) => tbl.entityId.equals(billId))).go();
+        var remoteSucceeded = false;
+        if (!AppConfig.offlineOnly) {
+          try {
+            await _remote.returnPurchaseBill(billId);
+            remoteSucceeded = true;
+          } on ApiException catch (e) {
+            if (e.statusCode != null && e.statusCode != 404) rethrow;
+          }
+        }
 
+        await (_db.update(_db.cachedPurchaseBills)..where((tbl) => tbl.id.equals(billId))).write(
+          CachedPurchaseBillsCompanion(
+            returnedAt: Value(now),
+            returnedBy: Value(returnedBy),
+            updatedAt: Value(now.toUtc()),
+          ),
+        );
+
+        await (_db.delete(_db.syncQueueItems)..where((tbl) => tbl.entityId.equals(billId))).go();
         if (!remoteSucceeded && !billId.startsWith('local-')) {
           await _db.into(_db.syncQueueItems).insert(
                 SyncQueueItemsCompanion.insert(
@@ -269,35 +310,25 @@ class LocalPurchaseRepository {
                   operation: 'return',
                   payload: jsonEncode({'id': billId}),
                   status: const Value('pending'),
-                  updatedAt: Value(DateTime.now().toUtc()),
+                  updatedAt: Value(now.toUtc()),
                 ),
               );
         }
-      } else {
-        if (fullyReturnedLineNumbers.isNotEmpty) {
-          await (_db.delete(_db.cachedPurchaseLineItems)
-                ..where((tbl) => tbl.purchaseBillId.equals(billId) & tbl.lineNumber.isIn(fullyReturnedLineNumbers)))
-              .go();
-        }
-
-        final remainingLineItems = await (_db.select(_db.cachedPurchaseLineItems)
-              ..where((tbl) => tbl.purchaseBillId.equals(billId)))
-            .get();
-
-        final newTotalAmount = remainingLineItems.fold<double>(0.0, (sum, i) => sum + i.amount);
-
-        final bill = await (_db.select(_db.cachedPurchaseBills)..where((tbl) => tbl.id.equals(billId))).getSingleOrNull();
-        if (bill != null) {
-          final newNetAmount = newTotalAmount - bill.discount + bill.vat + bill.stamp + bill.tcs + bill.loadingFreight;
-          await (_db.update(_db.cachedPurchaseBills)..where((tbl) => tbl.id.equals(billId))).write(
-            CachedPurchaseBillsCompanion(
-              totalAmount: Value(newTotalAmount),
-              netAmount: Value(newNetAmount),
-              updatedAt: Value(DateTime.now().toUtc()),
-            ),
-          );
-        }
+        return;
       }
+
+      final remainingLineItems = await (_db.select(_db.cachedPurchaseLineItems)
+            ..where((tbl) => tbl.purchaseBillId.equals(billId)))
+          .get();
+      final newTotalAmount = remainingLineItems.fold<double>(0.0, (sum, i) => sum + i.amount);
+      final newNetAmount = newTotalAmount - bill.discount + bill.vat + bill.stamp + bill.tcs + bill.loadingFreight;
+      await (_db.update(_db.cachedPurchaseBills)..where((tbl) => tbl.id.equals(billId))).write(
+        CachedPurchaseBillsCompanion(
+          totalAmount: Value(newTotalAmount),
+          netAmount: Value(newNetAmount),
+          updatedAt: Value(now.toUtc()),
+        ),
+      );
     });
   }
 

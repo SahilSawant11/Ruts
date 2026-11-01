@@ -150,6 +150,10 @@ class CachedPurchaseBills extends Table {
   TextColumn get tpDate => text().nullable()();
   TextColumn get stNo => text().nullable()();
   TextColumn get deviceId => text().nullable()();
+  /// Set when the whole purchase was returned to the supplier. The bill is
+  /// kept for the audit trail; reports and lists exclude it.
+  DateTimeColumn get returnedAt => dateTime().nullable()();
+  TextColumn get returnedBy => text().nullable()();
   RealColumn get discount => real()();
   RealColumn get vat => real()();
   RealColumn get stamp => real()();
@@ -230,6 +234,27 @@ class SalesReturnEntries extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
+/// One row per quantity returned to a supplier, full or partial.
+class PurchaseReturnEntries extends Table {
+  TextColumn get id => text()();
+  TextColumn get purchaseBillId => text()();
+  TextColumn get billNo => text().nullable()();
+  TextColumn get supplierId => text()();
+  IntColumn get lineNumber => integer()();
+  TextColumn get materialId => text()();
+  TextColumn get batchNo => text()();
+  IntColumn get quantity => integer()();
+  RealColumn get rate => real()();
+  RealColumn get amount => real()();
+  BoolColumn get isFullBillReturn => boolean().withDefault(const Constant(false))();
+  TextColumn get returnedBy => text().nullable()();
+  TextColumn get deviceId => text().nullable()();
+  DateTimeColumn get returnedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
 /// Simple key/value store for app-level settings (device id, bill
 /// sequences, backup preferences, seed flags).
 class AppSettings extends Table {
@@ -276,6 +301,7 @@ class AppUsers extends Table {
   AppSettings,
   AppUsers,
   SalesReturnEntries,
+  PurchaseReturnEntries,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
@@ -290,7 +316,7 @@ class AppDatabase extends _$AppDatabase {
         ));
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -356,6 +382,12 @@ class AppDatabase extends _$AppDatabase {
             await _ensureColumn('cached_sales_bills', 'returned_by', 'TEXT');
             await _createIndexes();
           }
+          if (from < 15) {
+            await m.createTable(purchaseReturnEntries);
+            await _ensureColumn('cached_purchase_bills', 'returned_at', 'INTEGER');
+            await _ensureColumn('cached_purchase_bills', 'returned_by', 'TEXT');
+            await _createIndexes();
+          }
           await _healMaterialsTable();
         },
         beforeOpen: (details) async {
@@ -415,6 +447,10 @@ class AppDatabase extends _$AppDatabase {
         'CREATE INDEX IF NOT EXISTS idx_inventory_barcode ON cached_inventory_stocks(barcode)',
         'CREATE INDEX IF NOT EXISTS idx_inventory_qty ON cached_inventory_stocks(qty_on_hand)',
       ],
+      'purchase_return_entries': [
+        'CREATE INDEX IF NOT EXISTS idx_purchase_returns_bill ON purchase_return_entries(purchase_bill_id)',
+        'CREATE INDEX IF NOT EXISTS idx_purchase_returns_date ON purchase_return_entries(returned_at)',
+      ],
       'sales_return_entries': [
         'CREATE INDEX IF NOT EXISTS idx_sales_returns_bill ON sales_return_entries(sales_bill_id)',
         'CREATE INDEX IF NOT EXISTS idx_sales_returns_date ON sales_return_entries(returned_at)',
@@ -449,6 +485,9 @@ class AppDatabase extends _$AppDatabase {
 
   /// True for bills that count in sales, reports and the dashboard.
   Expression<bool> isActiveSaleBill($CachedSalesBillsTable t) => t.status.equals(saleStatusReturned).not();
+
+  /// True for purchase bills that count (not fully returned to the supplier).
+  Expression<bool> isActivePurchaseBill($CachedPurchaseBillsTable t) => t.returnedAt.isNull();
 
   /// Line items belonging to active bills dated in [start, end) — as a
   /// subquery, so it works for any number of bills (no SQLite variable limit).

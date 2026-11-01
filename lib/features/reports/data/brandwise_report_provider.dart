@@ -154,7 +154,10 @@ Future<BrandwiseReportDto?> _buildLocalBrandwiseReport(AppDatabase db, DateTime 
 
   // Load purchases for this day
   final purchaseBills = await (db.select(db.cachedPurchaseBills)
-        ..where((t) => t.billDate.isBiggerOrEqualValue(start) & t.billDate.isSmallerThanValue(endExclusive)))
+        ..where((t) =>
+            db.isActivePurchaseBill(t) &
+            t.billDate.isBiggerOrEqualValue(start) &
+            t.billDate.isSmallerThanValue(endExclusive)))
       .get();
   final purchaseBillIds = purchaseBills.map((b) => b.id).toList();
 
