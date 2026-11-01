@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../domain/purchase_line_item.dart';
@@ -116,8 +117,8 @@ class PurchaseItemTable extends ConsumerWidget {
               color: AppColors.primarySoftFor(context),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.inventory_2_outlined,
+            child: const AppIcon(
+              AppIcons.crate,
               size: 32,
               color: AppColors.primary,
             ),
@@ -151,7 +152,7 @@ class PurchaseItemTable extends ConsumerWidget {
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.add_circle_outline_rounded, size: 16, color: AppColors.primary),
+                  AppIcon(AppIcons.addCircle, size: 16, color: AppColors.primary),
                   SizedBox(width: 6),
                   Text(
                     'Add First Line (F2)',
@@ -359,7 +360,7 @@ class _PurchaseTableRowState extends ConsumerState<_PurchaseTableRow> {
                   width: 36,
                   child: Center(
                     child: IconButton(
-                      icon: const Icon(Icons.delete_outline_rounded, size: 16),
+                      icon: const AppIcon(AppIcons.delete, size: 16),
                       color: AppColors.danger.withValues(alpha: 0.8),
                       hoverColor: AppColors.danger.withValues(alpha: 0.1),
                       splashRadius: 16,

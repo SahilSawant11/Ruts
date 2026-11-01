@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
 import '../../../masters/data/masters_providers.dart';
@@ -106,7 +107,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 // ),
                 SecondaryButton(
                   label: 'Refresh',
-                  icon: Icons.refresh_rounded,
+                  icon: AppIcons.refresh,
                   onPressed: () {
                     ref.invalidate(salesReportProvider);
                     ref.invalidate(categoriesListProvider);
@@ -116,7 +117,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 const SizedBox(width: AppSpacing.sm),
                 SecondaryButton(
                   label: _isExporting ? 'Exporting…' : 'Export Excel',
-                  icon: Icons.download_rounded,
+                  icon: AppIcons.download,
                   onPressed: _isExporting ? null : _exportExcel,
                 ),
               ],

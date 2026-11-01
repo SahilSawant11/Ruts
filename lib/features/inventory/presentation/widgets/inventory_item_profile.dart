@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../data/models/inventory_overview_item.dart';
 
@@ -29,7 +30,7 @@ class InventoryItemProfile extends StatelessWidget {
       child: Stack(
         children: [
           Center(
-            child: Icon(
+            child: AppIcon(
               spec.icon,
               size: spec.iconSize,
               color: spec.foreground,
@@ -73,7 +74,7 @@ class InventoryItemProfile extends StatelessWidget {
     if (category.contains('beer')) {
       if (packing.contains('can')) {
         return _ProfileSpec(
-          icon: Icons.local_drink_rounded,
+          icon: AppIcons.beer,
           badge: '',
           foreground: AppColors.chartBlue,
           background: isDark
@@ -86,7 +87,7 @@ class InventoryItemProfile extends StatelessWidget {
         );
       }
       return _ProfileSpec(
-        icon: Icons.liquor_rounded,
+        icon: AppIcons.liquorBottle,
         badge: '',
         foreground: AppColors.warning,
         background: isDark
@@ -131,7 +132,7 @@ class InventoryItemProfile extends StatelessWidget {
 
     if (category.contains('wine')) {
       return _ProfileSpec(
-        icon: Icons.wine_bar_rounded,
+        icon: AppIcons.wine,
         badge: 'WNE',
         foreground: AppColors.danger,
         background: isDark
@@ -166,7 +167,7 @@ class InventoryItemProfile extends StatelessWidget {
     final ml = _extractMl(packing);
     if (ml != null && ml <= 100) {
       return _ProfileSpec(
-        icon: Icons.local_bar_rounded,
+        icon: AppIcons.wine,
         badge: '90',
         foreground: AppColors.primary,
         background: bg,
@@ -176,7 +177,7 @@ class InventoryItemProfile extends StatelessWidget {
     }
     if (ml != null && ml <= 200) {
       return _ProfileSpec(
-        icon: Icons.local_bar_rounded,
+        icon: AppIcons.wine,
         badge: '180',
         foreground: AppColors.primary,
         background: bg,
@@ -186,7 +187,7 @@ class InventoryItemProfile extends StatelessWidget {
     }
     if (ml != null && ml <= 400) {
       return _ProfileSpec(
-        icon: Icons.sports_bar_rounded,
+        icon: AppIcons.beer,
         badge: '375',
         foreground: AppColors.primary,
         background: bg,
@@ -195,7 +196,7 @@ class InventoryItemProfile extends StatelessWidget {
       );
     }
     return _ProfileSpec(
-      icon: Icons.liquor_rounded,
+      icon: AppIcons.liquorBottle,
       badge: '750',
       foreground: AppColors.primary,
       background: bg,
@@ -213,7 +214,7 @@ class InventoryItemProfile extends StatelessWidget {
     final ml = _extractMl(packing);
     if (ml != null && ml <= 100) {
       return _ProfileSpec(
-        icon: Icons.local_bar_rounded,
+        icon: AppIcons.wine,
         badge: '${ml.round()}',
         foreground: foreground,
         background: background,
@@ -223,7 +224,7 @@ class InventoryItemProfile extends StatelessWidget {
     }
     if (ml != null && ml <= 200) {
       return _ProfileSpec(
-        icon: Icons.local_bar_rounded,
+        icon: AppIcons.wine,
         badge: '${ml.round()}',
         foreground: foreground,
         background: background,
@@ -233,7 +234,7 @@ class InventoryItemProfile extends StatelessWidget {
     }
     if (ml != null && ml <= 400) {
       return _ProfileSpec(
-        icon: Icons.sports_bar_rounded,
+        icon: AppIcons.beer,
         badge: '${ml.round()}',
         foreground: foreground,
         background: background,
@@ -242,7 +243,7 @@ class InventoryItemProfile extends StatelessWidget {
       );
     }
     return _ProfileSpec(
-      icon: Icons.liquor_rounded,
+      icon: AppIcons.liquorBottle,
       badge: ml == null ? 'BTL' : '${ml.round()}',
       foreground: foreground,
       background: background,
@@ -268,7 +269,7 @@ class _ProfileSpec {
     required this.iconSize,
   });
 
-  final IconData icon;
+  final AppIconData icon;
   final String badge;
   final Color foreground;
   final Color background;

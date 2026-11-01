@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
@@ -128,14 +129,14 @@ class _LicenseHolderFormCardState extends ConsumerState<LicenseHolderFormCard> {
                 ),
                 if (!isNew) ...[
                   IconButton(
-                    icon: const Icon(Icons.chevron_left_rounded),
+                    icon: const AppIcon(AppIcons.chevronLeft),
                     tooltip: 'Previous permit',
                     onPressed: browser.hasPrev
                         ? () => ref.read(licenseHolderBrowserProvider.notifier).prev()
                         : null,
                   ),
                   IconButton(
-                    icon: const Icon(Icons.chevron_right_rounded),
+                    icon: const AppIcon(AppIcons.chevronRight),
                     tooltip: 'Next permit',
                     onPressed: browser.hasNext
                         ? () => ref.read(licenseHolderBrowserProvider.notifier).next()
@@ -168,7 +169,7 @@ class _LicenseHolderFormCardState extends ConsumerState<LicenseHolderFormCard> {
               hint: 'e.g. 24-Mar-2017',
               controller: _issuedDate,
               suffix: IconButton(
-                icon: const Icon(Icons.calendar_today_rounded, size: 18),
+                icon: const AppIcon(AppIcons.calendar, size: 18),
                 onPressed: () async {
                   final now = DateTime.now();
                   final picked = await showDatePicker(
@@ -206,14 +207,14 @@ class _LicenseHolderFormCardState extends ConsumerState<LicenseHolderFormCard> {
                 if (!isNew)
                   SecondaryButton(
                     label: 'New Permit',
-                    icon: Icons.add_rounded,
+                    icon: AppIcons.add,
                     onPressed: () =>
                         ref.read(licenseHolderBrowserProvider.notifier).startNew(),
                   ),
                 const SizedBox(width: AppSpacing.sm),
                 PrimaryButton(
                   label: browser.isSaving ? 'Saving…' : (isNew ? 'Create Permit' : 'Save Changes'),
-                  icon: Icons.check_rounded,
+                  icon: AppIcons.check,
                   onPressed: browser.isSaving ? null : _save,
                 ),
               ],

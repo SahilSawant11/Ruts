@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/badges/tag_pill.dart';
@@ -15,7 +16,7 @@ class MasterTile extends StatelessWidget {
     this.comingSoon = false,
   });
 
-  final IconData icon;
+  final AppIconData icon;
   final String title;
   final String subtitle;
   final VoidCallback? onTap;
@@ -47,7 +48,7 @@ class MasterTile extends StatelessWidget {
                       borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
                     alignment: Alignment.center,
-                    child: Icon(icon, size: 19, color: AppColors.primary),
+                    child: AppIcon(icon, size: 19, color: AppColors.primary),
                   ),
                   if (comingSoon) const TagPill(label: 'SOON', tone: TagPillTone.neutral),
                 ],

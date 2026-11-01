@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:file_selector/file_selector.dart';
 import '../../../../core/local/backup_service.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../data/masters_providers.dart';
 import '../widgets/master_tile.dart';
@@ -40,61 +41,61 @@ class AllMastersScreen extends ConsumerWidget {
         childAspectRatio: 1.5,
         children: [
           MasterTile(
-            icon: Icons.local_shipping_outlined,
+            icon: AppIcons.suppliers,
             title: 'Supplier Master',
             subtitle: countLabel(suppliersAsync, 'supplier'),
             onTap: () => context.go('/supplier'),
           ),
           MasterTile(
-            icon: Icons.inventory_2_outlined,
+            icon: AppIcons.materials,
             title: 'Material Master',
             subtitle: countLabel(materialsAsync, 'material'),
             onTap: () => context.go('/material'),
           ),
           MasterTile(
-            icon: Icons.category_outlined,
+            icon: AppIcons.categories,
             title: 'Category Master',
             subtitle: countLabel(categoriesAsync, 'category'),
             onTap: () => context.go('/category'),
           ),
           MasterTile(
-            icon: Icons.business_outlined,
+            icon: AppIcons.manufacturers,
             title: 'Manufacturer Master',
             subtitle: countLabel(manufacturersAsync, 'manufacturer'),
             onTap: () => context.go('/manufacturer'),
           ),
           MasterTile(
-            icon: Icons.all_inbox_rounded,
+            icon: AppIcons.packagings,
             title: 'Packaging Master',
             subtitle: countLabel(packingsAsync, 'packaging'),
             onTap: () => context.go('/packaging'),
           ),
           const MasterTile(
-            icon: Icons.people_outline_rounded,
+            icon: AppIcons.people,
             title: 'Customer Master',
             subtitle: 'Credit accounts & balances',
             comingSoon: true,
           ),
           const MasterTile(
-            icon: Icons.badge_outlined,
+            icon: AppIcons.badge,
             title: 'User Management',
             subtitle: 'Roles & permissions',
             comingSoon: true,
           ),
           const MasterTile(
-            icon: Icons.receipt_long_outlined,
+            icon: AppIcons.receipt,
             title: 'Tax / GST Master',
             subtitle: 'Slab configuration',
             comingSoon: true,
           ),
           MasterTile(
-            icon: Icons.badge_outlined,
+            icon: AppIcons.licenseHolders,
             title: 'License Holder Master',
             subtitle: countLabel(licenseHoldersAsync, 'permit'),
             onTap: () => context.go('/license-holder'),
           ),
           MasterTile(
-            icon: Icons.settings_outlined,
+            icon: AppIcons.settings,
             title: 'App Settings',
             subtitle: 'Backup database',
             onTap: () => _showBackupDialog(context, ref),

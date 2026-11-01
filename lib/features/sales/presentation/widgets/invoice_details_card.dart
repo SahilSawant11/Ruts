@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../data/models/customer_dto.dart';
@@ -270,8 +271,8 @@ class _CustomerField extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 4),
-                    const Icon(
-                      Icons.arrow_drop_down_rounded,
+                    const AppIcon(
+                      AppIcons.arrowDropDown,
                       size: 16,
                       color: AppColors.primary,
                     ),
@@ -362,7 +363,7 @@ class _LicenseHolderField extends StatelessWidget {
                           ),
                         ),
                         if (h.id == activeHolder?.id)
-                          const Icon(Icons.check_rounded, size: 16, color: AppColors.primary),
+                          const AppIcon(AppIcons.check, size: 16, color: AppColors.primary),
                       ],
                     ),
                   ),
@@ -390,8 +391,8 @@ class _LicenseHolderField extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 4),
-                    const Icon(
-                      Icons.arrow_drop_down_rounded,
+                    const AppIcon(
+                      AppIcons.arrowDropDown,
                       size: 16,
                       color: AppColors.primary,
                     ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../data/dashboard_providers.dart';
@@ -60,7 +61,7 @@ class _DashboardKpiRowState extends ConsumerState<DashboardKpiRow> {
                 trendPercent: summary.salesDeltaPercent ?? 0.0,
                 isTrendUp: (summary.salesDeltaPercent ?? 0.0) >= 0,
                 subtitle: 'Sales vs last period',
-                icon: Icons.trending_up_rounded,
+                icon: AppIcons.trendingUp,
                 iconColor: AppColors.primary,
                 selectedTimeframe: _timeframe,
                 onTimeframeChanged: (v) =>
@@ -77,7 +78,7 @@ class _DashboardKpiRowState extends ConsumerState<DashboardKpiRow> {
                 trendPercent: summary.salesReturnDeltaPercent ?? 0.0,
                 isTrendUp: false,
                 subtitle: 'Sales return vs last period',
-                icon: Icons.sync_rounded,
+                icon: AppIcons.sync,
                 iconColor: AppColors.chartTeal,
                 selectedTimeframe: _timeframe,
                 onTimeframeChanged: (v) =>
@@ -94,7 +95,7 @@ class _DashboardKpiRowState extends ConsumerState<DashboardKpiRow> {
                 trendPercent: summary.purchaseDeltaPercent ?? 0.0,
                 isTrendUp: true,
                 subtitle: 'Purchase vs last period',
-                icon: Icons.shopping_bag_outlined,
+                icon: AppIcons.shoppingBag,
                 iconColor: AppColors.chartAmber,
                 selectedTimeframe: _timeframe,
                 onTimeframeChanged: (v) =>
@@ -111,7 +112,7 @@ class _DashboardKpiRowState extends ConsumerState<DashboardKpiRow> {
                 trendPercent: summary.purchaseReturnDeltaPercent ?? 0.0,
                 isTrendUp: false,
                 subtitle: 'Purchase return vs last period',
-                icon: Icons.swap_horiz_rounded,
+                icon: AppIcons.swapHoriz,
                 iconColor: AppColors.chartBlue,
                 selectedTimeframe: _timeframe,
                 onTimeframeChanged: (v) =>
@@ -157,7 +158,7 @@ class _MetricCard extends StatelessWidget {
   final double trendPercent;
   final bool isTrendUp;
   final String subtitle;
-  final IconData icon;
+  final AppIconData icon;
   final Color iconColor;
   final String selectedTimeframe;
   final ValueChanged<String> onTimeframeChanged;
@@ -217,7 +218,8 @@ class _MetricCard extends StatelessWidget {
                       : iconColor.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, size: 19, color: iconColor),
+                alignment: Alignment.center,
+                child: AppIcon(icon, size: 19, color: iconColor),
               ),
               const SizedBox(width: 10),
 
@@ -253,10 +255,10 @@ class _MetricCard extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
+                    AppIcon(
                       isTrendUp
-                          ? Icons.arrow_upward_rounded
-                          : Icons.arrow_downward_rounded,
+                          ? AppIcons.arrowUp
+                          : AppIcons.arrowDown,
                       size: 11,
                       color: isTrendUp ? AppColors.success : AppColors.danger,
                     ),
@@ -324,8 +326,8 @@ class _TimeframePill extends StatelessWidget {
             fontWeight: FontWeight.w600,
             color: AppColors.textSecondaryFor(context),
           ),
-          icon: Icon(
-            Icons.keyboard_arrow_down_rounded,
+          icon: AppIcon(
+            AppIcons.arrowDropDown,
             size: 15,
             color: AppColors.textMutedFor(context),
           ),

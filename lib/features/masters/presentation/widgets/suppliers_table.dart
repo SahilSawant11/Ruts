@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/badges/status_chip.dart';
@@ -126,14 +127,14 @@ class _SuppliersTableState extends ConsumerState<SuppliersTable> {
             ),
             SecondaryButton(
               label: _isImporting ? 'Importing…' : 'Import Excel',
-              icon: Icons.upload_file_rounded,
+              icon: AppIcons.uploadFile,
               dense: true,
               onPressed: _isImporting ? null : _import,
             ),
             const SizedBox(width: AppSpacing.xs),
             SecondaryButton(
               label: 'New',
-              icon: Icons.add_rounded,
+              icon: AppIcons.add,
               dense: true,
               onPressed: () => ref.read(supplierBrowserProvider.notifier).startNew(),
             ),
@@ -146,7 +147,7 @@ class _SuppliersTableState extends ConsumerState<SuppliersTable> {
           label: '',
           hint: 'Search by vendor name, contact phone, or VAT / GST number…',
           controller: _search,
-          suffix: const Icon(Icons.search_rounded, size: 18),
+          suffix: const AppIcon(AppIcons.search, size: 18),
         ),
         const SizedBox(height: AppSpacing.sm),
 
@@ -210,7 +211,7 @@ class _SuppliersTableState extends ConsumerState<SuppliersTable> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.search_off_rounded, size: 36, color: AppColors.textMutedFor(context)),
+                      AppIcon(AppIcons.searchOff, size: 36, color: AppColors.textMutedFor(context)),
                       const SizedBox(height: 8),
                       Text('No suppliers match "$query".', style: AppTypography.bodyMuted),
                     ],
@@ -306,8 +307,8 @@ class _SuppliersTableState extends ConsumerState<SuppliersTable> {
             ),
             if (isCurrent) ...[
               const SizedBox(width: 3),
-              Icon(
-                _sortAscending ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+              AppIcon(
+                _sortAscending ? AppIcons.arrowUp : AppIcons.arrowDown,
                 size: 13,
                 color: AppColors.primary,
               ),

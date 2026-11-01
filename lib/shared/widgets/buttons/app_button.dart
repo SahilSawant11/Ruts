@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../badges/keyboard_shortcut_badge.dart';
@@ -24,7 +25,7 @@ class AppButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
   final AppButtonVariant variant;
-  final IconData? icon;
+  final AppIconData? icon;
   final String? shortcut;
   final bool expand;
   final bool dense;
@@ -68,7 +69,7 @@ class AppButton extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         if (icon != null) ...[
-          Icon(icon, size: 16, color: colors.fg),
+          AppIcon(icon!, size: 16, color: colors.fg),
           const SizedBox(width: 8),
         ],
         Flexible(

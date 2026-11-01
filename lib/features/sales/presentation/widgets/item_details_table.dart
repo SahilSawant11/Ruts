@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../domain/sale_line_item.dart';
@@ -116,8 +117,8 @@ class ItemDetailsTable extends ConsumerWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          Icons.liquor_rounded,
+                        AppIcon(
+                          AppIcons.liquorBottle,
                           size: 13,
                           color: cart.isLimitReached ? AppColors.danger : AppColors.primary,
                         ),
@@ -240,8 +241,8 @@ class ItemDetailsTable extends ConsumerWidget {
               color: AppColors.primarySoftFor(context),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.qr_code_scanner_rounded,
+            child: const AppIcon(
+              AppIcons.barcode,
               size: 28,
               color: AppColors.primary,
             ),
@@ -409,7 +410,7 @@ class _TableRowState extends ConsumerState<_TableRow> {
                               color: AppColors.backgroundFor(context),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.remove_rounded, size: 12, color: AppColors.primary),
+                            child: const AppIcon(AppIcons.remove, size: 12, color: AppColors.primary),
                           ),
                         ),
                       Padding(
@@ -435,7 +436,7 @@ class _TableRowState extends ConsumerState<_TableRow> {
                               color: AppColors.backgroundFor(context),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.add_rounded, size: 12, color: AppColors.primary),
+                            child: const AppIcon(AppIcons.add, size: 12, color: AppColors.primary),
                           ),
                         ),
                     ],
@@ -499,7 +500,7 @@ class _TableRowState extends ConsumerState<_TableRow> {
                 width: 36,
                 child: Center(
                   child: IconButton(
-                    icon: const Icon(Icons.close_rounded, size: 16),
+                    icon: const AppIcon(AppIcons.close, size: 16),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
                     color: _isHovered ? AppColors.danger : AppColors.textMutedFor(context),

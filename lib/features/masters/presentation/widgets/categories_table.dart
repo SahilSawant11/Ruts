@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/badges/status_chip.dart';
@@ -64,7 +65,7 @@ class _CategoriesTableState extends ConsumerState<CategoriesTable> {
             ),
             SecondaryButton(
               label: 'New',
-              icon: Icons.add_rounded,
+              icon: AppIcons.add,
               dense: true,
               onPressed: () => ref.read(categoryBrowserProvider.notifier).startNew(),
             ),
@@ -77,7 +78,7 @@ class _CategoriesTableState extends ConsumerState<CategoriesTable> {
           label: '',
           hint: 'Search category name or description…',
           controller: _search,
-          suffix: const Icon(Icons.search_rounded, size: 18),
+          suffix: const AppIcon(AppIcons.search, size: 18),
         ),
         const SizedBox(height: AppSpacing.sm),
 
@@ -125,7 +126,7 @@ class _CategoriesTableState extends ConsumerState<CategoriesTable> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.search_off_rounded, size: 36, color: AppColors.textMutedFor(context)),
+                      AppIcon(AppIcons.searchOff, size: 36, color: AppColors.textMutedFor(context)),
                       const SizedBox(height: 8),
                       Text('No categories match "$query".', style: AppTypography.bodyMuted),
                     ],
@@ -191,8 +192,8 @@ class _CategoriesTableState extends ConsumerState<CategoriesTable> {
                     ),
                   ),
                   const SizedBox(width: 3),
-                  Icon(
-                    _sortAscending ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                  AppIcon(
+                    _sortAscending ? AppIcons.arrowUp : AppIcons.arrowDown,
                     size: 13,
                     color: AppColors.primary,
                   ),

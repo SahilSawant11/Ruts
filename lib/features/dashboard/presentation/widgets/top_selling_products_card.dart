@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../data/dashboard_providers.dart';
@@ -52,8 +53,9 @@ class _TopSellingProductsCardState
                           : const Color(0xFFFFECEB),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(
-                      Icons.inventory_2_outlined,
+                    alignment: Alignment.center,
+                    child: const AppIcon(
+                      AppIcons.crate,
                       size: 16,
                       color: Color(0xFFE96560),
                     ),
@@ -89,8 +91,8 @@ class _TopSellingProductsCardState
                       fontWeight: FontWeight.w600,
                       color: AppColors.textSecondaryFor(context),
                     ),
-                    icon: Icon(
-                      Icons.keyboard_arrow_down_rounded,
+                    icon: AppIcon(
+                      AppIcons.arrowDropDown,
                       size: 15,
                       color: AppColors.textMutedFor(context),
                     ),
@@ -266,10 +268,8 @@ class _ProductRow extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                isPositive
-                    ? Icons.north_east_rounded
-                    : Icons.south_east_rounded,
+              AppIcon(
+                isPositive ? AppIcons.northEast : AppIcons.southEast,
                 size: 11,
                 color: isPositive ? AppColors.success : AppColors.danger,
               ),

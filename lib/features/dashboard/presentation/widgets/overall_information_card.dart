@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../data/dashboard_providers.dart';
@@ -42,8 +43,9 @@ class OverallInformationCard extends ConsumerWidget {
                       : AppColors.chartBlue.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(
-                  Icons.info_outline_rounded,
+                alignment: Alignment.center,
+                child: const AppIcon(
+                  AppIcons.info,
                   size: 16,
                   color: AppColors.chartBlue,
                 ),
@@ -83,7 +85,7 @@ class OverallInformationCard extends ConsumerWidget {
                     child: _InfoTile(
                       count: '$suppliers',
                       label: 'Suppliers',
-                      icon: Icons.store_outlined,
+                      icon: AppIcons.storefront,
                       isPrimaryDark: true,
                       onTap: () => context.go('/supplier'),
                     ),
@@ -95,7 +97,7 @@ class OverallInformationCard extends ConsumerWidget {
                     child: _InfoTile(
                       count: '$catalogItems',
                       label: 'SCM Codes',
-                      icon: Icons.qr_code_2_rounded,
+                      icon: AppIcons.qrCode,
                       isPrimaryDark: false,
                       onTap: () => context.go('/inventory'),
                     ),
@@ -107,7 +109,7 @@ class OverallInformationCard extends ConsumerWidget {
                     child: _InfoTile(
                       count: '$lowStock',
                       label: 'Low Stock',
-                      icon: Icons.warning_amber_rounded,
+                      icon: AppIcons.warning,
                       isPrimaryDark: false,
                       onTap: () => context.go('/inventory'),
                     ),
@@ -133,7 +135,7 @@ class _InfoTile extends StatelessWidget {
 
   final String count;
   final String label;
-  final IconData icon;
+  final AppIconData icon;
   final bool isPrimaryDark;
   final VoidCallback onTap;
 
@@ -190,7 +192,7 @@ class _InfoTile extends StatelessWidget {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(icon, size: 12, color: subColor),
+                        AppIcon(icon, size: 12, color: subColor),
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
@@ -223,8 +225,9 @@ class _InfoTile extends StatelessWidget {
                           : AppColors.backgroundFor(context)),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  Icons.chevron_right_rounded,
+                alignment: Alignment.center,
+                child: AppIcon(
+                  AppIcons.chevronRight,
                   size: 15,
                   color: textColor,
                 ),

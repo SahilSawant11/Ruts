@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/auth/auth_controller.dart';
 // import '../../../core/config/app_config.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../features/dashboard/data/dashboard_providers.dart';
@@ -71,7 +72,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                   // 1. WORKSPACE
                   _SectionHeader(title: 'Workspace', collapsed: collapsed),
                   SidebarItem(
-                    icon: Icons.grid_view_rounded,
+                    icon: AppIcons.dashboard,
                     label: 'Dashboard',
                     shortcut: 'F1',
                     active: location == '/dashboard',
@@ -83,7 +84,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                     },
                   ),
                   SidebarItem(
-                    icon: Icons.point_of_sale_rounded,
+                    icon: AppIcons.pos,
                     label: 'Sales Bill',
                     shortcut: 'F3',
                     active: location == '/sales',
@@ -94,7 +95,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                     },
                   ),
                   SidebarItem(
-                    icon: Icons.assignment_return_outlined,
+                    icon: AppIcons.salesReturn,
                     label: 'Sales Return',
                     shortcut: 'F8',
                     active: location == '/sales-return',
@@ -105,7 +106,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                     },
                   ),
                   SidebarItem(
-                    icon: Icons.receipt_long_rounded,
+                    icon: AppIcons.purchaseBill,
                     label: 'Purchase Bill',
                     shortcut: 'F2',
                     active: location == '/purchase',
@@ -116,7 +117,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                     },
                   ),
                   SidebarItem(
-                    icon: Icons.keyboard_return_rounded,
+                    icon: AppIcons.purchaseReturn,
                     label: 'Purchase Return',
                     active: location == '/purchase-return',
                     collapsed: collapsed,
@@ -129,7 +130,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                   // 2. MASTERS
                   _SectionHeader(title: 'Masters', collapsed: collapsed),
                   SidebarItem(
-                    icon: Icons.inventory_2_outlined,
+                    icon: AppIcons.crate,
                     label: 'Material Master',
                     shortcut: 'F4',
                     active: location == '/material',
@@ -140,7 +141,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                     },
                   ),
                   SidebarItem(
-                    icon: Icons.category_outlined,
+                    icon: AppIcons.categories,
                     label: 'Category Master',
                     shortcut: 'F11',
                     active: location == '/category',
@@ -151,7 +152,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                     },
                   ),
                   SidebarItem(
-                    icon: Icons.local_shipping_outlined,
+                    icon: AppIcons.suppliers,
                     label: 'Supplier Master',
                     shortcut: 'F7',
                     active: location == '/supplier',
@@ -162,7 +163,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                     },
                   ),
                   SidebarItem(
-                    icon: Icons.business_outlined,
+                    icon: AppIcons.manufacturers,
                     label: 'Manufacturer',
                     active: location == '/manufacturer',
                     collapsed: collapsed,
@@ -172,7 +173,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                     },
                   ),
                   SidebarItem(
-                    icon: Icons.all_inbox_rounded,
+                    icon: AppIcons.packagings,
                     label: 'Packaging Master',
                     active: location == '/packaging',
                     collapsed: collapsed,
@@ -182,7 +183,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                     },
                   ),
                   SidebarItem(
-                    icon: Icons.badge_outlined,
+                    icon: AppIcons.exciseSeal,
                     label: 'License Holder',
                     active: location == '/license-holder',
                     collapsed: collapsed,
@@ -192,7 +193,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                     },
                   ),
                   SidebarItem(
-                    icon: Icons.dashboard_customize_outlined,
+                    icon: AppIcons.allMasters,
                     label: 'All Masters',
                     shortcut: 'F9',
                     active: location == '/masters',
@@ -206,7 +207,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                   // 3. INVENTORY & REPORTS
                   _SectionHeader(title: 'Inventory & Reports', collapsed: collapsed),
                   SidebarItem(
-                    icon: Icons.widgets_outlined,
+                    icon: AppIcons.inventory,
                     label: 'Inventory',
                     shortcut: 'F5',
                     active: location == '/inventory',
@@ -217,7 +218,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                     },
                   ),
                   SidebarItem(
-                    icon: Icons.assessment_outlined,
+                    icon: AppIcons.reports,
                     label: 'SCM Daily Sale',
                     shortcut: 'F6',
                     active: location == '/reports',
@@ -228,7 +229,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                     },
                   ),
                   SidebarItem(
-                    icon: Icons.liquor_outlined,
+                    icon: AppIcons.liquorBottle,
                     label: 'Brandwise Report',
                     shortcut: 'F10',
                     active: location == '/brandwise-report',
@@ -243,7 +244,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                   // if (!AppConfig.offlineOnly) ...[
                   //   _SectionHeader(title: 'System', collapsed: collapsed),
                   //   SidebarItem(
-                  //     icon: Icons.sync_alt_rounded,
+                  //     icon: AppIcons.sync,
                   //     label: 'Sync Center',
                   //     shortcut: 'F12',
                   //     active: location == '/sync',
@@ -362,8 +363,8 @@ class _CocktailMark extends StatelessWidget {
         border: Border.all(color: AppColors.borderFor(context)),
       ),
       alignment: Alignment.center,
-      child: const Icon(
-        Icons.local_bar_rounded,
+      child: const AppIcon(
+        AppIcons.liquorBottle,
         size: 19,
         color: AppColors.primary,
       ),
@@ -584,8 +585,8 @@ class _LogoutIconButtonState extends State<_LogoutIconButton> {
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(6),
             ),
-            child: Icon(
-              Icons.logout_rounded,
+            child: AppIcon(
+              AppIcons.logout,
               size: 17,
               color: _hovered
                   ? AppColors.danger

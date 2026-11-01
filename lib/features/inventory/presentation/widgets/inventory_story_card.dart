@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
@@ -117,7 +118,7 @@ class InventoryStoryCard extends ConsumerWidget {
                           context,
                           'Bottles',
                           '$bottleCount',
-                          Icons.local_bar_rounded,
+                          AppIcons.liquorBottle,
                           fg: AppColors.warning,
                           bg: AppColors.isDark(context)
                               ? AppColors.warning.withValues(alpha: 0.16)
@@ -128,7 +129,7 @@ class InventoryStoryCard extends ConsumerWidget {
                           context,
                           'Cans',
                           '$canCount',
-                          Icons.local_drink_rounded,
+                          AppIcons.beer,
                           fg: AppColors.chartBlue,
                           bg: AppColors.isDark(context)
                               ? AppColors.chartBlue.withValues(alpha: 0.16)
@@ -211,7 +212,7 @@ class InventoryStoryCard extends ConsumerWidget {
     BuildContext context,
     String label,
     String value,
-    IconData icon, {
+    AppIconData icon, {
     required Color fg,
     required Color bg,
   }) {
@@ -236,8 +237,10 @@ class InventoryStoryCard extends ConsumerWidget {
                     : Colors.transparent,
               ),
             ),
-            child: Icon(
+            alignment: Alignment.center,
+            child: AppIcon(
               icon,
+              size: 20,
               color: AppColors.isDark(context) ? Colors.white : fg,
             ),
           ),

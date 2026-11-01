@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/badges/status_chip.dart';
@@ -117,14 +118,14 @@ class _LicenseHoldersTableState extends ConsumerState<LicenseHoldersTable> {
             ),
             SecondaryButton(
               label: _isImporting ? 'Importing…' : 'Import Excel',
-              icon: Icons.upload_file_rounded,
+              icon: AppIcons.uploadFile,
               dense: true,
               onPressed: _isImporting ? null : _import,
             ),
             const SizedBox(width: AppSpacing.xs),
             SecondaryButton(
               label: 'New',
-              icon: Icons.add_rounded,
+              icon: AppIcons.add,
               dense: true,
               onPressed: () => ref.read(licenseHolderBrowserProvider.notifier).startNew(),
             ),
@@ -137,7 +138,7 @@ class _LicenseHoldersTableState extends ConsumerState<LicenseHoldersTable> {
           label: '',
           hint: 'Search by permit no, holder name, or location…',
           controller: _search,
-          suffix: const Icon(Icons.search_rounded, size: 18),
+          suffix: const AppIcon(AppIcons.search, size: 18),
         ),
         const SizedBox(height: AppSpacing.sm),
 
@@ -273,7 +274,7 @@ class _LicenseHoldersTableState extends ConsumerState<LicenseHoldersTable> {
                           SizedBox(
                             width: 36,
                             child: IconButton(
-                              icon: const Icon(Icons.delete_outline_rounded, size: 16),
+                              icon: const AppIcon(AppIcons.delete, size: 16),
                               color: AppColors.textMutedFor(context),
                               tooltip: 'Delete permit',
                               onPressed: () => _confirmDelete(holder),
@@ -352,8 +353,8 @@ class _LicenseHoldersTableState extends ConsumerState<LicenseHoldersTable> {
           ),
           if (active) ...[
             const SizedBox(width: 2),
-            Icon(
-              _sortAscending ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+            AppIcon(
+              _sortAscending ? AppIcons.arrowUp : AppIcons.arrowDown,
               size: 12,
               color: AppColors.primary,
             ),

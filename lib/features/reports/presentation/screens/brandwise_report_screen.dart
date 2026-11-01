@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
 import '../../data/brandwise_report_provider.dart';
@@ -82,7 +83,7 @@ class _BrandwiseReportScreenState extends ConsumerState<BrandwiseReportScreen> {
           BrandwiseFiltersCard(
             trailingAction: SecondaryButton(
               label: _isExporting ? 'Exporting…' : 'Export Excel',
-              icon: Icons.download_rounded,
+              icon: AppIcons.download,
               onPressed: _isExporting ? null : _exportExcel,
             ),
           ),

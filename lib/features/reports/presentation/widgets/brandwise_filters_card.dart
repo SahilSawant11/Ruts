@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
@@ -78,7 +79,7 @@ class _BrandwiseFiltersCardState extends ConsumerState<BrandwiseFiltersCard> {
                 child: _dateField('REPORT DATE', _pendingDate ?? current),
               ),
               const SizedBox(width: AppSpacing.md),
-              PrimaryButton(label: 'Generate', icon: Icons.search_rounded, onPressed: _generate),
+              PrimaryButton(label: 'Generate', icon: AppIcons.search, onPressed: _generate),
             ],
           ),
         ],
@@ -101,14 +102,14 @@ class _BrandwiseFiltersCardState extends ConsumerState<BrandwiseFiltersCard> {
             context,
             mode: BrandwiseViewMode.brandwise,
             label: 'Brandwise',
-            icon: Icons.liquor_outlined,
+            icon: AppIcons.liquorBottle,
             isSelected: currentMode == BrandwiseViewMode.brandwise,
           ),
           _modeSegment(
             context,
             mode: BrandwiseViewMode.counterBrandwise,
             label: 'Counter Brandwise',
-            icon: Icons.storefront_outlined,
+            icon: AppIcons.storefront,
             isSelected: currentMode == BrandwiseViewMode.counterBrandwise,
           ),
         ],
@@ -120,7 +121,7 @@ class _BrandwiseFiltersCardState extends ConsumerState<BrandwiseFiltersCard> {
     BuildContext context, {
     required BrandwiseViewMode mode,
     required String label,
-    required IconData icon,
+    required AppIconData icon,
     required bool isSelected,
   }) {
     return Material(
@@ -135,7 +136,7 @@ class _BrandwiseFiltersCardState extends ConsumerState<BrandwiseFiltersCard> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
+              AppIcon(
                 icon,
                 size: 15,
                 color: isSelected ? AppColors.primary : AppColors.textMutedFor(context),
@@ -174,7 +175,7 @@ class _BrandwiseFiltersCardState extends ConsumerState<BrandwiseFiltersCard> {
             ),
             child: Row(
               children: [
-                Icon(Icons.calendar_today_outlined, size: 15, color: AppColors.textMutedFor(context)),
+                AppIcon(AppIcons.calendar, size: 15, color: AppColors.textMutedFor(context)),
                 const SizedBox(width: 8),
                 Text(
                   _fmt(value),

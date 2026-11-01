@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../purchase_cart_controller.dart';
@@ -43,7 +44,7 @@ class PurchaseSummaryCard extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.receipt_outlined, size: 16, color: AppColors.primary),
+                  const AppIcon(AppIcons.receipt, size: 16, color: AppColors.primary),
                   const SizedBox(width: 8),
                   Text(
                     'Bill Summary',

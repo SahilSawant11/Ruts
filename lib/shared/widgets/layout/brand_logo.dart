@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 
@@ -35,8 +36,8 @@ class BrandLogo extends StatelessWidget {
             border: Border.all(color: borderColor),
           ),
           alignment: Alignment.center,
-          child: Icon(
-            Icons.local_bar_rounded,
+          child: AppIcon(
+            AppIcons.liquorBottle,
             size: iconSize,
             color: AppColors.primary,
           ),

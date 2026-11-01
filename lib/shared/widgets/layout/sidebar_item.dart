@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 
@@ -22,7 +23,7 @@ class SidebarItem extends StatefulWidget {
     this.onTap,
   });
 
-  final IconData icon;
+  final AppIconData icon;
   final String label;
   final String? shortcut;
   final bool active;
@@ -125,10 +126,11 @@ class _SidebarItemState extends State<SidebarItem> {
                                 scale: _hovered ? 1.08 : 1.0,
                                 duration: const Duration(milliseconds: 120),
                                 curve: Curves.easeOut,
-                                child: Icon(
+                                child: AppIcon(
                                   widget.icon,
                                   size: 19,
                                   color: iconColor,
+                                  active: widget.active,
                                 ),
                               ),
                             ),

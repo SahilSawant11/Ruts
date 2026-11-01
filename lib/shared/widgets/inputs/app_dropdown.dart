@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 
@@ -56,8 +57,8 @@ class AppDropdown<T> extends StatelessWidget {
                       ),
                     )
                   : null,
-              icon: Icon(
-                Icons.keyboard_arrow_down_rounded,
+              icon: AppIcon(
+                AppIcons.arrowDropDown,
                 size: 18,
                 color: AppColors.textMutedFor(context),
               ),

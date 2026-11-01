@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/local/app_database.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/badges/tag_pill.dart';
@@ -72,7 +73,7 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
               data: (overview) {
                 final syncButton = PrimaryButton(
                   label: _isSyncing ? 'Syncing…' : 'Sync Now',
-                  icon: Icons.sync_rounded,
+                  icon: AppIcons.sync,
                   onPressed: _isSyncing ? null : _syncNow,
                 );
 

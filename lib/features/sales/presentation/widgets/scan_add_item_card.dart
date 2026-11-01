@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../masters/data/masters_providers.dart';
@@ -172,7 +173,7 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.block_rounded, color: Colors.white, size: 18),
+                const AppIcon(AppIcons.block, color: Colors.white, size: 18),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -221,46 +222,46 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Row(
-                children: [
-                  const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 18),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      err,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
+              children: [
+                const AppIcon(AppIcons.warning, color: Colors.white, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    err,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
-                ],
-              ),
-              backgroundColor: AppColors.danger,
-              duration: const Duration(seconds: 3),
-              behavior: SnackBarBehavior.floating,
+                ),
+              ],
             ),
-          );
-        }
-      } else if (added && mounted) {
-        final cart = ref.read(cartControllerProvider);
-        if (cart.isLimitReached) {
-          await _triggerAutoCheckout();
-        }
+            backgroundColor: AppColors.danger,
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
-    } finally {
-      if (mounted) {
-        _isSubmitting = false;
+    } else if (added && mounted) {
+      final cart = ref.read(cartControllerProvider);
+      if (cart.isLimitReached) {
+        await _triggerAutoCheckout();
       }
     }
+  } finally {
+    if (mounted) {
+      _isSubmitting = false;
+    }
   }
+}
 
-  Future<void> _triggerAutoCheckout() async {
-    try {
-      final result = await ref.read(salesCheckoutServiceProvider).executeCheckout(isAuto: true);
-      if (!mounted || result == null) return;
+Future<void> _triggerAutoCheckout() async {
+  try {
+    final result = await ref.read(salesCheckoutServiceProvider).executeCheckout(isAuto: true);
+    if (!mounted || result == null) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const AppIcon(AppIcons.checkCircle, color: Colors.white, size: 18),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -347,7 +348,7 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
                             child: const Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.qr_code_scanner_rounded, size: 15, color: Colors.white),
+                                AppIcon(AppIcons.barcode, size: 15, color: Colors.white),
                                 SizedBox(width: 5),
                                 Text(
                                   'BARCODE',
@@ -406,8 +407,8 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
                             )
                           else
                             IconButton(
-                              icon: Icon(
-                                Icons.content_paste_rounded,
+                              icon: AppIcon(
+                                AppIcons.paste,
                                 size: 16,
                                 color: AppColors.textSecondaryFor(context),
                               ),
@@ -487,7 +488,7 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.add_rounded, size: 17, color: Colors.white),
+                          const AppIcon(AppIcons.add, size: 17, color: Colors.white),
                           const SizedBox(width: 6),
                           Text(
                             'Add',
@@ -511,7 +512,7 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
             const SizedBox(height: 6),
             Row(
               children: [
-                const Icon(Icons.error_outline_rounded, size: 14, color: AppColors.danger),
+                const AppIcon(AppIcons.error, size: 14, color: AppColors.danger),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
@@ -655,7 +656,7 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           if (isOutOfStock) ...[
-                                            const Icon(Icons.block_rounded, size: 9, color: AppColors.danger),
+                                            const AppIcon(AppIcons.block, size: 9, color: AppColors.danger),
                                             const SizedBox(width: 3),
                                           ],
                                           Text(

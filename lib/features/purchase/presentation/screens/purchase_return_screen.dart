@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/badges/status_chip.dart';
@@ -103,7 +104,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                 color: AppColors.danger.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.delete_sweep_rounded, color: AppColors.danger, size: 24),
+              child: const AppIcon(AppIcons.delete, color: AppColors.danger, size: 24),
             ),
             const SizedBox(width: AppSpacing.sm),
             Text(
@@ -147,7 +148,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.check_circle_outline, size: 16, color: AppColors.primary),
+                      const AppIcon(AppIcons.checkCircle, size: 16, color: AppColors.primary),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
@@ -162,7 +163,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.check_circle_outline, size: 16, color: AppColors.primary),
+                      const AppIcon(AppIcons.checkCircle, size: 16, color: AppColors.primary),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
@@ -184,7 +185,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
           ),
           DangerButton(
             label: 'Confirm Return',
-            icon: Icons.assignment_return_outlined,
+            icon: AppIcons.purchaseReturn,
             onPressed: () => Navigator.of(ctx).pop(true),
           ),
         ],
@@ -293,8 +294,8 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.calendar_month_outlined,
+            AppIcon(
+              AppIcons.calendarMonth,
               size: 18,
               color: hasDate ? AppColors.primary : AppColors.textSecondaryFor(context),
             ),
@@ -311,7 +312,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
               const SizedBox(width: 2),
               GestureDetector(
                 onTap: () => setState(() => _selectedDate = null),
-                child: const Icon(Icons.close_rounded, size: 14, color: AppColors.primary),
+                child: const AppIcon(AppIcons.close, size: 14, color: AppColors.primary),
               ),
             ],
           ],
@@ -351,8 +352,8 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                 ),
                 const SizedBox(width: 4),
                 IconButton(
-                  icon: Icon(
-                    Icons.refresh_rounded,
+                  icon: AppIcon(
+                    AppIcons.refresh,
                     size: 18,
                     color: AppColors.textSecondaryFor(context),
                   ),
@@ -373,13 +374,13 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                   onChanged: _onSearchChanged,
                   suffix: _searchQuery.isNotEmpty
                       ? IconButton(
-                          icon: Icon(Icons.clear, size: 18, color: AppColors.textSecondaryFor(context)),
+                          icon: AppIcon(AppIcons.close, size: 18, color: AppColors.textSecondaryFor(context)),
                           onPressed: () {
                             _searchController.clear();
                             _onSearchChanged('');
                           },
                         )
-                      : Icon(Icons.search_rounded, size: 18, color: AppColors.textSecondaryFor(context)),
+                      : AppIcon(AppIcons.search, size: 18, color: AppColors.textSecondaryFor(context)),
                 ),
               ),
               const SizedBox(width: AppSpacing.xs),
@@ -407,7 +408,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.inventory_2_outlined, size: 42, color: AppColors.textMutedFor(context)),
+                        AppIcon(AppIcons.crate, size: 42, color: AppColors.textMutedFor(context)),
                         const SizedBox(height: AppSpacing.sm),
                         Text(
                           _searchQuery.isEmpty ? 'No purchase bills found' : 'No bills match "$_searchQuery"',
@@ -528,8 +529,8 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.assignment_return_outlined,
+              AppIcon(
+                AppIcons.purchaseReturn,
                 size: 64,
                 color: AppColors.textMutedFor(context),
               ),
@@ -782,8 +783,8 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                                                   borderRadius: BorderRadius.circular(3),
                                                   child: Padding(
                                                     padding: const EdgeInsets.all(2),
-                                                    child: Icon(
-                                                      Icons.remove_rounded,
+                                                    child: AppIcon(
+                                                      AppIcons.remove,
                                                       size: 14,
                                                       color: currentReturnQty > 1 ? AppColors.primary : AppColors.textMutedFor(context),
                                                     ),
@@ -806,8 +807,8 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                                                   borderRadius: BorderRadius.circular(3),
                                                   child: Padding(
                                                     padding: const EdgeInsets.all(2),
-                                                    child: Icon(
-                                                      Icons.add_rounded,
+                                                    child: AppIcon(
+                                                      AppIcons.add,
                                                       size: 14,
                                                       color: currentReturnQty < item.qty ? AppColors.primary : AppColors.textMutedFor(context),
                                                     ),
@@ -876,7 +877,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
               children: [
                 SecondaryButton(
                   label: 'Clear Selection',
-                  icon: Icons.close_rounded,
+                  icon: AppIcons.close,
                   onPressed: () {
                     ref.read(selectedPurchaseBillProvider.notifier).state = null;
                   },
@@ -887,7 +888,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                       : (allSelected
                           ? 'Process Full Return'
                           : 'Process Return ($totalReturnBottles bottle${totalReturnBottles == 1 ? '' : 's'})'),
-                  icon: Icons.assignment_return_rounded,
+                  icon: AppIcons.purchaseReturn,
                   onPressed: (_isProcessing || _selectedLineNumbers.isEmpty) ? null : () => _processReturn(bill),
                 ),
               ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 
@@ -23,15 +24,15 @@ class ReportTabs extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _segment(context, ReportTab.dayWise, 'Day-wise', Icons.calendar_today_outlined),
-          _segment(context, ReportTab.monthly, 'Monthly', Icons.calendar_month_outlined),
-          _segment(context, ReportTab.custom, 'Custom', Icons.filter_list_rounded),
+          _segment(context, ReportTab.dayWise, 'Day-wise', AppIcons.calendar),
+          _segment(context, ReportTab.monthly, 'Monthly', AppIcons.calendarMonth),
+          _segment(context, ReportTab.custom, 'Custom', AppIcons.filter),
         ],
       ),
     );
   }
 
-  Widget _segment(BuildContext context, ReportTab tab, String label, IconData icon) {
+  Widget _segment(BuildContext context, ReportTab tab, String label, AppIconData icon) {
     final isSelected = tab == selected;
     return Material(
       color: isSelected ? AppColors.backgroundFor(context) : Colors.transparent,
@@ -45,7 +46,7 @@ class ReportTabs extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
+              AppIcon(
                 icon,
                 size: 15,
                 color: isSelected ? AppColors.primary : AppColors.textMutedFor(context),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
@@ -208,16 +209,18 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
                 color: AppColors.textMutedFor(context),
                 fontSize: 13,
               ),
-              prefixIcon: Icon(
-                Icons.search_rounded,
-                size: 18,
-                color: AppColors.textMutedFor(context),
+              prefixIcon: Center(
+                child: AppIcon(
+                  AppIcons.search,
+                  size: 18,
+                  color: AppColors.textMutedFor(context),
+                ),
               ),
               prefixIconConstraints:
                   const BoxConstraints(minWidth: 36, minHeight: 40),
               suffixIcon: _searchController.text.isNotEmpty
                   ? IconButton(
-                      icon: const Icon(Icons.close_rounded, size: 16),
+                      icon: const AppIcon(AppIcons.close, size: 16),
                       color: AppColors.textMutedFor(context),
                       splashRadius: 16,
                       padding: EdgeInsets.zero,
@@ -267,7 +270,7 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
                 : null,
             items: categoryItems,
             itemLabel: (v) => v,
-            icon: Icons.category_outlined,
+            icon: AppIcons.categories,
             onChanged: (val) {
               ref.read(inventoryCategoryFilterProvider.notifier).state = val;
             },
@@ -285,7 +288,7 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
                 : null,
             items: manufacturerItems,
             itemLabel: (v) => v,
-            icon: Icons.storefront_outlined,
+            icon: AppIcons.storefront,
             onChanged: (val) {
               ref.read(inventoryManufacturerFilterProvider.notifier).state =
                   val;
@@ -302,7 +305,7 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
             value: lowStockPinned ? null : selectedStatus,
             items: const ['In Stock', 'Low Stock', 'Out of Stock'],
             itemLabel: (v) => v,
-            icon: Icons.tune_rounded,
+            icon: AppIcons.tune,
             highlightActive: lowStockPinned || selectedStatus != null,
             onChanged: (val) {
               if (lowStockPinned) {
@@ -335,8 +338,9 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
                       color: AppColors.danger.withValues(alpha: 0.3),
                     ),
                   ),
-                  child: const Icon(
-                    Icons.filter_alt_off_rounded,
+                  alignment: Alignment.center,
+                  child: const AppIcon(
+                    AppIcons.filterClear,
                     size: 18,
                     color: AppColors.danger,
                   ),
@@ -365,8 +369,9 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                   border: Border.all(color: AppColors.borderFor(context)),
                 ),
-                child: Icon(
-                  Icons.refresh_rounded,
+                alignment: Alignment.center,
+                child: AppIcon(
+                  AppIcons.refresh,
                   size: 18,
                   color: AppColors.textPrimaryFor(context),
                 ),
@@ -395,8 +400,8 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.warning_amber_rounded,
+          const AppIcon(
+            AppIcons.warning,
             size: 16,
             color: AppColors.warning,
           ),
@@ -428,8 +433,8 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Icon(
-                    Icons.close_rounded,
+                  const AppIcon(
+                    AppIcons.close,
                     size: 14,
                     color: AppColors.warning,
                   ),
@@ -648,10 +653,11 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
               color: AppColors.surfaceFor(context),
               shape: BoxShape.circle,
             ),
-            child: Icon(
+            alignment: Alignment.center,
+            child: AppIcon(
               lowStockPinned
-                  ? Icons.check_circle_outline_rounded
-                  : Icons.search_off_rounded,
+                  ? AppIcons.checkCircle
+                  : AppIcons.searchOff,
               size: 26,
               color: lowStockPinned
                   ? AppColors.success
@@ -784,7 +790,7 @@ class _FilterDropdown<T> extends StatelessWidget {
   final List<T> items;
   final String Function(T) itemLabel;
   final String hint;
-  final IconData icon;
+  final AppIconData icon;
   final T? value;
   final ValueChanged<T?> onChanged;
   final bool highlightActive;
@@ -812,7 +818,7 @@ class _FilterDropdown<T> extends StatelessWidget {
           dropdownColor: AppColors.surfaceFor(context),
           hint: Row(
             children: [
-              Icon(
+              AppIcon(
                 icon,
                 size: 15,
                 color: isActive
@@ -835,8 +841,8 @@ class _FilterDropdown<T> extends StatelessWidget {
               ),
             ],
           ),
-          icon: Icon(
-            Icons.keyboard_arrow_down_rounded,
+          icon: AppIcon(
+            AppIcons.arrowDropDown,
             size: 18,
             color: AppColors.textMutedFor(context),
           ),
@@ -936,8 +942,8 @@ class _PureStatusBadge extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.warning_amber_rounded,
+            const AppIcon(
+              AppIcons.warning,
               size: 12,
               color: AppColors.warning,
             ),

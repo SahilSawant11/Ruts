@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/data/info_list_tile.dart';
@@ -54,7 +55,7 @@ class TopSellingItemsCard extends ConsumerWidget {
                 children: [
                   for (final item in summary.topSellingItems)
                     InfoListTile(
-                      icon: Icons.local_bar_outlined,
+                      icon: AppIcons.liquorBottle,
                       title: item.materialName,
                       subtitle: [
                         if ((item.manufacturer ?? '').isNotEmpty) item.manufacturer!,

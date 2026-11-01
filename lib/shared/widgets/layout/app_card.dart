@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 
@@ -45,14 +46,14 @@ class SectionHeader extends StatelessWidget {
   final String title;
   final String? subtitle;
   final Widget? trailing;
-  final IconData? icon;
+  final AppIconData? icon;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
         if (icon != null) ...[
-          Icon(icon, size: 17, color: AppColors.primary),
+          AppIcon(icon!, size: 17, color: AppColors.primary),
           const SizedBox(width: 8),
         ],
         Expanded(

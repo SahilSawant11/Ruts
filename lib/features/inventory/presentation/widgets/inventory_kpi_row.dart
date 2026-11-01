@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/widgets/data/kpi_card.dart';
 import '../../data/inventory_providers.dart';
@@ -25,7 +26,7 @@ class InventoryKpiRow extends ConsumerWidget {
               child: KpiCard(
                 label: 'Total Items',
                 value: '${items.length}',
-                icon: Icons.inventory_2_outlined,
+                icon: AppIcons.crate,
               ),
             ),
             const SizedBox(width: AppSpacing.md),
@@ -33,7 +34,7 @@ class InventoryKpiRow extends ConsumerWidget {
               child: KpiCard(
                 label: 'Ready to Sell',
                 value: '$inStock',
-                icon: Icons.check_circle_outline_rounded,
+                icon: AppIcons.checkCircle,
                 trendText: items.isEmpty ? null : '${(inStock / items.length * 100).round()}% of items',
               ),
             ),
@@ -42,7 +43,7 @@ class InventoryKpiRow extends ConsumerWidget {
               child: KpiCard(
                 label: 'Low Stock',
                 value: '$lowStock',
-                icon: Icons.warning_amber_rounded,
+                icon: AppIcons.warning,
                 tone: KpiTone.amber,
                 trendText: lowStock == 0 ? null : 'needs reorder soon',
               ),
@@ -52,7 +53,7 @@ class InventoryKpiRow extends ConsumerWidget {
               child: KpiCard(
                 label: 'Out of Stock',
                 value: '$outOfStock',
-                icon: Icons.remove_shopping_cart_outlined,
+                icon: AppIcons.cartRemove,
                 tone: KpiTone.red,
                 trendText: outOfStock == 0 ? null : 'reorder needed',
               ),

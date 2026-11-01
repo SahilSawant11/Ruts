@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../data/dashboard_providers.dart';
@@ -47,8 +48,9 @@ class RecentTransactionsCard extends ConsumerWidget {
                           : const Color(0xFFFEF3E2),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(
-                      Icons.receipt_long_outlined,
+                    alignment: Alignment.center,
+                    child: const AppIcon(
+                      AppIcons.receipt,
                       size: 16,
                       color: AppColors.chartAmber,
                     ),
@@ -77,8 +79,9 @@ class RecentTransactionsCard extends ConsumerWidget {
                     shape: BoxShape.circle,
                     border: Border.all(color: AppColors.borderFor(context)),
                   ),
-                  child: Icon(
-                    Icons.tune_rounded,
+                  alignment: Alignment.center,
+                  child: AppIcon(
+                    AppIcons.tune,
                     size: 15,
                     color: AppColors.textSecondaryFor(context),
                   ),
@@ -196,8 +199,8 @@ class RecentTransactionsCard extends ConsumerWidget {
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 alignment: Alignment.center,
-                                child: const Icon(
-                                  Icons.liquor_outlined,
+                                child: const AppIcon(
+                                  AppIcons.liquorBottle,
                                   size: 14,
                                   color: AppColors.primary,
                                 ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../badges/keyboard_shortcut_badge.dart';
@@ -21,7 +22,7 @@ class SearchField extends StatelessWidget {
         ),
         decoration: InputDecoration(
           isDense: true,
-          prefixIcon: Icon(Icons.search, size: 19, color: muted),
+          prefixIcon: AppIcon(AppIcons.search, size: 19, color: muted),
           hintText: 'Type here to search...',
           hintStyle: AppTypography.bodyMuted.copyWith(
             color: AppColors.textSecondaryFor(context),

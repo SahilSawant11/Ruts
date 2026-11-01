@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
@@ -86,7 +87,7 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
         title: const Row(
           children: [
-            Icon(Icons.clear_all_rounded, color: AppColors.danger, size: 22),
+            AppIcon(AppIcons.clearAll, color: AppColors.danger, size: 22),
             SizedBox(width: 8),
             Text('Discard Purchase Bill?'),
           ],
@@ -96,7 +97,7 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
           SecondaryButton(label: 'Cancel', onPressed: () => Navigator.of(ctx).pop()),
           DangerButton(
             label: 'Clear Bill',
-            icon: Icons.delete_outline_rounded,
+            icon: AppIcons.delete,
             onPressed: () {
               ref.read(purchaseCartControllerProvider.notifier).clear();
               ref.read(purchaseFormControllerProvider.notifier).reset();
@@ -204,7 +205,7 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
           // Header
           Row(
             children: [
-              const Icon(Icons.tune_rounded, size: 16, color: AppColors.primary),
+              const AppIcon(AppIcons.tune, size: 16, color: AppColors.primary),
               const SizedBox(width: 8),
               Text(
                 'Extra Charges & Settlement',
@@ -281,7 +282,7 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
           PrimaryButton(
             label: _isSaving ? 'Saving…' : 'Save Purchase',
             shortcut: 'F8',
-            icon: Icons.save_outlined,
+            icon: AppIcons.save,
             expand: true,
             onPressed: _isSaving ? null : _save,
           ),
@@ -291,7 +292,7 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
           // Clear / Discard Button
           SecondaryButton(
             label: 'Discard / Clear Bill',
-            icon: Icons.clear_all_rounded,
+            icon: AppIcons.clearAll,
             expand: true,
             dense: true,
             onPressed: _clear,

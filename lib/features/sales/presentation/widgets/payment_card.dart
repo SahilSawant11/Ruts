@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
@@ -125,7 +126,7 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
           // Header
           Row(
             children: [
-              const Icon(Icons.account_balance_wallet_outlined, size: 16, color: AppColors.primary),
+              const AppIcon(AppIcons.wallet, size: 16, color: AppColors.primary),
               const SizedBox(width: 8),
               Text(
                 'Payment',
@@ -145,7 +146,7 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
               Expanded(
                 child: _methodTile(
                   label: 'Cash',
-                  icon: Icons.payments_outlined,
+                  icon: AppIcons.cash,
                   method: PaymentMethod.cash,
                   selected: method == PaymentMethod.cash,
                 ),
@@ -154,7 +155,7 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
               Expanded(
                 child: _methodTile(
                   label: 'Card',
-                  icon: Icons.credit_card_outlined,
+                  icon: AppIcons.creditCard,
                   method: PaymentMethod.card,
                   selected: method == PaymentMethod.card,
                 ),
@@ -163,7 +164,7 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
               Expanded(
                 child: _methodTile(
                   label: 'UPI',
-                  icon: Icons.qr_code_2_rounded,
+                  icon: AppIcons.qrCode,
                   method: PaymentMethod.upi,
                   selected: method == PaymentMethod.upi,
                 ),
@@ -241,7 +242,7 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
           SuccessButton(
             label: _isSaving ? 'Saving…' : 'Save & Print',
             shortcut: 'F8',
-            icon: Icons.print_outlined,
+            icon: AppIcons.print,
             expand: true,
             onPressed: _isSaving || isEmpty ? null : _saveSale,
           ),
@@ -251,7 +252,7 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
           DangerButton(
             label: 'Clear Bill',
             shortcut: 'Esc',
-            icon: Icons.close_rounded,
+            icon: AppIcons.close,
             outline: true,
             expand: true,
             onPressed: _clearBill,
@@ -263,7 +264,7 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
 
   Widget _methodTile({
     required String label,
-    required IconData icon,
+    required AppIconData icon,
     required PaymentMethod method,
     required bool selected,
   }) {
@@ -285,10 +286,11 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
         ),
         child: Column(
           children: [
-            Icon(
+            AppIcon(
               icon,
               size: 18,
               color: selected ? AppColors.primary : AppColors.textSecondaryFor(context),
+              active: selected,
             ),
             const SizedBox(height: 4),
             Text(

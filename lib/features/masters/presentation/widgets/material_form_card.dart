@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
@@ -272,8 +273,8 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
                 : AppColors.primary.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(AppRadius.md),
           ),
-          child: Icon(
-            browser.isNew ? Icons.add_circle_outline_rounded : Icons.liquor_rounded,
+          child: AppIcon(
+            browser.isNew ? AppIcons.addCircle : AppIcons.liquorBottle,
             size: 20,
             color: browser.isNew ? AppColors.success : AppColors.primary,
           ),
@@ -322,8 +323,8 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  _isActive ? Icons.check_circle_rounded : Icons.block_rounded,
+                AppIcon(
+                  _isActive ? AppIcons.checkCircle : AppIcons.block,
                   size: 14,
                   color: _isActive ? AppColors.success : AppColors.danger,
                 ),
@@ -337,8 +338,8 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
                 ),
                 if (editable) ...[
                   const SizedBox(width: 3),
-                  Icon(
-                    Icons.edit_outlined,
+                  AppIcon(
+                    AppIcons.edit,
                     size: 12,
                     color: _isActive ? AppColors.success : AppColors.danger,
                   ),
@@ -351,14 +352,14 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
           const SizedBox(width: AppSpacing.xs),
           IconButton(
             tooltip: 'Previous Material',
-            icon: const Icon(Icons.chevron_left_rounded),
+            icon: const AppIcon(AppIcons.chevronLeft),
             iconSize: 20,
             visualDensity: VisualDensity.compact,
             onPressed: browser.hasPrev ? () => ref.read(materialBrowserProvider.notifier).prev() : null,
           ),
           IconButton(
             tooltip: 'Next Material',
-            icon: const Icon(Icons.chevron_right_rounded),
+            icon: const AppIcon(AppIcons.chevronRight),
             iconSize: 20,
             visualDensity: VisualDensity.compact,
             onPressed: browser.hasNext ? () => ref.read(materialBrowserProvider.notifier).next() : null,
@@ -381,7 +382,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Section 1: Identification
-        _sectionLabel(context, '1. Identification & Codes', Icons.qr_code_rounded),
+        _sectionLabel(context, '1. Identification & Codes', AppIcons.qrCode),
         const SizedBox(height: 8),
         Row(
           children: [
@@ -396,7 +397,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
                 hint: idEditable ? 'e.g. SCM-10029' : null,
                 suffix: idEditable
                     ? null
-                    : Icon(Icons.lock_outline_rounded, size: 16, color: AppColors.textMutedFor(context)),
+                    : AppIcon(AppIcons.lock, size: 16, color: AppColors.textMutedFor(context)),
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
@@ -424,7 +425,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
         const SizedBox(height: AppSpacing.md),
 
         // Section 2: Classification
-        _sectionLabel(context, '2. Classification & Packaging', Icons.category_outlined),
+        _sectionLabel(context, '2. Classification & Packaging', AppIcons.category),
         const SizedBox(height: 8),
         Row(
           children: [
@@ -472,7 +473,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
         const SizedBox(height: AppSpacing.md),
 
         // Section 3: Pricing & Inventory
-        _sectionLabel(context, '3. Pricing & Stock Rates', Icons.currency_rupee_rounded),
+        _sectionLabel(context, '3. Pricing & Stock Rates', AppIcons.rupee),
         const SizedBox(height: 8),
         Row(
           children: [
@@ -510,10 +511,10 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
     );
   }
 
-  Widget _sectionLabel(BuildContext context, String text, IconData icon) {
+  Widget _sectionLabel(BuildContext context, String text, AppIconData icon) {
     return Row(
       children: [
-        Icon(icon, size: 14, color: AppColors.primary),
+        AppIcon(icon, size: 14, color: AppColors.primary),
         const SizedBox(width: 6),
         Text(
           text,
@@ -542,7 +543,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
       children: [
         SecondaryButton(
           label: 'New Record',
-          icon: Icons.add_rounded,
+          icon: AppIcons.add,
           onPressed: () => ref.read(materialBrowserProvider.notifier).startNew(),
         ),
         Wrap(
@@ -553,7 +554,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
             if (!browser.isNew)
               SecondaryButton(
                 label: browser.isEditing ? 'Cancel' : 'Modify',
-                icon: browser.isEditing ? Icons.lock_outline_rounded : Icons.edit_outlined,
+                icon: browser.isEditing ? AppIcons.lock : AppIcons.edit,
                 onPressed: () {
                   if (browser.isEditing) {
                     // Revert
@@ -564,7 +565,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
               ),
             PrimaryButton(
               label: browser.isSaving ? 'Saving…' : (browser.isNew ? 'Create Material' : 'Save Changes'),
-              icon: Icons.check_circle_outline_rounded,
+              icon: AppIcons.checkCircle,
               onPressed: editable && !browser.isSaving ? _save : null,
             ),
           ],

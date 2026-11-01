@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 
@@ -18,7 +19,7 @@ class InfoListTile extends StatelessWidget {
   final String title;
   final String subtitle;
   final String trailing;
-  final IconData? icon;
+  final AppIconData? icon;
   final String? avatarText;
 
   @override
@@ -36,8 +37,8 @@ class InfoListTile extends StatelessWidget {
             ),
             alignment: Alignment.center,
             child: icon != null
-                ? Icon(
-                    icon,
+                ? AppIcon(
+                    icon!,
                     size: 17,
                     color: AppColors.textSecondaryFor(context),
                   )

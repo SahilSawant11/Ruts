@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
@@ -132,8 +133,8 @@ class _PackagingFormCardState extends ConsumerState<PackagingFormCard> {
                         : AppColors.primary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
-                  child: Icon(
-                    browser.isNew ? Icons.add_circle_outline_rounded : Icons.all_inbox_rounded,
+                  child: AppIcon(
+                    browser.isNew ? AppIcons.addCircle : AppIcons.allInbox,
                     size: 20,
                     color: browser.isNew ? AppColors.success : AppColors.primary,
                   ),
@@ -165,14 +166,14 @@ class _PackagingFormCardState extends ConsumerState<PackagingFormCard> {
                 if (!browser.isNew) ...[
                   IconButton(
                     tooltip: 'Previous Packaging',
-                    icon: const Icon(Icons.chevron_left_rounded),
+                    icon: const AppIcon(AppIcons.chevronLeft),
                     iconSize: 20,
                     visualDensity: VisualDensity.compact,
                     onPressed: browser.hasPrev ? () => ref.read(packagingBrowserProvider.notifier).prev() : null,
                   ),
                   IconButton(
                     tooltip: 'Next Packaging',
-                    icon: const Icon(Icons.chevron_right_rounded),
+                    icon: const AppIcon(AppIcons.chevronRight),
                     iconSize: 20,
                     visualDensity: VisualDensity.compact,
                     onPressed: browser.hasNext ? () => ref.read(packagingBrowserProvider.notifier).next() : null,
@@ -208,7 +209,7 @@ class _PackagingFormCardState extends ConsumerState<PackagingFormCard> {
               children: [
                 SecondaryButton(
                   label: 'New Size',
-                  icon: Icons.add_rounded,
+                  icon: AppIcons.add,
                   onPressed: () => ref.read(packagingBrowserProvider.notifier).startNew(),
                 ),
                 Wrap(
@@ -219,7 +220,7 @@ class _PackagingFormCardState extends ConsumerState<PackagingFormCard> {
                     if (!browser.isNew)
                       SecondaryButton(
                         label: browser.isEditing ? 'Cancel' : 'Modify',
-                        icon: browser.isEditing ? Icons.lock_outline_rounded : Icons.edit_outlined,
+                        icon: browser.isEditing ? AppIcons.lock : AppIcons.edit,
                         onPressed: () {
                           if (browser.isEditing) {
                             _populate(browser.current?.name, browser.current?.description);
@@ -229,7 +230,7 @@ class _PackagingFormCardState extends ConsumerState<PackagingFormCard> {
                       ),
                     PrimaryButton(
                       label: browser.isSaving ? 'Saving…' : (browser.isNew ? 'Create Size' : 'Save Changes'),
-                      icon: Icons.check_circle_outline_rounded,
+                      icon: AppIcons.checkCircle,
                       onPressed: editable && !browser.isSaving ? _save : null,
                     ),
                   ],

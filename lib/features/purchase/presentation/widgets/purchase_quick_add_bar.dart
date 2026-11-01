@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
@@ -403,7 +404,7 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
                             child: const Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.qr_code_scanner_rounded, size: 14, color: Colors.white),
+                                AppIcon(AppIcons.barcode, size: 14, color: Colors.white),
                                 SizedBox(width: 4),
                                 Text(
                                   'BARCODE / SKU',
@@ -481,8 +482,8 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
                                       });
                                       _searchFocusNode.requestFocus();
                                     },
-                                    child: const Icon(
-                                      Icons.close_rounded,
+                                    child: const AppIcon(
+                                      AppIcons.close,
                                       size: 13,
                                       color: AppColors.primary,
                                     ),
@@ -495,7 +496,7 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
 
                           // Paste Button
                           IconButton(
-                            icon: const Icon(Icons.content_paste_rounded, size: 15),
+                            icon: const AppIcon(AppIcons.paste, size: 15),
                             color: AppColors.textSecondaryFor(context),
                             tooltip: 'Paste from clipboard',
                             splashRadius: 14,
@@ -522,7 +523,7 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
               // Inline Add Line Button
               PrimaryButton(
                 label: 'Add Line',
-                icon: Icons.add_rounded,
+                icon: AppIcons.add,
                 dense: true,
                 onPressed: _submitLine,
               ),
@@ -531,7 +532,7 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
 
               // Advanced Dialog Trigger
               IconButton(
-                icon: const Icon(Icons.open_in_new_rounded, size: 17),
+                icon: const AppIcon(AppIcons.openInNew, size: 17),
                 color: AppColors.textSecondaryFor(context),
                 tooltip: 'Open Full Material Line Dialog (F2)',
                 splashRadius: 16,
@@ -597,8 +598,8 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
                     PopupMenuButton<String>(
                       color: AppColors.surfaceFor(context),
                       tooltip: 'Select Packaging',
-                      icon: Icon(
-                        Icons.arrow_drop_down_rounded,
+                      icon: AppIcon(
+                        AppIcons.arrowDropDown,
                         size: 16,
                         color: AppColors.textSecondaryFor(context),
                       ),
@@ -942,7 +943,7 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
             const SizedBox(height: 5),
             Row(
               children: [
-                const Icon(Icons.info_outline_rounded, size: 13, color: AppColors.danger),
+                const AppIcon(AppIcons.info, size: 13, color: AppColors.danger),
                 const SizedBox(width: 4),
                 Text(
                   _inlineError!,
@@ -990,7 +991,7 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
               child: _suggestions.isEmpty
                   ? ListTile(
                       dense: true,
-                      leading: const Icon(Icons.search_off_rounded, size: 18, color: AppColors.warning),
+                      leading: const AppIcon(AppIcons.searchOff, size: 18, color: AppColors.warning),
                       title: Text(
                         'No item found for "${_searchController.text.trim()}"',
                         style: AppTypography.body.copyWith(fontSize: 12),

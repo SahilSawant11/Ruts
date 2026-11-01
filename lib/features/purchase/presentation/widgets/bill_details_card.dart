@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 // import '../../../../shared/widgets/badges/status_chip.dart';
@@ -49,7 +50,7 @@ class _BillDetailsCardState extends ConsumerState<BillDetailsCard> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
         title: Row(
           children: [
-            const Icon(Icons.local_shipping_outlined, color: AppColors.primary, size: 20),
+            const AppIcon(AppIcons.suppliers, color: AppColors.primary, size: 20),
             const SizedBox(width: 8),
             Text(
               'Transport & Shipping Details',
@@ -236,7 +237,7 @@ class _BillDetailsCardState extends ConsumerState<BillDetailsCard> {
                           ),
                         ),
                         const SizedBox(width: 4),
-                        const Icon(Icons.arrow_drop_down, size: 14, color: AppColors.primary),
+                        const AppIcon(AppIcons.arrowDropDown, size: 14, color: AppColors.primary),
                       ],
                     ),
                   ),
@@ -268,8 +269,8 @@ class _BillDetailsCardState extends ConsumerState<BillDetailsCard> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        hasShippingInfo ? Icons.local_shipping_rounded : Icons.local_shipping_outlined,
+                      AppIcon(
+                        AppIcons.suppliers,
                         size: 14,
                         color: hasShippingInfo ? AppColors.primary : AppColors.textSecondaryFor(context),
                       ),
@@ -442,8 +443,8 @@ class _SupplierField extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 4),
-                  Icon(
-                    Icons.unfold_more_rounded,
+                  AppIcon(
+                    AppIcons.unfoldMore,
                     size: 14,
                     color: AppColors.textSecondaryFor(context),
                   ),

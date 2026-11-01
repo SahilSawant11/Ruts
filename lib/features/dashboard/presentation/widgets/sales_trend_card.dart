@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/charts/vertical_bar_chart.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
@@ -30,7 +31,7 @@ class SalesTrendCard extends ConsumerWidget {
             title: 'Sales — last 7 days',
             subtitle: 'Net amount (₹)',
             trailing: IconButton(
-              icon: const Icon(Icons.refresh_rounded, size: 16),
+              icon: const AppIcon(AppIcons.refresh, size: 16),
               tooltip: 'Refresh Dashboard',
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../masters/data/masters_providers.dart';
@@ -36,7 +37,7 @@ class InventoryKpiStrip extends ConsumerWidget {
               // Card 1 — Total SCM Codes
               Expanded(
                 child: _KpiCard(
-                  icon: Icons.tag_rounded,
+                  icon: AppIcons.tag,
                   iconColor: AppColors.primary,
                   label: 'Total SCM Codes',
                   value: '$totalScmCodes',
@@ -48,7 +49,7 @@ class InventoryKpiStrip extends ConsumerWidget {
               // Card 2 — Net Inventory Worth
               Expanded(
                 child: _KpiCard(
-                  icon: Icons.currency_rupee_rounded,
+                  icon: AppIcons.rupee,
                   iconColor: AppColors.success,
                   label: 'Net Inventory Worth',
                   value: _rupees(netWorth),
@@ -114,7 +115,7 @@ class _KpiCard extends StatelessWidget {
     this.trailingAction,
   });
 
-  final IconData icon;
+  final AppIconData icon;
   final Color iconColor;
   final String label;
   final String value;
@@ -163,7 +164,8 @@ class _KpiCard extends StatelessWidget {
                             : iconColor.withValues(alpha: 0.10),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Icon(icon, size: 20, color: iconColor),
+                      alignment: Alignment.center,
+                      child: AppIcon(icon, size: 20, color: iconColor),
                     ),
                     const Spacer(),
                     if (trailingAction != null) trailingAction!,
@@ -227,7 +229,7 @@ class _LowStockCard extends StatelessWidget {
     final hasCustomRules = config.categoryThresholds.isNotEmpty || config.packagingThresholds.isNotEmpty;
 
     return _KpiCard(
-      icon: Icons.warning_amber_rounded,
+      icon: AppIcons.warning,
       iconColor: count > 0 ? AppColors.warning : AppColors.success,
       label: 'Low Stock Items',
       value: '$count',
@@ -279,8 +281,9 @@ class _LowStockCard extends StatelessWidget {
                       color: AppColors.borderFor(context),
                     ),
                   ),
-                  child: Icon(
-                    Icons.tune_rounded,
+                  alignment: Alignment.center,
+                  child: AppIcon(
+                    AppIcons.tune,
                     size: 16,
                     color: AppColors.textSecondaryFor(context),
                   ),
@@ -348,8 +351,9 @@ void _showThresholdDialog(
                               : AppColors.warningSoft,
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(
-                          Icons.tune_rounded,
+                        alignment: Alignment.center,
+                        child: const AppIcon(
+                          AppIcons.tune,
                           size: 18,
                           color: AppColors.warning,
                         ),
@@ -476,7 +480,7 @@ Widget _buildGeneralTab(
           ),
           child: Row(
             children: [
-              const Icon(Icons.inventory_2_outlined, size: 18, color: AppColors.warning),
+              const AppIcon(AppIcons.crate, size: 18, color: AppColors.warning),
               const SizedBox(width: 10),
               Expanded(
                 child: TextField(

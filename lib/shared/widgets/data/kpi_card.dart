@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../layout/app_card.dart';
@@ -23,7 +24,7 @@ class KpiCard extends StatelessWidget {
 
   final String label;
   final String value;
-  final IconData? icon;
+  final AppIconData? icon;
   final String? trendText;
   final bool? trendUp;
   final double? progress;
@@ -108,7 +109,7 @@ class KpiCard extends StatelessWidget {
                         .toList(),
                   ),
                   alignment: Alignment.center,
-                  child: Icon(icon, size: 18, color: _iconFg(context)),
+                  child: AppIcon(icon!, size: 18, color: _iconFg(context)),
                 ),
               ],
             ],

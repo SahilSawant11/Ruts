@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
@@ -132,8 +133,8 @@ class _CategoryFormCardState extends ConsumerState<CategoryFormCard> {
                         : AppColors.primary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
-                  child: Icon(
-                    browser.isNew ? Icons.add_circle_outline_rounded : Icons.category_rounded,
+                  child: AppIcon(
+                    browser.isNew ? AppIcons.addCircle : AppIcons.category,
                     size: 20,
                     color: browser.isNew ? AppColors.success : AppColors.primary,
                   ),
@@ -154,7 +155,7 @@ class _CategoryFormCardState extends ConsumerState<CategoryFormCard> {
                       const SizedBox(height: 2),
                       Text(
                         browser.isNew
-                            ? 'Configure beverage class & classification'
+                             ? 'Configure beverage class & classification'
                             : 'Record ${browser.index + 1} of ${categories.length}',
                         overflow: TextOverflow.ellipsis,
                         style: AppTypography.caption.copyWith(color: AppColors.textMutedFor(context)),
@@ -165,14 +166,14 @@ class _CategoryFormCardState extends ConsumerState<CategoryFormCard> {
                 if (!browser.isNew) ...[
                   IconButton(
                     tooltip: 'Previous Category',
-                    icon: const Icon(Icons.chevron_left_rounded),
+                    icon: const AppIcon(AppIcons.chevronLeft),
                     iconSize: 20,
                     visualDensity: VisualDensity.compact,
                     onPressed: browser.hasPrev ? () => ref.read(categoryBrowserProvider.notifier).prev() : null,
                   ),
                   IconButton(
                     tooltip: 'Next Category',
-                    icon: const Icon(Icons.chevron_right_rounded),
+                    icon: const AppIcon(AppIcons.chevronRight),
                     iconSize: 20,
                     visualDensity: VisualDensity.compact,
                     onPressed: browser.hasNext ? () => ref.read(categoryBrowserProvider.notifier).next() : null,
@@ -208,7 +209,7 @@ class _CategoryFormCardState extends ConsumerState<CategoryFormCard> {
               children: [
                 SecondaryButton(
                   label: 'New Category',
-                  icon: Icons.add_rounded,
+                  icon: AppIcons.add,
                   onPressed: () => ref.read(categoryBrowserProvider.notifier).startNew(),
                 ),
                 Wrap(
@@ -219,7 +220,7 @@ class _CategoryFormCardState extends ConsumerState<CategoryFormCard> {
                     if (!browser.isNew)
                       SecondaryButton(
                         label: browser.isEditing ? 'Cancel' : 'Modify',
-                        icon: browser.isEditing ? Icons.lock_outline_rounded : Icons.edit_outlined,
+                        icon: browser.isEditing ? AppIcons.lock : AppIcons.edit,
                         onPressed: () {
                           if (browser.isEditing) {
                             _populate(browser.current?.name, browser.current?.description);
@@ -229,7 +230,7 @@ class _CategoryFormCardState extends ConsumerState<CategoryFormCard> {
                       ),
                     PrimaryButton(
                       label: browser.isSaving ? 'Saving…' : (browser.isNew ? 'Create Category' : 'Save Changes'),
-                      icon: Icons.check_circle_outline_rounded,
+                      icon: AppIcons.checkCircle,
                       onPressed: editable && !browser.isSaving ? _save : null,
                     ),
                   ],

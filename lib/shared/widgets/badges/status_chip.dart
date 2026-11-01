@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 
@@ -16,7 +17,7 @@ class StatusChip extends StatelessWidget {
 
   final String label;
   final StatusChipTone tone;
-  final IconData? icon;
+  final AppIconData? icon;
 
   @override
   Widget build(BuildContext context) {
@@ -40,8 +41,8 @@ class StatusChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(
-              icon,
+            AppIcon(
+              icon!,
               size: 14,
               color: isDark
                   ? Colors.white.withValues(alpha: 0.70)

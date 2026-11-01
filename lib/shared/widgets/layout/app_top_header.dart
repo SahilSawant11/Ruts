@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/font_scale_provider.dart';
 import '../../../core/theme/theme_mode_provider.dart';
@@ -70,7 +71,7 @@ class AppTopHeader extends ConsumerWidget {
       const SnackBar(
         content: Row(
           children: [
-            Icon(Icons.check_circle_outline_rounded, color: Colors.white, size: 16),
+            AppIcon(AppIcons.checkCircle, color: Colors.white, size: 16),
             SizedBox(width: 8),
             Text('Data refreshed successfully', style: TextStyle(fontWeight: FontWeight.w600)),
           ],
@@ -128,7 +129,7 @@ class AppTopHeader extends ConsumerWidget {
 
           // ── Universal Screen Refresh Action ─────────────────────────────
           _HeaderIconButton(
-            icon: Icons.refresh_rounded,
+            icon: AppIcons.refresh,
             tooltip: 'Refresh Screen Data',
             onTap: () => _handleRefresh(context, ref),
           ),
@@ -142,19 +143,19 @@ class AppTopHeader extends ConsumerWidget {
 
           // ── Quick POS Utilities ────────────────────────────────────────
           _HeaderIconButton(
-            icon: Icons.calculate_outlined,
+            icon: AppIcons.calculator,
             tooltip: 'Open Calculator (macOS)',
             onTap: () => _launchApp('Calculator'),
           ),
           const SizedBox(width: 6),
           _HeaderIconButton(
-            icon: Icons.edit_note_rounded,
+            icon: AppIcons.editNote,
             tooltip: 'Quick Notes (macOS)',
             onTap: () => _launchApp('Notes'),
           ),
           const SizedBox(width: 6),
           _HeaderIconButton(
-            icon: Icons.keyboard_outlined,
+            icon: AppIcons.keyboard,
             tooltip: 'Keyboard Shortcuts (F1–F12)',
             onTap: () => _showShortcutsDialog(context),
           ),
@@ -163,8 +164,8 @@ class AppTopHeader extends ConsumerWidget {
           const SizedBox(width: 8),
           _HeaderIconButton(
             icon: themeMode == ThemeMode.dark
-                ? Icons.dark_mode_rounded
-                : Icons.light_mode_rounded,
+                ? AppIcons.darkMode
+                : AppIcons.lightMode,
             tooltip: isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
             onTap: () => ref.read(appThemeModeProvider.notifier).state =
                 isDark ? ThemeMode.light : ThemeMode.dark,
@@ -224,7 +225,7 @@ class _HeaderIconButton extends StatefulWidget {
     required this.onTap,
   });
 
-  final IconData icon;
+  final AppIconData icon;
   final String tooltip;
   final VoidCallback onTap;
 
@@ -261,7 +262,7 @@ class _HeaderIconButtonState extends State<_HeaderIconButton> {
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(6),
             ),
-            child: Icon(
+            child: AppIcon(
               widget.icon,
               size: 17,
               color: _hovered
@@ -308,8 +309,8 @@ class _KeyboardShortcutsDialog extends StatelessWidget {
                           color: AppColors.primarySoftFor(context),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Icon(
-                          Icons.keyboard_outlined,
+                        child: const AppIcon(
+                          AppIcons.keyboard,
                           size: 20,
                           color: AppColors.primary,
                         ),
@@ -337,7 +338,7 @@ class _KeyboardShortcutsDialog extends StatelessWidget {
                     ],
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, size: 18),
+                    icon: const AppIcon(AppIcons.close, size: 18),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -629,8 +630,8 @@ class _FontSizePillStepperState extends ConsumerState<_FontSizePillStepper> {
                       width: 32,
                       height: 28,
                       child: Center(
-                        child: Icon(
-                          Icons.format_size_rounded,
+                        child: AppIcon(
+                          AppIcons.fontSize,
                           size: 17,
                           color: isScaled
                               ? AppColors.primary

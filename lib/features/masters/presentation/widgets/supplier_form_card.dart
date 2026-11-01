@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
@@ -205,8 +206,8 @@ class _SupplierFormCardState extends ConsumerState<SupplierFormCard> {
                 : AppColors.primary.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(AppRadius.md),
           ),
-          child: Icon(
-            browser.isNew ? Icons.add_business_rounded : Icons.local_shipping_rounded,
+          child: AppIcon(
+            browser.isNew ? AppIcons.addBusiness : AppIcons.suppliers,
             size: 20,
             color: browser.isNew ? AppColors.success : AppColors.primary,
           ),
@@ -238,14 +239,14 @@ class _SupplierFormCardState extends ConsumerState<SupplierFormCard> {
         if (!browser.isNew) ...[
           IconButton(
             tooltip: 'Previous Supplier',
-            icon: const Icon(Icons.chevron_left_rounded),
+            icon: const AppIcon(AppIcons.chevronLeft),
             iconSize: 20,
             visualDensity: VisualDensity.compact,
             onPressed: browser.hasPrev ? () => ref.read(supplierBrowserProvider.notifier).prev() : null,
           ),
           IconButton(
             tooltip: 'Next Supplier',
-            icon: const Icon(Icons.chevron_right_rounded),
+            icon: const AppIcon(AppIcons.chevronRight),
             iconSize: 20,
             visualDensity: VisualDensity.compact,
             onPressed: browser.hasNext ? () => ref.read(supplierBrowserProvider.notifier).next() : null,
@@ -264,7 +265,7 @@ class _SupplierFormCardState extends ConsumerState<SupplierFormCard> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Section 1: Vendor Details
-        _sectionLabel(context, '1. Vendor Profile & Contact', Icons.business_outlined),
+        _sectionLabel(context, '1. Vendor Profile & Contact', AppIcons.business),
         const SizedBox(height: 8),
         AppTextField(
           label: 'SUPPLIER NAME *',
@@ -307,7 +308,7 @@ class _SupplierFormCardState extends ConsumerState<SupplierFormCard> {
         const SizedBox(height: AppSpacing.md),
 
         // Section 2: Tax & Banking
-        _sectionLabel(context, '2. Tax ID & Bank Account', Icons.account_balance_outlined),
+        _sectionLabel(context, '2. Tax ID & Bank Account', AppIcons.bank),
         const SizedBox(height: 8),
         Row(
           children: [
@@ -336,7 +337,7 @@ class _SupplierFormCardState extends ConsumerState<SupplierFormCard> {
         const SizedBox(height: AppSpacing.md),
 
         // Section 3: Financial Terms
-        _sectionLabel(context, '3. Opening Balance & Terms', Icons.currency_rupee_rounded),
+        _sectionLabel(context, '3. Opening Balance & Terms', AppIcons.rupee),
         const SizedBox(height: 8),
         Row(
           children: [
@@ -378,10 +379,10 @@ class _SupplierFormCardState extends ConsumerState<SupplierFormCard> {
     );
   }
 
-  Widget _sectionLabel(BuildContext context, String text, IconData icon) {
+  Widget _sectionLabel(BuildContext context, String text, AppIconData icon) {
     return Row(
       children: [
-        Icon(icon, size: 14, color: AppColors.primary),
+        AppIcon(icon, size: 14, color: AppColors.primary),
         const SizedBox(width: 6),
         Text(
           text,
@@ -410,7 +411,7 @@ class _SupplierFormCardState extends ConsumerState<SupplierFormCard> {
       children: [
         SecondaryButton(
           label: 'New Supplier',
-          icon: Icons.add_rounded,
+          icon: AppIcons.add,
           onPressed: () => ref.read(supplierBrowserProvider.notifier).startNew(),
         ),
         Wrap(
@@ -421,7 +422,7 @@ class _SupplierFormCardState extends ConsumerState<SupplierFormCard> {
             if (!browser.isNew)
               SecondaryButton(
                 label: browser.isEditing ? 'Cancel' : 'Modify',
-                icon: browser.isEditing ? Icons.lock_outline_rounded : Icons.edit_outlined,
+                icon: browser.isEditing ? AppIcons.lock : AppIcons.edit,
                 onPressed: () {
                   if (browser.isEditing) {
                     _populateFrom(browser.current);
@@ -431,7 +432,7 @@ class _SupplierFormCardState extends ConsumerState<SupplierFormCard> {
               ),
             PrimaryButton(
               label: browser.isSaving ? 'Saving…' : (browser.isNew ? 'Create Supplier' : 'Save Changes'),
-              icon: Icons.check_circle_outline_rounded,
+              icon: AppIcons.checkCircle,
               onPressed: editable && !browser.isSaving ? _save : null,
             ),
           ],

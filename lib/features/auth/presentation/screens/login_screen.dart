@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/auth/auth_controller.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
@@ -128,7 +129,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           const SizedBox(height: 22),
                           PrimaryButton(
                             label: auth.isLoading ? 'Signing in…' : 'Enter Caskly',
-                            icon: Icons.arrow_forward_rounded,
+                            icon: AppIcons.arrowForward,
                             expand: true,
                             onPressed: auth.isLoading ? null : _submit,
                           ),
@@ -238,8 +239,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
         ],
       ),
-      child: const Icon(
-        Icons.wine_bar_rounded,
+      child: const AppIcon(
+        AppIcons.liquorBottle,
         color: AppColors.primary,
         size: 30,
       ),

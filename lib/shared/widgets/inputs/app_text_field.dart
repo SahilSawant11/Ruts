@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 
@@ -123,8 +124,8 @@ class AppTextField extends StatelessWidget {
                 ..selection = TextSelection.collapsed(offset: text.length);
               onChanged?.call(text);
             },
-            icon: Icon(
-              Icons.content_paste_rounded,
+            icon: AppIcon(
+              AppIcons.paste,
               size: 18,
               color: AppColors.textSecondaryFor(context),
             ),

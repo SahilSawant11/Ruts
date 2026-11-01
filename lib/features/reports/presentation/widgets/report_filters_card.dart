@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
@@ -202,28 +203,28 @@ class _ReportFiltersCardState extends ConsumerState<ReportFiltersCard> {
               final fromDateWidget = _pickerField(
                 label: 'FROM DATE',
                 value: _fmtDate(fromDateVal),
-                icon: Icons.calendar_today_outlined,
+                icon: AppIcons.calendar,
                 onTap: () => _pickDate(isFrom: true),
               );
 
               final fromTimeWidget = _pickerField(
                 label: 'FROM TIME',
                 value: _fmtTime(fromTimeVal),
-                icon: Icons.access_time_rounded,
+                icon: AppIcons.time,
                 onTap: () => _pickTime(isFrom: true),
               );
 
               final toDateWidget = _pickerField(
                 label: 'TO DATE',
                 value: _fmtDate(toDateVal),
-                icon: Icons.calendar_today_outlined,
+                icon: AppIcons.calendar,
                 onTap: () => _pickDate(isFrom: false),
               );
 
               final toTimeWidget = _pickerField(
                 label: 'TO TIME',
                 value: _fmtTime(toTimeVal),
-                icon: Icons.access_time_rounded,
+                icon: AppIcons.time,
                 onTap: () => _pickTime(isFrom: false),
               );
 
@@ -255,7 +256,7 @@ class _ReportFiltersCardState extends ConsumerState<ReportFiltersCard> {
 
               final generateButton = PrimaryButton(
                 label: 'Generate',
-                icon: Icons.search_rounded,
+                icon: AppIcons.search,
                 onPressed: _generate,
               );
 
@@ -317,7 +318,7 @@ class _ReportFiltersCardState extends ConsumerState<ReportFiltersCard> {
   Widget _pickerField({
     required String label,
     required String value,
-    required IconData icon,
+    required AppIconData icon,
     required VoidCallback onTap,
   }) {
     return Column(
@@ -337,7 +338,7 @@ class _ReportFiltersCardState extends ConsumerState<ReportFiltersCard> {
             ),
             child: Row(
               children: [
-                Icon(
+                AppIcon(
                   icon,
                   size: 15,
                   color: AppColors.textMutedFor(context),

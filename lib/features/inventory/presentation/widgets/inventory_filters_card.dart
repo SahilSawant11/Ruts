@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
 import '../../../../shared/widgets/inputs/app_dropdown.dart';
@@ -54,7 +55,7 @@ class _InventoryFiltersCardState extends ConsumerState<InventoryFiltersCard> {
               children: [
                 SecondaryButton(
                   label: 'Clear Filters',
-                  icon: Icons.filter_alt_off_rounded,
+                  icon: AppIcons.filterClear,
                   dense: true,
                   onPressed: () {
                     _searchController.clear();
@@ -65,7 +66,7 @@ class _InventoryFiltersCardState extends ConsumerState<InventoryFiltersCard> {
                   },
                 ),
                 const SizedBox(width: AppSpacing.sm),
-                PrimaryButton(label: 'Add Stock', icon: Icons.add_rounded, dense: true, onPressed: () {}),
+                PrimaryButton(label: 'Add Stock', icon: AppIcons.add, dense: true, onPressed: () {}),
               ],
             ),
           ),

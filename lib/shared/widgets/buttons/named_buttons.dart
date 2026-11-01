@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme/app_icons.dart';
 import 'app_button.dart';
 
 /// These thin wrappers exist purely so call-sites read naturally
@@ -18,7 +19,7 @@ class PrimaryButton extends StatelessWidget {
 
   final String label;
   final VoidCallback? onPressed;
-  final IconData? icon;
+  final AppIconData? icon;
   final String? shortcut;
   final bool expand;
   final bool dense;
@@ -48,7 +49,7 @@ class SecondaryButton extends StatelessWidget {
 
   final String label;
   final VoidCallback? onPressed;
-  final IconData? icon;
+  final AppIconData? icon;
   final String? shortcut;
   final bool expand;
   final bool dense;
@@ -77,7 +78,7 @@ class SuccessButton extends StatelessWidget {
 
   final String label;
   final VoidCallback? onPressed;
-  final IconData? icon;
+  final AppIconData? icon;
   final String? shortcut;
   final bool expand;
 
@@ -105,7 +106,7 @@ class DangerButton extends StatelessWidget {
 
   final String label;
   final VoidCallback? onPressed;
-  final IconData? icon;
+  final AppIconData? icon;
   final String? shortcut;
   final bool expand;
   final bool outline;

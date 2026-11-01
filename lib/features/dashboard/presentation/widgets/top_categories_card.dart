@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../data/dashboard_providers.dart';
@@ -50,8 +51,8 @@ class _TopCategoriesCardState extends State<TopCategoriesCard> {
                           : const Color(0xFFE8F8F1),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(
-                      Icons.category_outlined,
+                    child: const AppIcon(
+                      AppIcons.categories,
                       size: 16,
                       color: Color(0xFF2EBD85),
                     ),
@@ -87,8 +88,8 @@ class _TopCategoriesCardState extends State<TopCategoriesCard> {
                       fontWeight: FontWeight.w600,
                       color: AppColors.textSecondaryFor(context),
                     ),
-                    icon: Icon(
-                      Icons.keyboard_arrow_down_rounded,
+                    icon: AppIcon(
+                      AppIcons.arrowDropDown,
                       size: 15,
                       color: AppColors.textMutedFor(context),
                     ),
@@ -256,8 +257,8 @@ class _TopCategoriesCardState extends State<TopCategoriesCard> {
                                   ),
                                   child: Row(
                                     children: [
-                                      const Icon(
-                                        Icons.north_east_rounded,
+                                      const AppIcon(
+                                        AppIcons.northEast,
                                         size: 10,
                                         color: Colors.white,
                                       ),
