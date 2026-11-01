@@ -1,172 +1,185 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../core/format/money.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../data/dashboard_providers.dart';
+import '../../data/models/dashboard_summary_dto.dart';
 
-/// Top 4 elevated KPI cards matching the mood board design:
-///  1. Total Sales (with trend + dropdown + 'View all ↗')
-///  2. Sales Return (with trend + dropdown + 'View all ↗')
-///  3. Total Purchase (with trend + dropdown + 'View all ↗')
-///  4. Purchase Return (with trend + dropdown + 'View all ↗')
-class DashboardKpiRow extends ConsumerStatefulWidget {
+/// Period selector + the four headline numbers. Every figure is for the
+/// selected period and compared with the equally long period before it.
+class DashboardKpiRow extends ConsumerWidget {
   const DashboardKpiRow({super.key});
 
   @override
-  ConsumerState<DashboardKpiRow> createState() => _DashboardKpiRowState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final period = ref.watch(dashboardPeriodProvider);
+    final snapshot = ref.watch(dashboardSnapshotProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Overview',
+              style: AppTypography.sectionTitle.copyWith(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimaryFor(context),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'compared with the ${period.previousLabel}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.caption.copyWith(color: AppColors.textMutedFor(context)),
+              ),
+            ),
+            const SizedBox(width: 10),
+            DashboardPeriodSelector(
+              value: period,
+              onChanged: (p) => ref.read(dashboardPeriodProvider.notifier).state = p,
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        snapshot.when(
+          loading: () => const _KpiSkeletonRow(),
+          error: (e, _) => _KpiError(message: '$e'),
+          data: (s) => Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _MetricCard(
+                  title: 'Sales',
+                  metric: s.sales,
+                  higherIsBetter: true,
+                  icon: AppIcons.trendingUp,
+                  iconColor: AppColors.primary,
+                  footnote: s.billCount.current == 0
+                      ? 'No bills'
+                      : '${s.billCount.current.toInt()} bills · avg ${Money.compact(s.avgBillValue)}',
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: _MetricCard(
+                  title: 'Sales Returns',
+                  metric: s.salesReturns,
+                  higherIsBetter: false,
+                  icon: AppIcons.salesReturn,
+                  iconColor: AppColors.chartTeal,
+                  footnote: s.sales.current + s.salesReturns.current == 0
+                      ? 'No returns'
+                      : '${(s.salesReturns.current / (s.sales.current + s.salesReturns.current) * 100).toStringAsFixed(1)}% of sales returned',
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: _MetricCard(
+                  title: 'Purchases',
+                  metric: s.purchases,
+                  higherIsBetter: null,
+                  icon: AppIcons.purchaseBill,
+                  iconColor: AppColors.chartAmber,
+                  footnote: 'Stock received from suppliers',
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: _MetricCard(
+                  title: 'Purchase Returns',
+                  metric: s.purchaseReturns,
+                  higherIsBetter: null,
+                  icon: AppIcons.purchaseReturn,
+                  iconColor: AppColors.chartBlue,
+                  footnote: 'Stock sent back to suppliers',
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 }
 
-class _DashboardKpiRowState extends ConsumerState<DashboardKpiRow> {
-  String _timeframe = 'Weekly';
+/// Segmented Today / 7 days / 30 days / 12 months control.
+class DashboardPeriodSelector extends StatelessWidget {
+  const DashboardPeriodSelector({super.key, required this.value, required this.onChanged});
+
+  final DashboardPeriod value;
+  final ValueChanged<DashboardPeriod> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final summaryAsync = ref.watch(dashboardSummaryProvider);
-
-    return summaryAsync.when(
-      loading: () => const _KpiSkeletonRow(),
-      error: (_, __) => const _KpiSkeletonRow(),
-      data: (summary) {
-        // Sales value by timeframe
-        final salesVal = switch (_timeframe) {
-          'Today' => summary.todaySales,
-          'Monthly' => summary.totalSalesMonth > 0
-              ? summary.totalSalesMonth
-              : summary.todaySales,
-          _ => summary.totalSalesWeek > 0
-              ? summary.totalSalesWeek
-              : summary.todaySales,
-        };
-
-        // Purchase value by timeframe
-        final purchaseVal = switch (_timeframe) {
-          'Today' => summary.totalPurchase,
-          'Monthly' => summary.totalPurchase,
-          _ => summary.totalPurchase,
-        };
-
-        final salesReturnVal = summary.salesReturnAmount;
-        final purchaseReturnVal = summary.purchaseReturnAmount;
-
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Card 1 — Total Sales
-            Expanded(
-              child: _MetricCard(
-                title: 'Total Sales',
-                value: '₹ ${_formatRupee(salesVal)}',
-                trendPercent: summary.salesDeltaPercent ?? 0.0,
-                isTrendUp: (summary.salesDeltaPercent ?? 0.0) >= 0,
-                subtitle: 'Sales vs last period',
-                icon: AppIcons.trendingUp,
-                iconColor: AppColors.primary,
-                selectedTimeframe: _timeframe,
-                onTimeframeChanged: (v) =>
-                    setState(() => _timeframe = v),
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceAltFor(context),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(color: AppColors.borderFor(context)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final p in DashboardPeriod.values)
+            GestureDetector(
+              onTap: () => onChanged(p),
+              child: MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: p == value ? AppColors.primary : Colors.transparent,
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                  ),
+                  child: Text(
+                    p.label,
+                    style: AppTypography.caption.copyWith(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: p == value ? Colors.white : AppColors.textSecondaryFor(context),
+                    ),
+                  ),
+                ),
               ),
             ),
-            const SizedBox(width: AppSpacing.md),
-
-            // Card 2 — Sales Return
-            Expanded(
-              child: _MetricCard(
-                title: 'Sales Return',
-                value: '₹ ${_formatRupee(salesReturnVal)}',
-                trendPercent: summary.salesReturnDeltaPercent ?? 0.0,
-                isTrendUp: false,
-                subtitle: 'Sales return vs last period',
-                icon: AppIcons.sync,
-                iconColor: AppColors.chartTeal,
-                selectedTimeframe: _timeframe,
-                onTimeframeChanged: (v) =>
-                    setState(() => _timeframe = v),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-
-            // Card 3 — Total Purchase
-            Expanded(
-              child: _MetricCard(
-                title: 'Total Purchase',
-                value: '₹ ${_formatRupee(purchaseVal)}',
-                trendPercent: summary.purchaseDeltaPercent ?? 0.0,
-                isTrendUp: true,
-                subtitle: 'Purchase vs last period',
-                icon: AppIcons.shoppingBag,
-                iconColor: AppColors.chartAmber,
-                selectedTimeframe: _timeframe,
-                onTimeframeChanged: (v) =>
-                    setState(() => _timeframe = v),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-
-            // Card 4 — Purchase Return
-            Expanded(
-              child: _MetricCard(
-                title: 'Purchase Return',
-                value: '₹ ${_formatRupee(purchaseReturnVal)}',
-                trendPercent: summary.purchaseReturnDeltaPercent ?? 0.0,
-                isTrendUp: false,
-                subtitle: 'Purchase return vs last period',
-                icon: AppIcons.swapHoriz,
-                iconColor: AppColors.chartBlue,
-                selectedTimeframe: _timeframe,
-                onTimeframeChanged: (v) =>
-                    setState(() => _timeframe = v),
-              ),
-            ),
-          ],
-        );
-      },
+        ],
+      ),
     );
   }
-
-  static String _formatRupee(double v) {
-    if (v >= 10000000) return '${(v / 10000000).toStringAsFixed(2)} Cr';
-    if (v >= 100000) return '${(v / 100000).toStringAsFixed(2)} L';
-    if (v >= 1000) {
-      final s = v.toInt().toString();
-      final last3 = s.substring(s.length - 3);
-      final rest = s.substring(0, s.length - 3);
-      return '$rest,$last3';
-    }
-    return v.toStringAsFixed(0);
-  }
 }
-
-// ── Elevated KPI Card Shell ──────────────────────────────────────────────────
 
 class _MetricCard extends StatelessWidget {
   const _MetricCard({
     required this.title,
-    required this.value,
-    required this.trendPercent,
-    required this.isTrendUp,
-    required this.subtitle,
+    required this.metric,
+    required this.higherIsBetter,
     required this.icon,
     required this.iconColor,
-    required this.selectedTimeframe,
-    required this.onTimeframeChanged,
+    required this.footnote,
   });
 
   final String title;
-  final String value;
-  final double trendPercent;
-  final bool isTrendUp;
-  final String subtitle;
+  final PeriodMetric metric;
+
+  /// true: up is good (green). false: up is bad (red). null: neutral.
+  final bool? higherIsBetter;
   final AppIconData icon;
   final Color iconColor;
-  final String selectedTimeframe;
-  final ValueChanged<String> onTimeframeChanged;
+  final String footnote;
 
   @override
   Widget build(BuildContext context) {
     final isDark = AppColors.isDark(context);
-
     return Container(
       decoration: BoxDecoration(
         color: AppColors.backgroundFor(context),
@@ -178,10 +191,19 @@ class _MetricCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top Row: Title + Timeframe Dropdown
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: isDark ? 0.20 : 0.12),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                alignment: Alignment.center,
+                child: AppIcon(icon, size: 16, color: iconColor),
+              ),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   title,
@@ -189,105 +211,35 @@ class _MetricCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: AppTypography.body.copyWith(
                     fontWeight: FontWeight.w600,
-                    fontSize: 13.5,
-                    color: AppColors.textPrimaryFor(context),
+                    fontSize: 13,
+                    color: AppColors.textSecondaryFor(context),
                   ),
                 ),
               ),
-              const SizedBox(width: 4),
-              // Compact timeframe dropdown pill
-              _TimeframePill(
-                value: selectedTimeframe,
-                onChanged: onTimeframeChanged,
-              ),
+              _TrendBadge(delta: metric.deltaPercent, higherIsBetter: higherIsBetter),
             ],
           ),
-          const SizedBox(height: 14),
-
-          // Main Metric Row: Icon + Value + Trend Pill
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Tinted Circular Icon
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? iconColor.withValues(alpha: 0.20)
-                      : iconColor.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: AppIcon(icon, size: 19, color: iconColor),
+          const SizedBox(height: 12),
+          Tooltip(
+            message: Money.inr(metric.current),
+            child: Text(
+              Money.compact(metric.current),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.h1.copyWith(
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.3,
+                color: AppColors.textPrimaryFor(context),
               ),
-              const SizedBox(width: 10),
-
-              // Value
-              Expanded(
-                child: Text(
-                  value,
-                  style: AppTypography.h1.copyWith(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.3,
-                    color: AppColors.textPrimaryFor(context),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-
-              // Inline Trend Badge
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                decoration: BoxDecoration(
-                  color: isTrendUp
-                      ? (isDark
-                          ? AppColors.success.withValues(alpha: 0.16)
-                          : AppColors.successSoft)
-                      : (isDark
-                          ? AppColors.danger.withValues(alpha: 0.16)
-                          : AppColors.dangerSoft),
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AppIcon(
-                      isTrendUp
-                          ? AppIcons.arrowUp
-                          : AppIcons.arrowDown,
-                      size: 11,
-                      color: isTrendUp ? AppColors.success : AppColors.danger,
-                    ),
-                    const SizedBox(width: 2),
-                    Text(
-                      '${trendPercent.abs().toStringAsFixed(0)}%',
-                      style: AppTypography.mono.copyWith(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w700,
-                        color:
-                            isTrendUp ? AppColors.success : AppColors.danger,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
-          const SizedBox(height: 14),
-
-          // Bottom Row: Subtitle only (View all removed)
+          const SizedBox(height: 4),
           Text(
-            subtitle,
+            'was ${Money.compact(metric.previous)} · $footnote',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: AppTypography.caption.copyWith(
-              color: AppColors.textMutedFor(context),
-              fontSize: 11,
-            ),
+            style: AppTypography.caption.copyWith(color: AppColors.textMutedFor(context), fontSize: 11),
           ),
         ],
       ),
@@ -295,57 +247,54 @@ class _MetricCard extends StatelessWidget {
   }
 }
 
-// ── Timeframe Dropdown Pill ──────────────────────────────────────────────────
+class _TrendBadge extends StatelessWidget {
+  const _TrendBadge({required this.delta, required this.higherIsBetter});
 
-class _TimeframePill extends StatelessWidget {
-  const _TimeframePill({
-    required this.value,
-    required this.onChanged,
-  });
-
-  final String value;
-  final ValueChanged<String> onChanged;
+  final double? delta;
+  final bool? higherIsBetter;
 
   @override
   Widget build(BuildContext context) {
+    final d = delta;
+    if (d == null) {
+      return Tooltip(
+        message: 'No data in the previous period to compare with',
+        child: _pill(context, '—', AppColors.textMutedFor(context), null),
+      );
+    }
+    final up = d >= 0.5;
+    final down = d <= -0.5;
+    final good = higherIsBetter == null ? null : (higherIsBetter! ? up : down);
+    final bad = higherIsBetter == null ? null : (higherIsBetter! ? down : up);
+    final color = good == true
+        ? AppColors.success
+        : bad == true
+            ? AppColors.danger
+            : AppColors.textSecondaryFor(context);
+    final pct = d.abs() >= 1000 ? '999+%' : '${d.abs().toStringAsFixed(d.abs() < 10 ? 1 : 0)}%';
+    return _pill(context, pct, color, up ? AppIcons.arrowUp : (down ? AppIcons.arrowDown : null));
+  }
+
+  Widget _pill(BuildContext context, String text, Color color, AppIconData? icon) {
     return Container(
-      height: 26,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: AppColors.surfaceFor(context),
+        color: color.withValues(alpha: AppColors.isDark(context) ? 0.18 : 0.10),
         borderRadius: BorderRadius.circular(AppRadius.pill),
-        border: Border.all(color: AppColors.borderFor(context)),
       ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: value,
-          isDense: true,
-          dropdownColor: AppColors.surfaceFor(context),
-          style: AppTypography.body.copyWith(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textSecondaryFor(context),
-          ),
-          icon: AppIcon(
-            AppIcons.arrowDropDown,
-            size: 15,
-            color: AppColors.textMutedFor(context),
-          ),
-          items: const [
-            DropdownMenuItem(value: 'Today', child: Text('Today')),
-            DropdownMenuItem(value: 'Weekly', child: Text('Weekly')),
-            DropdownMenuItem(value: 'Monthly', child: Text('Monthly')),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            AppIcon(icon, size: 11, color: color),
+            const SizedBox(width: 2),
           ],
-          onChanged: (v) {
-            if (v != null) onChanged(v);
-          },
-        ),
+          Text(text, style: AppTypography.mono.copyWith(fontSize: 10.5, fontWeight: FontWeight.w700, color: color)),
+        ],
       ),
     );
   }
 }
-
-// ── Skeleton Loader ──────────────────────────────────────────────────────────
 
 class _KpiSkeletonRow extends StatelessWidget {
   const _KpiSkeletonRow();
@@ -353,22 +302,31 @@ class _KpiSkeletonRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      children: List.generate(
-        4,
-        (i) => Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(right: i < 3 ? AppSpacing.md : 0),
+      children: [
+        for (var i = 0; i < 4; i++) ...[
+          if (i > 0) const SizedBox(width: AppSpacing.md),
+          Expanded(
             child: Container(
-              height: 120,
+              height: 112,
               decoration: BoxDecoration(
-                color: AppColors.surfaceFor(context),
+                color: AppColors.surfaceAltFor(context),
                 borderRadius: BorderRadius.circular(AppRadius.md),
-                border: Border.all(color: AppColors.borderFor(context)),
               ),
             ),
           ),
-        ),
-      ),
+        ],
+      ],
     );
   }
+}
+
+class _KpiError extends StatelessWidget {
+  const _KpiError({required this.message});
+  final String message;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Text('Could not load figures: $message', style: AppTypography.body.copyWith(color: AppColors.danger)),
+      );
 }

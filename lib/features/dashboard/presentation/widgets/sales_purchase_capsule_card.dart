@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import '../../../../core/format/money.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_icons.dart';
@@ -16,12 +19,10 @@ class SalesPurchaseCapsuleCard extends ConsumerStatefulWidget {
   const SalesPurchaseCapsuleCard({super.key});
 
   @override
-  ConsumerState<SalesPurchaseCapsuleCard> createState() =>
-      _SalesPurchaseCapsuleCardState();
+  ConsumerState<SalesPurchaseCapsuleCard> createState() => _SalesPurchaseCapsuleCardState();
 }
 
-class _SalesPurchaseCapsuleCardState
-    extends ConsumerState<SalesPurchaseCapsuleCard> {
+class _SalesPurchaseCapsuleCardState extends ConsumerState<SalesPurchaseCapsuleCard> {
   String _selectedRange = '1Y';
   int? _hoveredIndex;
 
@@ -54,9 +55,7 @@ class _SalesPurchaseCapsuleCardState
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: isDark
-                      ? purchaseColor.withValues(alpha: 0.20)
-                      : const Color(0xFFF1EEFE),
+                  color: isDark ? purchaseColor.withValues(alpha: 0.20) : const Color(0xFFF1EEFE),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const AppIcon(
@@ -91,12 +90,9 @@ class _SalesPurchaseCapsuleCardState
                       onTap: () => setState(() => _selectedRange = range),
                       borderRadius: BorderRadius.circular(AppRadius.pill),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 5),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                         decoration: BoxDecoration(
-                          color: isSelected
-                              ? (isDark ? Colors.white : const Color(0xFF16161F))
-                              : Colors.transparent,
+                          color: isSelected ? (isDark ? Colors.white : const Color(0xFF16161F)) : Colors.transparent,
                           borderRadius: BorderRadius.circular(AppRadius.pill),
                         ),
                         child: Text(
@@ -104,9 +100,8 @@ class _SalesPurchaseCapsuleCardState
                           style: AppTypography.mono.copyWith(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: isSelected
-                                ? (isDark ? Colors.black : Colors.white)
-                                : AppColors.textMutedFor(context),
+                            color:
+                                isSelected ? (isDark ? Colors.black : Colors.white) : AppColors.textMutedFor(context),
                           ),
                         ),
                       ),
@@ -150,12 +145,14 @@ class _SalesPurchaseCapsuleCardState
             data: (summary) {
               final comparisonPoints = _resolvePointsForRange(summary, _selectedRange);
 
-              // Scale determination
-              double maxObserved = 100000;
+              // Scale: round the largest bar up to a nice number so the five
+              // gridlines read 1L, 2L, 3L… instead of 1.2L, 2.4L…
+              double peak = 0;
               for (final p in comparisonPoints) {
-                if (p.salesAmount > maxObserved) maxObserved = p.salesAmount;
-                if (p.purchaseAmount > maxObserved) maxObserved = p.purchaseAmount;
+                if (p.salesAmount > peak) peak = p.salesAmount;
+                if (p.purchaseAmount > peak) peak = p.purchaseAmount;
               }
+              final maxObserved = _niceCeil(peak);
 
               return SizedBox(
                 height: 220,
@@ -174,7 +171,7 @@ class _SalesPurchaseCapsuleCardState
                           _YLabel(_formatAxisLabel(maxObserved * 0.6)),
                           _YLabel(_formatAxisLabel(maxObserved * 0.4)),
                           _YLabel(_formatAxisLabel(maxObserved * 0.2)),
-                          const _YLabel('0K'),
+                          const _YLabel('0'),
                         ],
                       ),
                     ),
@@ -191,9 +188,7 @@ class _SalesPurchaseCapsuleCardState
                               (index) => CustomPaint(
                                 size: const Size(double.infinity, 1),
                                 painter: _DashedLinePainter(
-                                  color: isDark
-                                      ? Colors.white.withValues(alpha: 0.08)
-                                      : const Color(0xFFE5E5EB),
+                                  color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE5E5EB),
                                 ),
                               ),
                             ),
@@ -212,10 +207,8 @@ class _SalesPurchaseCapsuleCardState
 
                                   return Expanded(
                                     child: MouseRegion(
-                                      onEnter: (_) =>
-                                          setState(() => _hoveredIndex = idx),
-                                      onExit: (_) =>
-                                          setState(() => _hoveredIndex = null),
+                                      onEnter: (_) => setState(() => _hoveredIndex = idx),
+                                      onExit: (_) => setState(() => _hoveredIndex = null),
                                       child: _SideBySideCapsuleColumn(
                                         label: point.month,
                                         purchaseAmount: point.purchaseAmount,
@@ -274,63 +267,32 @@ class _SalesPurchaseCapsuleCardState
     );
   }
 
-  static String _formatAxisLabel(double v) {
-    if (v >= 10000000) return '${(v / 10000000).toStringAsFixed(0)}Cr';
-    if (v >= 100000) return '${(v / 100000).toStringAsFixed(0)}L';
-    if (v >= 1000) return '${(v / 1000).toStringAsFixed(0)}K';
-    return v.toStringAsFixed(0);
-  }
+  static String _formatAxisLabel(double v) => v == 0 ? '0' : Money.compact(v, symbol: false);
 
+  /// Real data only — an empty store shows empty bars, never sample numbers.
   static List<MonthlyComparisonPointDto> _resolvePointsForRange(
     DashboardSummaryDto summary,
     String range,
   ) {
-    switch (range) {
-      case '1D':
-        if (summary.dailyComparison.isNotEmpty) return summary.dailyComparison;
-        return const [
-          MonthlyComparisonPointDto(month: '9 AM', salesAmount: 12000, purchaseAmount: 8000),
-          MonthlyComparisonPointDto(month: '11 AM', salesAmount: 24000, purchaseAmount: 16000),
-          MonthlyComparisonPointDto(month: '1 PM', salesAmount: 38000, purchaseAmount: 22000),
-          MonthlyComparisonPointDto(month: '3 PM', salesAmount: 42000, purchaseAmount: 30000),
-          MonthlyComparisonPointDto(month: '5 PM', salesAmount: 58000, purchaseAmount: 44000),
-          MonthlyComparisonPointDto(month: '7 PM', salesAmount: 76000, purchaseAmount: 52000),
-          MonthlyComparisonPointDto(month: '9 PM', salesAmount: 48000, purchaseAmount: 36000),
-        ];
-      case '1W':
-        if (summary.weeklyComparison.isNotEmpty) return summary.weeklyComparison;
-        return const [
-          MonthlyComparisonPointDto(month: 'Mon', salesAmount: 42000, purchaseAmount: 30000),
-          MonthlyComparisonPointDto(month: 'Tue', salesAmount: 58000, purchaseAmount: 45000),
-          MonthlyComparisonPointDto(month: 'Wed', salesAmount: 64000, purchaseAmount: 50000),
-          MonthlyComparisonPointDto(month: 'Thu', salesAmount: 72000, purchaseAmount: 48000),
-          MonthlyComparisonPointDto(month: 'Fri', salesAmount: 88000, purchaseAmount: 60000),
-          MonthlyComparisonPointDto(month: 'Sat', salesAmount: 96000, purchaseAmount: 75000),
-          MonthlyComparisonPointDto(month: 'Sun', salesAmount: 82000, purchaseAmount: 62000),
-        ];
-      case '1M':
-        return const [
-          MonthlyComparisonPointDto(month: 'Week 1', salesAmount: 65000, purchaseAmount: 48000),
-          MonthlyComparisonPointDto(month: 'Week 2', salesAmount: 78000, purchaseAmount: 55000),
-          MonthlyComparisonPointDto(month: 'Week 3', salesAmount: 92000, purchaseAmount: 70000),
-          MonthlyComparisonPointDto(month: 'Week 4', salesAmount: 84000, purchaseAmount: 62000),
-        ];
-      case '1Y':
-      default:
-        if (summary.monthlyComparison.isNotEmpty) return summary.monthlyComparison;
-        return const [
-          MonthlyComparisonPointDto(month: 'Jan', salesAmount: 66000, purchaseAmount: 76000),
-          MonthlyComparisonPointDto(month: 'Feb', salesAmount: 42000, purchaseAmount: 65000),
-          MonthlyComparisonPointDto(month: 'Mar', salesAmount: 42000, purchaseAmount: 76000),
-          MonthlyComparisonPointDto(month: 'Apr', salesAmount: 76000, purchaseAmount: 88000),
-          MonthlyComparisonPointDto(month: 'May', salesAmount: 66000, purchaseAmount: 100000),
-          MonthlyComparisonPointDto(month: 'Jun', salesAmount: 66000, purchaseAmount: 88000),
-          MonthlyComparisonPointDto(month: 'Jul', salesAmount: 54000, purchaseAmount: 76000),
-          MonthlyComparisonPointDto(month: 'Aug', salesAmount: 42000, purchaseAmount: 65000),
-          MonthlyComparisonPointDto(month: 'Sep', salesAmount: 100000, purchaseAmount: 100000),
-          MonthlyComparisonPointDto(month: 'Oct', salesAmount: 65000, purchaseAmount: 76000),
-        ];
+    return switch (range) {
+      '1D' => summary.dailyComparison,
+      '1W' => summary.weeklyComparison,
+      '1M' => summary.last4WeeksComparison,
+      _ => summary.monthlyComparison,
+    };
+  }
+
+  /// Axis maximum = 5 gridline steps, where the step is a "nice" number
+  /// (1, 1.5, 2, 2.5, 3, 4, 5, 6, 8 × 10^n) just big enough for [peak].
+  static double _niceCeil(double peak) {
+    if (peak <= 0) return 5000;
+    final raw = peak / 5;
+    final exp = (math.log(raw) / math.ln10).floor();
+    final base = math.pow(10, exp).toDouble();
+    for (final m in const [1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0]) {
+      if (raw <= m * base) return m * base * 5;
     }
+    return 50 * base;
   }
 }
 
@@ -379,12 +341,9 @@ class _SideBySideCapsuleColumn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // 0 value records must have 0 beads so they sit on 0K baseline
-    final purchaseBeads = (purchaseAmount > 0 && maxScale > 0)
-        ? ((purchaseAmount / maxScale) * 10).round().clamp(1, 10)
-        : 0;
-    final saleBeads = (salesAmount > 0 && maxScale > 0)
-        ? ((salesAmount / maxScale) * 10).round().clamp(1, 10)
-        : 0;
+    final purchaseBeads =
+        (purchaseAmount > 0 && maxScale > 0) ? ((purchaseAmount / maxScale) * 10).round().clamp(1, 10) : 0;
+    final saleBeads = (salesAmount > 0 && maxScale > 0) ? ((salesAmount / maxScale) * 10).round().clamp(1, 10) : 0;
 
     return Tooltip(
       decoration: BoxDecoration(
@@ -421,7 +380,7 @@ class _SideBySideCapsuleColumn extends StatelessWidget {
             ),
           ),
           TextSpan(
-            text: '₹ ${_formatRupeeCommas(purchaseAmount)}\n',
+            text: '${Money.inr(purchaseAmount, decimals: 0)}\n',
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w700,
@@ -439,7 +398,7 @@ class _SideBySideCapsuleColumn extends StatelessWidget {
             ),
           ),
           TextSpan(
-            text: '₹ ${_formatRupeeCommas(salesAmount)}',
+            text: Money.inr(salesAmount, decimals: 0),
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w700,
@@ -504,9 +463,7 @@ class _SideBySideCapsuleColumn extends StatelessWidget {
             style: AppTypography.mono.copyWith(
               fontSize: 10.5,
               fontWeight: isHovered ? FontWeight.w800 : FontWeight.w500,
-              color: isHovered
-                  ? purchaseColor
-                  : AppColors.textSecondaryFor(context),
+              color: isHovered ? purchaseColor : AppColors.textSecondaryFor(context),
             ),
           ),
         ],
@@ -536,16 +493,6 @@ class _SideBySideCapsuleColumn extends StatelessWidget {
         borderRadius: BorderRadius.circular(2),
       ),
     );
-  }
-
-  static String _formatRupeeCommas(double v) {
-    if (v >= 1000) {
-      final s = v.toInt().toString();
-      final last3 = s.substring(s.length - 3);
-      final rest = s.substring(0, s.length - 3);
-      return '$rest,$last3';
-    }
-    return v.toStringAsFixed(0);
   }
 }
 

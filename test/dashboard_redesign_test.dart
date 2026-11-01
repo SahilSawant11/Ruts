@@ -86,6 +86,18 @@ void main() {
     ],
   );
 
+  final mockSnapshot = DashboardPeriodSnapshot(
+    period: DashboardPeriod.week,
+    sales: const PeriodMetric(89000, 75000),
+    billCount: const PeriodMetric(142, 120),
+    salesReturns: const PeriodMetric(4200, 0),
+    purchases: const PeriodMetric(180000, 160000),
+    purchaseReturns: const PeriodMetric(1200, 1500),
+    categoryBreakdown: mockSummary.categoryBreakdown,
+    topSellingItems: mockSummary.topSellingItems,
+    paymentMix: const [],
+  );
+
   group('Dashboard Summary DTO Tests', () {
     test('DashboardSummaryDto.fromJson parses extended fields correctly', () {
       final json = <String, dynamic>{
@@ -124,6 +136,7 @@ void main() {
         ProviderScope(
           overrides: [
             dashboardSummaryProvider.overrideWith((ref) async => mockSummary),
+            dashboardSnapshotProvider.overrideWith((ref) async => mockSnapshot),
           ],
           child: const MaterialApp(
             home: Scaffold(
@@ -134,11 +147,17 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Total Sales'), findsOneWidget);
-      expect(find.text('Sales Return'), findsOneWidget);
-      expect(find.text('Total Purchase'), findsOneWidget);
-      expect(find.text('Purchase Return'), findsOneWidget);
-      expect(find.text('View all'), findsNothing);
+      expect(find.text('Sales'), findsOneWidget);
+      expect(find.text('Sales Returns'), findsOneWidget);
+      expect(find.text('Purchases'), findsOneWidget);
+      expect(find.text('Purchase Returns'), findsOneWidget);
+      // Real comparisons: +18.7% sales (shown rounded); returns had no previous data → "—".
+      expect(find.text('19%'), findsOneWidget);
+      expect(find.text('—'), findsOneWidget);
+      expect(find.text('₹89,000'), findsOneWidget);
+      // One shared period selector.
+      expect(find.text('7 days'), findsOneWidget);
+      expect(find.text('Today'), findsOneWidget);
     });
 
     testWidgets('OverallInformationCard renders Suppliers, SCM Codes, and Low Stock', (tester) async {
@@ -146,6 +165,7 @@ void main() {
         ProviderScope(
           overrides: [
             dashboardSummaryProvider.overrideWith((ref) async => mockSummary),
+            dashboardSnapshotProvider.overrideWith((ref) async => mockSnapshot),
           ],
           child: const MaterialApp(
             home: Scaffold(
@@ -170,6 +190,7 @@ void main() {
         ProviderScope(
           overrides: [
             dashboardSummaryProvider.overrideWith((ref) async => mockSummary),
+            dashboardSnapshotProvider.overrideWith((ref) async => mockSnapshot),
           ],
           child: const MaterialApp(
             home: Scaffold(
@@ -190,6 +211,7 @@ void main() {
         ProviderScope(
           overrides: [
             dashboardSummaryProvider.overrideWith((ref) async => mockSummary),
+            dashboardSnapshotProvider.overrideWith((ref) async => mockSnapshot),
           ],
           child: const MaterialApp(
             home: Scaffold(
@@ -214,6 +236,7 @@ void main() {
         ProviderScope(
           overrides: [
             dashboardSummaryProvider.overrideWith((ref) async => mockSummary),
+            dashboardSnapshotProvider.overrideWith((ref) async => mockSnapshot),
           ],
           child: const MaterialApp(
             home: Scaffold(
@@ -226,7 +249,7 @@ void main() {
 
       expect(find.text('Top Selling Products'), findsOneWidget);
       expect(find.text('Johnnie Walker Black Label'), findsOneWidget);
-      expect(find.textContaining('64+ Sales'), findsWidgets);
+      expect(find.textContaining('64 sold'), findsWidgets);
     });
 
     testWidgets('RecentTransactionsCard renders rows and column headers', (tester) async {
@@ -234,6 +257,7 @@ void main() {
         ProviderScope(
           overrides: [
             dashboardSummaryProvider.overrideWith((ref) async => mockSummary),
+            dashboardSnapshotProvider.overrideWith((ref) async => mockSnapshot),
           ],
           child: const MaterialApp(
             home: Scaffold(
@@ -262,6 +286,7 @@ void main() {
         ProviderScope(
           overrides: [
             dashboardSummaryProvider.overrideWith((ref) async => mockSummary),
+            dashboardSnapshotProvider.overrideWith((ref) async => mockSnapshot),
           ],
           child: const MaterialApp(
             home: Scaffold(

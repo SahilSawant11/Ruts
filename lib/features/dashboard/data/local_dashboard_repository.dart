@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:drift/drift.dart' hide Column;
 
 import '../../../core/config/app_config.dart';
@@ -8,12 +7,22 @@ import '../../sales/data/local_sales_repository.dart';
 import 'dashboard_api_repository.dart';
 import 'models/dashboard_summary_dto.dart';
 
+/// Builds dashboard figures straight from SQLite with aggregate queries,
+/// so cost stays flat as years of bills accumulate.
+///
+/// Every number is real: fully returned bills are excluded (as in the
+/// reports), returns come from the return audit tables, and a trend is
+/// only shown when the previous period has data to compare against.
 class LocalDashboardRepository {
   LocalDashboardRepository(this._db, this._remote, this._sales);
 
   final AppDatabase _db;
   final DashboardApiRepository _remote;
   final LocalSalesRepository _sales;
+
+  static const _activeSale = "b.status <> 'returned'";
+  static const _activePurchase = 'p.returned_at IS NULL';
+  static const _localDay = "date(b.bill_date, 'unixepoch', 'localtime')";
 
   Future<DashboardSummaryDto> getSummary() async {
     if (AppConfig.offlineOnly) return _buildLocalSummary();
@@ -31,309 +40,303 @@ class LocalDashboardRepository {
     }
   }
 
+  // ── Period snapshot (KPIs, categories, top products, payment mix) ────
+
+  Future<DashboardPeriodSnapshot> getPeriodSnapshot(DashboardPeriod period, {DateTime? now}) async {
+    final at = now ?? DateTime.now();
+    final (start, end) = period.range(at);
+    final (prevStart, prevEnd) = period.previousRange(at);
+
+    Future<PeriodMetric> metric(Future<double> Function(DateTime, DateTime) f) async =>
+        PeriodMetric(await f(start, end), await f(prevStart, prevEnd));
+
+    return DashboardPeriodSnapshot(
+      period: period,
+      sales: await metric(_salesTotal),
+      billCount: await metric(_billCount),
+      salesReturns: await metric((s, e) => _sum('sales_return_entries', 'amount', 'returned_at', s, e)),
+      purchases: await metric(_purchaseTotal),
+      purchaseReturns: await metric((s, e) => _sum('purchase_return_entries', 'amount', 'returned_at', s, e)),
+      categoryBreakdown: await _categories(start, end),
+      topSellingItems: await _topSelling(start, end),
+      paymentMix: await _paymentMix(start, end),
+    );
+  }
+
+  Future<double> _salesTotal(DateTime s, DateTime e) async {
+    final r = await _db.customSelect(
+      'SELECT COALESCE(SUM(b.total_amount), 0) AS v FROM cached_sales_bills b '
+      'WHERE $_activeSale AND b.bill_date >= ? AND b.bill_date < ?',
+      variables: [Variable.withDateTime(s), Variable.withDateTime(e)],
+    ).getSingle();
+    return r.read<double>('v');
+  }
+
+  Future<double> _billCount(DateTime s, DateTime e) async {
+    final r = await _db.customSelect(
+      'SELECT COUNT(*) AS v FROM cached_sales_bills b WHERE $_activeSale AND b.bill_date >= ? AND b.bill_date < ?',
+      variables: [Variable.withDateTime(s), Variable.withDateTime(e)],
+    ).getSingle();
+    return r.read<int>('v').toDouble();
+  }
+
+  Future<double> _purchaseTotal(DateTime s, DateTime e) async {
+    final r = await _db.customSelect(
+      'SELECT COALESCE(SUM(p.total_amount), 0) AS v FROM cached_purchase_bills p '
+      'WHERE $_activePurchase AND p.bill_date >= ? AND p.bill_date < ?',
+      variables: [Variable.withDateTime(s), Variable.withDateTime(e)],
+    ).getSingle();
+    return r.read<double>('v');
+  }
+
+  Future<double> _sum(String table, String column, String dateColumn, DateTime s, DateTime e) async {
+    final r = await _db.customSelect(
+      'SELECT COALESCE(SUM($column), 0) AS v FROM $table WHERE $dateColumn >= ? AND $dateColumn < ?',
+      variables: [Variable.withDateTime(s), Variable.withDateTime(e)],
+    ).getSingle();
+    return r.read<double>('v');
+  }
+
+  Future<List<CategoryBreakdownItemDto>> _categories(DateTime s, DateTime e) async {
+    final rows = await _db.customSelect(
+      'SELECT l.material_type AS category, SUM(l.amount) AS amount '
+      'FROM cached_sale_line_items l JOIN cached_sales_bills b ON b.id = l.sales_bill_id '
+      'WHERE $_activeSale AND b.bill_date >= ? AND b.bill_date < ? '
+      'GROUP BY l.material_type ORDER BY amount DESC',
+      variables: [Variable.withDateTime(s), Variable.withDateTime(e)],
+    ).get();
+    return [
+      for (final r in rows)
+        CategoryBreakdownItemDto(category: r.read<String>('category'), amount: r.read<double>('amount')),
+    ];
+  }
+
+  Future<List<TopSellingItemDto>> _topSelling(DateTime s, DateTime e, {int limit = 5}) async {
+    final rows = await _db.customSelect(
+      'SELECT l.material_name AS name, l.packing AS packing, '
+      "COALESCE(MAX(m.manufacturer), '') AS manufacturer, "
+      'SUM(l.quantity) AS qty, SUM(l.amount) AS amount '
+      'FROM cached_sale_line_items l JOIN cached_sales_bills b ON b.id = l.sales_bill_id '
+      'LEFT JOIN cached_materials m ON m.id = l.material_id '
+      'WHERE $_activeSale AND b.bill_date >= ? AND b.bill_date < ? '
+      'GROUP BY l.material_name, l.packing ORDER BY qty DESC, amount DESC LIMIT ?',
+      variables: [Variable.withDateTime(s), Variable.withDateTime(e), Variable.withInt(limit)],
+    ).get();
+    return [
+      for (final r in rows)
+        TopSellingItemDto(
+          materialName: r.read<String>('name'),
+          manufacturer: r.read<String>('manufacturer'),
+          packing: r.readNullable<String>('packing'),
+          qty: r.read<int>('qty'),
+          amount: r.read<double>('amount'),
+        ),
+    ];
+  }
+
+  Future<List<PaymentMixItemDto>> _paymentMix(DateTime s, DateTime e) async {
+    final rows = await _db.customSelect(
+      'SELECT b.pay_mode AS mode, SUM(b.total_amount) AS amount FROM cached_sales_bills b '
+      'WHERE $_activeSale AND b.bill_date >= ? AND b.bill_date < ? GROUP BY b.pay_mode ORDER BY amount DESC',
+      variables: [Variable.withDateTime(s), Variable.withDateTime(e)],
+    ).get();
+    final total = rows.fold<double>(0, (t, r) => t + r.read<double>('amount'));
+    return [
+      for (final r in rows)
+        PaymentMixItemDto(
+          payMode: r.read<String>('mode'),
+          amount: r.read<double>('amount'),
+          percent: total > 0 ? r.read<double>('amount') / total * 100 : 0,
+        ),
+    ];
+  }
+
+  // ── Period-independent summary (charts, heatmap, counts, recent) ─────
+
   Future<DashboardSummaryDto> _buildLocalSummary() async {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final yesterday = today.subtract(const Duration(days: 1));
-    final last365Start = today.subtract(const Duration(days: 364));
-    final last30Start = today.subtract(const Duration(days: 29));
+    final tomorrow = today.add(const Duration(days: 1));
+    final yearStart = DateTime(today.year, today.month, today.day - 364);
 
-    final bills = await (_db.select(_db.cachedSalesBills)
-          ..where((tbl) => _db.isActiveSaleBill(tbl) & tbl.billDate.isBiggerOrEqualValue(last365Start))
-          ..orderBy([(tbl) => OrderingTerm.desc(tbl.createdAt)]))
-        .get();
-
-    final lines = bills.isEmpty
-        ? <CachedSaleLineItem>[]
-        : await (_db.select(_db.cachedSaleLineItems)
-              ..where((tbl) => _db.lineOfActiveBillBetween(tbl, last365Start, DateTime(9999))))
-            .get();
-    final materials = await _db.select(_db.cachedMaterials).get();
-    final manufacturerByMaterialId = {
-      for (final material in materials) material.id: material.manufacturer,
+    // Daily sales totals + bill counts for the last 365 days, one query.
+    final dailyRows = await _db.customSelect(
+      'SELECT $_localDay AS day, COUNT(*) AS bills, SUM(b.total_amount) AS amount '
+      'FROM cached_sales_bills b WHERE $_activeSale AND b.bill_date >= ? AND b.bill_date < ? GROUP BY day',
+      variables: [Variable.withDateTime(yearStart), Variable.withDateTime(tomorrow)],
+    ).get();
+    final salesByDay = <String, (int, double)>{
+      for (final r in dailyRows) r.read<String>('day'): (r.read<int>('bills'), r.read<double>('amount')),
     };
-    final manufacturerByBarcode = {
-      for (final material in materials) material.barcode: material.manufacturer,
+
+    final purchaseRows = await _db.customSelect(
+      "SELECT date(p.bill_date, 'unixepoch', 'localtime') AS day, SUM(p.total_amount) AS amount "
+      'FROM cached_purchase_bills p WHERE $_activePurchase AND p.bill_date >= ? AND p.bill_date < ? GROUP BY day',
+      variables: [Variable.withDateTime(yearStart), Variable.withDateTime(tomorrow)],
+    ).get();
+    final purchasesByDay = <String, double>{
+      for (final r in purchaseRows) r.read<String>('day'): r.read<double>('amount'),
     };
-    final linesByBill = <String, List<CachedSaleLineItem>>{};
-    for (final line in lines) {
-      linesByBill.putIfAbsent(line.salesBillId, () => []).add(line);
-    }
 
-    bool isSameDay(DateTime a, DateTime b) =>
-        a.year == b.year && a.month == b.month && a.day == b.day;
-
-    final todaysBills = bills.where((b) => isSameDay(b.billDate, today)).toList();
-    final yesterdaysBills = bills.where((b) => isSameDay(b.billDate, yesterday)).toList();
-
-    final todaySales = todaysBills.fold<double>(0, (sum, b) => sum + b.totalAmount);
-    final yesterdaySales = yesterdaysBills.fold<double>(0, (sum, b) => sum + b.totalAmount);
-    final todayBillCount = todaysBills.length;
-    final yesterdayBillCount = yesterdaysBills.length;
-    final avgBillValue = todayBillCount > 0 ? todaySales / todayBillCount : 0.0;
-
-    double? salesDeltaPercent = yesterdaySales > 0 ? ((todaySales - yesterdaySales) / yesterdaySales) * 100 : null;
-    double? billsDeltaPercent =
-        yesterdayBillCount > 0 ? ((todayBillCount - yesterdayBillCount) / yesterdayBillCount) * 100 : null;
-
-    final last7Days = <DailyTrendPointDto>[];
-    for (var i = 6; i >= 0; i--) {
-      final d = today.subtract(Duration(days: i));
-      final amount = bills.where((b) => isSameDay(b.billDate, d)).fold<double>(0, (sum, b) => sum + b.totalAmount);
-      last7Days.add(DailyTrendPointDto(date: d, amount: amount));
-    }
+    String key(DateTime d) =>
+        '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
     final transactionActivity = <TransactionActivityDayDto>[];
     for (var i = 364; i >= 0; i--) {
-      final d = today.subtract(Duration(days: i));
-      final dayBills = bills.where((b) => isSameDay(b.billDate, d)).toList();
-      transactionActivity.add(
-        TransactionActivityDayDto(
-          date: d,
-          billCount: dayBills.length,
-          amount: dayBills.fold<double>(0, (sum, bill) => sum + bill.totalAmount),
-        ),
-      );
+      final d = DateTime(today.year, today.month, today.day - i);
+      final (count, amount) = salesByDay[key(d)] ?? (0, 0.0);
+      transactionActivity.add(TransactionActivityDayDto(date: d, billCount: count, amount: amount));
     }
 
-    final categoryMap = <String, double>{};
-    final paymentMap = <String, double>{};
-    final topSellingMap = <String, _TopAgg>{};
-    final recentTransactions = <RecentTransactionDto>[];
-    final topCustomerMap = <String, _CustomerAgg>{};
+    final last7Days = [
+      for (var i = 6; i >= 0; i--)
+        () {
+          final d = DateTime(today.year, today.month, today.day - i);
+          return DailyTrendPointDto(date: d, amount: salesByDay[key(d)]?.$2 ?? 0);
+        }(),
+    ];
 
-    final totalForMix = bills.fold<double>(0, (sum, b) => sum + b.totalAmount);
-
-    for (final bill in bills) {
-      if (bill.billDate.isBefore(last30Start)) {
-        continue;
-      }
-      paymentMap[bill.payMode] = (paymentMap[bill.payMode] ?? 0) + bill.totalAmount;
-
-      final billLines = linesByBill[bill.id] ?? const [];
-      final firstLine = billLines.isNotEmpty ? billLines.first : null;
-      final itemSummary = firstLine != null
-          ? (billLines.length > 1
-              ? '${firstLine.materialName} (${firstLine.quantity}) +${billLines.length - 1}'
-              : '${firstLine.materialName} (${firstLine.quantity})')
-          : null;
-
-      recentTransactions.add(
-        RecentTransactionDto(
-          billNo: bill.billNo,
-          billDate: bill.billDate,
-          customerName: bill.customerId == null ? 'Counter Sale' : 'Customer',
-          payMode: bill.payMode,
-          totalAmount: bill.totalAmount,
-          status: bill.syncStatus == 'synced' ? bill.status : 'pending sync',
-          itemDetail: itemSummary,
-        ),
-      );
-
-      if (bill.customerId != null) {
-        final agg = topCustomerMap.putIfAbsent(bill.customerId!, () => _CustomerAgg(customerName: 'Customer'));
-        agg.billCount += 1;
-        agg.totalAmount += bill.totalAmount;
-      }
-
-      for (final line in billLines) {
-        categoryMap[line.materialType] = (categoryMap[line.materialType] ?? 0) + line.amount;
-        final manufacturerName = manufacturerByMaterialId[line.materialId ?? ''] ??
-            manufacturerByBarcode[line.barcodeNo] ??
-            '';
-
-        final key = '${line.materialName}|$manufacturerName|${line.packing ?? ''}';
-        final topAgg = topSellingMap.putIfAbsent(
-          key,
-          () => _TopAgg(
-            materialName: line.materialName,
-            manufacturer: manufacturerName,
-            packing: line.packing,
-          ),
-        );
-        topAgg.qty += line.quantity;
-        topAgg.amount += line.amount;
-      }
-    }
-
-    final categoryBreakdown = categoryMap.entries
-        .map((e) => CategoryBreakdownItemDto(category: e.key, amount: e.value))
-        .toList()
-      ..sort((a, b) => b.amount.compareTo(a.amount));
-
-    final paymentMix = paymentMap.entries
-        .map(
-          (e) => PaymentMixItemDto(
-            payMode: e.key,
-            amount: e.value,
-            percent: totalForMix > 0 ? (e.value / totalForMix) * 100 : 0,
-          ),
-        )
-        .toList()
-      ..sort((a, b) => b.amount.compareTo(a.amount));
-
-    final topSellingItems = topSellingMap.values
-        .map(
-          (e) => TopSellingItemDto(
-            materialName: e.materialName,
-            manufacturer: e.manufacturer,
-            packing: e.packing,
-            qty: e.qty,
-            amount: e.amount,
-          ),
-        )
-        .toList()
-      ..sort((a, b) => b.qty.compareTo(a.qty));
-
-    final topCustomers = topCustomerMap.values
-        .map((e) => TopCustomerDto(customerName: e.customerName, billCount: e.billCount, totalAmount: e.totalAmount))
-        .toList()
-      ..sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
-
-    final purchases = await (_db.select(_db.cachedPurchaseBills)..where(_db.isActivePurchaseBill)).get();
-    final suppliers = await _db.select(_db.cachedSuppliers).get();
-    final stocks = await _db.select(_db.cachedInventoryStocks).get();
-
-    // Low stock count based on standard threshold of 10
-    const lowStockThreshold = 10;
-    final lowStockCount = stocks.where((s) => s.qtyOnHand <= lowStockThreshold).length;
-
-    // Track real returns from syncQueueItems
-    final returnSyncItems = await (_db.select(_db.syncQueueItems)
-          ..where((tbl) => tbl.operation.equals('return')))
-        .get();
-
-    double salesReturnSum = 0;
-    double purchaseReturnSum = 0;
-    for (final item in returnSyncItems) {
-      try {
-        final payload = jsonDecode(item.payload) as Map<String, dynamic>;
-        final amt = (payload['amount'] as num?)?.toDouble() ?? 0.0;
-        if (item.entityType == 'sale') {
-          salesReturnSum += amt;
-        } else if (item.entityType == 'purchase') {
-          purchaseReturnSum += amt;
-        }
-      } catch (_) {}
-    }
-
-    final last7Start = today.subtract(const Duration(days: 6));
-    final weekBills = bills.where((b) => !b.billDate.isBefore(last7Start)).toList();
-    final monthBills = bills.where((b) => !b.billDate.isBefore(last30Start)).toList();
-
-    final totalSalesWeek = weekBills.fold<double>(0, (s, b) => s + b.totalAmount);
-    final totalSalesMonth = monthBills.fold<double>(0, (s, b) => s + b.totalAmount);
-    final totalPurchase = purchases.fold<double>(0, (s, p) => s + p.totalAmount);
-
-    // 1D: Today's hourly comparison points
+    // 1D: today in two-hour buckets (sales use the exact bill time).
+    final hourRows = await _db.customSelect(
+      "SELECT CAST(strftime('%H', b.bill_date, 'unixepoch', 'localtime') AS INTEGER) AS h, SUM(b.total_amount) AS amount "
+      'FROM cached_sales_bills b WHERE $_activeSale AND b.bill_date >= ? AND b.bill_date < ? GROUP BY h',
+      variables: [Variable.withDateTime(today), Variable.withDateTime(tomorrow)],
+    ).get();
+    final salesByHour = {for (final r in hourRows) r.read<int>('h'): r.read<double>('amount')};
+    final todayPurchases = purchasesByDay[key(today)] ?? 0;
     final dailyComparison = <MonthlyComparisonPointDto>[];
-    for (final hour in [9, 11, 13, 15, 17, 19, 21]) {
-      final hourSales = todaysBills
-          .where((b) => b.billDate.hour >= hour && b.billDate.hour < hour + 2)
-          .fold<double>(0, (s, b) => s + b.totalAmount);
-      final hourPurchases = purchases
-          .where((p) => isSameDay(p.billDate, today) && p.billDate.hour >= hour && p.billDate.hour < hour + 2)
-          .fold<double>(0, (s, p) => s + p.totalAmount);
+    for (final hour in const [9, 11, 13, 15, 17, 19, 21]) {
+      final sales = (salesByHour[hour] ?? 0) + (salesByHour[hour + 1] ?? 0);
       final label = '${hour > 12 ? hour - 12 : hour} ${hour >= 12 ? 'PM' : 'AM'}';
-      dailyComparison.add(
-        MonthlyComparisonPointDto(
-          month: label,
-          salesAmount: hourSales,
-          purchaseAmount: hourPurchases,
-        ),
-      );
+      // Purchases are dated by day only, so today's total sits in the first bucket.
+      dailyComparison.add(MonthlyComparisonPointDto(
+        month: label,
+        salesAmount: sales,
+        purchaseAmount: hour == 9 ? todayPurchases : 0,
+      ));
     }
 
-    // 1W: Weekly comparison points (Mon - Sun)
+    // 1W: last seven days.
     const weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    final weeklyComparison = <MonthlyComparisonPointDto>[];
-    for (var i = 6; i >= 0; i--) {
-      final d = today.subtract(Duration(days: i));
-      final daySales = bills.where((b) => isSameDay(b.billDate, d)).fold<double>(0, (s, b) => s + b.totalAmount);
-      final dayPurchases = purchases.where((p) => isSameDay(p.billDate, d)).fold<double>(0, (s, p) => s + p.totalAmount);
-      weeklyComparison.add(
-        MonthlyComparisonPointDto(
-          month: weekdayNames[d.weekday - 1],
-          salesAmount: daySales,
-          purchaseAmount: dayPurchases,
-        ),
-      );
+    final weeklyComparison = [
+      for (var i = 6; i >= 0; i--)
+        () {
+          final d = DateTime(today.year, today.month, today.day - i);
+          return MonthlyComparisonPointDto(
+            month: weekdayNames[d.weekday - 1],
+            salesAmount: salesByDay[key(d)]?.$2 ?? 0,
+            purchaseAmount: purchasesByDay[key(d)] ?? 0,
+          );
+        }(),
+    ];
+
+    // 1M: four 7-day buckets ending today, labelled by their start date.
+    const shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final last4WeeksComparison = <MonthlyComparisonPointDto>[];
+    for (var w = 3; w >= 0; w--) {
+      final weekStart = DateTime(today.year, today.month, today.day - w * 7 - 6);
+      var sales = 0.0;
+      var purchases = 0.0;
+      for (var d = 0; d < 7; d++) {
+        final day = DateTime(weekStart.year, weekStart.month, weekStart.day + d);
+        sales += salesByDay[key(day)]?.$2 ?? 0;
+        purchases += purchasesByDay[key(day)] ?? 0;
+      }
+      last4WeeksComparison.add(MonthlyComparisonPointDto(
+        month: '${weekStart.day} ${shortMonths[weekStart.month - 1]}',
+        salesAmount: sales,
+        purchaseAmount: purchases,
+      ));
     }
 
-    // 1Y: Monthly comparison points (Jan - Oct or last 10 months)
+    // 1Y: last twelve months (including this one).
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    final monthlyComparison = <MonthlyComparisonPointDto>[];
-    for (var i = 9; i >= 0; i--) {
-      final monthDate = DateTime(now.year, now.month - i, 1);
-      final mSales = bills
-          .where((b) => b.billDate.year == monthDate.year && b.billDate.month == monthDate.month)
-          .fold<double>(0, (s, b) => s + b.totalAmount);
-      final mPurchases = purchases
-          .where((p) => p.billDate.year == monthDate.year && p.billDate.month == monthDate.month)
-          .fold<double>(0, (s, p) => s + p.totalAmount);
+    final salesByMonth = <String, double>{};
+    salesByDay.forEach((day, v) => salesByMonth[day.substring(0, 7)] = (salesByMonth[day.substring(0, 7)] ?? 0) + v.$2);
+    final purchasesByMonth = <String, double>{};
+    purchasesByDay
+        .forEach((day, v) => purchasesByMonth[day.substring(0, 7)] = (purchasesByMonth[day.substring(0, 7)] ?? 0) + v);
+    final monthlyComparison = [
+      for (var i = 11; i >= 0; i--)
+        () {
+          final m = DateTime(now.year, now.month - i, 1);
+          final k = key(m).substring(0, 7);
+          return MonthlyComparisonPointDto(
+            month: monthNames[m.month - 1],
+            salesAmount: salesByMonth[k] ?? 0,
+            purchaseAmount: purchasesByMonth[k] ?? 0,
+          );
+        }(),
+    ];
 
-      monthlyComparison.add(
-        MonthlyComparisonPointDto(
-          month: monthNames[monthDate.month - 1],
-          salesAmount: mSales,
-          purchaseAmount: mPurchases,
-        ),
-      );
-    }
+    final (todayBills, todaySales) = salesByDay[key(today)] ?? (0, 0.0);
+    final (yBills, ySales) = salesByDay[key(today.subtract(const Duration(days: 1)))] ?? (0, 0.0);
 
-    recentTransactions.sort((a, b) => b.billDate.compareTo(a.billDate));
+    final last30 = DateTime(today.year, today.month, today.day - 29);
 
     return DashboardSummaryDto(
       todaySales: todaySales,
-      todayBillCount: todayBillCount,
-      avgBillValue: avgBillValue,
-      salesDeltaPercent: salesDeltaPercent,
-      billsDeltaPercent: billsDeltaPercent,
-      dailyTarget: 250000.0,
+      todayBillCount: todayBills,
+      avgBillValue: todayBills > 0 ? todaySales / todayBills : 0,
+      salesDeltaPercent: ySales > 0 ? (todaySales - ySales) / ySales * 100 : null,
+      billsDeltaPercent: yBills > 0 ? (todayBills - yBills) / yBills * 100 : null,
+      dailyTarget: 0,
       last7Days: last7Days,
-      categoryBreakdown: categoryBreakdown,
-      paymentMix: paymentMix,
-      topSellingItems: topSellingItems.take(5).toList(),
-      recentTransactions: recentTransactions.take(8).toList(),
-      topCustomers: topCustomers.take(5).toList(),
+      categoryBreakdown: await _categories(last30, tomorrow),
+      paymentMix: await _paymentMix(last30, tomorrow),
+      topSellingItems: await _topSelling(last30, tomorrow),
+      recentTransactions: await _recentTransactions(),
+      topCustomers: const [],
       transactionActivity: transactionActivity,
-      totalSalesWeek: totalSalesWeek,
-      totalSalesMonth: totalSalesMonth,
-      totalPurchase: totalPurchase,
-      purchaseDeltaPercent: 18.5,
-      salesReturnAmount: salesReturnSum,
-      salesReturnDeltaPercent: salesReturnSum > 0 ? 5.0 : 0.0,
-      purchaseReturnAmount: purchaseReturnSum,
-      purchaseReturnDeltaPercent: purchaseReturnSum > 0 ? 5.0 : 0.0,
-      supplierCount: suppliers.length,
-      customerCount: topCustomerMap.length,
-      materialCount: materials.length,
-      lowStockCount: lowStockCount,
+      supplierCount: await _count('cached_suppliers'),
+      materialCount: await _count('cached_materials', where: 'is_active = 1'),
+      lowStockCount: await _count('cached_inventory_stocks', where: 'qty_on_hand <= reorder_level'),
       monthlyComparison: monthlyComparison,
       dailyComparison: dailyComparison,
       weeklyComparison: weeklyComparison,
+      last4WeeksComparison: last4WeeksComparison,
     );
   }
-}
 
-class _TopAgg {
-  _TopAgg({
-    required this.materialName,
-    required this.manufacturer,
-    required this.packing,
-  });
+  Future<int> _count(String table, {String? where}) async {
+    final r =
+        await _db.customSelect('SELECT COUNT(*) AS c FROM $table${where == null ? '' : ' WHERE $where'}').getSingle();
+    return r.read<int>('c');
+  }
 
-  final String materialName;
-  final String manufacturer;
-  final String? packing;
-  int qty = 0;
-  double amount = 0;
-}
-
-class _CustomerAgg {
-  _CustomerAgg({required this.customerName});
-
-  final String customerName;
-  int billCount = 0;
-  double totalAmount = 0;
+  Future<List<RecentTransactionDto>> _recentTransactions({int limit = 8}) async {
+    final bills = await (_db.select(_db.cachedSalesBills)
+          ..where(_db.isActiveSaleBill)
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
+          ..limit(limit))
+        .get();
+    if (bills.isEmpty) return const [];
+    final lines = await (_db.select(_db.cachedSaleLineItems)
+          ..where((t) => t.salesBillId.isIn(bills.map((b) => b.id)))
+          ..orderBy([(t) => OrderingTerm.asc(t.lineNumber)]))
+        .get();
+    final byBill = <String, List<CachedSaleLineItem>>{};
+    for (final l in lines) {
+      byBill.putIfAbsent(l.salesBillId, () => []).add(l);
+    }
+    return [
+      for (final bill in bills)
+        () {
+          final billLines = byBill[bill.id] ?? const <CachedSaleLineItem>[];
+          final first = billLines.isEmpty ? null : billLines.first;
+          return RecentTransactionDto(
+            billNo: bill.billNo,
+            // createdAt carries the real time of sale (billDate may be date-only).
+            billDate: bill.createdAt.toLocal(),
+            customerName: bill.customerId == null ? 'Counter Sale' : 'Customer',
+            payMode: bill.payMode,
+            totalAmount: bill.totalAmount,
+            status: bill.syncStatus == 'synced' ? bill.status : 'pending sync',
+            itemDetail: first == null
+                ? null
+                : '${first.materialName} (${first.quantity})${billLines.length > 1 ? ' +${billLines.length - 1}' : ''}',
+          );
+        }(),
+    ];
+  }
 }

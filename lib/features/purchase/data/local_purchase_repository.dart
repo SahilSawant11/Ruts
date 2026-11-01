@@ -399,7 +399,9 @@ class LocalPurchaseRepository {
     String? deviceId,
   }) async {
     final now = DateTime.now().toUtc();
-    final billDate = DateTime(now.year, now.month, now.day);
+    // Local calendar day (not the UTC day — in IST that's wrong before 05:30).
+    final local = DateTime.now();
+    final billDate = DateTime(local.year, local.month, local.day);
 
     await _db.transaction(() async {
       await (_db.delete(_db.cachedPurchaseLineItems)..where((tbl) => tbl.purchaseBillId.equals(purchaseId))).go();

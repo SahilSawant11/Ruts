@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/format/money.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -6,7 +7,6 @@ import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../data/dashboard_providers.dart';
-import '../../data/models/dashboard_summary_dto.dart';
 
 /// 'Recent Transaction' Card matching user requirements:
 ///  - Removed TXN ID column
@@ -43,9 +43,7 @@ class RecentTransactionsCard extends ConsumerWidget {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: isDark
-                          ? AppColors.chartAmber.withValues(alpha: 0.20)
-                          : const Color(0xFFFEF3E2),
+                      color: isDark ? AppColors.chartAmber.withValues(alpha: 0.20) : const Color(0xFFFEF3E2),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     alignment: Alignment.center,
@@ -161,9 +159,18 @@ class RecentTransactionsCard extends ConsumerWidget {
               child: Center(child: Text('—')),
             ),
             data: (summary) {
-              final txns = summary.recentTransactions.isNotEmpty
-                  ? summary.recentTransactions
-                  : _fallbackTransactions();
+              final txns = summary.recentTransactions;
+              if (txns.isEmpty) {
+                return SizedBox(
+                  height: 160,
+                  child: Center(
+                    child: Text(
+                      'No bills yet — sales appear here as soon as they are saved',
+                      style: AppTypography.body.copyWith(color: AppColors.textMutedFor(context)),
+                    ),
+                  ),
+                );
+              }
 
               return ListView.separated(
                 shrinkWrap: true,
@@ -179,8 +186,7 @@ class RecentTransactionsCard extends ConsumerWidget {
                   final displayName = txn.itemDetail ?? txn.customerName;
 
                   return Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
@@ -193,9 +199,7 @@ class RecentTransactionsCard extends ConsumerWidget {
                                 width: 28,
                                 height: 28,
                                 decoration: BoxDecoration(
-                                  color: isDark
-                                      ? const Color(0xFF232734)
-                                      : const Color(0xFFF1F1F6),
+                                  color: isDark ? const Color(0xFF232734) : const Color(0xFFF1F1F6),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 alignment: Alignment.center,
@@ -253,7 +257,7 @@ class RecentTransactionsCard extends ConsumerWidget {
                         Expanded(
                           flex: 3,
                           child: Text(
-                            '₹ ${txn.totalAmount.toStringAsFixed(2)}',
+                            Money.inr(txn.totalAmount),
                             textAlign: TextAlign.end,
                             style: AppTypography.mono.copyWith(
                               fontSize: 12,
@@ -282,46 +286,5 @@ class RecentTransactionsCard extends ConsumerWidget {
     final minute = dt.minute.toString().padLeft(2, '0');
     final ampm = dt.hour >= 12 ? 'PM' : 'AM';
     return '$day $month, ${hour.toString().padLeft(2, '0')}:$minute $ampm';
-  }
-
-  static List<RecentTransactionDto> _fallbackTransactions() {
-    return [
-      RecentTransactionDto(
-        billNo: 'TXN-1001',
-        billDate: DateTime.now().subtract(const Duration(minutes: 15)),
-        customerName: 'Counter Sale',
-        itemDetail: 'Old Monk XXX Rum (2)',
-        payMode: 'Cash',
-        totalAmount: 480.00,
-        status: 'synced',
-      ),
-      RecentTransactionDto(
-        billNo: 'TXN-1002',
-        billDate: DateTime.now().subtract(const Duration(minutes: 42)),
-        customerName: 'Counter Sale',
-        itemDetail: 'Royal Challenge (1)',
-        payMode: 'UPI',
-        totalAmount: 720.00,
-        status: 'synced',
-      ),
-      RecentTransactionDto(
-        billNo: 'TXN-1003',
-        billDate: DateTime.now().subtract(const Duration(hours: 1, minutes: 20)),
-        customerName: 'Counter Sale',
-        itemDetail: 'Tuborg Premium (4)',
-        payMode: 'Card',
-        totalAmount: 640.00,
-        status: 'synced',
-      ),
-      RecentTransactionDto(
-        billNo: 'TXN-1004',
-        billDate: DateTime.now().subtract(const Duration(hours: 2, minutes: 5)),
-        customerName: 'Counter Sale',
-        itemDetail: 'Blenders Pride (1)',
-        payMode: 'Cash',
-        totalAmount: 980.00,
-        status: 'synced',
-      ),
-    ];
   }
 }

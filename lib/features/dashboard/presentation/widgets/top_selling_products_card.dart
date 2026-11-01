@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../../../core/format/money.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../data/dashboard_providers.dart';
-import '../../data/models/dashboard_summary_dto.dart';
 
 /// 'Top Selling Products' Card matching the mood board:
 ///  - Header with pink box icon & Weekly dropdown
@@ -14,17 +14,13 @@ class TopSellingProductsCard extends ConsumerStatefulWidget {
   const TopSellingProductsCard({super.key});
 
   @override
-  ConsumerState<TopSellingProductsCard> createState() =>
-      _TopSellingProductsCardState();
+  ConsumerState<TopSellingProductsCard> createState() => _TopSellingProductsCardState();
 }
 
-class _TopSellingProductsCardState
-    extends ConsumerState<TopSellingProductsCard> {
-  String _timeframe = 'Weekly';
-
+class _TopSellingProductsCardState extends ConsumerState<TopSellingProductsCard> {
   @override
   Widget build(BuildContext context) {
-    final summaryAsync = ref.watch(dashboardSummaryProvider);
+    final summaryAsync = ref.watch(dashboardSnapshotProvider);
     final isDark = AppColors.isDark(context);
 
     return Container(
@@ -48,9 +44,7 @@ class _TopSellingProductsCardState
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: isDark
-                          ? const Color(0xFFE96560).withValues(alpha: 0.20)
-                          : const Color(0xFFFFECEB),
+                      color: isDark ? const Color(0xFFE96560).withValues(alpha: 0.20) : const Color(0xFFFFECEB),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     alignment: Alignment.center,
@@ -71,41 +65,9 @@ class _TopSellingProductsCardState
                   ),
                 ],
               ),
-
-              // Dropdown
-              Container(
-                height: 26,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceFor(context),
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                  border: Border.all(color: AppColors.borderFor(context)),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: _timeframe,
-                    isDense: true,
-                    dropdownColor: AppColors.surfaceFor(context),
-                    style: AppTypography.body.copyWith(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textSecondaryFor(context),
-                    ),
-                    icon: AppIcon(
-                      AppIcons.arrowDropDown,
-                      size: 15,
-                      color: AppColors.textMutedFor(context),
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: 'Today', child: Text('Today')),
-                      DropdownMenuItem(value: 'Weekly', child: Text('Weekly')),
-                      DropdownMenuItem(value: 'Monthly', child: Text('Monthly')),
-                    ],
-                    onChanged: (v) {
-                      if (v != null) setState(() => _timeframe = v);
-                    },
-                  ),
-                ),
+              Text(
+                ref.watch(dashboardPeriodProvider).label,
+                style: AppTypography.caption.copyWith(color: AppColors.textMutedFor(context)),
               ),
             ],
           ),
@@ -122,9 +84,18 @@ class _TopSellingProductsCardState
               child: Center(child: Text('—')),
             ),
             data: (summary) {
-              final items = summary.topSellingItems.isNotEmpty
-                  ? summary.topSellingItems
-                  : _fallbackItems();
+              final items = summary.topSellingItems;
+              if (items.isEmpty) {
+                return SizedBox(
+                  height: 180,
+                  child: Center(
+                    child: Text(
+                      'No sales in this period',
+                      style: AppTypography.body.copyWith(color: AppColors.textMutedFor(context)),
+                    ),
+                  ),
+                );
+              }
               final totalUnits = items.fold<int>(0, (sum, i) => sum + i.qty);
 
               return ListView.separated(
@@ -134,13 +105,11 @@ class _TopSellingProductsCardState
                 separatorBuilder: (_, __) => const SizedBox(height: 14),
                 itemBuilder: (context, index) {
                   final item = items[index];
-                  final sharePercent = totalUnits > 0
-                      ? ((item.qty / totalUnits) * 100).round()
-                      : 0;
+                  final sharePercent = totalUnits > 0 ? ((item.qty / totalUnits) * 100).round() : 0;
 
                   return _ProductRow(
                     name: item.materialName,
-                    price: (item.amount / (item.qty > 0 ? item.qty : 1)),
+                    price: item.amount,
                     salesCount: item.qty,
                     trendPercent: sharePercent,
                     isPositive: true,
@@ -152,29 +121,6 @@ class _TopSellingProductsCardState
         ],
       ),
     );
-  }
-
-  static List<TopSellingItemDto> _fallbackItems() {
-    return const [
-      TopSellingItemDto(
-        materialName: 'Johnnie Walker Black Label',
-        manufacturer: 'Diageo',
-        qty: 184,
-        amount: 552000,
-      ),
-      TopSellingItemDto(
-        materialName: 'Royal Challenge Whisky',
-        manufacturer: 'United Spirits',
-        qty: 142,
-        amount: 102240,
-      ),
-      TopSellingItemDto(
-        materialName: 'Kingfisher Premium Beer',
-        manufacturer: 'UBL',
-        qty: 110,
-        amount: 17600,
-      ),
-    ];
   }
 }
 
@@ -241,7 +187,7 @@ class _ProductRow extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                '₹ ${price.toStringAsFixed(0)}  ·  $salesCount+ Sales',
+                '$salesCount sold  ·  ${Money.compact(price)}',
                 style: AppTypography.caption.copyWith(
                   fontSize: 11,
                   color: AppColors.textMutedFor(context),
@@ -252,37 +198,23 @@ class _ProductRow extends StatelessWidget {
         ),
         const SizedBox(width: 8),
 
-        // Trend Pill
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: isPositive
-                ? (isDark
-                    ? AppColors.success.withValues(alpha: 0.16)
-                    : AppColors.successSoft)
-                : (isDark
-                    ? AppColors.danger.withValues(alpha: 0.16)
-                    : AppColors.dangerSoft),
-            borderRadius: BorderRadius.circular(AppRadius.pill),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AppIcon(
-                isPositive ? AppIcons.northEast : AppIcons.southEast,
-                size: 11,
-                color: isPositive ? AppColors.success : AppColors.danger,
+        // Share of units sold among the top products (neutral — not a trend).
+        Tooltip(
+          message: '$trendPercent% of units among the top products',
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.primarySoftFor(context),
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+            ),
+            child: Text(
+              '$trendPercent%',
+              style: AppTypography.mono.copyWith(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primary,
               ),
-              const SizedBox(width: 3),
-              Text(
-                '$trendPercent% share',
-                style: AppTypography.mono.copyWith(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w700,
-                  color: isPositive ? AppColors.success : AppColors.danger,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ],

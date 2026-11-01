@@ -10,6 +10,17 @@ abstract final class Money {
   /// 1,23,456.00 without the symbol (table cells under a ₹ header).
   static String plain(num value, {int decimals = 2}) => inr(value, decimals: decimals, symbol: false);
 
+  /// Short form for cards and chart axes: ₹950, ₹12,450, ₹1.25 L, ₹3.4 Cr.
+  static String compact(num value, {bool symbol = true}) {
+    final v = value.abs();
+    final sign = value < 0 ? '-' : '';
+    final sym = symbol ? '₹' : '';
+    String trim(String s) => s.contains('.') ? s.replaceFirst(RegExp(r'\.?0+$'), '') : s;
+    if (v >= 10000000) return '$sign$sym${trim((v / 10000000).toStringAsFixed(2))} Cr';
+    if (v >= 100000) return '$sign$sym${trim((v / 100000).toStringAsFixed(2))} L';
+    return '$sign$sym${group(v, decimals: 0)}';
+  }
+
   /// Groups an absolute value in the Indian system.
   static String group(num value, {int decimals = 2}) {
     final fixed = value.toStringAsFixed(decimals);

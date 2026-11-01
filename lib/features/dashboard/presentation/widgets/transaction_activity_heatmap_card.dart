@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/format/money.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math' as math;
 
@@ -17,12 +18,10 @@ class TransactionActivityHeatmapCard extends ConsumerStatefulWidget {
   const TransactionActivityHeatmapCard({super.key});
 
   @override
-  ConsumerState<TransactionActivityHeatmapCard> createState() =>
-      _TransactionActivityHeatmapCardState();
+  ConsumerState<TransactionActivityHeatmapCard> createState() => _TransactionActivityHeatmapCardState();
 }
 
-class _TransactionActivityHeatmapCardState
-    extends ConsumerState<TransactionActivityHeatmapCard> {
+class _TransactionActivityHeatmapCardState extends ConsumerState<TransactionActivityHeatmapCard> {
   _HeatmapMode _mode = _HeatmapMode.count;
 
   @override
@@ -57,7 +56,7 @@ class _TransactionActivityHeatmapCardState
                     Text(
                       _mode == _HeatmapMode.count
                           ? '$totalCount transactions in the last year'
-                          : '₹${totalAmount.toStringAsFixed(0)} billed in the last year',
+                          : '${Money.inr(totalAmount, decimals: 0)} billed in the last year',
                       style: AppTypography.caption.copyWith(
                         color: AppColors.textSecondaryFor(context),
                         fontWeight: FontWeight.w600,
@@ -73,7 +72,7 @@ class _TransactionActivityHeatmapCardState
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   _MetricChip(label: 'Transactions', value: '$totalCount'),
-                  _MetricChip(label: 'Amount', value: '₹${totalAmount.toStringAsFixed(0)}'),
+                  _MetricChip(label: 'Amount', value: Money.compact(totalAmount)),
                   const SizedBox(width: 4),
                   _ModeToggle(
                     mode: _mode,
@@ -189,9 +188,7 @@ class _ToggleButton extends StatelessWidget {
           label,
           style: AppTypography.caption.copyWith(
             fontWeight: FontWeight.w700,
-            color: selected
-                ? AppColors.primary
-                : AppColors.textSecondaryFor(context),
+            color: selected ? AppColors.primary : AppColors.textSecondaryFor(context),
           ),
         ),
       ),
@@ -256,19 +253,16 @@ class _Heatmap extends StatelessWidget {
               visibleWeeks = weeks;
             } else {
               cellSize = 12.0;
-              final maxColumns = ((availableGridWidth - rowLabelWidth + cellGap) /
-                      (cellSize + cellGap))
+              final maxColumns = ((availableGridWidth - rowLabelWidth + cellGap) / (cellSize + cellGap))
                   .floor()
                   .clamp(0, weeks.length);
-              visibleWeeks = maxColumns > 0 && weeks.length > maxColumns
-                  ? weeks.sublist(weeks.length - maxColumns)
-                  : weeks;
+              visibleWeeks =
+                  maxColumns > 0 && weeks.length > maxColumns ? weeks.sublist(weeks.length - maxColumns) : weeks;
             }
 
             final monthMarkers = _monthMarkers(visibleWeeks);
-            final gridWidth = rowLabelWidth +
-                (visibleWeeks.length * cellSize) +
-                ((visibleWeeks.length - 1).clamp(0, 999) * cellGap);
+            final gridWidth =
+                rowLabelWidth + (visibleWeeks.length * cellSize) + ((visibleWeeks.length - 1).clamp(0, 999) * cellGap);
 
             return Container(
               width: double.infinity,
@@ -309,9 +303,7 @@ class _Heatmap extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 6),
-                      for (var weekday = DateTime.monday;
-                          weekday <= DateTime.sunday;
-                          weekday++)
+                      for (var weekday = DateTime.monday; weekday <= DateTime.sunday; weekday++)
                         Padding(
                           padding: EdgeInsets.only(bottom: weekday == DateTime.sunday ? 0 : 4),
                           child: SizedBox(
@@ -401,8 +393,7 @@ class _Heatmap extends StatelessWidget {
     final first = sorted.first.date;
     final mondayStart = first.subtract(Duration(days: first.weekday - DateTime.monday));
     final byDate = {
-      for (final point in sorted)
-        DateTime(point.date.year, point.date.month, point.date.day): point,
+      for (final point in sorted) DateTime(point.date.year, point.date.month, point.date.day): point,
     };
 
     final weeks = <List<TransactionActivityDayDto?>>[];
@@ -426,8 +417,7 @@ class _Heatmap extends StatelessWidget {
   double _maxMetric() {
     if (points.isEmpty) return 0;
     if (mode == _HeatmapMode.count) {
-      return points.fold<int>(0, (max, point) => point.billCount > max ? point.billCount : max)
-          .toDouble();
+      return points.fold<int>(0, (max, point) => point.billCount > max ? point.billCount : max).toDouble();
     }
     return points.fold<double>(0, (max, point) => point.amount > max ? point.amount : max);
   }
@@ -527,12 +517,10 @@ class _DayCell extends StatelessWidget {
         ? 'No data'
         : mode == _HeatmapMode.count
             ? '${point!.billCount} transaction(s)'
-            : '₹${point!.amount.toStringAsFixed(0)} billed';
+            : '${Money.inr(point!.amount, decimals: 0)} billed';
 
     return Tooltip(
-      message: point == null
-          ? valueText
-          : '${_formatDate(point!.date)}\n$valueText',
+      message: point == null ? valueText : '${_formatDate(point!.date)}\n$valueText',
       child: Container(
         width: cellSize,
         height: cellSize,

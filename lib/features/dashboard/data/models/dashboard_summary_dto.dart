@@ -20,8 +20,7 @@ class TransactionActivityDayDto {
   final int billCount;
   final double amount;
 
-  factory TransactionActivityDayDto.fromJson(Map<String, dynamic> json) =>
-      TransactionActivityDayDto(
+  factory TransactionActivityDayDto.fromJson(Map<String, dynamic> json) => TransactionActivityDayDto(
         date: DateTime.parse(json['date'] as String),
         billCount: (json['billCount'] as num?)?.toInt() ?? 0,
         amount: (json['amount'] as num?)?.toDouble() ?? 0,
@@ -129,8 +128,7 @@ class MonthlyComparisonPointDto {
   final double salesAmount;
   final double purchaseAmount;
 
-  factory MonthlyComparisonPointDto.fromJson(Map<String, dynamic> json) =>
-      MonthlyComparisonPointDto(
+  factory MonthlyComparisonPointDto.fromJson(Map<String, dynamic> json) => MonthlyComparisonPointDto(
         month: json['month'] as String,
         salesAmount: (json['salesAmount'] as num).toDouble(),
         purchaseAmount: (json['purchaseAmount'] as num).toDouble(),
@@ -168,6 +166,7 @@ class DashboardSummaryDto {
     this.monthlyComparison = const [],
     this.dailyComparison = const [],
     this.weeklyComparison = const [],
+    this.last4WeeksComparison = const [],
   });
 
   final double todaySales;
@@ -200,6 +199,9 @@ class DashboardSummaryDto {
   final List<MonthlyComparisonPointDto> monthlyComparison;
   final List<MonthlyComparisonPointDto> dailyComparison;
   final List<MonthlyComparisonPointDto> weeklyComparison;
+
+  /// Four 7-day buckets ending today (the chart's 1M view).
+  final List<MonthlyComparisonPointDto> last4WeeksComparison;
 
   factory DashboardSummaryDto.fromJson(Map<String, dynamic> json) {
     List<T> parseList<T>(String key, T Function(Map<String, dynamic>) fromJson) {
@@ -238,4 +240,72 @@ class DashboardSummaryDto {
       weeklyComparison: parseList('weeklyComparison', MonthlyComparisonPointDto.fromJson),
     );
   }
+}
+
+/// The period every period-based dashboard figure is computed for, always
+/// compared with the immediately preceding period of the same length.
+enum DashboardPeriod {
+  today('Today', 'yesterday'),
+  week('7 days', 'previous 7 days'),
+  month('30 days', 'previous 30 days'),
+  year('12 months', 'previous 12 months');
+
+  const DashboardPeriod(this.label, this.previousLabel);
+  final String label;
+  final String previousLabel;
+
+  /// [start, end) for the current period, ending at the end of today.
+  (DateTime, DateTime) range(DateTime now) {
+    final tomorrow = DateTime(now.year, now.month, now.day + 1);
+    final start = switch (this) {
+      DashboardPeriod.today => DateTime(now.year, now.month, now.day),
+      DashboardPeriod.week => DateTime(now.year, now.month, now.day - 6),
+      DashboardPeriod.month => DateTime(now.year, now.month, now.day - 29),
+      DashboardPeriod.year => DateTime(now.year - 1, now.month, now.day + 1),
+    };
+    return (start, tomorrow);
+  }
+
+  /// The equally long period immediately before [range].
+  (DateTime, DateTime) previousRange(DateTime now) {
+    final (start, end) = range(now);
+    final days = end.difference(start).inDays;
+    return (DateTime(start.year, start.month, start.day - days), start);
+  }
+}
+
+/// Current vs previous value. [deltaPercent] is null when there is nothing
+/// to compare against — the UI shows "—" rather than an invented number.
+class PeriodMetric {
+  const PeriodMetric(this.current, this.previous);
+  final double current;
+  final double previous;
+
+  double? get deltaPercent => previous == 0 ? null : (current - previous) / previous * 100;
+}
+
+class DashboardPeriodSnapshot {
+  const DashboardPeriodSnapshot({
+    required this.period,
+    required this.sales,
+    required this.billCount,
+    required this.salesReturns,
+    required this.purchases,
+    required this.purchaseReturns,
+    required this.categoryBreakdown,
+    required this.topSellingItems,
+    required this.paymentMix,
+  });
+
+  final DashboardPeriod period;
+  final PeriodMetric sales;
+  final PeriodMetric billCount;
+  final PeriodMetric salesReturns;
+  final PeriodMetric purchases;
+  final PeriodMetric purchaseReturns;
+  final List<CategoryBreakdownItemDto> categoryBreakdown;
+  final List<TopSellingItemDto> topSellingItems;
+  final List<PaymentMixItemDto> paymentMix;
+
+  double get avgBillValue => billCount.current == 0 ? 0 : sales.current / billCount.current;
 }
