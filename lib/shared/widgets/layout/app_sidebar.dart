@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'caskly_logo.dart';
 import '../../../core/auth/auth_controller.dart';
 // import '../../../core/config/app_config.dart';
 import '../../../core/theme/app_colors.dart';
@@ -366,23 +367,7 @@ class _CocktailMark extends StatelessWidget {
   const _CocktailMark();
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 36,
-      height: 36,
-      decoration: BoxDecoration(
-        color: AppColors.primarySoftFor(context),
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-        border: Border.all(color: AppColors.borderFor(context)),
-      ),
-      alignment: Alignment.center,
-      child: const AppIcon(
-        AppIcons.liquorBottle,
-        size: 19,
-        color: AppColors.primary,
-      ),
-    );
-  }
+  Widget build(BuildContext context) => const CasklyLogo(size: 38);
 }
 
 // ─── Section Header ──────────────────────────────────────────────────────────

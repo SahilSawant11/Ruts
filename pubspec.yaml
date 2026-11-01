@@ -40,4 +40,5 @@ flutter:
     # Bundled so the UI looks identical offline (google_fonts loads these
     # instead of downloading). OFL licensed; licences alongside.
     - assets/fonts/
+    - assets/branding/
 

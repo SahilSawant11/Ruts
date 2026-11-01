@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+<defs>
+  <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#FFFFFF"/>
+    <stop offset="0.55" stop-color="#F7F6FB"/>
+    <stop offset="1" stop-color="#ECEAF3"/>
+  </linearGradient>
+  <linearGradient id="tileEdge" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#FFFFFF"/>
+    <stop offset="1" stop-color="#D9D6E4"/>
+  </linearGradient>
+  <linearGradient id="ink" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0" stop-color="#2B2B36"/>
+    <stop offset="0.45" stop-color="#16161F"/>
+    <stop offset="1" stop-color="#0B0B10"/>
+  </linearGradient>
+  <linearGradient id="inkV" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#2E2E3A"/>
+    <stop offset="1" stop-color="#101016"/>
+  </linearGradient>
+  <linearGradient id="glassIn" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#FFFFFF"/>
+    <stop offset="1" stop-color="#E4E2EE"/>
+  </linearGradient>
+  <linearGradient id="liquid" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#8E80F2"/>
+    <stop offset="0.5" stop-color="#6C5CE7"/>
+    <stop offset="1" stop-color="#3B2CA8"/>
+  </linearGradient>
+  <linearGradient id="liquidSheen" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.38"/>
+    <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+  </linearGradient>
+  <radialGradient id="olive" cx="0.38" cy="0.32" r="0.75">
+    <stop offset="0" stop-color="#C7DB7A"/>
+    <stop offset="0.45" stop-color="#7E9B33"/>
+    <stop offset="1" stop-color="#3F5512"/>
+  </radialGradient>
+  <radialGradient id="pimento" cx="0.4" cy="0.35" r="0.7">
+    <stop offset="0" stop-color="#F06A55"/>
+    <stop offset="1" stop-color="#A3261A"/>
+  </radialGradient>
+  <radialGradient id="pickHead" cx="0.35" cy="0.3" r="0.7">
+    <stop offset="0" stop-color="#C0574F"/>
+    <stop offset="1" stop-color="#6E211B"/>
+  </radialGradient>
+  <radialGradient id="contact" cx="0.5" cy="0.5" r="0.5">
+    <stop offset="0" stop-color="#1A1830" stop-opacity="0.28"/>
+    <stop offset="1" stop-color="#1A1830" stop-opacity="0"/>
+  </radialGradient>
+</defs>
+  <rect x="16" y="16" width="992" height="992" rx="190" fill="url(#tileEdge)"/>
+  <rect x="19" y="19" width="986" height="986" rx="187" fill="url(#tile)"/>
+  <g transform="translate(512 520) scale(1.38) translate(-512 -540)"><ellipse cx="512" cy="800" rx="190" ry="26" fill="url(#contact)"/>
+  <path d="M 268 300 Q 260 300 266 309 L 486 586 Q 512 614 538 586 L 758 309 Q 764 300 756 300 Z" fill="url(#ink)"/>
+  <path d="M 318 336 L 706 336 L 512 572 Z" fill="url(#liquid)"/>
+  <rect x="480.0" y="580" width="64" height="190" rx="32.0" fill="url(#ink)"/>
+  <rect x="347.0" y="741.0" width="330" height="70" rx="35.0" fill="url(#inkV)"/></g>
+</svg>
