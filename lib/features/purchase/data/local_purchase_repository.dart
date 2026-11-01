@@ -386,7 +386,10 @@ class LocalPurchaseRepository {
         billNo: request.billNo,
         deviceId: deviceId,
       );
+      final now = DateTime.now();
       final payload = request.toJson()
+        ..['billDate'] =
+            '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}'
         ..['deviceId'] = deviceId
         ..['clientId'] = localId;
       await _db.into(_db.syncQueueItems).insert(

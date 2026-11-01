@@ -57,6 +57,8 @@ void main() {
       expect(queue, hasLength(1));
       expect(queue.single.entityId, result.id);
       expect(queue.single.payload, contains(result.billNo));
+      expect(queue.single.payload, contains('"billDate"'));
+      expect(queue.single.payload, contains('"clientId":"${result.id}"'));
     });
 
     test('failed sale leaves no bill and no sync job', () async {

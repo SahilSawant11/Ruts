@@ -375,6 +375,7 @@ class LocalSalesRepository {
       );
       final payload = request.toJson()
         ..['billNo'] = billNo
+        ..['billDate'] = _isoDate(DateTime.now())
         ..['deviceId'] = deviceId
         ..['clientId'] = localId;
       await _db.into(_db.syncQueueItems).insert(
@@ -610,4 +611,9 @@ class LocalSalesRepository {
       lineItems: items,
     );
   }
+
+  /// yyyy-MM-dd of the sale's local day — the server keeps it, so a bill
+  /// synced days later still lands on the day it was sold.
+  static String _isoDate(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 }
