@@ -13,6 +13,7 @@ import '../../data/master_import_service.dart';
 import '../../data/masters_providers.dart';
 import '../../data/models/supplier_dto.dart';
 import '../supplier_browser_controller.dart';
+import '../../../../core/format/money.dart';
 
 enum _SupplierSortField { name, balance, vat }
 
@@ -384,7 +385,7 @@ class _SuppliersTableState extends ConsumerState<SuppliersTable> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          '₹${s.openingBalance.toStringAsFixed(0)}',
+                          Money.inr(s.openingBalance, decimals: 0),
                           style: AppTypography.body.copyWith(
                             fontWeight: FontWeight.w700,
                             color: isSelected ? AppColors.primary : AppColors.textPrimaryFor(context),
@@ -410,7 +411,7 @@ class _SuppliersTableState extends ConsumerState<SuppliersTable> {
                   _cell(s.email ?? '—', flex: 3, selected: isSelected),
                   _cell(s.vatNo ?? '—', flex: 2, mono: true, selected: isSelected),
                   _cell(
-                    '₹${s.openingBalance.toStringAsFixed(0)}',
+                    Money.inr(s.openingBalance, decimals: 0),
                     flex: 2,
                     alignEnd: true,
                     selected: isSelected,

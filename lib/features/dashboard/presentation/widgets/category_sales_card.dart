@@ -9,6 +9,7 @@ import '../../../masters/data/masters_providers.dart';
 import '../../../masters/data/models/category_dto.dart';
 import '../../data/dashboard_providers.dart';
 import '../../data/models/dashboard_summary_dto.dart';
+import '../../../../core/format/money.dart';
 
 class CategorySalesCard extends ConsumerWidget {
   const CategorySalesCard({super.key});
@@ -23,9 +24,9 @@ class CategorySalesCard extends ConsumerWidget {
   ];
 
   String _formatAmount(double amount) {
-    if (amount >= 100000) return '₹${(amount / 100000).toStringAsFixed(1)}L';
-    if (amount >= 1000) return '₹${(amount / 1000).toStringAsFixed(0)}k';
-    return '₹${amount.toStringAsFixed(0)}';
+    if (amount >= 100000) return '${Money.inr((amount / 100000), decimals: 1)}L';
+    if (amount >= 1000) return '${Money.inr((amount / 1000), decimals: 0)}k';
+    return Money.inr(amount, decimals: 0);
   }
 
   @override

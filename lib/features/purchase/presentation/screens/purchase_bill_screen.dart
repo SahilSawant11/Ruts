@@ -97,14 +97,12 @@ class _PurchaseSplitWorkspace extends StatelessWidget {
         // Right Sidebar (Pebble Summary & Settlement)
         const SizedBox(
           width: 320,
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                PurchaseSummaryCard(compact: true),
-                SizedBox(height: AppSpacing.sm),
-                ExtraChargesTotalsCard(compact: true),
-              ],
-            ),
+          child: Column(
+            children: [
+              PurchaseSummaryCard(compact: true),
+              SizedBox(height: AppSpacing.sm),
+              Expanded(child: ExtraChargesTotalsCard(compact: true, fillHeight: true)),
+            ],
           ),
         ),
       ],

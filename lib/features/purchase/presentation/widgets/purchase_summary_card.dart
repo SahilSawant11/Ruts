@@ -6,6 +6,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../purchase_cart_controller.dart';
 import '../purchase_form_controller.dart';
+import '../../../../core/format/money.dart';
 
 /// Right-column summary panel for Purchase: displays breakdown rows and a
 /// prominent high-contrast dark Payable Card with the total inward amount,
@@ -81,11 +82,11 @@ class PurchaseSummaryCard extends ConsumerWidget {
           const SizedBox(height: AppSpacing.xs),
           _SummaryRow(label: 'Total Units', value: '$totalQty'),
           const SizedBox(height: AppSpacing.xs),
-          _SummaryRow(label: 'Gross Items Total', value: '₹${itemsAmount.toStringAsFixed(2)}'),
+          _SummaryRow(label: 'Gross Items Total', value: Money.inr(itemsAmount)),
           const SizedBox(height: AppSpacing.xs),
           _SummaryRow(
             label: 'Extra Charges / Adjustments',
-            value: '${extraCharges >= 0 ? '+' : '-'}₹${extraCharges.abs().toStringAsFixed(2)}',
+            value: '${extraCharges >= 0 ? '+' : '-'}${Money.inr(extraCharges.abs())}',
             valueColor: extraCharges > 0
                 ? AppColors.warning
                 : (extraCharges < 0 ? AppColors.success : null),
@@ -93,7 +94,7 @@ class PurchaseSummaryCard extends ConsumerWidget {
           const SizedBox(height: AppSpacing.xs),
           _SummaryRow(
             label: 'Net Taxable Value',
-            value: '₹${netAmount.toStringAsFixed(2)}',
+            value: Money.inr(netAmount),
             isBold: true,
           ),
 
@@ -141,7 +142,7 @@ class PurchaseSummaryCard extends ConsumerWidget {
                   ],
                 ),
                 Text(
-                  '₹${netAmount.toStringAsFixed(2)}',
+                  Money.inr(netAmount),
                   style: AppTypography.mono.copyWith(
                     color: Colors.white,
                     fontSize: 20,

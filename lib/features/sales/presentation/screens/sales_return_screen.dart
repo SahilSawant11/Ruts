@@ -14,6 +14,7 @@ import '../../../dashboard/data/dashboard_providers.dart';
 import '../../../inventory/data/inventory_providers.dart';
 import '../../data/models/sales_return_models.dart';
 import '../../data/sales_providers.dart';
+import '../../../../core/format/money.dart';
 
 class SalesReturnScreen extends ConsumerStatefulWidget {
   const SalesReturnScreen({super.key});
@@ -136,7 +137,7 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Total Refund Amount: ₹${totalRefundAmount.toStringAsFixed(2)}',
+              'Total Refund Amount: ${Money.inr(totalRefundAmount)}',
               style: AppTypography.body.copyWith(color: AppColors.danger, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -470,7 +471,7 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
                                     ),
                                   ),
                                   Text(
-                                    '₹${bill.totalAmount.toStringAsFixed(2)}',
+                                    Money.inr(bill.totalAmount),
                                     style: AppTypography.body.copyWith(
                                       fontWeight: FontWeight.w700,
                                       color: AppColors.textPrimaryFor(context),
@@ -616,7 +617,7 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
                       style: AppTypography.caption.copyWith(color: AppColors.textSecondaryFor(context)),
                     ),
                     Text(
-                      '₹${selectedRefundAmount.toStringAsFixed(2)}',
+                      Money.inr(selectedRefundAmount),
                       style: AppTypography.h1.copyWith(color: AppColors.primary),
                     ),
                   ],
@@ -824,9 +825,9 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
                                           ),
                                         ),
                                 ),
-                                _td(context, '₹${item.rate.toStringAsFixed(2)}'),
+                                _td(context, Money.inr(item.rate)),
                                 _td(context, '${item.taxPercent}%'),
-                                _td(context, '₹${(isSelected ? lineRefund : item.amount).toStringAsFixed(2)}', align: TextAlign.right, bold: isSelected),
+                                _td(context, Money.inr((isSelected ? lineRefund : item.amount)), align: TextAlign.right, bold: isSelected),
                               ],
                             );
                           },

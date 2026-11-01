@@ -15,6 +15,7 @@ import '../../../sales/data/models/material_dto.dart';
 import '../../data/purchase_providers.dart';
 import '../../domain/purchase_line_item.dart';
 import '../purchase_cart_controller.dart';
+import '../../../../core/format/money.dart';
 
 Future<void> showAddMaterialLineDialog(BuildContext context) {
   return showDialog(
@@ -392,7 +393,7 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
                             ),
                           ),
                           trailing: Text(
-                            '₹${material.saleRate.toStringAsFixed(0)}',
+                            Money.inr(material.saleRate, decimals: 0),
                             style: AppTypography.caption.copyWith(
                               fontWeight: FontWeight.w700,
                               color: isHighlighted

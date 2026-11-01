@@ -6,6 +6,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/charts/labeled_progress_row.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
 import '../../data/dashboard_providers.dart';
+import '../../../../core/format/money.dart';
 
 class PaymentMixCard extends ConsumerWidget {
   const PaymentMixCard({super.key});
@@ -70,7 +71,7 @@ class PaymentMixCard extends ConsumerWidget {
                   for (var i = 0; i < summary.paymentMix.length; i++)
                     LabeledProgressRow(
                       label: summary.paymentMix[i].payMode,
-                      valueLabel: '₹${summary.paymentMix[i].amount.toStringAsFixed(0)} · ${summary.paymentMix[i].percent.toStringAsFixed(0)}%',
+                      valueLabel: '${Money.inr(summary.paymentMix[i].amount, decimals: 0)} · ${summary.paymentMix[i].percent.toStringAsFixed(0)}%',
                       fraction: summary.paymentMix[i].percent / 100,
                       color: _colorFor(summary.paymentMix[i].payMode, i),
                     ),

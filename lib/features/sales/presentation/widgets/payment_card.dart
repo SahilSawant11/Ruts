@@ -240,24 +240,30 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
 
           const SizedBox(height: AppSpacing.sm),
 
-          // Save Bill button
-          SuccessButton(
-            label: _isSaving ? 'Saving…' : 'Save Bill',
-            shortcut: 'F8',
-            icon: AppIcons.checkCircle,
-            expand: true,
-            onPressed: _isSaving || isEmpty ? null : _saveSale,
-          ),
-          const SizedBox(height: AppSpacing.xs),
-
-          // Clear Bill Button
-          DangerButton(
-            label: 'Clear Bill',
-            shortcut: 'Esc',
-            icon: AppIcons.close,
-            outline: true,
-            expand: true,
-            onPressed: _clearBill,
+          // Save + Clear side by side so both stay visible on short
+          // (scaled) Windows screens.
+          Row(
+            children: [
+              Expanded(
+                child: SuccessButton(
+                  label: _isSaving ? 'Saving…' : 'Save Bill',
+                  shortcut: 'F8',
+                  icon: AppIcons.checkCircle,
+                  expand: true,
+                  onPressed: _isSaving || isEmpty ? null : _saveSale,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Tooltip(
+                message: 'Clear bill (Esc)',
+                child: DangerButton(
+                  label: 'Esc',
+                  icon: AppIcons.close,
+                  outline: true,
+                  onPressed: isEmpty ? null : _clearBill,
+                ),
+              ),
+            ],
           ),
         ],
       ),

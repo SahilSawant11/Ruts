@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/format/money.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -547,8 +548,11 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
 
           const SizedBox(height: 6),
 
-          // ROW 2: All OG Screen Parameters Strip
-          Row(
+          // ROW 2: All OG Screen Parameters Strip — wraps onto a second line
+          // on narrow (scaled) screens instead of overflowing.
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            runSpacing: 6,
             children: [
               // 1. PACKING Field (Editable + Master Dropdown)
               Container(
@@ -927,7 +931,7 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
                     ),
                     const SizedBox(width: 5),
                     Text(
-                      '₹${liveTotal.toStringAsFixed(2)}',
+                      Money.inr(liveTotal),
                       style: AppTypography.mono.copyWith(
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
@@ -1082,7 +1086,7 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Text(
-                                      '₹${item.saleRate.toStringAsFixed(2)}',
+                                      Money.inr(item.saleRate),
                                       style: AppTypography.mono.copyWith(
                                         fontSize: 12.5,
                                         fontWeight: FontWeight.w700,

@@ -6,6 +6,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../masters/data/masters_providers.dart';
 import '../../data/inventory_providers.dart';
+import '../../../../core/format/money.dart';
 
 /// Three-card KPI strip for the Inventory screen.
 ///
@@ -82,8 +83,8 @@ class InventoryKpiStrip extends ConsumerWidget {
 
   static String _rupees(double v) {
     if (v <= 0) return '₹ 0';
-    if (v >= 10000000) return '₹ ${(v / 10000000).toStringAsFixed(2)} Cr';
-    if (v >= 100000) return '₹ ${(v / 100000).toStringAsFixed(2)} L';
+    if (v >= 10000000) return '${Money.inr((v / 10000000))} Cr';
+    if (v >= 100000) return '${Money.inr((v / 100000))} L';
     return '₹ ${_indianComma(v.toInt())}';
   }
 

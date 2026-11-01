@@ -8,6 +8,7 @@ import '../../../../shared/widgets/layout/app_card.dart';
 import '../../../masters/data/masters_providers.dart';
 import '../../data/inventory_providers.dart';
 import '../../data/models/inventory_overview_item.dart';
+import '../../../../core/format/money.dart';
 
 /// Full-width inventory data table adhering strictly to the Ruts design system.
 ///
@@ -470,7 +471,7 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
 
   Widget _dataRow(BuildContext context, InventoryOverviewItem item,
       {required int lowStockThreshold}) {
-    final priceText = '₹ ${item.saleRate.toStringAsFixed(2)}';
+    final priceText = Money.inr(item.saleRate);
     final valueText = '₹ ${_formatCurrency(item.onHandValue)}';
     final isOutOfStock = item.isOutOfStock;
     final isLowStock = !isOutOfStock && item.isAtRiskFor(lowStockThreshold);

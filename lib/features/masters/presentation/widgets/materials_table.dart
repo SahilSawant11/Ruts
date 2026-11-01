@@ -13,6 +13,7 @@ import '../../../sales/data/models/material_dto.dart';
 import '../../data/master_import_service.dart';
 import '../../data/masters_providers.dart';
 import '../material_browser_controller.dart';
+import '../../../../core/format/money.dart';
 
 enum _SortField { name, id, saleRate }
 
@@ -479,7 +480,7 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
                         : const TagPill(label: 'Inactive', tone: TagPillTone.neutral),
                   ),
                   _cell(
-                    m.saleRate == 0 ? '—' : '₹${m.saleRate.toStringAsFixed(0)}',
+                    m.saleRate == 0 ? '—' : Money.inr(m.saleRate, decimals: 0),
                     flex: 2,
                     alignEnd: true,
                     bold: true,
@@ -514,7 +515,7 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
                         : const SizedBox.shrink(),
                   ),
                   _cell(
-                    m.saleRate == 0 ? '—' : '₹${m.saleRate.toStringAsFixed(0)}',
+                    m.saleRate == 0 ? '—' : Money.inr(m.saleRate, decimals: 0),
                     flex: 1,
                     alignEnd: true,
                     selected: isSelected,

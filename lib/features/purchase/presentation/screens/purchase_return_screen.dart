@@ -15,6 +15,7 @@ import '../../../inventory/data/inventory_providers.dart';
 import '../../../masters/data/masters_providers.dart';
 import '../../data/models/purchase_return_models.dart';
 import '../../data/purchase_providers.dart';
+import '../../../../core/format/money.dart';
 
 class PurchaseReturnScreen extends ConsumerStatefulWidget {
   const PurchaseReturnScreen({super.key});
@@ -130,8 +131,8 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
             const SizedBox(height: AppSpacing.sm),
             Text(
               isFullReturn
-                  ? 'Bill No: ${bill.billNo ?? bill.challanNo ?? 'N/A'} · Net Amount: ₹${bill.netAmount.toStringAsFixed(2)}'
-                  : 'Bill No: ${bill.billNo ?? bill.challanNo ?? 'N/A'} · Selected Return Amount: ₹${totalItemAmount.toStringAsFixed(2)}',
+                  ? 'Bill No: ${bill.billNo ?? bill.challanNo ?? 'N/A'} · Net Amount: ${Money.inr(bill.netAmount)}'
+                  : 'Bill No: ${bill.billNo ?? bill.challanNo ?? 'N/A'} · Selected Return Amount: ${Money.inr(totalItemAmount)}',
               style: AppTypography.body.copyWith(color: AppColors.danger, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -465,7 +466,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                                     ),
                                   ),
                                   Text(
-                                    '₹${bill.netAmount.toStringAsFixed(2)}',
+                                    Money.inr(bill.netAmount),
                                     style: AppTypography.body.copyWith(
                                       fontWeight: FontWeight.w700,
                                       color: AppColors.textPrimaryFor(context),
@@ -619,7 +620,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                       style: AppTypography.caption.copyWith(color: AppColors.textSecondaryFor(context)),
                     ),
                     Text(
-                      '₹${(allSelected ? bill.netAmount : selectedItemAmount).toStringAsFixed(2)}',
+                      Money.inr((allSelected ? bill.netAmount : selectedItemAmount)),
                       style: AppTypography.h1.copyWith(color: AppColors.primary),
                     ),
                   ],
@@ -827,9 +828,9 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                                           ),
                                         ),
                                 ),
-                                _td(context, '₹${item.rate.toStringAsFixed(2)}'),
+                                _td(context, Money.inr(item.rate)),
                                 _td(context, '${item.taxPercent}%'),
-                                _td(context, '₹${(isSelected ? lineReturnAmount : item.amount).toStringAsFixed(2)}', align: TextAlign.right, bold: isSelected),
+                                _td(context, Money.inr((isSelected ? lineReturnAmount : item.amount)), align: TextAlign.right, bold: isSelected),
                               ],
                             );
                           },
@@ -853,11 +854,11 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                       spacing: AppSpacing.lg,
                       runSpacing: AppSpacing.xs,
                       children: [
-                        _chargeItem(context, 'Discount', '-₹${bill.discount.toStringAsFixed(2)}'),
-                        _chargeItem(context, 'VAT', '₹${bill.vat.toStringAsFixed(2)}'),
-                        _chargeItem(context, 'Stamp', '₹${bill.stamp.toStringAsFixed(2)}'),
-                        _chargeItem(context, 'TCS', '₹${bill.tcs.toStringAsFixed(2)}'),
-                        _chargeItem(context, 'Freight', '₹${bill.loadingFreight.toStringAsFixed(2)}'),
+                        _chargeItem(context, 'Discount', '-${Money.inr(bill.discount)}'),
+                        _chargeItem(context, 'VAT', Money.inr(bill.vat)),
+                        _chargeItem(context, 'Stamp', Money.inr(bill.stamp)),
+                        _chargeItem(context, 'TCS', Money.inr(bill.tcs)),
+                        _chargeItem(context, 'Freight', Money.inr(bill.loadingFreight)),
                       ],
                     ),
                   ),

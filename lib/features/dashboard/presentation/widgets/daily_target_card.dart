@@ -5,6 +5,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
 import '../../data/dashboard_providers.dart';
+import '../../../../core/format/money.dart';
 
 class DailyTargetCard extends ConsumerWidget {
   const DailyTargetCard({super.key});
@@ -44,14 +45,14 @@ class DailyTargetCard extends ConsumerWidget {
                     textBaseline: TextBaseline.alphabetic,
                     children: [
                       Text(
-                        '₹${summary.todaySales.toStringAsFixed(0)}',
+                        Money.inr(summary.todaySales, decimals: 0),
                         style: AppTypography.h1.copyWith(
                           color: AppColors.textPrimaryFor(context),
                         ),
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        '/ ₹${summary.dailyTarget.toStringAsFixed(0)}',
+                        '/ ${Money.inr(summary.dailyTarget, decimals: 0)}',
                         style: AppTypography.bodyMuted.copyWith(
                           color: AppColors.textSecondaryFor(context),
                         ),
@@ -70,7 +71,7 @@ class DailyTargetCard extends ConsumerWidget {
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    '${(progress * 100).toStringAsFixed(0)}% achieved · ₹${remaining.toStringAsFixed(0)} to target',
+                    '${(progress * 100).toStringAsFixed(0)}% achieved · ${Money.inr(remaining, decimals: 0)} to target',
                     style: AppTypography.bodyMuted.copyWith(
                       color: AppColors.success,
                       fontWeight: FontWeight.w600,

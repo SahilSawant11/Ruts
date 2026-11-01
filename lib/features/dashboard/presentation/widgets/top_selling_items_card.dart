@@ -7,6 +7,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/data/info_list_tile.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
 import '../../data/dashboard_providers.dart';
+import '../../../../core/format/money.dart';
 
 class TopSellingItemsCard extends ConsumerWidget {
   const TopSellingItemsCard({super.key});
@@ -62,7 +63,7 @@ class TopSellingItemsCard extends ConsumerWidget {
                         if ((item.packing ?? '').isNotEmpty) item.packing!,
                         '${item.qty} units sold',
                       ].join(' · '),
-                      trailing: '₹${item.amount.toStringAsFixed(0)}',
+                      trailing: Money.inr(item.amount, decimals: 0),
                     ),
                 ],
               );

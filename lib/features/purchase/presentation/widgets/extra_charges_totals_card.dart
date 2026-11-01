@@ -20,7 +20,11 @@ import '../../../../shared/keyboard/screen_key_guard.dart';
 /// Settlement, extra charges and actions card for Purchase,
 /// styled in the app's signature pebble card aesthetic matching PaymentCard.
 class ExtraChargesTotalsCard extends ConsumerStatefulWidget {
-  const ExtraChargesTotalsCard({super.key, this.compact = true});
+  /// Fill the available height: fields scroll, buttons stay pinned at the
+  /// bottom (keeps Save visible on short, scaled Windows screens).
+  final bool fillHeight;
+
+  const ExtraChargesTotalsCard({super.key, this.compact = true, this.fillHeight = false});
 
   final bool compact;
 
@@ -46,7 +50,13 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
   @override
   void dispose() {
     HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
-    for (final c in [_discountController, _vatController, _stampController, _tcsController, _loadingFreightController]) {
+    for (final c in [
+      _discountController,
+      _vatController,
+      _stampController,
+      _tcsController,
+      _loadingFreightController
+    ]) {
       c.dispose();
     }
     super.dispose();
@@ -102,7 +112,13 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
             onPressed: () {
               ref.read(purchaseCartControllerProvider.notifier).clear();
               ref.read(purchaseFormControllerProvider.notifier).reset();
-              for (final c in [_discountController, _vatController, _stampController, _tcsController, _loadingFreightController]) {
+              for (final c in [
+                _discountController,
+                _vatController,
+                _stampController,
+                _tcsController,
+                _loadingFreightController
+              ]) {
                 c.text = '0';
               }
               Navigator.of(ctx).pop();
@@ -173,7 +189,13 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
 
       ref.read(purchaseCartControllerProvider.notifier).clear();
       ref.read(purchaseFormControllerProvider.notifier).reset();
-      for (final c in [_discountController, _vatController, _stampController, _tcsController, _loadingFreightController]) {
+      for (final c in [
+        _discountController,
+        _vatController,
+        _stampController,
+        _tcsController,
+        _loadingFreightController
+      ]) {
         c.text = '0';
       }
 
@@ -191,6 +213,68 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
 
   @override
   Widget build(BuildContext context) {
+    final fields = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 2-column compact inputs
+        Row(
+          children: [
+            Expanded(
+              child: AppTextField(
+                label: 'DISCOUNT',
+                hint: '0',
+                controller: _discountController,
+                onChanged: (v) => ref.read(purchaseFormControllerProvider.notifier).setDiscount(_parse(v)),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: AppTextField(
+                label: 'VAT',
+                hint: '0',
+                controller: _vatController,
+                onChanged: (v) => ref.read(purchaseFormControllerProvider.notifier).setVat(_parse(v)),
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: AppSpacing.xs),
+
+        Row(
+          children: [
+            Expanded(
+              child: AppTextField(
+                label: 'STAMP DUTY',
+                hint: '0',
+                controller: _stampController,
+                onChanged: (v) => ref.read(purchaseFormControllerProvider.notifier).setStamp(_parse(v)),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: AppTextField(
+                label: 'TCS',
+                hint: '0',
+                controller: _tcsController,
+                onChanged: (v) => ref.read(purchaseFormControllerProvider.notifier).setTcs(_parse(v)),
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: AppSpacing.xs),
+
+        AppTextField(
+          label: 'LOADING / FREIGHT',
+          hint: '0',
+          controller: _loadingFreightController,
+          onChanged: (v) => ref.read(purchaseFormControllerProvider.notifier).setLoadingFreight(_parse(v)),
+        ),
+      ],
+    );
+
     return Container(
       decoration: BoxDecoration(
         color: AppColors.backgroundFor(context),
@@ -201,7 +285,7 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: widget.fillHeight ? MainAxisSize.max : MainAxisSize.min,
         children: [
           // Header
           Row(
@@ -220,83 +304,30 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
           ),
 
           const SizedBox(height: AppSpacing.sm),
-
-          // 2-column compact inputs
-          Row(
-            children: [
-              Expanded(
-                child: AppTextField(
-                  label: 'DISCOUNT',
-                  hint: '0',
-                  controller: _discountController,
-                  onChanged: (v) => ref.read(purchaseFormControllerProvider.notifier).setDiscount(_parse(v)),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: AppTextField(
-                  label: 'VAT',
-                  hint: '0',
-                  controller: _vatController,
-                  onChanged: (v) => ref.read(purchaseFormControllerProvider.notifier).setVat(_parse(v)),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: AppSpacing.xs),
-
-          Row(
-            children: [
-              Expanded(
-                child: AppTextField(
-                  label: 'STAMP DUTY',
-                  hint: '0',
-                  controller: _stampController,
-                  onChanged: (v) => ref.read(purchaseFormControllerProvider.notifier).setStamp(_parse(v)),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: AppTextField(
-                  label: 'TCS',
-                  hint: '0',
-                  controller: _tcsController,
-                  onChanged: (v) => ref.read(purchaseFormControllerProvider.notifier).setTcs(_parse(v)),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: AppSpacing.xs),
-
-          AppTextField(
-            label: 'LOADING / FREIGHT',
-            hint: '0',
-            controller: _loadingFreightController,
-            onChanged: (v) => ref.read(purchaseFormControllerProvider.notifier).setLoadingFreight(_parse(v)),
-          ),
-
+          if (widget.fillHeight) Expanded(child: SingleChildScrollView(child: fields)) else fields,
           const SizedBox(height: AppSpacing.md),
 
-          // Primary Save Button
-          PrimaryButton(
-            label: _isSaving ? 'Saving…' : 'Save Purchase',
-            shortcut: 'F8',
-            icon: AppIcons.save,
-            expand: true,
-            onPressed: _isSaving ? null : _save,
-          ),
-
-          const SizedBox(height: AppSpacing.xs),
-
-          // Clear / Discard Button
-          SecondaryButton(
-            label: 'Discard / Clear Bill',
-            icon: AppIcons.clearAll,
-            expand: true,
-            dense: true,
-            onPressed: _clear,
+          Row(
+            children: [
+              Expanded(
+                child: PrimaryButton(
+                  label: _isSaving ? 'Saving…' : 'Save Bill',
+                  shortcut: 'F8',
+                  icon: AppIcons.save,
+                  expand: true,
+                  onPressed: _isSaving ? null : _save,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Tooltip(
+                message: 'Discard / clear this purchase bill',
+                child: SecondaryButton(
+                  label: 'Clear',
+                  icon: AppIcons.clearAll,
+                  onPressed: _clear,
+                ),
+              ),
+            ],
           ),
         ],
       ),

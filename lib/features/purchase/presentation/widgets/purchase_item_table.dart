@@ -7,6 +7,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../domain/purchase_line_item.dart';
 import '../purchase_cart_controller.dart';
 import 'add_material_line_dialog.dart';
+import '../../../../core/format/money.dart';
 
 /// High-density purchase items table: starts immediately under the quick add bar.
 /// Styled in the app's pebble aesthetic: soft rounded hovers,
@@ -300,7 +301,7 @@ class _PurchaseTableRowState extends ConsumerState<_PurchaseTableRow> {
                   child: Align(
                     alignment: Alignment.centerRight,
                     child: Text(
-                      '₹${item.rate.toStringAsFixed(2)}',
+                      Money.inr(item.rate),
                       style: AppTypography.mono.copyWith(
                         fontSize: 12,
                         color: AppColors.textPrimaryFor(context),
@@ -315,7 +316,7 @@ class _PurchaseTableRowState extends ConsumerState<_PurchaseTableRow> {
                   child: Align(
                     alignment: Alignment.centerRight,
                     child: Text(
-                      item.discountAmount > 0 ? '₹${item.discountAmount.toStringAsFixed(2)}' : '—',
+                      item.discountAmount > 0 ? Money.inr(item.discountAmount) : '—',
                       style: AppTypography.mono.copyWith(
                         fontSize: 11,
                         color: item.discountAmount > 0 ? AppColors.success : AppColors.textMutedFor(context),
@@ -345,7 +346,7 @@ class _PurchaseTableRowState extends ConsumerState<_PurchaseTableRow> {
                   child: Align(
                     alignment: Alignment.centerRight,
                     child: Text(
-                      '₹${item.amount.toStringAsFixed(2)}',
+                      Money.inr(item.amount),
                       style: AppTypography.mono.copyWith(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,

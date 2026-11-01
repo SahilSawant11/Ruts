@@ -6,6 +6,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/data/info_list_tile.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
 import '../../data/dashboard_providers.dart';
+import '../../../../core/format/money.dart';
 
 class TopCustomersCard extends ConsumerWidget {
   const TopCustomersCard({super.key});
@@ -65,7 +66,7 @@ class TopCustomersCard extends ConsumerWidget {
                       avatarText: _initials(c.customerName),
                       title: c.customerName,
                       subtitle: '${c.billCount} bill${c.billCount == 1 ? '' : 's'}',
-                      trailing: '₹${c.totalAmount.toStringAsFixed(0)}',
+                      trailing: Money.inr(c.totalAmount, decimals: 0),
                     ),
                 ],
               );

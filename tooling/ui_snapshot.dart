@@ -30,7 +30,9 @@ import 'package:pos_app/features/sales/presentation/cart_controller.dart';
 const _outOverride = String.fromEnvironment('SNAP_OUT');
 late final String _out;
 const _routes = String.fromEnvironment('SNAP_ROUTES', defaultValue: '/sales');
-const _sizes = [Size(1366, 768), Size(1920, 1080)];
+// Logical sizes Windows reports: 1366x768 @125% ≈ 1093x614, 1920x1080 @150%
+// = 1280x720, plus the unscaled 1366x768 and 1920x1080.
+const _sizes = [Size(1093, 614), Size(1280, 720), Size(1366, 768), Size(1920, 1080)];
 
 final _boundaryKey = GlobalKey();
 
@@ -120,7 +122,10 @@ Future<void> main() async {
 }
 
 Future<void> _capture(String name) async {
-  await WidgetsBinding.instance.endOfFrame;
+  // Hidden/occluded macOS windows stop producing frames; force one and
+  // don't wait forever.
+  WidgetsBinding.instance.scheduleForcedFrame();
+  await WidgetsBinding.instance.endOfFrame.timeout(const Duration(seconds: 3), onTimeout: () {});
   final boundary = _boundaryKey.currentContext!.findRenderObject()! as RenderRepaintBoundary;
   final image = await boundary.toImage(pixelRatio: 1);
   final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
