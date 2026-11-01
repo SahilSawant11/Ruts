@@ -8,6 +8,7 @@ import '../widgets/extra_charges_totals_card.dart';
 import '../widgets/purchase_item_table.dart';
 import '../widgets/purchase_quick_add_bar.dart';
 import '../widgets/purchase_summary_card.dart';
+import '../../../../shared/keyboard/screen_key_guard.dart';
 
 /// Redesigned POS Inward / Purchase Screen:
 /// - Aligned to match the visual architecture and UX of SalesBillingScreen.
@@ -39,7 +40,7 @@ class _PurchaseBillScreenState extends State<PurchaseBillScreen> {
   }
 
   bool _handleKeyEvent(KeyEvent event) {
-    if (event is! KeyDownEvent) return false;
+    if (event is! KeyDownEvent || !screenOwnsKeyboard(context)) return false;
     final isF2 = event.logicalKey == LogicalKeyboardKey.f2 || event.physicalKey == PhysicalKeyboardKey.f2;
     if (isF2) {
       showAddMaterialLineDialog(context);

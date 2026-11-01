@@ -15,6 +15,7 @@ import '../../data/models/create_purchase_request.dart';
 import '../../data/purchase_providers.dart';
 import '../purchase_cart_controller.dart';
 import '../purchase_form_controller.dart';
+import '../../../../shared/keyboard/screen_key_guard.dart';
 
 /// Settlement, extra charges and actions card for Purchase,
 /// styled in the app's signature pebble card aesthetic matching PaymentCard.
@@ -52,7 +53,7 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
   }
 
   bool _handleKeyEvent(KeyEvent event) {
-    if (event is! KeyDownEvent) return false;
+    if (event is! KeyDownEvent || !screenOwnsKeyboard(context)) return false;
     final isF8 = event.logicalKey == LogicalKeyboardKey.f8 || event.physicalKey == PhysicalKeyboardKey.f8;
     final isEscape = event.logicalKey == LogicalKeyboardKey.escape || event.physicalKey == PhysicalKeyboardKey.escape;
 

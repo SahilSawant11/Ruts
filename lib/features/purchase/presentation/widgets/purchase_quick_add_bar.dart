@@ -11,6 +11,7 @@ import '../../../sales/data/models/material_dto.dart';
 import '../../domain/purchase_line_item.dart';
 import '../purchase_cart_controller.dart';
 import 'add_material_line_dialog.dart';
+import '../../../../shared/keyboard/screen_key_guard.dart';
 
 /// Comprehensive POS Quick Add Bar for the Purchase Bill screen.
 /// Provides all capabilities and parameters from the OG screen:
@@ -83,7 +84,7 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
   }
 
   bool _handleGlobalKeyEvent(KeyEvent event) {
-    if (event is! KeyDownEvent) return false;
+    if (event is! KeyDownEvent || !screenOwnsKeyboard(context)) return false;
     final isF1 = event.logicalKey == LogicalKeyboardKey.f1 || event.physicalKey == PhysicalKeyboardKey.f1;
     final isF2 = event.logicalKey == LogicalKeyboardKey.f2 || event.physicalKey == PhysicalKeyboardKey.f2;
     final isF4 = event.logicalKey == LogicalKeyboardKey.f4 || event.physicalKey == PhysicalKeyboardKey.f4;
