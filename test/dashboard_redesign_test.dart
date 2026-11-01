@@ -277,6 +277,39 @@ void main() {
       expect(find.text('Royal Challenge (2)'), findsOneWidget);
     });
 
+    testWidgets('SalesPurchaseCapsuleCard fits 12 monthly bars in a narrow card', (tester) async {
+      tester.view.physicalSize = const Size(1366, 768);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final year = DashboardSummaryDto(
+        todaySales: 0,
+        todayBillCount: 0,
+        avgBillValue: 0,
+        dailyTarget: 0,
+        last7Days: const [],
+        categoryBreakdown: const [],
+        paymentMix: const [],
+        topSellingItems: const [],
+        recentTransactions: const [],
+        topCustomers: const [],
+        transactionActivity: const [],
+        monthlyComparison: [
+          for (var i = 0; i < 12; i++)
+            MonthlyComparisonPointDto(month: 'M$i', salesAmount: 50000.0 * (i + 1), purchaseAmount: 30000.0 * i),
+        ],
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [dashboardSummaryProvider.overrideWith((ref) async => year)],
+          // A smaller window than 1366px (e.g. a laptop) gives the card ~600px.
+          child: const MaterialApp(home: Scaffold(body: Center(child: SizedBox(width: 600, child: SalesPurchaseCapsuleCard())))),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.text('M11'), findsOneWidget);
+    });
+
     testWidgets('DashboardScreen renders complete assembled hierarchy without overflow', (tester) async {
       tester.view.physicalSize = const Size(1400, 1000);
       tester.view.devicePixelRatio = 1.0;

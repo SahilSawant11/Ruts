@@ -411,50 +411,56 @@ class _SideBySideCapsuleColumn extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 2),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              boxShadow: isHovered
-                  ? [
-                      BoxShadow(
-                        color: purchaseColor.withValues(alpha: 0.25),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                // Left Column: Total Purchase (Purple beads)
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: purchaseBeads > 0
-                      ? List.generate(
-                          purchaseBeads,
-                          (_) => _bead(purchaseColor),
-                        )
-                      : [_emptyBase(purchaseColor)],
-                ),
-                const SizedBox(width: 3.5),
+          // Shrink beads to the slot width (12 monthly slots are narrow at 1366px).
+          LayoutBuilder(builder: (context, constraints) {
+            final beadW = constraints.maxWidth.isFinite
+                ? ((constraints.maxWidth - 4 - 3.5) / 2).clamp(4.0, beadWidth)
+                : beadWidth;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: isHovered
+                    ? [
+                        BoxShadow(
+                          color: purchaseColor.withValues(alpha: 0.25),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // Left Column: Total Purchase (Purple beads)
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: purchaseBeads > 0
+                        ? List.generate(
+                            purchaseBeads,
+                            (_) => _bead(purchaseColor, beadW),
+                          )
+                        : [_emptyBase(purchaseColor, beadW)],
+                  ),
+                  const SizedBox(width: 3.5),
 
-                // Right Column: Total Sale (Lavender beads)
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: saleBeads > 0
-                      ? List.generate(
-                          saleBeads,
-                          (_) => _bead(saleColor),
-                        )
-                      : [_emptyBase(saleColor)],
-                ),
-              ],
-            ),
-          ),
+                  // Right Column: Total Sale (Lavender beads)
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: saleBeads > 0
+                        ? List.generate(
+                            saleBeads,
+                            (_) => _bead(saleColor, beadW),
+                          )
+                        : [_emptyBase(saleColor, beadW)],
+                  ),
+                ],
+              ),
+            );
+          }),
           const SizedBox(height: 8),
 
           // Label
@@ -471,9 +477,9 @@ class _SideBySideCapsuleColumn extends StatelessWidget {
     );
   }
 
-  Widget _bead(Color color) {
+  Widget _bead(Color color, double width) {
     return Container(
-      width: beadWidth,
+      width: width,
       height: beadHeight,
       margin: const EdgeInsets.symmetric(vertical: 1.5),
       decoration: BoxDecoration(
@@ -483,9 +489,9 @@ class _SideBySideCapsuleColumn extends StatelessWidget {
     );
   }
 
-  Widget _emptyBase(Color color) {
+  Widget _emptyBase(Color color, double width) {
     return Container(
-      width: beadWidth,
+      width: width,
       height: 2.5,
       margin: const EdgeInsets.symmetric(vertical: 1.5),
       decoration: BoxDecoration(

@@ -16,6 +16,13 @@ abstract final class AppLogger {
   static String? _currentDay;
   static Directory? _dir;
 
+  // Collapse bursts of the same message (e.g. a layout error repeated every
+  // frame) into one line plus a "repeated N times" note.
+  static String? _lastKey;
+  static DateTime _lastAt = DateTime.fromMillisecondsSinceEpoch(0);
+  static int _repeats = 0;
+  static const _repeatWindow = Duration(seconds: 30);
+
   static Future<void> init() async {
     try {
       _dir = await DbPaths.logsDir();
@@ -46,6 +53,22 @@ abstract final class AppLogger {
 
   static void _write(String level, String area, String message) {
     final now = DateTime.now();
+    final key = '$level|$area|${message.split('\n').first}';
+    if (key == _lastKey && now.difference(_lastAt) < _repeatWindow) {
+      _repeats++;
+      return;
+    }
+    if (_repeats > 0) {
+      final repeated = _repeats;
+      _repeats = 0;
+      _emit(now, 'INFO', 'Logger', 'previous message repeated $repeated more time(s)');
+    }
+    _lastKey = key;
+    _lastAt = now;
+    _emit(now, level, area, message);
+  }
+
+  static void _emit(DateTime now, String level, String area, String message) {
     final line = '${now.toIso8601String()} [$level] $area: $message';
     if (kDebugMode) debugPrint(line);
     final dir = _dir;
