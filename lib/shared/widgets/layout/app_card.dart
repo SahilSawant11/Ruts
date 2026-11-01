@@ -91,10 +91,9 @@ class SectionHeader extends StatelessWidget {
         ),
         if (trailing != null) ...[
           const SizedBox(width: AppSpacing.xs),
-          Flexible(
-            fit: FlexFit.loose,
-            child: trailing!,
-          ),
+          // Natural width, pinned right (a Flexible here took half the row
+          // and pushed buttons/chips into the middle of the card).
+          trailing!,
         ],
       ],
     );

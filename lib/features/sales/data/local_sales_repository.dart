@@ -49,134 +49,85 @@ class LocalSalesRepository {
     }).toList();
   }
 
-  Future<List<SalesBillDetailDto>> getSalesBills({String? search, DateTime? date}) async {
-      final billsQuery = _db.select(_db.cachedSalesBills)
-        ..where(_db.isActiveSaleBill)
-        ..orderBy([(tbl) => OrderingTerm.desc(tbl.createdAt)]);
-      if (date != null) {
-        final start = DateTime(date.year, date.month, date.day);
-        final end = start.add(const Duration(days: 1));
-        billsQuery.where((tbl) => tbl.billDate.isBiggerOrEqualValue(start) & tbl.billDate.isSmallerThanValue(end));
-      }
-      if (search != null && search.trim().isNotEmpty) {
-        final s = search.trim().toLowerCase();
-        billsQuery.where((tbl) => tbl.billNo.lower().contains(s));
-      }
-      final billRows = await billsQuery.get();
-      final result = <SalesBillDetailDto>[];
+  /// Most recent bills shown in the Sales Return list. Search / date
+  /// filters run in SQL first, so any older bill is still findable.
+  static const recentBillsLimit = 300;
 
-      for (final bill in billRows) {
-        final lineRows = await (_db.select(_db.cachedSaleLineItems)
-              ..where((tbl) => tbl.salesBillId.equals(bill.id))
-              ..orderBy([(tbl) => OrderingTerm.asc(tbl.lineNumber)]))
-            .get();
-
-        result.add(
-          SalesBillDetailDto(
-            id: bill.id,
-            billNo: bill.billNo,
-            customerId: bill.customerId,
-            billType: 'CounterSale.Sale',
-            billDate: bill.billDate.toIso8601String(),
-            payMode: bill.payMode,
-            taxableValue: bill.totalAmount - bill.totalTax,
-            totalDiscount: 0,
-            totalTax: bill.totalTax,
-            totalAmount: bill.totalAmount,
-            balanceDue: bill.balanceDue,
-            status: bill.status,
-            createdAt: bill.createdAt.toIso8601String(),
-            lineItems: lineRows
-                .map((li) => SaleLineItemDetailDto(
-                      id: li.id,
-                      salesBillId: li.salesBillId,
-                      barcodeNo: li.barcodeNo,
-                      materialId: li.materialId,
-                      materialType: li.materialType,
-                      materialName: li.materialName,
-                      batchNo: li.batchNo,
-                      packing: li.packing,
-                      quantity: li.quantity,
-                      qtyCase: li.qtyCase,
-                      rate: li.rate,
-                      discountPercent: li.discountPercent,
-                      discountAmount: li.discountAmount,
-                      taxPercent: li.taxPercent,
-                      taxAmount: li.taxAmount,
-                      amount: li.amount,
-                      lineNumber: li.lineNumber,
-                    ))
-                .toList(),
-          ),
-        );
-      }
-      return result;
-  }
-
-  Stream<List<SalesBillDetailDto>> watchSalesBills({String? search, DateTime? date}) {
-    final billsQuery = _db.select(_db.cachedSalesBills)
+  SimpleSelectStatement<$CachedSalesBillsTable, CachedSalesBill> _billsQuery({String? search, DateTime? date}) {
+    final q = _db.select(_db.cachedSalesBills)
       ..where(_db.isActiveSaleBill)
-      ..orderBy([(tbl) => OrderingTerm.desc(tbl.createdAt)]);
+      ..orderBy([(tbl) => OrderingTerm.desc(tbl.createdAt)])
+      ..limit(recentBillsLimit);
     if (date != null) {
       final start = DateTime(date.year, date.month, date.day);
       final end = start.add(const Duration(days: 1));
-      billsQuery.where((tbl) => tbl.billDate.isBiggerOrEqualValue(start) & tbl.billDate.isSmallerThanValue(end));
+      q.where((tbl) => tbl.billDate.isBiggerOrEqualValue(start) & tbl.billDate.isSmallerThanValue(end));
     }
     if (search != null && search.trim().isNotEmpty) {
       final s = search.trim().toLowerCase();
-      billsQuery.where((tbl) => tbl.billNo.lower().contains(s));
+      q.where((tbl) => tbl.billNo.lower().contains(s));
     }
-
-    return billsQuery.watch().asyncMap((billRows) async {
-      final result = <SalesBillDetailDto>[];
-      for (final bill in billRows) {
-        final lineRows = await (_db.select(_db.cachedSaleLineItems)
-              ..where((tbl) => tbl.salesBillId.equals(bill.id))
-              ..orderBy([(tbl) => OrderingTerm.asc(tbl.lineNumber)]))
-            .get();
-
-        result.add(
-          SalesBillDetailDto(
-            id: bill.id,
-            billNo: bill.billNo,
-            customerId: bill.customerId,
-            billType: 'CounterSale.Sale',
-            billDate: bill.billDate.toIso8601String(),
-            payMode: bill.payMode,
-            taxableValue: bill.totalAmount - bill.totalTax,
-            totalDiscount: 0,
-            totalTax: bill.totalTax,
-            totalAmount: bill.totalAmount,
-            balanceDue: bill.balanceDue,
-            status: bill.status,
-            createdAt: bill.createdAt.toIso8601String(),
-            lineItems: lineRows
-                .map((li) => SaleLineItemDetailDto(
-                      id: li.id,
-                      salesBillId: li.salesBillId,
-                      barcodeNo: li.barcodeNo,
-                      materialId: li.materialId,
-                      materialType: li.materialType,
-                      materialName: li.materialName,
-                      batchNo: li.batchNo,
-                      packing: li.packing,
-                      quantity: li.quantity,
-                      qtyCase: li.qtyCase,
-                      rate: li.rate,
-                      discountPercent: li.discountPercent,
-                      discountAmount: li.discountAmount,
-                      taxPercent: li.taxPercent,
-                      taxAmount: li.taxAmount,
-                      amount: li.amount,
-                      lineNumber: li.lineNumber,
-                    ))
-                .toList(),
-          ),
-        );
-      }
-      return result;
-    });
+    return q;
   }
+
+  /// Attaches line items with ONE query (was one query per bill).
+  Future<List<SalesBillDetailDto>> _withLines(List<CachedSalesBill> bills) async {
+    if (bills.isEmpty) return const [];
+    final lines = await (_db.select(_db.cachedSaleLineItems)
+          ..where((tbl) => tbl.salesBillId.isIn(bills.map((b) => b.id)))
+          ..orderBy([(tbl) => OrderingTerm.asc(tbl.lineNumber)]))
+        .get();
+    final byBill = <String, List<CachedSaleLineItem>>{};
+    for (final l in lines) {
+      byBill.putIfAbsent(l.salesBillId, () => []).add(l);
+    }
+    return [
+      for (final bill in bills)
+        SalesBillDetailDto(
+          id: bill.id,
+          billNo: bill.billNo,
+          customerId: bill.customerId,
+          billType: 'CounterSale.Sale',
+          billDate: bill.billDate.toIso8601String(),
+          payMode: bill.payMode,
+          taxableValue: bill.totalAmount - bill.totalTax,
+          totalDiscount: 0,
+          totalTax: bill.totalTax,
+          totalAmount: bill.totalAmount,
+          balanceDue: bill.balanceDue,
+          status: bill.status,
+          createdAt: bill.createdAt.toIso8601String(),
+          lineItems: [
+            for (final li in byBill[bill.id] ?? const <CachedSaleLineItem>[])
+              SaleLineItemDetailDto(
+                id: li.id,
+                salesBillId: li.salesBillId,
+                barcodeNo: li.barcodeNo,
+                materialId: li.materialId,
+                materialType: li.materialType,
+                materialName: li.materialName,
+                batchNo: li.batchNo,
+                packing: li.packing,
+                quantity: li.quantity,
+                qtyCase: li.qtyCase,
+                rate: li.rate,
+                discountPercent: li.discountPercent,
+                discountAmount: li.discountAmount,
+                taxPercent: li.taxPercent,
+                taxAmount: li.taxAmount,
+                amount: li.amount,
+                lineNumber: li.lineNumber,
+              ),
+          ],
+        ),
+    ];
+  }
+
+  Future<List<SalesBillDetailDto>> getSalesBills({String? search, DateTime? date}) async =>
+      _withLines(await _billsQuery(search: search, date: date).get());
+
+  Stream<List<SalesBillDetailDto>> watchSalesBills({String? search, DateTime? date}) =>
+      _billsQuery(search: search, date: date).watch().asyncMap(_withLines);
 
   /// Returns some or all of a bill.
   ///

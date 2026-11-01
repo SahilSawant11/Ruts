@@ -107,7 +107,9 @@ class LocalPurchaseRepository {
     }
     final query = _db.select(_db.cachedPurchaseBills)
       ..where(_db.isActivePurchaseBill)
-      ..orderBy([(tbl) => OrderingTerm.desc(tbl.createdAt)]);
+      ..orderBy([(tbl) => OrderingTerm.desc(tbl.createdAt)])
+      // Most recent bills only; search/date filters run first in SQL.
+      ..limit(300);
     if (date != null) {
       final start = DateTime(date.year, date.month, date.day);
       final end = start.add(const Duration(days: 1));
@@ -121,22 +123,39 @@ class LocalPurchaseRepository {
     }
     final billRows = await query.get();
     final result = <PurchaseBillDetailDto>[];
+    if (billRows.isEmpty) return result;
+
+    // Three batched queries instead of 1 + 2 per bill + 1 per line.
+    final supplierIds = billRows.map((b) => b.supplierId).toSet();
+    final suppliers = {
+      for (final s in await (_db.select(_db.cachedSuppliers)..where((t) => t.id.isIn(supplierIds))).get()) s.id: s,
+    };
+    final allLines = await (_db.select(_db.cachedPurchaseLineItems)
+          ..where((t) => t.purchaseBillId.isIn(billRows.map((b) => b.id)))
+          ..orderBy([(t) => OrderingTerm.asc(t.lineNumber)]))
+        .get();
+    final materialNames = {
+      for (final m in await (_db.select(_db.cachedMaterials)
+            ..where((t) => t.id.isIn(allLines.map((l) => l.materialId).toSet())))
+          .get())
+        m.id: m.name,
+    };
+    final linesByBill = <String, List<CachedPurchaseLineItem>>{};
+    for (final l in allLines) {
+      linesByBill.putIfAbsent(l.purchaseBillId, () => []).add(l);
+    }
 
     for (final bill in billRows) {
-      final supplier = await (_db.select(_db.cachedSuppliers)..where((tbl) => tbl.id.equals(bill.supplierId))).getSingleOrNull();
-      final lineRows = await (_db.select(_db.cachedPurchaseLineItems)
-            ..where((tbl) => tbl.purchaseBillId.equals(bill.id))
-            ..orderBy([(tbl) => OrderingTerm.asc(tbl.lineNumber)]))
-          .get();
+      final supplier = suppliers[bill.supplierId];
+      final lineRows = linesByBill[bill.id] ?? const <CachedPurchaseLineItem>[];
 
       final lineDtos = <PurchaseLineItemDetailDto>[];
       for (final li in lineRows) {
-        final material = await (_db.select(_db.cachedMaterials)..where((tbl) => tbl.id.equals(li.materialId))).getSingleOrNull();
         lineDtos.add(PurchaseLineItemDetailDto(
           id: li.id,
           purchaseBillId: li.purchaseBillId,
           materialId: li.materialId,
-          materialName: material?.name ?? li.materialId,
+          materialName: materialNames[li.materialId] ?? li.materialId,
           batchNo: li.batchNo,
           packing: li.packing,
           qty: li.qty,

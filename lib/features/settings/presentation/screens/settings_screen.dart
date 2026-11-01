@@ -95,6 +95,17 @@ Future<void> _openFolder(String path) async {
   }
 }
 
+class _Explain extends StatelessWidget {
+  const _Explain(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Text(
+        text,
+        style: AppTypography.body.copyWith(height: 1.45, color: AppColors.textSecondaryFor(context)),
+      );
+}
+
 class _Row extends StatelessWidget {
   const _Row(this.label, this.value);
   final String label;
@@ -347,11 +358,12 @@ class _BackupCardState extends ConsumerState<_BackupCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SectionHeader(
-            icon: AppIcons.download,
-            title: 'Backup & restore',
-            subtitle: 'An automatic backup is taken every day when Caskly starts. '
-                'The last ${BackupService.keepAutoBackups} are kept.',
+          const SectionHeader(icon: AppIcons.download, title: 'Backup & restore'),
+          const SizedBox(height: AppSpacing.xs),
+          const _Explain(
+            'An automatic backup is taken every day when Caskly starts; the last '
+            '${BackupService.keepAutoBackups} are kept. Set a copy folder on a USB drive or cloud folder so '
+            'a failed hard disk doesn\'t take the backups with it.',
           ),
           const SizedBox(height: AppSpacing.md),
           _Row('Last backup', _formatDateTime(last)),
@@ -461,14 +473,17 @@ class _UsersCard extends ConsumerWidget {
           SectionHeader(
             icon: AppIcons.people,
             title: 'Users',
-            subtitle: 'Cashiers can open Sales, Sales Return and Inventory. Managers can open everything '
-                'except user management and restore.',
             trailing: PrimaryButton(
               label: 'Add user',
               icon: AppIcons.add,
               dense: true,
               onPressed: () => showDialog<void>(context: context, builder: (_) => const _UserDialog()),
             ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          const _Explain(
+            'Cashiers can open Sales, Sales Return and Inventory. Managers can open everything except '
+            'user management and restore. Owners can do everything.',
           ),
           const SizedBox(height: AppSpacing.md),
           users.when(
