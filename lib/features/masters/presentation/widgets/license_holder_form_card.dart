@@ -213,7 +213,7 @@ class _LicenseHolderFormCardState extends ConsumerState<LicenseHolderFormCard> {
                   ),
                 const SizedBox(width: AppSpacing.sm),
                 PrimaryButton(
-                  label: browser.isSaving ? 'Saving…' : (isNew ? 'Create Permit' : 'Save Changes'),
+                  label: browser.isSaving ? 'Saving…' : (isNew ? 'Create' : 'Save'),
                   icon: AppIcons.check,
                   onPressed: browser.isSaving ? null : _save,
                 ),

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/local/app_database.dart';
 import 'package:http/http.dart' as http;
 import '../../../core/network/api_config.dart';
 import '../../../core/network/api_exception.dart';
@@ -113,9 +114,57 @@ class LowStockThresholdConfig {
   }
 }
 
-final lowStockThresholdConfigProvider = StateProvider<LowStockThresholdConfig>(
-  (ref) => const LowStockThresholdConfig(),
+/// Low-stock rules, saved in the database so they survive restarts and
+/// are shared by the Inventory screen and the Dashboard.
+class LowStockThresholdNotifier extends StateNotifier<LowStockThresholdConfig> {
+  LowStockThresholdNotifier(this._db) : super(const LowStockThresholdConfig()) {
+    _load();
+  }
+
+  final AppDatabase _db;
+  static const _key = 'low_stock_thresholds';
+
+  Future<void> _load() async {
+    try {
+      final raw = await _db.getSetting(_key);
+      if (raw == null || !mounted) return;
+      final j = jsonDecode(raw) as Map<String, dynamic>;
+      Map<String, int> map(Object? v) =>
+          {for (final e in ((v as Map?) ?? const {}).entries) '${e.key}': (e.value as num).toInt()};
+      state = LowStockThresholdConfig(
+        defaultThreshold: (j['default'] as num?)?.toInt() ?? 10,
+        categoryThresholds: map(j['category']),
+        packagingThresholds: map(j['packaging']),
+      );
+    } catch (_) {
+      // Corrupt setting: keep defaults.
+    }
+  }
+
+  Future<void> update(LowStockThresholdConfig config) async {
+    state = config;
+    await _db.setSetting(
+      _key,
+      jsonEncode({
+        'default': config.defaultThreshold,
+        'category': config.categoryThresholds,
+        'packaging': config.packagingThresholds,
+      }),
+    );
+  }
+}
+
+final lowStockThresholdConfigProvider = StateNotifierProvider<LowStockThresholdNotifier, LowStockThresholdConfig>(
+  (ref) => LowStockThresholdNotifier(ref.watch(appDatabaseProvider)),
 );
+
+/// Number of items at or below their low-stock threshold (incl. out of
+/// stock). Single source of truth for Inventory and Dashboard.
+final inventoryLowStockCountProvider = FutureProvider<int>((ref) async {
+  final items = await ref.watch(inventoryOverviewProvider.future);
+  final config = ref.watch(lowStockThresholdConfigProvider);
+  return items.where((i) => i.isAtRiskFor(config.getThresholdFor(i.category, i.packing))).length;
+});
 
 /// Default threshold integer provider (used for legacy or global default queries).
 final inventoryLowStockThresholdProvider = Provider<int>((ref) {

@@ -26,59 +26,63 @@ class PurchaseItemTable extends ConsumerWidget {
     final headerBg = isDark ? AppColors.surfaceFor(context) : AppColors.surfaceAltFor(context);
     final borderColor = AppColors.borderFor(context);
 
-    final content = Column(
-      children: [
-        // Sticky Header Row
-        Container(
-          height: 34,
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          decoration: BoxDecoration(
-            color: headerBg,
-            border: Border(bottom: BorderSide(color: borderColor)),
+    // Below ~760px (scaled Windows laptops) hide MAKE (shown under the item
+    // name instead) and DISC so amounts never wrap.
+    return LayoutBuilder(builder: (context, constraints) {
+      final compact = constraints.maxWidth < 760;
+      return Column(
+        children: [
+          // Sticky Header Row
+          Container(
+            height: 34,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            decoration: BoxDecoration(
+              color: headerBg,
+              border: Border(bottom: BorderSide(color: borderColor)),
+            ),
+            child: Row(
+              children: [
+                _colHeader(context, '#', flex: 1, alignment: Alignment.centerLeft),
+                if (!compact) _colHeader(context, 'MAKE', flex: 3),
+                _colHeader(context, 'MATERIAL / ITEM NAME', flex: 6),
+                _colHeader(context, 'BATCH', flex: 2),
+                _colHeader(context, 'PACK', flex: 2),
+                _colHeader(context, 'QTY', flex: 2, alignment: Alignment.centerRight),
+                _colHeader(context, 'RATE', flex: 2, alignment: Alignment.centerRight),
+                if (!compact) _colHeader(context, 'DISC', flex: 2, alignment: Alignment.centerRight),
+                _colHeader(context, 'TAX %', flex: 2, alignment: Alignment.centerRight),
+                _colHeader(context, 'TOTAL', flex: 3, alignment: Alignment.centerRight),
+                _colHeader(context, 'DEL', width: 36, alignment: Alignment.center),
+              ],
+            ),
           ),
-          child: Row(
-            children: [
-              _colHeader(context, '#', flex: 1, alignment: Alignment.centerLeft),
-              _colHeader(context, 'MAKE', flex: 3),
-              _colHeader(context, 'MATERIAL / ITEM NAME', flex: 6),
-              _colHeader(context, 'BATCH', flex: 2),
-              _colHeader(context, 'PACK', flex: 2),
-              _colHeader(context, 'QTY', flex: 2, alignment: Alignment.centerRight),
-              _colHeader(context, 'RATE', flex: 2, alignment: Alignment.centerRight),
-              _colHeader(context, 'DISC', flex: 2, alignment: Alignment.centerRight),
-              _colHeader(context, 'TAX %', flex: 2, alignment: Alignment.centerRight),
-              _colHeader(context, 'TOTAL', flex: 3, alignment: Alignment.centerRight),
-              _colHeader(context, 'DEL', width: 36, alignment: Alignment.center),
-            ],
-          ),
-        ),
 
-        // Table Rows List (Expands full remaining height)
-        Expanded(
-          child: items.isEmpty
-              ? _buildEmptyState(context)
-              : ListView.separated(
-                  itemCount: items.length,
-                  padding: const EdgeInsets.symmetric(vertical: 2),
-                  separatorBuilder: (context, _) => Divider(
-                    height: 1,
-                    thickness: 1,
-                    color: AppColors.borderFor(context).withValues(alpha: 0.5),
+          // Table Rows List (Expands full remaining height)
+          Expanded(
+            child: items.isEmpty
+                ? _buildEmptyState(context)
+                : ListView.separated(
+                    itemCount: items.length,
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    separatorBuilder: (context, _) => Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: AppColors.borderFor(context).withValues(alpha: 0.5),
+                    ),
+                    itemBuilder: (context, index) {
+                      final item = items[index];
+                      return _PurchaseTableRow(
+                        index: index,
+                        item: item,
+                        compact: compact,
+                        onDelete: () => ref.read(purchaseCartControllerProvider.notifier).removeAt(index),
+                      );
+                    },
                   ),
-                  itemBuilder: (context, index) {
-                    final item = items[index];
-                    return _PurchaseTableRow(
-                      index: index,
-                      item: item,
-                      onDelete: () => ref.read(purchaseCartControllerProvider.notifier).removeAt(index),
-                    );
-                  },
-                ),
-        ),
-      ],
-    );
-
-    return content;
+          ),
+        ],
+      );
+    });
   }
 
   Widget _colHeader(
@@ -178,8 +182,10 @@ class _PurchaseTableRow extends ConsumerStatefulWidget {
     required this.index,
     required this.item,
     required this.onDelete,
+    this.compact = false,
   });
 
+  final bool compact;
   final int index;
   final PurchaseLineItem item;
   final VoidCallback onDelete;
@@ -227,29 +233,44 @@ class _PurchaseTableRowState extends ConsumerState<_PurchaseTableRow> {
                 ),
 
                 // Make / Manufacturer
-                Expanded(
-                  flex: 3,
-                  child: Text(
-                    item.manufacturer,
-                    style: AppTypography.caption.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimaryFor(context),
+                if (!widget.compact)
+                  Expanded(
+                    flex: 3,
+                    child: Text(
+                      item.manufacturer,
+                      style: AppTypography.caption.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimaryFor(context),
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
 
                 // Material Name
                 Expanded(
                   flex: 6,
-                  child: Text(
-                    item.material,
-                    style: AppTypography.body.copyWith(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimaryFor(context),
-                    ),
-                    overflow: TextOverflow.ellipsis,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.material,
+                        maxLines: 1,
+                        style: AppTypography.body.copyWith(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimaryFor(context),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (widget.compact && item.manufacturer.isNotEmpty)
+                        Text(
+                          item.manufacturer,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.caption.copyWith(fontSize: 9.5, color: AppColors.textMutedFor(context)),
+                        ),
+                    ],
                   ),
                 ),
 
@@ -282,8 +303,7 @@ class _PurchaseTableRowState extends ConsumerState<_PurchaseTableRow> {
                 // Qty
                 Expanded(
                   flex: 2,
-                  child: Align(
-                    alignment: Alignment.centerRight,
+                  child: _NumCell(
                     child: Text(
                       '${item.qty}',
                       style: AppTypography.mono.copyWith(
@@ -298,10 +318,9 @@ class _PurchaseTableRowState extends ConsumerState<_PurchaseTableRow> {
                 // Rate
                 Expanded(
                   flex: 2,
-                  child: Align(
-                    alignment: Alignment.centerRight,
+                  child: _NumCell(
                     child: Text(
-                      Money.inr(item.rate),
+                      Money.plain(item.rate),
                       style: AppTypography.mono.copyWith(
                         fontSize: 12,
                         color: AppColors.textPrimaryFor(context),
@@ -311,25 +330,24 @@ class _PurchaseTableRowState extends ConsumerState<_PurchaseTableRow> {
                 ),
 
                 // Discount
-                Expanded(
-                  flex: 2,
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      item.discountAmount > 0 ? Money.inr(item.discountAmount) : '—',
-                      style: AppTypography.mono.copyWith(
-                        fontSize: 11,
-                        color: item.discountAmount > 0 ? AppColors.success : AppColors.textMutedFor(context),
+                if (!widget.compact)
+                  Expanded(
+                    flex: 2,
+                    child: _NumCell(
+                      child: Text(
+                        item.discountAmount > 0 ? Money.plain(item.discountAmount) : '—',
+                        style: AppTypography.mono.copyWith(
+                          fontSize: 11,
+                          color: item.discountAmount > 0 ? AppColors.success : AppColors.textMutedFor(context),
+                        ),
                       ),
                     ),
                   ),
-                ),
 
                 // Tax %
                 Expanded(
                   flex: 2,
-                  child: Align(
-                    alignment: Alignment.centerRight,
+                  child: _NumCell(
                     child: Text(
                       '${item.taxPercent.toStringAsFixed(0)}%',
                       style: AppTypography.mono.copyWith(
@@ -343,10 +361,9 @@ class _PurchaseTableRowState extends ConsumerState<_PurchaseTableRow> {
                 // Total Amount
                 Expanded(
                   flex: 3,
-                  child: Align(
-                    alignment: Alignment.centerRight,
+                  child: _NumCell(
                     child: Text(
-                      Money.inr(item.amount),
+                      Money.plain(item.amount),
                       style: AppTypography.mono.copyWith(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -379,4 +396,20 @@ class _PurchaseTableRowState extends ConsumerState<_PurchaseTableRow> {
       ),
     );
   }
+}
+
+/// Right-aligned numeric cell: a little leading gap so adjacent numbers
+/// never touch, and scales down instead of wrapping on narrow screens.
+class _NumCell extends StatelessWidget {
+  const _NumCell({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(left: 6),
+        child: Align(
+          alignment: Alignment.centerRight,
+          child: FittedBox(fit: BoxFit.scaleDown, child: child),
+        ),
+      );
 }

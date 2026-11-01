@@ -69,7 +69,7 @@ void main() {
     );
 
     // Tap "Modify" button to enter editing mode
-    final modifyButton = find.text('Modify');
+    final modifyButton = find.text('Edit');
     expect(modifyButton, findsOneWidget);
     await tester.tap(modifyButton);
     await tester.pumpAndSettle();

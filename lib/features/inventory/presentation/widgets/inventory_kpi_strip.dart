@@ -81,25 +81,8 @@ class InventoryKpiStrip extends ConsumerWidget {
 
   // ── Helpers ─────────────────────────────────────────────────────────
 
-  static String _rupees(double v) {
-    if (v <= 0) return '₹ 0';
-    if (v >= 10000000) return '${Money.inr((v / 10000000))} Cr';
-    if (v >= 100000) return '${Money.inr((v / 100000))} L';
-    return '₹ ${_indianComma(v.toInt())}';
-  }
+  static String _rupees(double v) => Money.compact(v);
 
-  static String _indianComma(int n) {
-    final s = n.toString();
-    if (s.length <= 3) return s;
-    final last3 = s.substring(s.length - 3);
-    final rest = s.substring(0, s.length - 3);
-    final buf = StringBuffer();
-    for (var i = 0; i < rest.length; i++) {
-      if (i != 0 && (rest.length - i) % 2 == 0) buf.write(',');
-      buf.write(rest[i]);
-    }
-    return '${buf.toString()},$last3';
-  }
 }
 
 // ── Shared KPI card shell ────────────────────────────────────────────────────
@@ -238,7 +221,7 @@ class _LowStockCard extends StatelessWidget {
           ? 'Filter active · Tap to clear'
           : (hasCustomRules
               ? 'Category/size rules active · Tap to filter'
-              : 'Items with ≤ ${config.defaultThreshold} units · Tap to filter'),
+              : 'At or below their low-stock level · Tap to filter'),
       isPinned: isPinned,
       onTap: onTap,
       trailingAction: Row(
@@ -434,11 +417,11 @@ void _showThresholdDialog(
                   ),
                   onPressed: () {
                     final defParsed = int.tryParse(defaultController.text.trim()) ?? selectedDefault;
-                    ref.read(lowStockThresholdConfigProvider.notifier).state = LowStockThresholdConfig(
+                    ref.read(lowStockThresholdConfigProvider.notifier).update(LowStockThresholdConfig(
                       defaultThreshold: defParsed,
                       categoryThresholds: categoryMap,
                       packagingThresholds: packagingMap,
-                    );
+                    ));
                     Navigator.of(ctx).pop();
                   },
                   child: const Text('Save Thresholds', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),

@@ -14,6 +14,12 @@ void main() {
       expect(Money.inr(-1500), '-₹1,500.00');
       expect(Money.plain(1290), '1,290.00');
       expect(Money.inr(100000, decimals: 0), '₹1,00,000');
+      expect(Money.compact(950), '₹950');
+      expect(Money.compact(111000), '₹1.11 L');
+      expect(Money.compact(30000000), '₹3 Cr');
+      expect(Money.editable(1180.0), '1180');
+      expect(Money.editable(18.5), '18.5');
+      expect(Money.editable(12.345), '12.35');
     });
   });
 

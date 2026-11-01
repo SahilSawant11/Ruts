@@ -13,6 +13,7 @@ import '../../../sales/data/models/material_dto.dart';
 import '../../data/masters_providers.dart';
 import '../../data/models/save_material_request.dart';
 import '../material_browser_controller.dart';
+import '../../../../core/format/money.dart';
 
 /// Single-record material inspector & editor form.
 /// In split-view mode, it docks as an Apple-style inspector pane with
@@ -56,8 +57,8 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
     _barcode.text = material?.barcode ?? '';
     _name.text = material?.name ?? '';
     _packing = material?.packing ?? '';
-    _saleRate.text = material != null ? material.saleRate.toString() : '0';
-    _taxPercent.text = material != null ? material.taxPercent.toString() : '5';
+    _saleRate.text = material != null ? Money.editable(material.saleRate) : '0';
+    _taxPercent.text = material != null ? Money.editable(material.taxPercent) : '5';
     _manufacturer = material?.manufacturer ?? '';
     _category = material?.category ?? '';
     _isActive = material?.isActive ?? true;
@@ -542,7 +543,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
       runSpacing: AppSpacing.xs,
       children: [
         SecondaryButton(
-          label: 'New Record',
+          label: 'New',
           icon: AppIcons.add,
           onPressed: () => ref.read(materialBrowserProvider.notifier).startNew(),
         ),
@@ -553,7 +554,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
           children: [
             if (!browser.isNew)
               SecondaryButton(
-                label: browser.isEditing ? 'Cancel' : 'Modify',
+                label: browser.isEditing ? 'Cancel' : 'Edit',
                 icon: browser.isEditing ? AppIcons.lock : AppIcons.edit,
                 onPressed: () {
                   if (browser.isEditing) {
@@ -564,7 +565,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
                 },
               ),
             PrimaryButton(
-              label: browser.isSaving ? 'Saving…' : (browser.isNew ? 'Create Material' : 'Save Changes'),
+              label: browser.isSaving ? 'Saving…' : (browser.isNew ? 'Create' : 'Save'),
               icon: AppIcons.checkCircle,
               onPressed: editable && !browser.isSaving ? _save : null,
             ),

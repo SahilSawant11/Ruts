@@ -13,6 +13,7 @@ import '../../data/masters_providers.dart';
 import '../../data/models/save_supplier_request.dart';
 import '../../data/models/supplier_dto.dart';
 import '../supplier_browser_controller.dart';
+import '../../../../core/format/money.dart';
 
 const _balanceTypes = ['Credit', 'Debit'];
 
@@ -59,8 +60,8 @@ class _SupplierFormCardState extends ConsumerState<SupplierFormCard> {
     _email.text = supplier?.email ?? '';
     _vatNo.text = supplier?.vatNo ?? '';
     _bankDetails.text = supplier?.bankDetails ?? '';
-    _disPercent.text = supplier != null ? supplier.disPercent.toString() : '0';
-    _openingBalance.text = supplier != null ? supplier.openingBalance.toString() : '0';
+    _disPercent.text = supplier != null ? Money.editable(supplier.disPercent) : '0';
+    _openingBalance.text = supplier != null ? Money.editable(supplier.openingBalance) : '0';
     _balanceType = supplier?.balanceType ?? 'Credit';
   }
 
@@ -410,7 +411,7 @@ class _SupplierFormCardState extends ConsumerState<SupplierFormCard> {
       runSpacing: AppSpacing.xs,
       children: [
         SecondaryButton(
-          label: 'New Supplier',
+          label: 'New',
           icon: AppIcons.add,
           onPressed: () => ref.read(supplierBrowserProvider.notifier).startNew(),
         ),
@@ -421,7 +422,7 @@ class _SupplierFormCardState extends ConsumerState<SupplierFormCard> {
           children: [
             if (!browser.isNew)
               SecondaryButton(
-                label: browser.isEditing ? 'Cancel' : 'Modify',
+                label: browser.isEditing ? 'Cancel' : 'Edit',
                 icon: browser.isEditing ? AppIcons.lock : AppIcons.edit,
                 onPressed: () {
                   if (browser.isEditing) {
@@ -431,7 +432,7 @@ class _SupplierFormCardState extends ConsumerState<SupplierFormCard> {
                 },
               ),
             PrimaryButton(
-              label: browser.isSaving ? 'Saving…' : (browser.isNew ? 'Create Supplier' : 'Save Changes'),
+              label: browser.isSaving ? 'Saving…' : (browser.isNew ? 'Create' : 'Save'),
               icon: AppIcons.checkCircle,
               onPressed: editable && !browser.isSaving ? _save : null,
             ),

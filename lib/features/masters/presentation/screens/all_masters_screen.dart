@@ -29,13 +29,17 @@ class AllMastersScreen extends ConsumerWidget {
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.lg),
-      child: GridView.count(
+      // Fixed-height tiles (content is ~110px; aspect-ratio tiles were 200px
+      // of mostly empty space) and as many columns as fit.
+      child: GridView(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        crossAxisCount: 4,
-        crossAxisSpacing: AppSpacing.md,
-        mainAxisSpacing: AppSpacing.md,
-        childAspectRatio: 1.5,
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 320,
+          mainAxisExtent: 136,
+          crossAxisSpacing: AppSpacing.md,
+          mainAxisSpacing: AppSpacing.md,
+        ),
         children: [
           MasterTile(
             icon: AppIcons.suppliers,

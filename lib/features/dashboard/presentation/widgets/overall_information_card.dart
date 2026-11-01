@@ -6,6 +6,7 @@ import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../data/dashboard_providers.dart';
+import '../../../inventory/data/inventory_providers.dart';
 
 /// 'Overall Information' Card matching the mood board:
 ///  3 quick horizontal summary action tiles with count, label, and chevron button:
@@ -76,7 +77,8 @@ class OverallInformationCard extends ConsumerWidget {
             data: (summary) {
               final suppliers = summary.supplierCount;
               final catalogItems = summary.materialCount;
-              final lowStock = summary.lowStockCount;
+              // Same rules as the Inventory screen (saved low-stock thresholds).
+              final lowStock = ref.watch(inventoryLowStockCountProvider).valueOrNull ?? summary.lowStockCount;
 
               return Row(
                 children: [

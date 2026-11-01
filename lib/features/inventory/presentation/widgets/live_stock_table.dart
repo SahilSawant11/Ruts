@@ -210,15 +210,19 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
                 color: AppColors.textMutedFor(context),
                 fontSize: 13,
               ),
-              prefixIcon: Center(
-                child: AppIcon(
-                  AppIcons.search,
-                  size: 18,
-                  color: AppColors.textMutedFor(context),
+              // A bare Center here expanded to the full field width and hid
+              // the hint text; size the icon box explicitly instead.
+              prefixIcon: SizedBox(
+                width: 36,
+                child: Center(
+                  child: AppIcon(
+                    AppIcons.search,
+                    size: 18,
+                    color: AppColors.textMutedFor(context),
+                  ),
                 ),
               ),
-              prefixIconConstraints:
-                  const BoxConstraints(minWidth: 36, minHeight: 40),
+              prefixIconConstraints: const BoxConstraints(minWidth: 36, maxWidth: 36, minHeight: 40),
               suffixIcon: _searchController.text.isNotEmpty
                   ? IconButton(
                       icon: const AppIcon(AppIcons.close, size: 16),
@@ -472,7 +476,7 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
   Widget _dataRow(BuildContext context, InventoryOverviewItem item,
       {required int lowStockThreshold}) {
     final priceText = Money.inr(item.saleRate);
-    final valueText = '₹ ${_formatCurrency(item.onHandValue)}';
+    final valueText = Money.inr(item.onHandValue, decimals: 0);
     final isOutOfStock = item.isOutOfStock;
     final isLowStock = !isOutOfStock && item.isAtRiskFor(lowStockThreshold);
 
@@ -726,7 +730,7 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
           ],
           const Spacer(),
           Text(
-            'Total Valuation: ₹ ${_formatCurrency(totalValue)}',
+            'Total Valuation: ${Money.compact(totalValue)}',
             style: AppTypography.mono.copyWith(
               fontWeight: FontWeight.w700,
               fontSize: 12.5,
@@ -757,22 +761,6 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
     );
   }
 
-  static String _formatCurrency(double v) {
-    if (v >= 10000000) return '${(v / 10000000).toStringAsFixed(2)} Cr';
-    if (v >= 100000) return '${(v / 100000).toStringAsFixed(2)} L';
-    if (v >= 1000) {
-      final s = v.toInt().toString();
-      final last3 = s.substring(s.length - 3);
-      final rest = s.substring(0, s.length - 3);
-      final buf = StringBuffer();
-      for (var i = 0; i < rest.length; i++) {
-        if (i != 0 && (rest.length - i) % 2 == 0) buf.write(',');
-        buf.write(rest[i]);
-      }
-      return '${buf.toString()},$last3';
-    }
-    return v.toStringAsFixed(0);
-  }
 }
 
 // ── Compact Filter Dropdown ──────────────────────────────────────────────────

@@ -56,34 +56,38 @@ class SectionHeader extends StatelessWidget {
           AppIcon(icon!, size: 17, color: AppColors.primary),
           const SizedBox(width: 8),
         ],
+        // The title always wins; the subtitle shows only if at least ~110px
+        // remain after it (otherwise both got ellipsised on narrow screens).
         Expanded(
-          child: Row(
-            children: [
-              Flexible(
-                child: Text(
-                  title,
-                  style: AppTypography.sectionTitle.copyWith(
-                    color: AppColors.textPrimaryFor(context),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              if (subtitle != null) ...[
-                const SizedBox(width: AppSpacing.xs),
+          child: LayoutBuilder(builder: (context, constraints) {
+            final titleStyle = AppTypography.sectionTitle.copyWith(color: AppColors.textPrimaryFor(context));
+            final painter = TextPainter(
+              text: TextSpan(text: title, style: titleStyle),
+              maxLines: 1,
+              textDirection: Directionality.of(context),
+              textScaler: MediaQuery.textScalerOf(context),
+            )..layout();
+            final showSubtitle =
+                subtitle != null && constraints.maxWidth - painter.width - AppSpacing.xs >= 110;
+            return Row(
+              children: [
                 Flexible(
-                  child: Text(
-                    subtitle!,
-                    style: AppTypography.bodyMuted.copyWith(
-                      color: AppColors.textSecondaryFor(context),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  child: Text(title, style: titleStyle, maxLines: 1, overflow: TextOverflow.ellipsis),
                 ),
+                if (showSubtitle) ...[
+                  const SizedBox(width: AppSpacing.xs),
+                  Expanded(
+                    child: Text(
+                      subtitle!,
+                      style: AppTypography.bodyMuted.copyWith(color: AppColors.textSecondaryFor(context)),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ],
-            ],
-          ),
+            );
+          }),
         ),
         if (trailing != null) ...[
           const SizedBox(width: AppSpacing.xs),

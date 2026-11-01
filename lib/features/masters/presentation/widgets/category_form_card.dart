@@ -219,7 +219,7 @@ class _CategoryFormCardState extends ConsumerState<CategoryFormCard> {
                   children: [
                     if (!browser.isNew)
                       SecondaryButton(
-                        label: browser.isEditing ? 'Cancel' : 'Modify',
+                        label: browser.isEditing ? 'Cancel' : 'Edit',
                         icon: browser.isEditing ? AppIcons.lock : AppIcons.edit,
                         onPressed: () {
                           if (browser.isEditing) {
@@ -229,7 +229,7 @@ class _CategoryFormCardState extends ConsumerState<CategoryFormCard> {
                         },
                       ),
                     PrimaryButton(
-                      label: browser.isSaving ? 'Saving…' : (browser.isNew ? 'Create Category' : 'Save Changes'),
+                      label: browser.isSaving ? 'Saving…' : (browser.isNew ? 'Create' : 'Save'),
                       icon: AppIcons.checkCircle,
                       onPressed: editable && !browser.isSaving ? _save : null,
                     ),

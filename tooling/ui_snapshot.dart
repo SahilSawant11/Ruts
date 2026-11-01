@@ -25,6 +25,8 @@ import 'package:pos_app/core/theme/app_theme.dart';
 import 'package:pos_app/core/theme/app_typography.dart';
 import 'package:pos_app/core/theme/theme_mode_provider.dart';
 import 'package:pos_app/features/masters/data/masters_providers.dart';
+import 'package:pos_app/features/purchase/domain/purchase_line_item.dart';
+import 'package:pos_app/features/purchase/presentation/purchase_cart_controller.dart';
 import 'package:pos_app/features/sales/presentation/cart_controller.dart';
 
 const _outOverride = String.fromEnvironment('SNAP_OUT');
@@ -105,8 +107,29 @@ Future<void> main() async {
     await cart.addByBarcode(mats[i].barcode, qty: 1 + i % 2);
   }
 
+  // A realistic purchase: six lines.
+  final purchase = container.read(purchaseCartControllerProvider.notifier);
+  final pmats = await (db.select(db.cachedMaterials)..limit(6)).get();
+  for (var i = 0; i < pmats.length; i++) {
+    final m = pmats[i];
+    purchase.addLine(PurchaseLineItem(
+      index: i + 1,
+      materialId: m.id,
+      manufacturer: m.manufacturer,
+      material: m.name,
+      batch: 'B-${2600 + i}',
+      packing: '12x${m.packing}',
+      qty: 12 * (i + 1),
+      rate: m.saleRate * 0.8,
+      discountPercent: i.isEven ? 2 : 0,
+      taxPercent: m.taxPercent,
+    ));
+  }
+
   for (final route in _routes.split(',')) {
     router.go(route);
+    container.read(appThemeModeProvider.notifier).state = ThemeMode.light;
+    await Future<void>.delayed(const Duration(milliseconds: 2500)); // let the screen load its data
     for (final mode in [ThemeMode.light, ThemeMode.dark]) {
       container.read(appThemeModeProvider.notifier).state = mode;
       for (final size in _sizes) {

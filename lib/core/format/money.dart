@@ -21,6 +21,14 @@ abstract final class Money {
     return '$sign$sym${group(v, decimals: 0)}';
   }
 
+  /// For editable number fields: 1180 not 1180.0, 18.5 stays 18.5,
+  /// 12.345 → 12.35. No grouping (the field must parse back).
+  static String editable(num value) {
+    if (value == value.roundToDouble()) return value.toInt().toString();
+    final s = value.toStringAsFixed(2);
+    return s.endsWith('0') ? s.substring(0, s.length - 1) : s;
+  }
+
   /// Groups an absolute value in the Indian system.
   static String group(num value, {int decimals = 2}) {
     final fixed = value.toStringAsFixed(decimals);
