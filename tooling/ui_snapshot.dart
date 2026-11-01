@@ -34,7 +34,12 @@ late final String _out;
 const _routes = String.fromEnvironment('SNAP_ROUTES', defaultValue: '/sales');
 // Logical sizes Windows reports: 1366x768 @125% ≈ 1093x614, 1920x1080 @150%
 // = 1280x720, plus the unscaled 1366x768 and 1920x1080.
-const _sizes = [Size(1093, 614), Size(1280, 720), Size(1366, 768), Size(1920, 1080)];
+const _allSizes = [Size(1093, 614), Size(1280, 720), Size(1366, 768), Size(1920, 1080)];
+
+/// --dart-define=SNAP_SCALE=2 renders at 2x (e.g. 3840x2160 for 1920x1080)
+/// and, for speed, only at 1920x1080 — used for crisp promo-video close-ups.
+const _scale = int.fromEnvironment('SNAP_SCALE', defaultValue: 1);
+const _sizes = _scale > 1 ? [Size(1920, 1080)] : _allSizes;
 
 final _boundaryKey = GlobalKey();
 
@@ -155,7 +160,7 @@ Future<void> _capture(String name) async {
     await Future<void>.delayed(const Duration(milliseconds: 16));
   }
   final boundary = _boundaryKey.currentContext!.findRenderObject()! as RenderRepaintBoundary;
-  final image = await boundary.toImage(pixelRatio: 1);
+  final image = await boundary.toImage(pixelRatio: _scale.toDouble());
   final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
   await File('$_out/$name.png').writeAsBytes(bytes!.buffer.asUint8List());
   // ignore: avoid_print
