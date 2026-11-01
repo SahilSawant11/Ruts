@@ -147,8 +147,13 @@ Future<void> main() async {
 Future<void> _capture(String name) async {
   // Hidden/occluded macOS windows stop producing frames; force one and
   // don't wait forever.
-  WidgetsBinding.instance.scheduleForcedFrame();
-  await WidgetsBinding.instance.endOfFrame.timeout(const Duration(seconds: 3), onTimeout: () {});
+  // Hidden/occluded macOS windows get few or no frames, which also stalls
+  // loading and animations; drive ~1.5 s of frames before capturing.
+  for (var i = 0; i < 90; i++) {
+    WidgetsBinding.instance.scheduleForcedFrame();
+    await WidgetsBinding.instance.endOfFrame.timeout(const Duration(milliseconds: 60), onTimeout: () {});
+    await Future<void>.delayed(const Duration(milliseconds: 16));
+  }
   final boundary = _boundaryKey.currentContext!.findRenderObject()! as RenderRepaintBoundary;
   final image = await boundary.toImage(pixelRatio: 1);
   final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
