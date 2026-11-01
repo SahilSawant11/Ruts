@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/auth/auth_controller.dart';
+import '../core/licensing/license_service.dart';
 import '../core/local/app_bootstrap_provider.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/app_typography.dart';
 import '../core/theme/font_scale_provider.dart';
 import '../core/theme/theme_mode_provider.dart';
+import '../features/auth/presentation/screens/activation_screen.dart';
+import '../features/auth/presentation/screens/change_password_screen.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
 import 'router.dart';
 
@@ -16,6 +19,7 @@ class PosApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final bootstrapAsync = ref.watch(appBootstrapProvider);
     final auth = ref.watch(authControllerProvider);
+    final license = ref.watch(licenseStatusProvider);
     final themeMode = ref.watch(appThemeModeProvider);
     final fontScale = ref.watch(appFontScaleProvider);
 
@@ -38,7 +42,17 @@ class PosApp extends ConsumerWidget {
       );
     }
 
-    if (bootstrapAsync.isLoading || auth.isLoading) {
+    MaterialApp simple(Widget home) => MaterialApp(
+          title: 'Caskly - Liquor Store POS',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          themeMode: themeMode,
+          builder: appBuilder,
+          home: home,
+        );
+
+    if (bootstrapAsync.isLoading || license.isLoading || auth.initializing) {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
@@ -70,17 +84,14 @@ class PosApp extends ConsumerWidget {
       );
     }
 
-    if (!auth.isAuthenticated) {
-      return MaterialApp(
-        title: 'Caskly - Liquor Store POS',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light,
-        darkTheme: AppTheme.dark,
-        themeMode: themeMode,
-        builder: appBuilder,
-        home: const LoginScreen(),
-      );
+    final licenseStatus = license.valueOrNull;
+    if (licenseStatus != null && !licenseStatus.allowsUse) {
+      return simple(ActivationScreen(status: licenseStatus));
     }
+
+    if (!auth.isAuthenticated) return simple(const LoginScreen());
+
+    if (auth.user!.mustChangePassword) return simple(const ChangePasswordScreen());
 
     return MaterialApp.router(
       title: 'Caskly - Liquor Store POS',
@@ -89,7 +100,7 @@ class PosApp extends ConsumerWidget {
       darkTheme: AppTheme.dark,
       themeMode: themeMode,
       builder: appBuilder,
-      routerConfig: appRouter,
+      routerConfig: ref.watch(appRouterProvider),
     );
   }
 }

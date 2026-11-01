@@ -4,6 +4,7 @@ import 'package:drift/drift.dart' hide Column;
 
 import '../../../core/config/app_config.dart';
 import '../../../core/local/app_database.dart';
+import '../../../core/local/db_paths.dart';
 import '../../../core/network/api_exception.dart';
 import '../../sales/data/models/material_dto.dart';
 import 'masters_api_repository.dart';
@@ -489,7 +490,7 @@ class LocalMastersRepository {
   Future<SupplierDto> createSupplier(SaveSupplierRequest request) async {
     if (AppConfig.offlineOnly) {
       final local = SupplierDto(
-        id: 'local-supplier-${DateTime.now().microsecondsSinceEpoch}',
+        id: 'local-supplier-${DbPaths.newId()}',
         name: request.name,
         address: request.address,
         contactNo: request.contactNo,
@@ -518,7 +519,7 @@ class LocalMastersRepository {
       if (e.statusCode != null) rethrow;
 
       final local = SupplierDto(
-        id: 'local-supplier-${DateTime.now().microsecondsSinceEpoch}',
+        id: 'local-supplier-${DbPaths.newId()}',
         name: request.name,
         address: request.address,
         contactNo: request.contactNo,

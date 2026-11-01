@@ -23,6 +23,8 @@ dependencies:
   path_provider: ^2.1.6
   phosphoricons_flutter: ^1.1.1
   flutter_svg: ^2.3.0
+  cryptography: ^2.9.0
+  win32_registry: ^3.0.3
 
 dev_dependencies:
   flutter_test:

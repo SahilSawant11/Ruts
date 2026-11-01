@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../features/masters/data/masters_providers.dart';
 import '../network/api_exception.dart';
 import 'app_user.dart';
 import 'auth_repository.dart';
@@ -9,14 +10,17 @@ class AuthState {
     required this.isLoading,
     this.user,
     this.errorMessage,
+    this.initializing = false,
   });
 
-  const AuthState.loading() : this(isLoading: true);
+  /// Restoring the saved session at startup (vs. an interactive sign-in).
+  const AuthState.loading() : this(isLoading: true, initializing: true);
   const AuthState.loggedOut() : this(isLoading: false);
 
   final bool isLoading;
   final AppUser? user;
   final String? errorMessage;
+  final bool initializing;
 
   bool get isAuthenticated => user != null;
 
@@ -43,7 +47,7 @@ class AuthController extends StateNotifier<AuthState> {
   final AuthRepository _repository;
 
   Future<void> restore() async {
-    state = state.copyWith(isLoading: true, clearError: true);
+    state = const AuthState.loading();
     final user = await _repository.restoreSession();
     state = AuthState(isLoading: false, user: user);
   }
@@ -63,6 +67,23 @@ class AuthController extends StateNotifier<AuthState> {
     }
   }
 
+  /// Changes the signed-in user's password. Returns an error message or null.
+  Future<String?> changePassword({required String currentPassword, required String newPassword}) async {
+    final user = state.user;
+    if (user == null) return 'Not signed in.';
+    try {
+      await _repository.changePassword(
+        userId: user.id,
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      );
+      state = AuthState(isLoading: false, user: user.copyWith(mustChangePassword: false));
+      return null;
+    } on ApiException catch (e) {
+      return e.message;
+    }
+  }
+
   Future<void> signOut() async {
     await _repository.signOut();
     state = const AuthState.loggedOut();
@@ -70,7 +91,7 @@ class AuthController extends StateNotifier<AuthState> {
 }
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return AuthRepository();
+  return AuthRepository(ref.watch(appDatabaseProvider));
 });
 
 final authControllerProvider = StateNotifierProvider<AuthController, AuthState>((ref) {

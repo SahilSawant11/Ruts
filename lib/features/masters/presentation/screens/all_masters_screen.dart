@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:file_selector/file_selector.dart';
-import '../../../../core/local/backup_service.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../data/masters_providers.dart';
@@ -76,11 +73,11 @@ class AllMastersScreen extends ConsumerWidget {
             subtitle: 'Credit accounts & balances',
             comingSoon: true,
           ),
-          const MasterTile(
+          MasterTile(
             icon: AppIcons.badge,
             title: 'User Management',
             subtitle: 'Roles & permissions',
-            comingSoon: true,
+            onTap: () => context.go('/settings'),
           ),
           const MasterTile(
             icon: AppIcons.receipt,
@@ -97,48 +94,11 @@ class AllMastersScreen extends ConsumerWidget {
           MasterTile(
             icon: AppIcons.settings,
             title: 'App Settings',
-            subtitle: 'Backup database',
-            onTap: () => _showBackupDialog(context, ref),
+            subtitle: 'Backup, restore & users',
+            onTap: () => context.go('/settings'),
           ),
         ],
       ),
     );
-  }
-
-  void _showBackupDialog(BuildContext context, WidgetRef ref) async {
-    final db = ref.read(appDatabaseProvider);
-    final backup = BackupService(db);
-
-    final folder = await getDirectoryPath(
-      confirmButtonText: 'Save Backup Here',
-    );
-    if (folder == null) return;
-
-    try {
-      final path = await backup.backupNow(folder);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Backup saved: ${path.split('/').last}',
-              style: const TextStyle(color: Colors.white),
-            ),
-            backgroundColor: AppColors.success,
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Backup failed: $e',
-              style: const TextStyle(color: Colors.white),
-            ),
-            backgroundColor: AppColors.danger,
-          ),
-        );
-      }
-    }
   }
 }

@@ -4,6 +4,7 @@ import 'package:drift/drift.dart' hide Column;
 
 import '../../../core/config/app_config.dart';
 import '../../../core/local/app_database.dart';
+import '../../../core/local/db_paths.dart';
 import '../../../core/network/api_exception.dart';
 import '../../masters/data/local_masters_repository.dart';
 import '../../masters/data/models/supplier_dto.dart';
@@ -303,29 +304,7 @@ class LocalPurchaseRepository {
   Future<CreatePurchaseResult> createPurchase(CreatePurchaseRequest request) async {
     if (AppConfig.offlineOnly) {
       // In offline mode, all IDs are already local — no _resolveDependencies needed.
-      final localId = 'local-purchase-${DateTime.now().microsecondsSinceEpoch}';
-      await _persistPurchaseWithStock(
-        purchaseId: localId,
-        request: request,
-        syncStatus: 'pending_create',
-        billNo: request.billNo,
-      );
-      await _db.into(_db.syncQueueItems).insert(
-            SyncQueueItemsCompanion.insert(
-              entityType: 'purchase',
-              entityId: localId,
-              operation: 'create',
-              payload: jsonEncode(request.toJson()),
-              status: const Value('pending'),
-              updatedAt: Value(DateTime.now().toUtc()),
-            ),
-          );
-      return CreatePurchaseResult(
-        id: localId,
-        billNo: request.billNo ?? 'Offline Queue',
-        lineItemCount: request.lineItems.length,
-        isPendingSync: true,
-      );
+      return _createLocalPurchase(request);
     }
     try {
       await syncPendingPurchases();
@@ -340,32 +319,43 @@ class LocalPurchaseRepository {
       return result;
     } on ApiException catch (e) {
       if (e.statusCode != null) rethrow;
+      return _createLocalPurchase(request);
+    }
+  }
 
-      final localId = 'local-purchase-${DateTime.now().microsecondsSinceEpoch}';
+  /// Saves the purchase, applies stock and queues the sync job in one
+  /// transaction, so a crash can't leave stock changed without a bill.
+  Future<CreatePurchaseResult> _createLocalPurchase(CreatePurchaseRequest request) async {
+    final localId = 'local-purchase-${DbPaths.newId()}';
+    final deviceId = await _db.deviceId();
+    await _db.transaction(() async {
       await _persistPurchaseWithStock(
         purchaseId: localId,
         request: request,
         syncStatus: 'pending_create',
         billNo: request.billNo,
+        deviceId: deviceId,
       );
+      final payload = request.toJson()
+        ..['deviceId'] = deviceId
+        ..['clientId'] = localId;
       await _db.into(_db.syncQueueItems).insert(
             SyncQueueItemsCompanion.insert(
               entityType: 'purchase',
               entityId: localId,
               operation: 'create',
-              payload: jsonEncode(request.toJson()),
+              payload: jsonEncode(payload),
               status: const Value('pending'),
               updatedAt: Value(DateTime.now().toUtc()),
             ),
           );
-
-      return CreatePurchaseResult(
-        id: localId,
-        billNo: request.billNo ?? 'Offline Queue',
-        lineItemCount: request.lineItems.length,
-        isPendingSync: true,
-      );
-    }
+    });
+    return CreatePurchaseResult(
+      id: localId,
+      billNo: request.billNo ?? 'Offline Queue',
+      lineItemCount: request.lineItems.length,
+      isPendingSync: true,
+    );
   }
 
   /// Persists the purchase bill + line items AND applies stock changes,
@@ -375,6 +365,7 @@ class LocalPurchaseRepository {
     required CreatePurchaseRequest request,
     required String syncStatus,
     String? billNo,
+    String? deviceId,
   }) async {
     final now = DateTime.now().toUtc();
     final billDate = DateTime(now.year, now.month, now.day);
@@ -393,6 +384,7 @@ class LocalPurchaseRepository {
               tpNo: Value(request.tpNo),
               tpDate: Value(request.tpDate),
               stNo: Value(request.stNo),
+              deviceId: Value(deviceId),
               discount: request.discount,
               vat: request.vat,
               stamp: request.stamp,

@@ -34,6 +34,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
     final location    = GoRouterState.of(context).uri.toString();
     final currentUser = ref.watch(currentUserProvider);
     final isDark      = AppColors.isDark(context);
+    bool can(String route) => currentUser?.canOpen(route) ?? false;
 
     // Pure hover-to-expand: expanded when hovered, compact rail when not.
     final collapsed = !_isHovered;
@@ -71,7 +72,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                 children: [
                   // 1. WORKSPACE
                   _SectionHeader(title: 'Workspace', collapsed: collapsed),
-                  SidebarItem(
+                  if (can('/dashboard')) SidebarItem(
                     icon: AppIcons.dashboard,
                     label: 'Dashboard',
                     shortcut: 'F1',
@@ -83,7 +84,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                       setState(() => _isHovered = false);
                     },
                   ),
-                  SidebarItem(
+                  if (can('/sales')) SidebarItem(
                     icon: AppIcons.pos,
                     label: 'Sales Bill',
                     shortcut: 'F3',
@@ -94,7 +95,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                       setState(() => _isHovered = false);
                     },
                   ),
-                  SidebarItem(
+                  if (can('/sales-return')) SidebarItem(
                     icon: AppIcons.salesReturn,
                     label: 'Sales Return',
                     shortcut: 'F8',
@@ -105,7 +106,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                       setState(() => _isHovered = false);
                     },
                   ),
-                  SidebarItem(
+                  if (can('/purchase')) SidebarItem(
                     icon: AppIcons.purchaseBill,
                     label: 'Purchase Bill',
                     shortcut: 'F2',
@@ -116,7 +117,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                       setState(() => _isHovered = false);
                     },
                   ),
-                  SidebarItem(
+                  if (can('/purchase-return')) SidebarItem(
                     icon: AppIcons.purchaseReturn,
                     label: 'Purchase Return',
                     active: location == '/purchase-return',
@@ -128,8 +129,8 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                   ),
 
                   // 2. MASTERS
-                  _SectionHeader(title: 'Masters', collapsed: collapsed),
-                  SidebarItem(
+                  if (can('/material')) _SectionHeader(title: 'Masters', collapsed: collapsed),
+                  if (can('/material')) SidebarItem(
                     icon: AppIcons.crate,
                     label: 'Material Master',
                     shortcut: 'F4',
@@ -140,7 +141,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                       setState(() => _isHovered = false);
                     },
                   ),
-                  SidebarItem(
+                  if (can('/category')) SidebarItem(
                     icon: AppIcons.categories,
                     label: 'Category Master',
                     shortcut: 'F11',
@@ -151,7 +152,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                       setState(() => _isHovered = false);
                     },
                   ),
-                  SidebarItem(
+                  if (can('/supplier')) SidebarItem(
                     icon: AppIcons.suppliers,
                     label: 'Supplier Master',
                     shortcut: 'F7',
@@ -162,7 +163,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                       setState(() => _isHovered = false);
                     },
                   ),
-                  SidebarItem(
+                  if (can('/manufacturer')) SidebarItem(
                     icon: AppIcons.manufacturers,
                     label: 'Manufacturer',
                     active: location == '/manufacturer',
@@ -172,7 +173,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                       setState(() => _isHovered = false);
                     },
                   ),
-                  SidebarItem(
+                  if (can('/packaging')) SidebarItem(
                     icon: AppIcons.packagings,
                     label: 'Packaging Master',
                     active: location == '/packaging',
@@ -182,7 +183,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                       setState(() => _isHovered = false);
                     },
                   ),
-                  SidebarItem(
+                  if (can('/license-holder')) SidebarItem(
                     icon: AppIcons.exciseSeal,
                     label: 'License Holder',
                     active: location == '/license-holder',
@@ -192,7 +193,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                       setState(() => _isHovered = false);
                     },
                   ),
-                  SidebarItem(
+                  if (can('/masters')) SidebarItem(
                     icon: AppIcons.allMasters,
                     label: 'All Masters',
                     shortcut: 'F9',
@@ -206,7 +207,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
 
                   // 3. INVENTORY & REPORTS
                   _SectionHeader(title: 'Inventory & Reports', collapsed: collapsed),
-                  SidebarItem(
+                  if (can('/inventory')) SidebarItem(
                     icon: AppIcons.inventory,
                     label: 'Inventory',
                     shortcut: 'F5',
@@ -217,7 +218,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                       setState(() => _isHovered = false);
                     },
                   ),
-                  SidebarItem(
+                  if (can('/reports')) SidebarItem(
                     icon: AppIcons.reports,
                     label: 'SCM Daily Sale',
                     shortcut: 'F6',
@@ -228,7 +229,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                       setState(() => _isHovered = false);
                     },
                   ),
-                  SidebarItem(
+                  if (can('/brandwise-report')) SidebarItem(
                     icon: AppIcons.liquorBottle,
                     label: 'Brandwise Report',
                     shortcut: 'F10',
@@ -240,7 +241,19 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                     },
                   ),
 
-                  // 4. SYSTEM (Sync Center commented out for offline MVP)
+                  _SectionHeader(title: 'System', collapsed: collapsed),
+                  SidebarItem(
+                    icon: AppIcons.settings,
+                    label: 'Settings',
+                    active: location == '/settings',
+                    collapsed: collapsed,
+                    onTap: () {
+                      context.go('/settings');
+                      setState(() => _isHovered = false);
+                    },
+                  ),
+
+                  // 4. SYNC (Sync Center commented out for offline MVP)
                   // if (!AppConfig.offlineOnly) ...[
                   //   _SectionHeader(title: 'System', collapsed: collapsed),
                   //   SidebarItem(

@@ -33,10 +33,14 @@ final activeLicenseHolderProvider = Provider<LicenseHolderDto?>((ref) {
   );
 });
 
-/// Bill number for the bill currently being built. Regenerated after
-/// every successful save so the next bill gets a fresh number.
-final billNoProvider = StateProvider<String>((ref) => _generateBillNo());
+/// Preview of the next sales bill number (sequential per financial year,
+/// e.g. CS-2627-000042). The real number is reserved atomically when the
+/// bill is saved; invalidate this after each save.
+final nextBillNoProvider = FutureProvider<String>((ref) {
+  return ref.watch(appDatabaseProvider).peekNextSalesBillNo();
+});
 
-String _generateBillNo() => 'CS-${DateTime.now().millisecondsSinceEpoch}';
-
-String generateBillNo() => _generateBillNo();
+/// Bill number shown on the bill currently being built.
+final billNoProvider = Provider<String>((ref) {
+  return ref.watch(nextBillNoProvider).valueOrNull ?? '—';
+});

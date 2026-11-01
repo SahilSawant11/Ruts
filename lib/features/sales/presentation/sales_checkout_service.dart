@@ -74,7 +74,7 @@ class SalesCheckoutService {
 
       // Reset cart and generate next bill number
       ref.read(cartControllerProvider.notifier).clear();
-      ref.read(billNoProvider.notifier).state = generateBillNo();
+      ref.invalidate(nextBillNoProvider);
       ref.read(selectedCustomerIdProvider.notifier).state = null;
 
       // Advance license holder sequentially to the next one in rotation

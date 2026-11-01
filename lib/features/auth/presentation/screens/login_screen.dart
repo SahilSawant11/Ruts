@@ -1,4 +1,5 @@
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,8 +19,9 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _usernameController = TextEditingController(text: 'admin');
-  final _passwordController = TextEditingController(text: 'admin123');
+  // Prefill only in debug builds, for development convenience.
+  final _usernameController = TextEditingController(text: kDebugMode ? 'admin' : '');
+  final _passwordController = TextEditingController(text: kDebugMode ? 'admin123' : '');
   final _passwordFocusNode = FocusNode();
 
   @override
@@ -133,13 +135,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             expand: true,
                             onPressed: auth.isLoading ? null : _submit,
                           ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Default login: admin / admin123',
-                            style: AppTypography.caption.copyWith(
-                              color: AppColors.textSecondaryFor(context),
-                            ),
-                          ),
+
                         ],
                       ),
                 ),

@@ -3082,6 +3082,12 @@ class $CachedSalesBillsTable extends CachedSalesBills
   late final GeneratedColumn<String> permitHolderName = GeneratedColumn<String>(
       'permit_holder_name', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _deviceIdMeta =
+      const VerificationMeta('deviceId');
+  @override
+  late final GeneratedColumn<String> deviceId = GeneratedColumn<String>(
+      'device_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _payModeMeta =
       const VerificationMeta('payMode');
   @override
@@ -3148,6 +3154,7 @@ class $CachedSalesBillsTable extends CachedSalesBills
         customerId,
         permitNo,
         permitHolderName,
+        deviceId,
         payMode,
         status,
         totalAmount,
@@ -3194,6 +3201,10 @@ class $CachedSalesBillsTable extends CachedSalesBills
           _permitHolderNameMeta,
           permitHolderName.isAcceptableOrUnknown(
               data['permit_holder_name']!, _permitHolderNameMeta));
+    }
+    if (data.containsKey('device_id')) {
+      context.handle(_deviceIdMeta,
+          deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta));
     }
     if (data.containsKey('pay_mode')) {
       context.handle(_payModeMeta,
@@ -3268,6 +3279,8 @@ class $CachedSalesBillsTable extends CachedSalesBills
           .read(DriftSqlType.string, data['${effectivePrefix}permit_no']),
       permitHolderName: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}permit_holder_name']),
+      deviceId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}device_id']),
       payMode: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}pay_mode'])!,
       status: attachedDatabase.typeMapping
@@ -3301,6 +3314,7 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
   final String? customerId;
   final String? permitNo;
   final String? permitHolderName;
+  final String? deviceId;
   final String payMode;
   final String status;
   final double totalAmount;
@@ -3316,6 +3330,7 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
       this.customerId,
       this.permitNo,
       this.permitHolderName,
+      this.deviceId,
       required this.payMode,
       required this.status,
       required this.totalAmount,
@@ -3338,6 +3353,9 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
     }
     if (!nullToAbsent || permitHolderName != null) {
       map['permit_holder_name'] = Variable<String>(permitHolderName);
+    }
+    if (!nullToAbsent || deviceId != null) {
+      map['device_id'] = Variable<String>(deviceId);
     }
     map['pay_mode'] = Variable<String>(payMode);
     map['status'] = Variable<String>(status);
@@ -3364,6 +3382,9 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
       permitHolderName: permitHolderName == null && nullToAbsent
           ? const Value.absent()
           : Value(permitHolderName),
+      deviceId: deviceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deviceId),
       payMode: Value(payMode),
       status: Value(status),
       totalAmount: Value(totalAmount),
@@ -3385,6 +3406,7 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
       customerId: serializer.fromJson<String?>(json['customerId']),
       permitNo: serializer.fromJson<String?>(json['permitNo']),
       permitHolderName: serializer.fromJson<String?>(json['permitHolderName']),
+      deviceId: serializer.fromJson<String?>(json['deviceId']),
       payMode: serializer.fromJson<String>(json['payMode']),
       status: serializer.fromJson<String>(json['status']),
       totalAmount: serializer.fromJson<double>(json['totalAmount']),
@@ -3405,6 +3427,7 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
       'customerId': serializer.toJson<String?>(customerId),
       'permitNo': serializer.toJson<String?>(permitNo),
       'permitHolderName': serializer.toJson<String?>(permitHolderName),
+      'deviceId': serializer.toJson<String?>(deviceId),
       'payMode': serializer.toJson<String>(payMode),
       'status': serializer.toJson<String>(status),
       'totalAmount': serializer.toJson<double>(totalAmount),
@@ -3423,6 +3446,7 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
           Value<String?> customerId = const Value.absent(),
           Value<String?> permitNo = const Value.absent(),
           Value<String?> permitHolderName = const Value.absent(),
+          Value<String?> deviceId = const Value.absent(),
           String? payMode,
           String? status,
           double? totalAmount,
@@ -3440,6 +3464,7 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
         permitHolderName: permitHolderName.present
             ? permitHolderName.value
             : this.permitHolderName,
+        deviceId: deviceId.present ? deviceId.value : this.deviceId,
         payMode: payMode ?? this.payMode,
         status: status ?? this.status,
         totalAmount: totalAmount ?? this.totalAmount,
@@ -3460,6 +3485,7 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
       permitHolderName: data.permitHolderName.present
           ? data.permitHolderName.value
           : this.permitHolderName,
+      deviceId: data.deviceId.present ? data.deviceId.value : this.deviceId,
       payMode: data.payMode.present ? data.payMode.value : this.payMode,
       status: data.status.present ? data.status.value : this.status,
       totalAmount:
@@ -3483,6 +3509,7 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
           ..write('customerId: $customerId, ')
           ..write('permitNo: $permitNo, ')
           ..write('permitHolderName: $permitHolderName, ')
+          ..write('deviceId: $deviceId, ')
           ..write('payMode: $payMode, ')
           ..write('status: $status, ')
           ..write('totalAmount: $totalAmount, ')
@@ -3503,6 +3530,7 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
       customerId,
       permitNo,
       permitHolderName,
+      deviceId,
       payMode,
       status,
       totalAmount,
@@ -3521,6 +3549,7 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
           other.customerId == this.customerId &&
           other.permitNo == this.permitNo &&
           other.permitHolderName == this.permitHolderName &&
+          other.deviceId == this.deviceId &&
           other.payMode == this.payMode &&
           other.status == this.status &&
           other.totalAmount == this.totalAmount &&
@@ -3538,6 +3567,7 @@ class CachedSalesBillsCompanion extends UpdateCompanion<CachedSalesBill> {
   final Value<String?> customerId;
   final Value<String?> permitNo;
   final Value<String?> permitHolderName;
+  final Value<String?> deviceId;
   final Value<String> payMode;
   final Value<String> status;
   final Value<double> totalAmount;
@@ -3554,6 +3584,7 @@ class CachedSalesBillsCompanion extends UpdateCompanion<CachedSalesBill> {
     this.customerId = const Value.absent(),
     this.permitNo = const Value.absent(),
     this.permitHolderName = const Value.absent(),
+    this.deviceId = const Value.absent(),
     this.payMode = const Value.absent(),
     this.status = const Value.absent(),
     this.totalAmount = const Value.absent(),
@@ -3571,6 +3602,7 @@ class CachedSalesBillsCompanion extends UpdateCompanion<CachedSalesBill> {
     this.customerId = const Value.absent(),
     this.permitNo = const Value.absent(),
     this.permitHolderName = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required String payMode,
     required String status,
     required double totalAmount,
@@ -3595,6 +3627,7 @@ class CachedSalesBillsCompanion extends UpdateCompanion<CachedSalesBill> {
     Expression<String>? customerId,
     Expression<String>? permitNo,
     Expression<String>? permitHolderName,
+    Expression<String>? deviceId,
     Expression<String>? payMode,
     Expression<String>? status,
     Expression<double>? totalAmount,
@@ -3612,6 +3645,7 @@ class CachedSalesBillsCompanion extends UpdateCompanion<CachedSalesBill> {
       if (customerId != null) 'customer_id': customerId,
       if (permitNo != null) 'permit_no': permitNo,
       if (permitHolderName != null) 'permit_holder_name': permitHolderName,
+      if (deviceId != null) 'device_id': deviceId,
       if (payMode != null) 'pay_mode': payMode,
       if (status != null) 'status': status,
       if (totalAmount != null) 'total_amount': totalAmount,
@@ -3631,6 +3665,7 @@ class CachedSalesBillsCompanion extends UpdateCompanion<CachedSalesBill> {
       Value<String?>? customerId,
       Value<String?>? permitNo,
       Value<String?>? permitHolderName,
+      Value<String?>? deviceId,
       Value<String>? payMode,
       Value<String>? status,
       Value<double>? totalAmount,
@@ -3647,6 +3682,7 @@ class CachedSalesBillsCompanion extends UpdateCompanion<CachedSalesBill> {
       customerId: customerId ?? this.customerId,
       permitNo: permitNo ?? this.permitNo,
       permitHolderName: permitHolderName ?? this.permitHolderName,
+      deviceId: deviceId ?? this.deviceId,
       payMode: payMode ?? this.payMode,
       status: status ?? this.status,
       totalAmount: totalAmount ?? this.totalAmount,
@@ -3677,6 +3713,9 @@ class CachedSalesBillsCompanion extends UpdateCompanion<CachedSalesBill> {
     }
     if (permitHolderName.present) {
       map['permit_holder_name'] = Variable<String>(permitHolderName.value);
+    }
+    if (deviceId.present) {
+      map['device_id'] = Variable<String>(deviceId.value);
     }
     if (payMode.present) {
       map['pay_mode'] = Variable<String>(payMode.value);
@@ -3719,6 +3758,7 @@ class CachedSalesBillsCompanion extends UpdateCompanion<CachedSalesBill> {
           ..write('customerId: $customerId, ')
           ..write('permitNo: $permitNo, ')
           ..write('permitHolderName: $permitHolderName, ')
+          ..write('deviceId: $deviceId, ')
           ..write('payMode: $payMode, ')
           ..write('status: $status, ')
           ..write('totalAmount: $totalAmount, ')
@@ -3787,6 +3827,12 @@ class $CachedPurchaseBillsTable extends CachedPurchaseBills
   @override
   late final GeneratedColumn<String> stNo = GeneratedColumn<String>(
       'st_no', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _deviceIdMeta =
+      const VerificationMeta('deviceId');
+  @override
+  late final GeneratedColumn<String> deviceId = GeneratedColumn<String>(
+      'device_id', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _discountMeta =
       const VerificationMeta('discount');
@@ -3868,6 +3914,7 @@ class $CachedPurchaseBillsTable extends CachedPurchaseBills
         tpNo,
         tpDate,
         stNo,
+        deviceId,
         discount,
         vat,
         stamp,
@@ -3932,6 +3979,10 @@ class $CachedPurchaseBillsTable extends CachedPurchaseBills
     if (data.containsKey('st_no')) {
       context.handle(
           _stNoMeta, stNo.isAcceptableOrUnknown(data['st_no']!, _stNoMeta));
+    }
+    if (data.containsKey('device_id')) {
+      context.handle(_deviceIdMeta,
+          deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta));
     }
     if (data.containsKey('discount')) {
       context.handle(_discountMeta,
@@ -4026,6 +4077,8 @@ class $CachedPurchaseBillsTable extends CachedPurchaseBills
           .read(DriftSqlType.string, data['${effectivePrefix}tp_date']),
       stNo: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}st_no']),
+      deviceId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}device_id']),
       discount: attachedDatabase.typeMapping
           .read(DriftSqlType.double, data['${effectivePrefix}discount'])!,
       vat: attachedDatabase.typeMapping
@@ -4068,6 +4121,7 @@ class CachedPurchaseBill extends DataClass
   final String? tpNo;
   final String? tpDate;
   final String? stNo;
+  final String? deviceId;
   final double discount;
   final double vat;
   final double stamp;
@@ -4089,6 +4143,7 @@ class CachedPurchaseBill extends DataClass
       this.tpNo,
       this.tpDate,
       this.stNo,
+      this.deviceId,
       required this.discount,
       required this.vat,
       required this.stamp,
@@ -4124,6 +4179,9 @@ class CachedPurchaseBill extends DataClass
     if (!nullToAbsent || stNo != null) {
       map['st_no'] = Variable<String>(stNo);
     }
+    if (!nullToAbsent || deviceId != null) {
+      map['device_id'] = Variable<String>(deviceId);
+    }
     map['discount'] = Variable<double>(discount);
     map['vat'] = Variable<double>(vat);
     map['stamp'] = Variable<double>(stamp);
@@ -4154,6 +4212,9 @@ class CachedPurchaseBill extends DataClass
       tpDate:
           tpDate == null && nullToAbsent ? const Value.absent() : Value(tpDate),
       stNo: stNo == null && nullToAbsent ? const Value.absent() : Value(stNo),
+      deviceId: deviceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deviceId),
       discount: Value(discount),
       vat: Value(vat),
       stamp: Value(stamp),
@@ -4181,6 +4242,7 @@ class CachedPurchaseBill extends DataClass
       tpNo: serializer.fromJson<String?>(json['tpNo']),
       tpDate: serializer.fromJson<String?>(json['tpDate']),
       stNo: serializer.fromJson<String?>(json['stNo']),
+      deviceId: serializer.fromJson<String?>(json['deviceId']),
       discount: serializer.fromJson<double>(json['discount']),
       vat: serializer.fromJson<double>(json['vat']),
       stamp: serializer.fromJson<double>(json['stamp']),
@@ -4207,6 +4269,7 @@ class CachedPurchaseBill extends DataClass
       'tpNo': serializer.toJson<String?>(tpNo),
       'tpDate': serializer.toJson<String?>(tpDate),
       'stNo': serializer.toJson<String?>(stNo),
+      'deviceId': serializer.toJson<String?>(deviceId),
       'discount': serializer.toJson<double>(discount),
       'vat': serializer.toJson<double>(vat),
       'stamp': serializer.toJson<double>(stamp),
@@ -4231,6 +4294,7 @@ class CachedPurchaseBill extends DataClass
           Value<String?> tpNo = const Value.absent(),
           Value<String?> tpDate = const Value.absent(),
           Value<String?> stNo = const Value.absent(),
+          Value<String?> deviceId = const Value.absent(),
           double? discount,
           double? vat,
           double? stamp,
@@ -4252,6 +4316,7 @@ class CachedPurchaseBill extends DataClass
         tpNo: tpNo.present ? tpNo.value : this.tpNo,
         tpDate: tpDate.present ? tpDate.value : this.tpDate,
         stNo: stNo.present ? stNo.value : this.stNo,
+        deviceId: deviceId.present ? deviceId.value : this.deviceId,
         discount: discount ?? this.discount,
         vat: vat ?? this.vat,
         stamp: stamp ?? this.stamp,
@@ -4276,6 +4341,7 @@ class CachedPurchaseBill extends DataClass
       tpNo: data.tpNo.present ? data.tpNo.value : this.tpNo,
       tpDate: data.tpDate.present ? data.tpDate.value : this.tpDate,
       stNo: data.stNo.present ? data.stNo.value : this.stNo,
+      deviceId: data.deviceId.present ? data.deviceId.value : this.deviceId,
       discount: data.discount.present ? data.discount.value : this.discount,
       vat: data.vat.present ? data.vat.value : this.vat,
       stamp: data.stamp.present ? data.stamp.value : this.stamp,
@@ -4306,6 +4372,7 @@ class CachedPurchaseBill extends DataClass
           ..write('tpNo: $tpNo, ')
           ..write('tpDate: $tpDate, ')
           ..write('stNo: $stNo, ')
+          ..write('deviceId: $deviceId, ')
           ..write('discount: $discount, ')
           ..write('vat: $vat, ')
           ..write('stamp: $stamp, ')
@@ -4322,27 +4389,29 @@ class CachedPurchaseBill extends DataClass
   }
 
   @override
-  int get hashCode => Object.hash(
-      id,
-      supplierId,
-      billNo,
-      challanNo,
-      noteNo,
-      payMode,
-      tpNo,
-      tpDate,
-      stNo,
-      discount,
-      vat,
-      stamp,
-      tcs,
-      loadingFreight,
-      netAmount,
-      totalAmount,
-      syncStatus,
-      billDate,
-      createdAt,
-      updatedAt);
+  int get hashCode => Object.hashAll([
+        id,
+        supplierId,
+        billNo,
+        challanNo,
+        noteNo,
+        payMode,
+        tpNo,
+        tpDate,
+        stNo,
+        deviceId,
+        discount,
+        vat,
+        stamp,
+        tcs,
+        loadingFreight,
+        netAmount,
+        totalAmount,
+        syncStatus,
+        billDate,
+        createdAt,
+        updatedAt
+      ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -4356,6 +4425,7 @@ class CachedPurchaseBill extends DataClass
           other.tpNo == this.tpNo &&
           other.tpDate == this.tpDate &&
           other.stNo == this.stNo &&
+          other.deviceId == this.deviceId &&
           other.discount == this.discount &&
           other.vat == this.vat &&
           other.stamp == this.stamp &&
@@ -4379,6 +4449,7 @@ class CachedPurchaseBillsCompanion extends UpdateCompanion<CachedPurchaseBill> {
   final Value<String?> tpNo;
   final Value<String?> tpDate;
   final Value<String?> stNo;
+  final Value<String?> deviceId;
   final Value<double> discount;
   final Value<double> vat;
   final Value<double> stamp;
@@ -4401,6 +4472,7 @@ class CachedPurchaseBillsCompanion extends UpdateCompanion<CachedPurchaseBill> {
     this.tpNo = const Value.absent(),
     this.tpDate = const Value.absent(),
     this.stNo = const Value.absent(),
+    this.deviceId = const Value.absent(),
     this.discount = const Value.absent(),
     this.vat = const Value.absent(),
     this.stamp = const Value.absent(),
@@ -4424,6 +4496,7 @@ class CachedPurchaseBillsCompanion extends UpdateCompanion<CachedPurchaseBill> {
     this.tpNo = const Value.absent(),
     this.tpDate = const Value.absent(),
     this.stNo = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required double discount,
     required double vat,
     required double stamp,
@@ -4457,6 +4530,7 @@ class CachedPurchaseBillsCompanion extends UpdateCompanion<CachedPurchaseBill> {
     Expression<String>? tpNo,
     Expression<String>? tpDate,
     Expression<String>? stNo,
+    Expression<String>? deviceId,
     Expression<double>? discount,
     Expression<double>? vat,
     Expression<double>? stamp,
@@ -4480,6 +4554,7 @@ class CachedPurchaseBillsCompanion extends UpdateCompanion<CachedPurchaseBill> {
       if (tpNo != null) 'tp_no': tpNo,
       if (tpDate != null) 'tp_date': tpDate,
       if (stNo != null) 'st_no': stNo,
+      if (deviceId != null) 'device_id': deviceId,
       if (discount != null) 'discount': discount,
       if (vat != null) 'vat': vat,
       if (stamp != null) 'stamp': stamp,
@@ -4505,6 +4580,7 @@ class CachedPurchaseBillsCompanion extends UpdateCompanion<CachedPurchaseBill> {
       Value<String?>? tpNo,
       Value<String?>? tpDate,
       Value<String?>? stNo,
+      Value<String?>? deviceId,
       Value<double>? discount,
       Value<double>? vat,
       Value<double>? stamp,
@@ -4527,6 +4603,7 @@ class CachedPurchaseBillsCompanion extends UpdateCompanion<CachedPurchaseBill> {
       tpNo: tpNo ?? this.tpNo,
       tpDate: tpDate ?? this.tpDate,
       stNo: stNo ?? this.stNo,
+      deviceId: deviceId ?? this.deviceId,
       discount: discount ?? this.discount,
       vat: vat ?? this.vat,
       stamp: stamp ?? this.stamp,
@@ -4571,6 +4648,9 @@ class CachedPurchaseBillsCompanion extends UpdateCompanion<CachedPurchaseBill> {
     }
     if (stNo.present) {
       map['st_no'] = Variable<String>(stNo.value);
+    }
+    if (deviceId.present) {
+      map['device_id'] = Variable<String>(deviceId.value);
     }
     if (discount.present) {
       map['discount'] = Variable<double>(discount.value);
@@ -4623,6 +4703,7 @@ class CachedPurchaseBillsCompanion extends UpdateCompanion<CachedPurchaseBill> {
           ..write('tpNo: $tpNo, ')
           ..write('tpDate: $tpDate, ')
           ..write('stNo: $stNo, ')
+          ..write('deviceId: $deviceId, ')
           ..write('discount: $discount, ')
           ..write('vat: $vat, ')
           ..write('stamp: $stamp, ')
@@ -6499,6 +6580,758 @@ class CachedLicenseHoldersCompanion
   }
 }
 
+class $AppSettingsTable extends AppSettings
+    with TableInfo<$AppSettingsTable, AppSetting> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AppSettingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _keyMeta = const VerificationMeta('key');
+  @override
+  late final GeneratedColumn<String> key = GeneratedColumn<String>(
+      'key', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _valueMeta = const VerificationMeta('value');
+  @override
+  late final GeneratedColumn<String> value = GeneratedColumn<String>(
+      'value', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [key, value, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'app_settings';
+  @override
+  VerificationContext validateIntegrity(Insertable<AppSetting> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('key')) {
+      context.handle(
+          _keyMeta, key.isAcceptableOrUnknown(data['key']!, _keyMeta));
+    } else if (isInserting) {
+      context.missing(_keyMeta);
+    }
+    if (data.containsKey('value')) {
+      context.handle(
+          _valueMeta, value.isAcceptableOrUnknown(data['value']!, _valueMeta));
+    } else if (isInserting) {
+      context.missing(_valueMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {key};
+  @override
+  AppSetting map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AppSetting(
+      key: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}key'])!,
+      value: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}value'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $AppSettingsTable createAlias(String alias) {
+    return $AppSettingsTable(attachedDatabase, alias);
+  }
+}
+
+class AppSetting extends DataClass implements Insertable<AppSetting> {
+  final String key;
+  final String value;
+  final DateTime updatedAt;
+  const AppSetting(
+      {required this.key, required this.value, required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['key'] = Variable<String>(key);
+    map['value'] = Variable<String>(value);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  AppSettingsCompanion toCompanion(bool nullToAbsent) {
+    return AppSettingsCompanion(
+      key: Value(key),
+      value: Value(value),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory AppSetting.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AppSetting(
+      key: serializer.fromJson<String>(json['key']),
+      value: serializer.fromJson<String>(json['value']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'key': serializer.toJson<String>(key),
+      'value': serializer.toJson<String>(value),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  AppSetting copyWith({String? key, String? value, DateTime? updatedAt}) =>
+      AppSetting(
+        key: key ?? this.key,
+        value: value ?? this.value,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  AppSetting copyWithCompanion(AppSettingsCompanion data) {
+    return AppSetting(
+      key: data.key.present ? data.key.value : this.key,
+      value: data.value.present ? data.value.value : this.value,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AppSetting(')
+          ..write('key: $key, ')
+          ..write('value: $value, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(key, value, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AppSetting &&
+          other.key == this.key &&
+          other.value == this.value &&
+          other.updatedAt == this.updatedAt);
+}
+
+class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
+  final Value<String> key;
+  final Value<String> value;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const AppSettingsCompanion({
+    this.key = const Value.absent(),
+    this.value = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AppSettingsCompanion.insert({
+    required String key,
+    required String value,
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : key = Value(key),
+        value = Value(value);
+  static Insertable<AppSetting> custom({
+    Expression<String>? key,
+    Expression<String>? value,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (key != null) 'key': key,
+      if (value != null) 'value': value,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AppSettingsCompanion copyWith(
+      {Value<String>? key,
+      Value<String>? value,
+      Value<DateTime>? updatedAt,
+      Value<int>? rowid}) {
+    return AppSettingsCompanion(
+      key: key ?? this.key,
+      value: value ?? this.value,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (key.present) {
+      map['key'] = Variable<String>(key.value);
+    }
+    if (value.present) {
+      map['value'] = Variable<String>(value.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AppSettingsCompanion(')
+          ..write('key: $key, ')
+          ..write('value: $value, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AppUsersTable extends AppUsers
+    with TableInfo<$AppUsersTable, AppUserRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AppUsersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _usernameMeta =
+      const VerificationMeta('username');
+  @override
+  late final GeneratedColumn<String> username = GeneratedColumn<String>(
+      'username', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'));
+  static const VerificationMeta _displayNameMeta =
+      const VerificationMeta('displayName');
+  @override
+  late final GeneratedColumn<String> displayName = GeneratedColumn<String>(
+      'display_name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _roleMeta = const VerificationMeta('role');
+  @override
+  late final GeneratedColumn<String> role = GeneratedColumn<String>(
+      'role', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _passwordHashMeta =
+      const VerificationMeta('passwordHash');
+  @override
+  late final GeneratedColumn<String> passwordHash = GeneratedColumn<String>(
+      'password_hash', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _isActiveMeta =
+      const VerificationMeta('isActive');
+  @override
+  late final GeneratedColumn<bool> isActive = GeneratedColumn<bool>(
+      'is_active', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_active" IN (0, 1))'),
+      defaultValue: const Constant(true));
+  static const VerificationMeta _mustChangePasswordMeta =
+      const VerificationMeta('mustChangePassword');
+  @override
+  late final GeneratedColumn<bool> mustChangePassword = GeneratedColumn<bool>(
+      'must_change_password', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("must_change_password" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _lastLoginAtMeta =
+      const VerificationMeta('lastLoginAt');
+  @override
+  late final GeneratedColumn<DateTime> lastLoginAt = GeneratedColumn<DateTime>(
+      'last_login_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        username,
+        displayName,
+        role,
+        passwordHash,
+        isActive,
+        mustChangePassword,
+        lastLoginAt,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'app_users';
+  @override
+  VerificationContext validateIntegrity(Insertable<AppUserRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('username')) {
+      context.handle(_usernameMeta,
+          username.isAcceptableOrUnknown(data['username']!, _usernameMeta));
+    } else if (isInserting) {
+      context.missing(_usernameMeta);
+    }
+    if (data.containsKey('display_name')) {
+      context.handle(
+          _displayNameMeta,
+          displayName.isAcceptableOrUnknown(
+              data['display_name']!, _displayNameMeta));
+    } else if (isInserting) {
+      context.missing(_displayNameMeta);
+    }
+    if (data.containsKey('role')) {
+      context.handle(
+          _roleMeta, role.isAcceptableOrUnknown(data['role']!, _roleMeta));
+    } else if (isInserting) {
+      context.missing(_roleMeta);
+    }
+    if (data.containsKey('password_hash')) {
+      context.handle(
+          _passwordHashMeta,
+          passwordHash.isAcceptableOrUnknown(
+              data['password_hash']!, _passwordHashMeta));
+    } else if (isInserting) {
+      context.missing(_passwordHashMeta);
+    }
+    if (data.containsKey('is_active')) {
+      context.handle(_isActiveMeta,
+          isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta));
+    }
+    if (data.containsKey('must_change_password')) {
+      context.handle(
+          _mustChangePasswordMeta,
+          mustChangePassword.isAcceptableOrUnknown(
+              data['must_change_password']!, _mustChangePasswordMeta));
+    }
+    if (data.containsKey('last_login_at')) {
+      context.handle(
+          _lastLoginAtMeta,
+          lastLoginAt.isAcceptableOrUnknown(
+              data['last_login_at']!, _lastLoginAtMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AppUserRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AppUserRow(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      username: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}username'])!,
+      displayName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}display_name'])!,
+      role: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}role'])!,
+      passwordHash: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}password_hash'])!,
+      isActive: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_active'])!,
+      mustChangePassword: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool, data['${effectivePrefix}must_change_password'])!,
+      lastLoginAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}last_login_at']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $AppUsersTable createAlias(String alias) {
+    return $AppUsersTable(attachedDatabase, alias);
+  }
+}
+
+class AppUserRow extends DataClass implements Insertable<AppUserRow> {
+  final String id;
+  final String username;
+  final String displayName;
+
+  /// One of: owner, manager, cashier.
+  final String role;
+  final String passwordHash;
+  final bool isActive;
+  final bool mustChangePassword;
+  final DateTime? lastLoginAt;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const AppUserRow(
+      {required this.id,
+      required this.username,
+      required this.displayName,
+      required this.role,
+      required this.passwordHash,
+      required this.isActive,
+      required this.mustChangePassword,
+      this.lastLoginAt,
+      required this.createdAt,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['username'] = Variable<String>(username);
+    map['display_name'] = Variable<String>(displayName);
+    map['role'] = Variable<String>(role);
+    map['password_hash'] = Variable<String>(passwordHash);
+    map['is_active'] = Variable<bool>(isActive);
+    map['must_change_password'] = Variable<bool>(mustChangePassword);
+    if (!nullToAbsent || lastLoginAt != null) {
+      map['last_login_at'] = Variable<DateTime>(lastLoginAt);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  AppUsersCompanion toCompanion(bool nullToAbsent) {
+    return AppUsersCompanion(
+      id: Value(id),
+      username: Value(username),
+      displayName: Value(displayName),
+      role: Value(role),
+      passwordHash: Value(passwordHash),
+      isActive: Value(isActive),
+      mustChangePassword: Value(mustChangePassword),
+      lastLoginAt: lastLoginAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastLoginAt),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory AppUserRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AppUserRow(
+      id: serializer.fromJson<String>(json['id']),
+      username: serializer.fromJson<String>(json['username']),
+      displayName: serializer.fromJson<String>(json['displayName']),
+      role: serializer.fromJson<String>(json['role']),
+      passwordHash: serializer.fromJson<String>(json['passwordHash']),
+      isActive: serializer.fromJson<bool>(json['isActive']),
+      mustChangePassword: serializer.fromJson<bool>(json['mustChangePassword']),
+      lastLoginAt: serializer.fromJson<DateTime?>(json['lastLoginAt']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'username': serializer.toJson<String>(username),
+      'displayName': serializer.toJson<String>(displayName),
+      'role': serializer.toJson<String>(role),
+      'passwordHash': serializer.toJson<String>(passwordHash),
+      'isActive': serializer.toJson<bool>(isActive),
+      'mustChangePassword': serializer.toJson<bool>(mustChangePassword),
+      'lastLoginAt': serializer.toJson<DateTime?>(lastLoginAt),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  AppUserRow copyWith(
+          {String? id,
+          String? username,
+          String? displayName,
+          String? role,
+          String? passwordHash,
+          bool? isActive,
+          bool? mustChangePassword,
+          Value<DateTime?> lastLoginAt = const Value.absent(),
+          DateTime? createdAt,
+          DateTime? updatedAt}) =>
+      AppUserRow(
+        id: id ?? this.id,
+        username: username ?? this.username,
+        displayName: displayName ?? this.displayName,
+        role: role ?? this.role,
+        passwordHash: passwordHash ?? this.passwordHash,
+        isActive: isActive ?? this.isActive,
+        mustChangePassword: mustChangePassword ?? this.mustChangePassword,
+        lastLoginAt: lastLoginAt.present ? lastLoginAt.value : this.lastLoginAt,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  AppUserRow copyWithCompanion(AppUsersCompanion data) {
+    return AppUserRow(
+      id: data.id.present ? data.id.value : this.id,
+      username: data.username.present ? data.username.value : this.username,
+      displayName:
+          data.displayName.present ? data.displayName.value : this.displayName,
+      role: data.role.present ? data.role.value : this.role,
+      passwordHash: data.passwordHash.present
+          ? data.passwordHash.value
+          : this.passwordHash,
+      isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      mustChangePassword: data.mustChangePassword.present
+          ? data.mustChangePassword.value
+          : this.mustChangePassword,
+      lastLoginAt:
+          data.lastLoginAt.present ? data.lastLoginAt.value : this.lastLoginAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AppUserRow(')
+          ..write('id: $id, ')
+          ..write('username: $username, ')
+          ..write('displayName: $displayName, ')
+          ..write('role: $role, ')
+          ..write('passwordHash: $passwordHash, ')
+          ..write('isActive: $isActive, ')
+          ..write('mustChangePassword: $mustChangePassword, ')
+          ..write('lastLoginAt: $lastLoginAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, username, displayName, role, passwordHash,
+      isActive, mustChangePassword, lastLoginAt, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AppUserRow &&
+          other.id == this.id &&
+          other.username == this.username &&
+          other.displayName == this.displayName &&
+          other.role == this.role &&
+          other.passwordHash == this.passwordHash &&
+          other.isActive == this.isActive &&
+          other.mustChangePassword == this.mustChangePassword &&
+          other.lastLoginAt == this.lastLoginAt &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class AppUsersCompanion extends UpdateCompanion<AppUserRow> {
+  final Value<String> id;
+  final Value<String> username;
+  final Value<String> displayName;
+  final Value<String> role;
+  final Value<String> passwordHash;
+  final Value<bool> isActive;
+  final Value<bool> mustChangePassword;
+  final Value<DateTime?> lastLoginAt;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const AppUsersCompanion({
+    this.id = const Value.absent(),
+    this.username = const Value.absent(),
+    this.displayName = const Value.absent(),
+    this.role = const Value.absent(),
+    this.passwordHash = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.mustChangePassword = const Value.absent(),
+    this.lastLoginAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AppUsersCompanion.insert({
+    required String id,
+    required String username,
+    required String displayName,
+    required String role,
+    required String passwordHash,
+    this.isActive = const Value.absent(),
+    this.mustChangePassword = const Value.absent(),
+    this.lastLoginAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        username = Value(username),
+        displayName = Value(displayName),
+        role = Value(role),
+        passwordHash = Value(passwordHash);
+  static Insertable<AppUserRow> custom({
+    Expression<String>? id,
+    Expression<String>? username,
+    Expression<String>? displayName,
+    Expression<String>? role,
+    Expression<String>? passwordHash,
+    Expression<bool>? isActive,
+    Expression<bool>? mustChangePassword,
+    Expression<DateTime>? lastLoginAt,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (username != null) 'username': username,
+      if (displayName != null) 'display_name': displayName,
+      if (role != null) 'role': role,
+      if (passwordHash != null) 'password_hash': passwordHash,
+      if (isActive != null) 'is_active': isActive,
+      if (mustChangePassword != null)
+        'must_change_password': mustChangePassword,
+      if (lastLoginAt != null) 'last_login_at': lastLoginAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AppUsersCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? username,
+      Value<String>? displayName,
+      Value<String>? role,
+      Value<String>? passwordHash,
+      Value<bool>? isActive,
+      Value<bool>? mustChangePassword,
+      Value<DateTime?>? lastLoginAt,
+      Value<DateTime>? createdAt,
+      Value<DateTime>? updatedAt,
+      Value<int>? rowid}) {
+    return AppUsersCompanion(
+      id: id ?? this.id,
+      username: username ?? this.username,
+      displayName: displayName ?? this.displayName,
+      role: role ?? this.role,
+      passwordHash: passwordHash ?? this.passwordHash,
+      isActive: isActive ?? this.isActive,
+      mustChangePassword: mustChangePassword ?? this.mustChangePassword,
+      lastLoginAt: lastLoginAt ?? this.lastLoginAt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (username.present) {
+      map['username'] = Variable<String>(username.value);
+    }
+    if (displayName.present) {
+      map['display_name'] = Variable<String>(displayName.value);
+    }
+    if (role.present) {
+      map['role'] = Variable<String>(role.value);
+    }
+    if (passwordHash.present) {
+      map['password_hash'] = Variable<String>(passwordHash.value);
+    }
+    if (isActive.present) {
+      map['is_active'] = Variable<bool>(isActive.value);
+    }
+    if (mustChangePassword.present) {
+      map['must_change_password'] = Variable<bool>(mustChangePassword.value);
+    }
+    if (lastLoginAt.present) {
+      map['last_login_at'] = Variable<DateTime>(lastLoginAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AppUsersCompanion(')
+          ..write('id: $id, ')
+          ..write('username: $username, ')
+          ..write('displayName: $displayName, ')
+          ..write('role: $role, ')
+          ..write('passwordHash: $passwordHash, ')
+          ..write('isActive: $isActive, ')
+          ..write('mustChangePassword: $mustChangePassword, ')
+          ..write('lastLoginAt: $lastLoginAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -6524,6 +7357,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $CachedSaleLineItemsTable(this);
   late final $CachedLicenseHoldersTable cachedLicenseHolders =
       $CachedLicenseHoldersTable(this);
+  late final $AppSettingsTable appSettings = $AppSettingsTable(this);
+  late final $AppUsersTable appUsers = $AppUsersTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -6540,7 +7375,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         cachedPurchaseBills,
         cachedPurchaseLineItems,
         cachedSaleLineItems,
-        cachedLicenseHolders
+        cachedLicenseHolders,
+        appSettings,
+        appUsers
       ];
 }
 
@@ -8094,6 +8931,7 @@ typedef $$CachedSalesBillsTableCreateCompanionBuilder
   Value<String?> customerId,
   Value<String?> permitNo,
   Value<String?> permitHolderName,
+  Value<String?> deviceId,
   required String payMode,
   required String status,
   required double totalAmount,
@@ -8112,6 +8950,7 @@ typedef $$CachedSalesBillsTableUpdateCompanionBuilder
   Value<String?> customerId,
   Value<String?> permitNo,
   Value<String?> permitHolderName,
+  Value<String?> deviceId,
   Value<String> payMode,
   Value<String> status,
   Value<double> totalAmount,
@@ -8148,6 +8987,9 @@ class $$CachedSalesBillsTableFilterComposer
   ColumnFilters<String> get permitHolderName => $composableBuilder(
       column: $table.permitHolderName,
       builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get deviceId => $composableBuilder(
+      column: $table.deviceId, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get payMode => $composableBuilder(
       column: $table.payMode, builder: (column) => ColumnFilters(column));
@@ -8202,6 +9044,9 @@ class $$CachedSalesBillsTableOrderingComposer
       column: $table.permitHolderName,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get deviceId => $composableBuilder(
+      column: $table.deviceId, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get payMode => $composableBuilder(
       column: $table.payMode, builder: (column) => ColumnOrderings(column));
 
@@ -8253,6 +9098,9 @@ class $$CachedSalesBillsTableAnnotationComposer
 
   GeneratedColumn<String> get permitHolderName => $composableBuilder(
       column: $table.permitHolderName, builder: (column) => column);
+
+  GeneratedColumn<String> get deviceId =>
+      $composableBuilder(column: $table.deviceId, builder: (column) => column);
 
   GeneratedColumn<String> get payMode =>
       $composableBuilder(column: $table.payMode, builder: (column) => column);
@@ -8314,6 +9162,7 @@ class $$CachedSalesBillsTableTableManager extends RootTableManager<
             Value<String?> customerId = const Value.absent(),
             Value<String?> permitNo = const Value.absent(),
             Value<String?> permitHolderName = const Value.absent(),
+            Value<String?> deviceId = const Value.absent(),
             Value<String> payMode = const Value.absent(),
             Value<String> status = const Value.absent(),
             Value<double> totalAmount = const Value.absent(),
@@ -8331,6 +9180,7 @@ class $$CachedSalesBillsTableTableManager extends RootTableManager<
             customerId: customerId,
             permitNo: permitNo,
             permitHolderName: permitHolderName,
+            deviceId: deviceId,
             payMode: payMode,
             status: status,
             totalAmount: totalAmount,
@@ -8348,6 +9198,7 @@ class $$CachedSalesBillsTableTableManager extends RootTableManager<
             Value<String?> customerId = const Value.absent(),
             Value<String?> permitNo = const Value.absent(),
             Value<String?> permitHolderName = const Value.absent(),
+            Value<String?> deviceId = const Value.absent(),
             required String payMode,
             required String status,
             required double totalAmount,
@@ -8365,6 +9216,7 @@ class $$CachedSalesBillsTableTableManager extends RootTableManager<
             customerId: customerId,
             permitNo: permitNo,
             permitHolderName: permitHolderName,
+            deviceId: deviceId,
             payMode: payMode,
             status: status,
             totalAmount: totalAmount,
@@ -8409,6 +9261,7 @@ typedef $$CachedPurchaseBillsTableCreateCompanionBuilder
   Value<String?> tpNo,
   Value<String?> tpDate,
   Value<String?> stNo,
+  Value<String?> deviceId,
   required double discount,
   required double vat,
   required double stamp,
@@ -8433,6 +9286,7 @@ typedef $$CachedPurchaseBillsTableUpdateCompanionBuilder
   Value<String?> tpNo,
   Value<String?> tpDate,
   Value<String?> stNo,
+  Value<String?> deviceId,
   Value<double> discount,
   Value<double> vat,
   Value<double> stamp,
@@ -8482,6 +9336,9 @@ class $$CachedPurchaseBillsTableFilterComposer
 
   ColumnFilters<String> get stNo => $composableBuilder(
       column: $table.stNo, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get deviceId => $composableBuilder(
+      column: $table.deviceId, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<double> get discount => $composableBuilder(
       column: $table.discount, builder: (column) => ColumnFilters(column));
@@ -8554,6 +9411,9 @@ class $$CachedPurchaseBillsTableOrderingComposer
   ColumnOrderings<String> get stNo => $composableBuilder(
       column: $table.stNo, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get deviceId => $composableBuilder(
+      column: $table.deviceId, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<double> get discount => $composableBuilder(
       column: $table.discount, builder: (column) => ColumnOrderings(column));
 
@@ -8624,6 +9484,9 @@ class $$CachedPurchaseBillsTableAnnotationComposer
 
   GeneratedColumn<String> get stNo =>
       $composableBuilder(column: $table.stNo, builder: (column) => column);
+
+  GeneratedColumn<String> get deviceId =>
+      $composableBuilder(column: $table.deviceId, builder: (column) => column);
 
   GeneratedColumn<double> get discount =>
       $composableBuilder(column: $table.discount, builder: (column) => column);
@@ -8698,6 +9561,7 @@ class $$CachedPurchaseBillsTableTableManager extends RootTableManager<
             Value<String?> tpNo = const Value.absent(),
             Value<String?> tpDate = const Value.absent(),
             Value<String?> stNo = const Value.absent(),
+            Value<String?> deviceId = const Value.absent(),
             Value<double> discount = const Value.absent(),
             Value<double> vat = const Value.absent(),
             Value<double> stamp = const Value.absent(),
@@ -8721,6 +9585,7 @@ class $$CachedPurchaseBillsTableTableManager extends RootTableManager<
             tpNo: tpNo,
             tpDate: tpDate,
             stNo: stNo,
+            deviceId: deviceId,
             discount: discount,
             vat: vat,
             stamp: stamp,
@@ -8744,6 +9609,7 @@ class $$CachedPurchaseBillsTableTableManager extends RootTableManager<
             Value<String?> tpNo = const Value.absent(),
             Value<String?> tpDate = const Value.absent(),
             Value<String?> stNo = const Value.absent(),
+            Value<String?> deviceId = const Value.absent(),
             required double discount,
             required double vat,
             required double stamp,
@@ -8767,6 +9633,7 @@ class $$CachedPurchaseBillsTableTableManager extends RootTableManager<
             tpNo: tpNo,
             tpDate: tpDate,
             stNo: stNo,
+            deviceId: deviceId,
             discount: discount,
             vat: vat,
             stamp: stamp,
@@ -9679,6 +10546,386 @@ typedef $$CachedLicenseHoldersTableProcessedTableManager
         ),
         CachedLicenseHolder,
         PrefetchHooks Function()>;
+typedef $$AppSettingsTableCreateCompanionBuilder = AppSettingsCompanion
+    Function({
+  required String key,
+  required String value,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+typedef $$AppSettingsTableUpdateCompanionBuilder = AppSettingsCompanion
+    Function({
+  Value<String> key,
+  Value<String> value,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+
+class $$AppSettingsTableFilterComposer
+    extends Composer<_$AppDatabase, $AppSettingsTable> {
+  $$AppSettingsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get key => $composableBuilder(
+      column: $table.key, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get value => $composableBuilder(
+      column: $table.value, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$AppSettingsTableOrderingComposer
+    extends Composer<_$AppDatabase, $AppSettingsTable> {
+  $$AppSettingsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get key => $composableBuilder(
+      column: $table.key, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get value => $composableBuilder(
+      column: $table.value, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$AppSettingsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AppSettingsTable> {
+  $$AppSettingsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get key =>
+      $composableBuilder(column: $table.key, builder: (column) => column);
+
+  GeneratedColumn<String> get value =>
+      $composableBuilder(column: $table.value, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$AppSettingsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $AppSettingsTable,
+    AppSetting,
+    $$AppSettingsTableFilterComposer,
+    $$AppSettingsTableOrderingComposer,
+    $$AppSettingsTableAnnotationComposer,
+    $$AppSettingsTableCreateCompanionBuilder,
+    $$AppSettingsTableUpdateCompanionBuilder,
+    (AppSetting, BaseReferences<_$AppDatabase, $AppSettingsTable, AppSetting>),
+    AppSetting,
+    PrefetchHooks Function()> {
+  $$AppSettingsTableTableManager(_$AppDatabase db, $AppSettingsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AppSettingsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AppSettingsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AppSettingsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> key = const Value.absent(),
+            Value<String> value = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              AppSettingsCompanion(
+            key: key,
+            value: value,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String key,
+            required String value,
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              AppSettingsCompanion.insert(
+            key: key,
+            value: value,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$AppSettingsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $AppSettingsTable,
+    AppSetting,
+    $$AppSettingsTableFilterComposer,
+    $$AppSettingsTableOrderingComposer,
+    $$AppSettingsTableAnnotationComposer,
+    $$AppSettingsTableCreateCompanionBuilder,
+    $$AppSettingsTableUpdateCompanionBuilder,
+    (AppSetting, BaseReferences<_$AppDatabase, $AppSettingsTable, AppSetting>),
+    AppSetting,
+    PrefetchHooks Function()>;
+typedef $$AppUsersTableCreateCompanionBuilder = AppUsersCompanion Function({
+  required String id,
+  required String username,
+  required String displayName,
+  required String role,
+  required String passwordHash,
+  Value<bool> isActive,
+  Value<bool> mustChangePassword,
+  Value<DateTime?> lastLoginAt,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+typedef $$AppUsersTableUpdateCompanionBuilder = AppUsersCompanion Function({
+  Value<String> id,
+  Value<String> username,
+  Value<String> displayName,
+  Value<String> role,
+  Value<String> passwordHash,
+  Value<bool> isActive,
+  Value<bool> mustChangePassword,
+  Value<DateTime?> lastLoginAt,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+
+class $$AppUsersTableFilterComposer
+    extends Composer<_$AppDatabase, $AppUsersTable> {
+  $$AppUsersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get username => $composableBuilder(
+      column: $table.username, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get displayName => $composableBuilder(
+      column: $table.displayName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get role => $composableBuilder(
+      column: $table.role, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get passwordHash => $composableBuilder(
+      column: $table.passwordHash, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isActive => $composableBuilder(
+      column: $table.isActive, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get mustChangePassword => $composableBuilder(
+      column: $table.mustChangePassword,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get lastLoginAt => $composableBuilder(
+      column: $table.lastLoginAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$AppUsersTableOrderingComposer
+    extends Composer<_$AppDatabase, $AppUsersTable> {
+  $$AppUsersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get username => $composableBuilder(
+      column: $table.username, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get displayName => $composableBuilder(
+      column: $table.displayName, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get role => $composableBuilder(
+      column: $table.role, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get passwordHash => $composableBuilder(
+      column: $table.passwordHash,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isActive => $composableBuilder(
+      column: $table.isActive, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get mustChangePassword => $composableBuilder(
+      column: $table.mustChangePassword,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get lastLoginAt => $composableBuilder(
+      column: $table.lastLoginAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$AppUsersTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AppUsersTable> {
+  $$AppUsersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get username =>
+      $composableBuilder(column: $table.username, builder: (column) => column);
+
+  GeneratedColumn<String> get displayName => $composableBuilder(
+      column: $table.displayName, builder: (column) => column);
+
+  GeneratedColumn<String> get role =>
+      $composableBuilder(column: $table.role, builder: (column) => column);
+
+  GeneratedColumn<String> get passwordHash => $composableBuilder(
+      column: $table.passwordHash, builder: (column) => column);
+
+  GeneratedColumn<bool> get isActive =>
+      $composableBuilder(column: $table.isActive, builder: (column) => column);
+
+  GeneratedColumn<bool> get mustChangePassword => $composableBuilder(
+      column: $table.mustChangePassword, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastLoginAt => $composableBuilder(
+      column: $table.lastLoginAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$AppUsersTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $AppUsersTable,
+    AppUserRow,
+    $$AppUsersTableFilterComposer,
+    $$AppUsersTableOrderingComposer,
+    $$AppUsersTableAnnotationComposer,
+    $$AppUsersTableCreateCompanionBuilder,
+    $$AppUsersTableUpdateCompanionBuilder,
+    (AppUserRow, BaseReferences<_$AppDatabase, $AppUsersTable, AppUserRow>),
+    AppUserRow,
+    PrefetchHooks Function()> {
+  $$AppUsersTableTableManager(_$AppDatabase db, $AppUsersTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AppUsersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AppUsersTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AppUsersTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> username = const Value.absent(),
+            Value<String> displayName = const Value.absent(),
+            Value<String> role = const Value.absent(),
+            Value<String> passwordHash = const Value.absent(),
+            Value<bool> isActive = const Value.absent(),
+            Value<bool> mustChangePassword = const Value.absent(),
+            Value<DateTime?> lastLoginAt = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              AppUsersCompanion(
+            id: id,
+            username: username,
+            displayName: displayName,
+            role: role,
+            passwordHash: passwordHash,
+            isActive: isActive,
+            mustChangePassword: mustChangePassword,
+            lastLoginAt: lastLoginAt,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String username,
+            required String displayName,
+            required String role,
+            required String passwordHash,
+            Value<bool> isActive = const Value.absent(),
+            Value<bool> mustChangePassword = const Value.absent(),
+            Value<DateTime?> lastLoginAt = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              AppUsersCompanion.insert(
+            id: id,
+            username: username,
+            displayName: displayName,
+            role: role,
+            passwordHash: passwordHash,
+            isActive: isActive,
+            mustChangePassword: mustChangePassword,
+            lastLoginAt: lastLoginAt,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$AppUsersTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $AppUsersTable,
+    AppUserRow,
+    $$AppUsersTableFilterComposer,
+    $$AppUsersTableOrderingComposer,
+    $$AppUsersTableAnnotationComposer,
+    $$AppUsersTableCreateCompanionBuilder,
+    $$AppUsersTableUpdateCompanionBuilder,
+    (AppUserRow, BaseReferences<_$AppDatabase, $AppUsersTable, AppUserRow>),
+    AppUserRow,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -9708,4 +10955,8 @@ class $AppDatabaseManager {
       $$CachedSaleLineItemsTableTableManager(_db, _db.cachedSaleLineItems);
   $$CachedLicenseHoldersTableTableManager get cachedLicenseHolders =>
       $$CachedLicenseHoldersTableTableManager(_db, _db.cachedLicenseHolders);
+  $$AppSettingsTableTableManager get appSettings =>
+      $$AppSettingsTableTableManager(_db, _db.appSettings);
+  $$AppUsersTableTableManager get appUsers =>
+      $$AppUsersTableTableManager(_db, _db.appUsers);
 }

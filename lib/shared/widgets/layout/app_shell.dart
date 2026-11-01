@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../app/router.dart' show kBranchRoutes;
+import '../../../core/auth/auth_controller.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../features/dashboard/data/dashboard_providers.dart';
@@ -37,6 +39,7 @@ const _branchMeta = [
   _BranchMeta('Purchase Return', 'Purchase · Return', 'Purchase Return'),
   _BranchMeta('Packaging', 'Master · Packaging', 'Packaging'),
   _BranchMeta('License Holder', 'Master · License Holder', 'License Holder'),
+  _BranchMeta('Settings', 'Settings · Backup & Users', 'Settings'),
 ];
 
 /// The persistent app chrome: fixed left sidebar, fixed top header,
@@ -112,44 +115,51 @@ class _AppShellState extends ConsumerState<AppShell> {
 
     if (_matches(event, LogicalKeyboardKey.f1, PhysicalKeyboardKey.f1)) {
       ref.invalidate(dashboardSummaryProvider);
-      widget.navigationShell.goBranch(0);
+      _goBranchIfAllowed(0);
       return true;
     } else if (_matches(event, LogicalKeyboardKey.f2, PhysicalKeyboardKey.f2)) {
-      widget.navigationShell.goBranch(2);
+      _goBranchIfAllowed(2);
       return true;
     } else if (_matches(event, LogicalKeyboardKey.f3, PhysicalKeyboardKey.f3)) {
-      widget.navigationShell.goBranch(1);
+      _goBranchIfAllowed(1);
       return true;
     } else if (_matches(event, LogicalKeyboardKey.f4, PhysicalKeyboardKey.f4)) {
-      widget.navigationShell.goBranch(4);
+      _goBranchIfAllowed(4);
       return true;
     } else if (_matches(event, LogicalKeyboardKey.f5, PhysicalKeyboardKey.f5)) {
-      widget.navigationShell.goBranch(8);
+      _goBranchIfAllowed(8);
       return true;
     } else if (_matches(event, LogicalKeyboardKey.f6, PhysicalKeyboardKey.f6)) {
-      widget.navigationShell.goBranch(9);
+      _goBranchIfAllowed(9);
       return true;
     } else if (_matches(event, LogicalKeyboardKey.f7, PhysicalKeyboardKey.f7)) {
-      widget.navigationShell.goBranch(3);
+      _goBranchIfAllowed(3);
       return true;
     } else if (_matches(event, LogicalKeyboardKey.f8, PhysicalKeyboardKey.f8)) {
-      widget.navigationShell.goBranch(12);
+      _goBranchIfAllowed(12);
       return true;
     } else if (_matches(event, LogicalKeyboardKey.f9, PhysicalKeyboardKey.f9)) {
-      widget.navigationShell.goBranch(7);
+      _goBranchIfAllowed(7);
       return true;
     } else if (_matches(event, LogicalKeyboardKey.f10, PhysicalKeyboardKey.f10)) {
-      widget.navigationShell.goBranch(10);
+      _goBranchIfAllowed(10);
       return true;
     } else if (_matches(event, LogicalKeyboardKey.f11, PhysicalKeyboardKey.f11)) {
-      widget.navigationShell.goBranch(5);
+      _goBranchIfAllowed(5);
       return true;
     } else if (_matches(event, LogicalKeyboardKey.f12, PhysicalKeyboardKey.f12)) {
-      widget.navigationShell.goBranch(11);
+      _goBranchIfAllowed(11);
       return true;
     }
 
     return false;
+  }
+
+  /// F-keys bypass the sidebar, so enforce role permissions here too.
+  void _goBranchIfAllowed(int index) {
+    final user = ref.read(currentUserProvider);
+    if (user == null || index >= kBranchRoutes.length || !user.canOpen(kBranchRoutes[index])) return;
+    widget.navigationShell.goBranch(index);
   }
 
   void _triggerBranch(int targetBranch) {
@@ -158,7 +168,7 @@ class _AppShellState extends ConsumerState<AppShell> {
     }
     final currentBranch = widget.navigationShell.currentIndex;
     if (currentBranch == targetBranch) return;
-    widget.navigationShell.goBranch(targetBranch);
+    _goBranchIfAllowed(targetBranch);
   }
 
   @override

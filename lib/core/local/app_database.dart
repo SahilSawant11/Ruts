@@ -2,6 +2,8 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
+import 'db_paths.dart';
+
 part 'app_database.g.dart';
 
 class CachedMaterials extends Table {
@@ -118,6 +120,7 @@ class CachedSalesBills extends Table {
   TextColumn get customerId => text().nullable()();
   TextColumn get permitNo => text().nullable()();
   TextColumn get permitHolderName => text().nullable()();
+  TextColumn get deviceId => text().nullable()();
   TextColumn get payMode => text()();
   TextColumn get status => text()();
   RealColumn get totalAmount => real()();
@@ -142,6 +145,7 @@ class CachedPurchaseBills extends Table {
   TextColumn get tpNo => text().nullable()();
   TextColumn get tpDate => text().nullable()();
   TextColumn get stNo => text().nullable()();
+  TextColumn get deviceId => text().nullable()();
   RealColumn get discount => real()();
   RealColumn get vat => real()();
   RealColumn get stamp => real()();
@@ -200,6 +204,36 @@ class CachedSaleLineItems extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
+/// Simple key/value store for app-level settings (device id, bill
+/// sequences, backup preferences, seed flags).
+class AppSettings extends Table {
+  TextColumn get key => text()();
+  TextColumn get value => text()();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column<Object>> get primaryKey => {key};
+}
+
+/// Local user accounts. Passwords are stored as PBKDF2 hashes only.
+@DataClassName('AppUserRow')
+class AppUsers extends Table {
+  TextColumn get id => text()();
+  TextColumn get username => text().unique()();
+  TextColumn get displayName => text()();
+  /// One of: owner, manager, cashier.
+  TextColumn get role => text()();
+  TextColumn get passwordHash => text()();
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  BoolColumn get mustChangePassword => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get lastLoginAt => dateTime().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
 @DriftDatabase(tables: [
   CachedMaterials,
   CachedSuppliers,
@@ -213,14 +247,23 @@ class CachedSaleLineItems extends Table {
   CachedPurchaseLineItems,
   CachedSaleLineItems,
   CachedLicenseHolders,
+  AppSettings,
+  AppUsers,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
-  AppDatabase.defaults() : super(driftDatabase(name: 'pos_app.sqlite'));
+  /// Production database. The file lives in the app-support directory
+  /// (not Documents, which Windows often syncs to OneDrive). See
+  /// [DbPaths.prepareDatabaseFile] for legacy migration + pending restore.
+  AppDatabase.defaults()
+      : super(driftDatabase(
+          name: 'pos_app',
+          native: const DriftNativeOptions(databasePath: DbPaths.prepareDatabaseFile),
+        ));
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -271,6 +314,15 @@ class AppDatabase extends _$AppDatabase {
             await _ensureColumn('cached_sales_bills', 'permit_holder_name', 'TEXT');
             await _createIndexes();
           }
+          if (from < 13) {
+            await m.createTable(appSettings);
+            await m.createTable(appUsers);
+            await _ensureColumn('cached_sales_bills', 'device_id', 'TEXT');
+            await _ensureColumn('cached_purchase_bills', 'device_id', 'TEXT');
+            // Existing installs already have their data; never re-seed them.
+            await _markSeededIfHasData();
+            await _createIndexes();
+          }
           await _healMaterialsTable();
         },
         beforeOpen: (details) async {
@@ -278,6 +330,8 @@ class AppDatabase extends _$AppDatabase {
           await customStatement('PRAGMA journal_mode=WAL');
           await customStatement('PRAGMA synchronous=NORMAL');
           await customStatement('PRAGMA cache_size=-8000'); // 8 MB
+          await customStatement('PRAGMA foreign_keys=ON');
+          await customStatement('PRAGMA busy_timeout=5000');
 
           await _healMaterialsTable();
         },
@@ -306,6 +360,7 @@ class AppDatabase extends _$AppDatabase {
       ],
       'cached_sales_bills': [
         'CREATE INDEX IF NOT EXISTS idx_sales_bills_date ON cached_sales_bills(bill_date)',
+        'CREATE INDEX IF NOT EXISTS idx_sales_bills_bill_no ON cached_sales_bills(bill_no)',
         'CREATE INDEX IF NOT EXISTS idx_sales_bills_sync ON cached_sales_bills(sync_status)',
       ],
       'cached_sale_line_items': [
@@ -320,9 +375,11 @@ class AppDatabase extends _$AppDatabase {
       ],
       'sync_queue_items': [
         'CREATE INDEX IF NOT EXISTS idx_sync_queue_type_status ON sync_queue_items(entity_type, status)',
+        'CREATE INDEX IF NOT EXISTS idx_sync_queue_entity ON sync_queue_items(entity_id)',
       ],
       'cached_inventory_stocks': [
         'CREATE INDEX IF NOT EXISTS idx_inventory_barcode ON cached_inventory_stocks(barcode)',
+        'CREATE INDEX IF NOT EXISTS idx_inventory_qty ON cached_inventory_stocks(qty_on_hand)',
       ],
       'cached_license_holders': [
         'CREATE INDEX IF NOT EXISTS idx_license_holders_permit ON cached_license_holders(permit_no)',
@@ -333,14 +390,104 @@ class AppDatabase extends _$AppDatabase {
     for (final entry in tableIndexes.entries) {
       if (await _tableExists(entry.key)) {
         for (final indexSql in entry.value) {
-          await customStatement(indexSql);
+          try {
+            await customStatement(indexSql);
+          } on Object catch (e) {
+            // Very old schemas may lack a column; an index is an optimisation,
+            // never a reason to fail an upgrade.
+            // ignore: avoid_print
+            print('Skipped index ($e)');
+          }
         }
       }
     }
   }
 
 
-  Future<void> ensureStarterData() async {
+  static const _seededKey = 'starter_data_seeded';
+
+  /// Seeds lookup data (and, in demo builds, sample transactions) exactly
+  /// once per database. Never re-seeds a table just because it is empty —
+  /// a real store with zero sales must never get demo bills injected.
+  Future<void> ensureStarterData({bool? includeDemoData}) async {
+    if (await getSetting(_seededKey) != null) return;
+    if (await _hasAnyBusinessData()) {
+      await setSetting(_seededKey, 'existing-data');
+      return;
+    }
+    await _seedStarterData(demo: includeDemoData ?? DbPaths.seedDemoData);
+    await setSetting(_seededKey, DateTime.now().toUtc().toIso8601String());
+  }
+
+  Future<bool> _hasAnyBusinessData() async {
+    for (final t in const ['cached_materials', 'cached_sales_bills', 'cached_purchase_bills', 'cached_inventory_stocks']) {
+      if (await _tableHasRows(t)) return true;
+    }
+    return false;
+  }
+
+  Future<void> _markSeededIfHasData() async {
+    if (await _hasAnyBusinessData()) {
+      await customStatement(
+        "INSERT OR IGNORE INTO app_settings (key, value, updated_at) VALUES ('$_seededKey', 'existing-data', strftime('%s','now'))",
+      );
+    }
+  }
+
+  // ── Settings (key/value) ───────────────────────────────────────────
+  Future<String?> getSetting(String key) async {
+    final row = await (select(appSettings)..where((t) => t.key.equals(key))).getSingleOrNull();
+    return row?.value;
+  }
+
+  Future<void> setSetting(String key, String value) async {
+    await into(appSettings).insertOnConflictUpdate(
+      AppSettingsCompanion.insert(key: key, value: value, updatedAt: Value(DateTime.now().toUtc())),
+    );
+  }
+
+  Future<void> deleteSetting(String key) async {
+    await (delete(appSettings)..where((t) => t.key.equals(key))).go();
+  }
+
+  /// Stable per-install device identifier, generated on first use.
+  Future<String> deviceId() async {
+    final existing = await getSetting('device_id');
+    if (existing != null) return existing;
+    final id = DbPaths.newId();
+    await setSetting('device_id', id);
+    return id;
+  }
+
+  /// Financial-year code for Indian FY (Apr–Mar), e.g. 2026-11-01 → "2627".
+  static String financialYearCode(DateTime date) {
+    final startYear = date.month >= 4 ? date.year : date.year - 1;
+    final a = (startYear % 100).toString().padLeft(2, '0');
+    final b = ((startYear + 1) % 100).toString().padLeft(2, '0');
+    return '$a$b';
+  }
+
+  static String formatSalesBillNo(String fy, int seq) => 'CS-$fy-${seq.toString().padLeft(6, '0')}';
+
+  /// Preview of the next sales bill number (does not reserve it).
+  Future<String> peekNextSalesBillNo([DateTime? at]) async {
+    final fy = financialYearCode(at ?? DateTime.now());
+    final current = int.tryParse(await getSetting('bill_seq_sales_$fy') ?? '') ?? 0;
+    return formatSalesBillNo(fy, current + 1);
+  }
+
+  /// Reserves the next sales bill number. Call inside the same transaction
+  /// that inserts the bill so a failed save never burns or duplicates a number.
+  Future<String> reserveNextSalesBillNo([DateTime? at]) async {
+    final fy = financialYearCode(at ?? DateTime.now());
+    final key = 'bill_seq_sales_$fy';
+    final current = int.tryParse(await getSetting(key) ?? '') ?? 0;
+    final next = current + 1;
+    await setSetting(key, '$next');
+    return formatSalesBillNo(fy, next);
+  }
+
+  Future<void> _seedStarterData({required bool demo}) async {
     final hasMaterials = await _tableHasRows('cached_materials');
     final hasSuppliers = await _tableHasRows('cached_suppliers');
     final hasManufacturers = await _tableHasRows('cached_manufacturers');
@@ -366,7 +513,7 @@ class AppDatabase extends _$AppDatabase {
     final now = DateTime.now().toUtc();
 
     await transaction(() async {
-      if (!hasSuppliers) {
+      if (demo && !hasSuppliers) {
         await batch((batch) {
           for (final supplier in _starterSuppliers) {
             batch.insert(
@@ -442,7 +589,7 @@ class AppDatabase extends _$AppDatabase {
         });
       }
 
-      if (!hasMaterials) {
+      if (demo && !hasMaterials) {
         await batch((batch) {
           for (final material in _starterMaterials) {
             batch.insert(
@@ -468,7 +615,7 @@ class AppDatabase extends _$AppDatabase {
         });
       }
 
-      if (!hasInventory) {
+      if (demo && !hasInventory) {
         await batch((batch) {
           for (final stock in _starterInventory) {
             batch.insert(
@@ -488,10 +635,8 @@ class AppDatabase extends _$AppDatabase {
         });
       }
 
-      if (!hasSalesBills || !hasSaleLines) {
+      if (demo && !hasSalesBills && !hasSaleLines) {
         final seed = _buildStarterSalesHistory(now);
-        await delete(cachedSaleLineItems).go();
-        await delete(cachedSalesBills).go();
 
         await batch((batch) {
           for (final bill in seed.bills) {

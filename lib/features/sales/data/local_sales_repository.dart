@@ -4,6 +4,7 @@ import 'package:drift/drift.dart' hide Column;
 
 import '../../../core/config/app_config.dart';
 import '../../../core/local/app_database.dart';
+import '../../../core/local/db_paths.dart';
 import '../../../core/network/api_exception.dart';
 import '../../masters/data/local_masters_repository.dart';
 import 'models/create_sale_request.dart';
@@ -373,28 +374,44 @@ class LocalSalesRepository {
   Future<CreateSaleResult> createSale(CreateSaleRequest request) async {
     // Local-first: persist immediately, queue for background sync.
     // Never blocks on network — sync happens via Sync Center.
-    final localId = 'local-sale-${DateTime.now().microsecondsSinceEpoch}';
-    await _persistSale(
-      saleId: localId,
-      request: request,
-      syncStatus: 'pending_create',
-      status: 'pending sync',
-      billNo: request.billNo,
-    );
-    await _db.into(_db.syncQueueItems).insert(
-          SyncQueueItemsCompanion.insert(
-            entityType: 'sale',
-            entityId: localId,
-            operation: 'create',
-            payload: jsonEncode(request.toJson()),
-            status: const Value('pending'),
-            updatedAt: Value(DateTime.now().toUtc()),
-          ),
-        );
+    //
+    // Everything happens in ONE transaction: the bill number is reserved,
+    // stock is checked and deducted, the bill is written and the sync job
+    // is queued — or none of it happens. A crash can't leave a saved bill
+    // without its sync job, or burn/duplicate a bill number.
+    final localId = 'local-sale-${DbPaths.newId()}';
+    final deviceId = await _db.deviceId();
+    late String billNo;
+
+    await _db.transaction(() async {
+      billNo = await _db.reserveNextSalesBillNo();
+      await _persistSale(
+        saleId: localId,
+        request: request,
+        syncStatus: 'pending_create',
+        status: 'pending sync',
+        billNo: billNo,
+        deviceId: deviceId,
+      );
+      final payload = request.toJson()
+        ..['billNo'] = billNo
+        ..['deviceId'] = deviceId
+        ..['clientId'] = localId;
+      await _db.into(_db.syncQueueItems).insert(
+            SyncQueueItemsCompanion.insert(
+              entityType: 'sale',
+              entityId: localId,
+              operation: 'create',
+              payload: jsonEncode(payload),
+              status: const Value('pending'),
+              updatedAt: Value(DateTime.now().toUtc()),
+            ),
+          );
+    });
 
     return CreateSaleResult(
       id: localId,
-      billNo: request.billNo,
+      billNo: billNo,
       lineItemCount: request.lineItems.length,
       isPendingSync: true,
     );
@@ -451,6 +468,7 @@ class LocalSalesRepository {
     required String syncStatus,
     required String status,
     required String billNo,
+    String? deviceId,
   }) async {
     final now = DateTime.now();
     final billDate = now;
@@ -465,6 +483,7 @@ class LocalSalesRepository {
               customerId: Value(request.customerId),
               permitNo: Value(request.permitNo),
               permitHolderName: Value(request.permitHolderName),
+              deviceId: Value(deviceId),
               payMode: request.payMode,
               status: status,
               totalAmount: request.totalAmount,

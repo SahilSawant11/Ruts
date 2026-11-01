@@ -1,4 +1,8 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../core/auth/app_user.dart';
+import '../core/auth/auth_controller.dart';
+import '../features/settings/presentation/screens/settings_screen.dart';
 import '../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../features/inventory/presentation/screens/inventory_screen.dart';
 import '../features/masters/presentation/screens/all_masters_screen.dart';
@@ -23,9 +27,43 @@ import '../shared/widgets/layout/app_shell.dart';
 /// screen's local state (e.g. the Sales cart) survives switching away
 /// and back, instead of resetting every time like a plain GoRoute would.
 ///
-/// Branch order here MUST match `_branchMeta` in app_shell.dart.
-final appRouter = GoRouter(
-  initialLocation: '/dashboard',
+/// Branch order here MUST match `_branchMeta` in app_shell.dart and
+/// [kBranchRoutes] below.
+const kBranchRoutes = [
+  '/dashboard',
+  '/sales',
+  '/purchase',
+  '/supplier',
+  '/material',
+  '/category',
+  '/manufacturer',
+  '/masters',
+  '/inventory',
+  '/reports',
+  '/brandwise-report',
+  '/sync',
+  '/sales-return',
+  '/purchase-return',
+  '/packaging',
+  '/license-holder',
+  '/settings',
+];
+
+/// One router per signed-in user, so a cashier never inherits the
+/// previous user's screen stack. Routes the role can't open redirect home.
+final appRouterProvider = Provider<GoRouter>((ref) {
+  final role = ref.watch(currentUserProvider.select((u) => u?.role)) ?? UserRole.cashier;
+  final router = buildAppRouter(role);
+  ref.onDispose(router.dispose);
+  return router;
+});
+
+GoRouter buildAppRouter(UserRole role) => GoRouter(
+  initialLocation: Permissions.homeRoute(role),
+  redirect: (context, state) {
+    final path = state.uri.path;
+    return Permissions.canOpen(role, path) ? null : Permissions.homeRoute(role);
+  },
   routes: [
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) => AppShell(navigationShell: navigationShell),
@@ -77,6 +115,9 @@ final appRouter = GoRouter(
         ]),
         StatefulShellBranch(routes: [
           GoRoute(path: '/license-holder', builder: (context, state) => const LicenseHolderMasterScreen()),
+        ]),
+        StatefulShellBranch(routes: [
+          GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
         ]),
       ],
     ),
