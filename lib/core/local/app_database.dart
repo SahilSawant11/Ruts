@@ -122,6 +122,10 @@ class CachedSalesBills extends Table {
   TextColumn get permitHolderName => text().nullable()();
   TextColumn get deviceId => text().nullable()();
   TextColumn get payMode => text()();
+  /// Set when the whole bill was returned. The bill and its lines are kept
+  /// (status = 'returned') for the audit trail; reports exclude it.
+  DateTimeColumn get returnedAt => dateTime().nullable()();
+  TextColumn get returnedBy => text().nullable()();
   TextColumn get status => text()();
   RealColumn get totalAmount => real()();
   RealColumn get balanceDue => real()();
@@ -204,6 +208,28 @@ class CachedSaleLineItems extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
+/// One row per returned quantity, full or partial — the permanent record
+/// of every sales return (what, how many, how much, when, by whom).
+class SalesReturnEntries extends Table {
+  TextColumn get id => text()();
+  TextColumn get salesBillId => text()();
+  TextColumn get billNo => text()();
+  IntColumn get lineNumber => integer()();
+  TextColumn get materialId => text().nullable()();
+  TextColumn get barcodeNo => text()();
+  TextColumn get materialName => text()();
+  IntColumn get quantity => integer()();
+  RealColumn get rate => real()();
+  RealColumn get amount => real()();
+  BoolColumn get isFullBillReturn => boolean().withDefault(const Constant(false))();
+  TextColumn get returnedBy => text().nullable()();
+  TextColumn get deviceId => text().nullable()();
+  DateTimeColumn get returnedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
 /// Simple key/value store for app-level settings (device id, bill
 /// sequences, backup preferences, seed flags).
 class AppSettings extends Table {
@@ -249,6 +275,7 @@ class AppUsers extends Table {
   CachedLicenseHolders,
   AppSettings,
   AppUsers,
+  SalesReturnEntries,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
@@ -263,7 +290,7 @@ class AppDatabase extends _$AppDatabase {
         ));
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -323,6 +350,12 @@ class AppDatabase extends _$AppDatabase {
             await _markSeededIfHasData();
             await _createIndexes();
           }
+          if (from < 14) {
+            await m.createTable(salesReturnEntries);
+            await _ensureColumn('cached_sales_bills', 'returned_at', 'INTEGER');
+            await _ensureColumn('cached_sales_bills', 'returned_by', 'TEXT');
+            await _createIndexes();
+          }
           await _healMaterialsTable();
         },
         beforeOpen: (details) async {
@@ -361,6 +394,7 @@ class AppDatabase extends _$AppDatabase {
       'cached_sales_bills': [
         'CREATE INDEX IF NOT EXISTS idx_sales_bills_date ON cached_sales_bills(bill_date)',
         'CREATE INDEX IF NOT EXISTS idx_sales_bills_bill_no ON cached_sales_bills(bill_no)',
+        'CREATE INDEX IF NOT EXISTS idx_sales_bills_status_date ON cached_sales_bills(status, bill_date)',
         'CREATE INDEX IF NOT EXISTS idx_sales_bills_sync ON cached_sales_bills(sync_status)',
       ],
       'cached_sale_line_items': [
@@ -380,6 +414,10 @@ class AppDatabase extends _$AppDatabase {
       'cached_inventory_stocks': [
         'CREATE INDEX IF NOT EXISTS idx_inventory_barcode ON cached_inventory_stocks(barcode)',
         'CREATE INDEX IF NOT EXISTS idx_inventory_qty ON cached_inventory_stocks(qty_on_hand)',
+      ],
+      'sales_return_entries': [
+        'CREATE INDEX IF NOT EXISTS idx_sales_returns_bill ON sales_return_entries(sales_bill_id)',
+        'CREATE INDEX IF NOT EXISTS idx_sales_returns_date ON sales_return_entries(returned_at)',
       ],
       'cached_license_holders': [
         'CREATE INDEX IF NOT EXISTS idx_license_holders_permit ON cached_license_holders(permit_no)',
@@ -405,6 +443,29 @@ class AppDatabase extends _$AppDatabase {
 
 
   static const _seededKey = 'starter_data_seeded';
+
+  /// Status of a sales bill whose every item was returned.
+  static const saleStatusReturned = 'returned';
+
+  /// True for bills that count in sales, reports and the dashboard.
+  Expression<bool> isActiveSaleBill($CachedSalesBillsTable t) => t.status.equals(saleStatusReturned).not();
+
+  /// Line items belonging to active bills dated in [start, end) — as a
+  /// subquery, so it works for any number of bills (no SQLite variable limit).
+  Expression<bool> lineOfActiveBillBetween(
+    $CachedSaleLineItemsTable line,
+    DateTime start,
+    DateTime end, {
+    bool endInclusive = false,
+  }) {
+    final b = cachedSalesBills;
+    final q = selectOnly(b)
+      ..addColumns([b.id])
+      ..where(isActiveSaleBill(b) &
+          b.billDate.isBiggerOrEqualValue(start) &
+          (endInclusive ? b.billDate.isSmallerOrEqualValue(end) : b.billDate.isSmallerThanValue(end)));
+    return line.salesBillId.isInQuery(q);
+  }
 
   /// Seeds lookup data (and, in demo builds, sample transactions) exactly
   /// once per database. Never re-seeds a table just because it is empty —

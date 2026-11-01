@@ -3094,6 +3094,18 @@ class $CachedSalesBillsTable extends CachedSalesBills
   late final GeneratedColumn<String> payMode = GeneratedColumn<String>(
       'pay_mode', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _returnedAtMeta =
+      const VerificationMeta('returnedAt');
+  @override
+  late final GeneratedColumn<DateTime> returnedAt = GeneratedColumn<DateTime>(
+      'returned_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _returnedByMeta =
+      const VerificationMeta('returnedBy');
+  @override
+  late final GeneratedColumn<String> returnedBy = GeneratedColumn<String>(
+      'returned_by', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _statusMeta = const VerificationMeta('status');
   @override
   late final GeneratedColumn<String> status = GeneratedColumn<String>(
@@ -3156,6 +3168,8 @@ class $CachedSalesBillsTable extends CachedSalesBills
         permitHolderName,
         deviceId,
         payMode,
+        returnedAt,
+        returnedBy,
         status,
         totalAmount,
         balanceDue,
@@ -3211,6 +3225,18 @@ class $CachedSalesBillsTable extends CachedSalesBills
           payMode.isAcceptableOrUnknown(data['pay_mode']!, _payModeMeta));
     } else if (isInserting) {
       context.missing(_payModeMeta);
+    }
+    if (data.containsKey('returned_at')) {
+      context.handle(
+          _returnedAtMeta,
+          returnedAt.isAcceptableOrUnknown(
+              data['returned_at']!, _returnedAtMeta));
+    }
+    if (data.containsKey('returned_by')) {
+      context.handle(
+          _returnedByMeta,
+          returnedBy.isAcceptableOrUnknown(
+              data['returned_by']!, _returnedByMeta));
     }
     if (data.containsKey('status')) {
       context.handle(_statusMeta,
@@ -3283,6 +3309,10 @@ class $CachedSalesBillsTable extends CachedSalesBills
           .read(DriftSqlType.string, data['${effectivePrefix}device_id']),
       payMode: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}pay_mode'])!,
+      returnedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}returned_at']),
+      returnedBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}returned_by']),
       status: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
       totalAmount: attachedDatabase.typeMapping
@@ -3316,6 +3346,11 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
   final String? permitHolderName;
   final String? deviceId;
   final String payMode;
+
+  /// Set when the whole bill was returned. The bill and its lines are kept
+  /// (status = 'returned') for the audit trail; reports exclude it.
+  final DateTime? returnedAt;
+  final String? returnedBy;
   final String status;
   final double totalAmount;
   final double balanceDue;
@@ -3332,6 +3367,8 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
       this.permitHolderName,
       this.deviceId,
       required this.payMode,
+      this.returnedAt,
+      this.returnedBy,
       required this.status,
       required this.totalAmount,
       required this.balanceDue,
@@ -3358,6 +3395,12 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
       map['device_id'] = Variable<String>(deviceId);
     }
     map['pay_mode'] = Variable<String>(payMode);
+    if (!nullToAbsent || returnedAt != null) {
+      map['returned_at'] = Variable<DateTime>(returnedAt);
+    }
+    if (!nullToAbsent || returnedBy != null) {
+      map['returned_by'] = Variable<String>(returnedBy);
+    }
     map['status'] = Variable<String>(status);
     map['total_amount'] = Variable<double>(totalAmount);
     map['balance_due'] = Variable<double>(balanceDue);
@@ -3386,6 +3429,12 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
           ? const Value.absent()
           : Value(deviceId),
       payMode: Value(payMode),
+      returnedAt: returnedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(returnedAt),
+      returnedBy: returnedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(returnedBy),
       status: Value(status),
       totalAmount: Value(totalAmount),
       balanceDue: Value(balanceDue),
@@ -3408,6 +3457,8 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
       permitHolderName: serializer.fromJson<String?>(json['permitHolderName']),
       deviceId: serializer.fromJson<String?>(json['deviceId']),
       payMode: serializer.fromJson<String>(json['payMode']),
+      returnedAt: serializer.fromJson<DateTime?>(json['returnedAt']),
+      returnedBy: serializer.fromJson<String?>(json['returnedBy']),
       status: serializer.fromJson<String>(json['status']),
       totalAmount: serializer.fromJson<double>(json['totalAmount']),
       balanceDue: serializer.fromJson<double>(json['balanceDue']),
@@ -3429,6 +3480,8 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
       'permitHolderName': serializer.toJson<String?>(permitHolderName),
       'deviceId': serializer.toJson<String?>(deviceId),
       'payMode': serializer.toJson<String>(payMode),
+      'returnedAt': serializer.toJson<DateTime?>(returnedAt),
+      'returnedBy': serializer.toJson<String?>(returnedBy),
       'status': serializer.toJson<String>(status),
       'totalAmount': serializer.toJson<double>(totalAmount),
       'balanceDue': serializer.toJson<double>(balanceDue),
@@ -3448,6 +3501,8 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
           Value<String?> permitHolderName = const Value.absent(),
           Value<String?> deviceId = const Value.absent(),
           String? payMode,
+          Value<DateTime?> returnedAt = const Value.absent(),
+          Value<String?> returnedBy = const Value.absent(),
           String? status,
           double? totalAmount,
           double? balanceDue,
@@ -3466,6 +3521,8 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
             : this.permitHolderName,
         deviceId: deviceId.present ? deviceId.value : this.deviceId,
         payMode: payMode ?? this.payMode,
+        returnedAt: returnedAt.present ? returnedAt.value : this.returnedAt,
+        returnedBy: returnedBy.present ? returnedBy.value : this.returnedBy,
         status: status ?? this.status,
         totalAmount: totalAmount ?? this.totalAmount,
         balanceDue: balanceDue ?? this.balanceDue,
@@ -3487,6 +3544,10 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
           : this.permitHolderName,
       deviceId: data.deviceId.present ? data.deviceId.value : this.deviceId,
       payMode: data.payMode.present ? data.payMode.value : this.payMode,
+      returnedAt:
+          data.returnedAt.present ? data.returnedAt.value : this.returnedAt,
+      returnedBy:
+          data.returnedBy.present ? data.returnedBy.value : this.returnedBy,
       status: data.status.present ? data.status.value : this.status,
       totalAmount:
           data.totalAmount.present ? data.totalAmount.value : this.totalAmount,
@@ -3511,6 +3572,8 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
           ..write('permitHolderName: $permitHolderName, ')
           ..write('deviceId: $deviceId, ')
           ..write('payMode: $payMode, ')
+          ..write('returnedAt: $returnedAt, ')
+          ..write('returnedBy: $returnedBy, ')
           ..write('status: $status, ')
           ..write('totalAmount: $totalAmount, ')
           ..write('balanceDue: $balanceDue, ')
@@ -3532,6 +3595,8 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
       permitHolderName,
       deviceId,
       payMode,
+      returnedAt,
+      returnedBy,
       status,
       totalAmount,
       balanceDue,
@@ -3551,6 +3616,8 @@ class CachedSalesBill extends DataClass implements Insertable<CachedSalesBill> {
           other.permitHolderName == this.permitHolderName &&
           other.deviceId == this.deviceId &&
           other.payMode == this.payMode &&
+          other.returnedAt == this.returnedAt &&
+          other.returnedBy == this.returnedBy &&
           other.status == this.status &&
           other.totalAmount == this.totalAmount &&
           other.balanceDue == this.balanceDue &&
@@ -3569,6 +3636,8 @@ class CachedSalesBillsCompanion extends UpdateCompanion<CachedSalesBill> {
   final Value<String?> permitHolderName;
   final Value<String?> deviceId;
   final Value<String> payMode;
+  final Value<DateTime?> returnedAt;
+  final Value<String?> returnedBy;
   final Value<String> status;
   final Value<double> totalAmount;
   final Value<double> balanceDue;
@@ -3586,6 +3655,8 @@ class CachedSalesBillsCompanion extends UpdateCompanion<CachedSalesBill> {
     this.permitHolderName = const Value.absent(),
     this.deviceId = const Value.absent(),
     this.payMode = const Value.absent(),
+    this.returnedAt = const Value.absent(),
+    this.returnedBy = const Value.absent(),
     this.status = const Value.absent(),
     this.totalAmount = const Value.absent(),
     this.balanceDue = const Value.absent(),
@@ -3604,6 +3675,8 @@ class CachedSalesBillsCompanion extends UpdateCompanion<CachedSalesBill> {
     this.permitHolderName = const Value.absent(),
     this.deviceId = const Value.absent(),
     required String payMode,
+    this.returnedAt = const Value.absent(),
+    this.returnedBy = const Value.absent(),
     required String status,
     required double totalAmount,
     required double balanceDue,
@@ -3629,6 +3702,8 @@ class CachedSalesBillsCompanion extends UpdateCompanion<CachedSalesBill> {
     Expression<String>? permitHolderName,
     Expression<String>? deviceId,
     Expression<String>? payMode,
+    Expression<DateTime>? returnedAt,
+    Expression<String>? returnedBy,
     Expression<String>? status,
     Expression<double>? totalAmount,
     Expression<double>? balanceDue,
@@ -3647,6 +3722,8 @@ class CachedSalesBillsCompanion extends UpdateCompanion<CachedSalesBill> {
       if (permitHolderName != null) 'permit_holder_name': permitHolderName,
       if (deviceId != null) 'device_id': deviceId,
       if (payMode != null) 'pay_mode': payMode,
+      if (returnedAt != null) 'returned_at': returnedAt,
+      if (returnedBy != null) 'returned_by': returnedBy,
       if (status != null) 'status': status,
       if (totalAmount != null) 'total_amount': totalAmount,
       if (balanceDue != null) 'balance_due': balanceDue,
@@ -3667,6 +3744,8 @@ class CachedSalesBillsCompanion extends UpdateCompanion<CachedSalesBill> {
       Value<String?>? permitHolderName,
       Value<String?>? deviceId,
       Value<String>? payMode,
+      Value<DateTime?>? returnedAt,
+      Value<String?>? returnedBy,
       Value<String>? status,
       Value<double>? totalAmount,
       Value<double>? balanceDue,
@@ -3684,6 +3763,8 @@ class CachedSalesBillsCompanion extends UpdateCompanion<CachedSalesBill> {
       permitHolderName: permitHolderName ?? this.permitHolderName,
       deviceId: deviceId ?? this.deviceId,
       payMode: payMode ?? this.payMode,
+      returnedAt: returnedAt ?? this.returnedAt,
+      returnedBy: returnedBy ?? this.returnedBy,
       status: status ?? this.status,
       totalAmount: totalAmount ?? this.totalAmount,
       balanceDue: balanceDue ?? this.balanceDue,
@@ -3719,6 +3800,12 @@ class CachedSalesBillsCompanion extends UpdateCompanion<CachedSalesBill> {
     }
     if (payMode.present) {
       map['pay_mode'] = Variable<String>(payMode.value);
+    }
+    if (returnedAt.present) {
+      map['returned_at'] = Variable<DateTime>(returnedAt.value);
+    }
+    if (returnedBy.present) {
+      map['returned_by'] = Variable<String>(returnedBy.value);
     }
     if (status.present) {
       map['status'] = Variable<String>(status.value);
@@ -3760,6 +3847,8 @@ class CachedSalesBillsCompanion extends UpdateCompanion<CachedSalesBill> {
           ..write('permitHolderName: $permitHolderName, ')
           ..write('deviceId: $deviceId, ')
           ..write('payMode: $payMode, ')
+          ..write('returnedAt: $returnedAt, ')
+          ..write('returnedBy: $returnedBy, ')
           ..write('status: $status, ')
           ..write('totalAmount: $totalAmount, ')
           ..write('balanceDue: $balanceDue, ')
@@ -7332,6 +7421,701 @@ class AppUsersCompanion extends UpdateCompanion<AppUserRow> {
   }
 }
 
+class $SalesReturnEntriesTable extends SalesReturnEntries
+    with TableInfo<$SalesReturnEntriesTable, SalesReturnEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SalesReturnEntriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _salesBillIdMeta =
+      const VerificationMeta('salesBillId');
+  @override
+  late final GeneratedColumn<String> salesBillId = GeneratedColumn<String>(
+      'sales_bill_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _billNoMeta = const VerificationMeta('billNo');
+  @override
+  late final GeneratedColumn<String> billNo = GeneratedColumn<String>(
+      'bill_no', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _lineNumberMeta =
+      const VerificationMeta('lineNumber');
+  @override
+  late final GeneratedColumn<int> lineNumber = GeneratedColumn<int>(
+      'line_number', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _materialIdMeta =
+      const VerificationMeta('materialId');
+  @override
+  late final GeneratedColumn<String> materialId = GeneratedColumn<String>(
+      'material_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _barcodeNoMeta =
+      const VerificationMeta('barcodeNo');
+  @override
+  late final GeneratedColumn<String> barcodeNo = GeneratedColumn<String>(
+      'barcode_no', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _materialNameMeta =
+      const VerificationMeta('materialName');
+  @override
+  late final GeneratedColumn<String> materialName = GeneratedColumn<String>(
+      'material_name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _quantityMeta =
+      const VerificationMeta('quantity');
+  @override
+  late final GeneratedColumn<int> quantity = GeneratedColumn<int>(
+      'quantity', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _rateMeta = const VerificationMeta('rate');
+  @override
+  late final GeneratedColumn<double> rate = GeneratedColumn<double>(
+      'rate', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _amountMeta = const VerificationMeta('amount');
+  @override
+  late final GeneratedColumn<double> amount = GeneratedColumn<double>(
+      'amount', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _isFullBillReturnMeta =
+      const VerificationMeta('isFullBillReturn');
+  @override
+  late final GeneratedColumn<bool> isFullBillReturn = GeneratedColumn<bool>(
+      'is_full_bill_return', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("is_full_bill_return" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _returnedByMeta =
+      const VerificationMeta('returnedBy');
+  @override
+  late final GeneratedColumn<String> returnedBy = GeneratedColumn<String>(
+      'returned_by', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _deviceIdMeta =
+      const VerificationMeta('deviceId');
+  @override
+  late final GeneratedColumn<String> deviceId = GeneratedColumn<String>(
+      'device_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _returnedAtMeta =
+      const VerificationMeta('returnedAt');
+  @override
+  late final GeneratedColumn<DateTime> returnedAt = GeneratedColumn<DateTime>(
+      'returned_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        salesBillId,
+        billNo,
+        lineNumber,
+        materialId,
+        barcodeNo,
+        materialName,
+        quantity,
+        rate,
+        amount,
+        isFullBillReturn,
+        returnedBy,
+        deviceId,
+        returnedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sales_return_entries';
+  @override
+  VerificationContext validateIntegrity(Insertable<SalesReturnEntry> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('sales_bill_id')) {
+      context.handle(
+          _salesBillIdMeta,
+          salesBillId.isAcceptableOrUnknown(
+              data['sales_bill_id']!, _salesBillIdMeta));
+    } else if (isInserting) {
+      context.missing(_salesBillIdMeta);
+    }
+    if (data.containsKey('bill_no')) {
+      context.handle(_billNoMeta,
+          billNo.isAcceptableOrUnknown(data['bill_no']!, _billNoMeta));
+    } else if (isInserting) {
+      context.missing(_billNoMeta);
+    }
+    if (data.containsKey('line_number')) {
+      context.handle(
+          _lineNumberMeta,
+          lineNumber.isAcceptableOrUnknown(
+              data['line_number']!, _lineNumberMeta));
+    } else if (isInserting) {
+      context.missing(_lineNumberMeta);
+    }
+    if (data.containsKey('material_id')) {
+      context.handle(
+          _materialIdMeta,
+          materialId.isAcceptableOrUnknown(
+              data['material_id']!, _materialIdMeta));
+    }
+    if (data.containsKey('barcode_no')) {
+      context.handle(_barcodeNoMeta,
+          barcodeNo.isAcceptableOrUnknown(data['barcode_no']!, _barcodeNoMeta));
+    } else if (isInserting) {
+      context.missing(_barcodeNoMeta);
+    }
+    if (data.containsKey('material_name')) {
+      context.handle(
+          _materialNameMeta,
+          materialName.isAcceptableOrUnknown(
+              data['material_name']!, _materialNameMeta));
+    } else if (isInserting) {
+      context.missing(_materialNameMeta);
+    }
+    if (data.containsKey('quantity')) {
+      context.handle(_quantityMeta,
+          quantity.isAcceptableOrUnknown(data['quantity']!, _quantityMeta));
+    } else if (isInserting) {
+      context.missing(_quantityMeta);
+    }
+    if (data.containsKey('rate')) {
+      context.handle(
+          _rateMeta, rate.isAcceptableOrUnknown(data['rate']!, _rateMeta));
+    } else if (isInserting) {
+      context.missing(_rateMeta);
+    }
+    if (data.containsKey('amount')) {
+      context.handle(_amountMeta,
+          amount.isAcceptableOrUnknown(data['amount']!, _amountMeta));
+    } else if (isInserting) {
+      context.missing(_amountMeta);
+    }
+    if (data.containsKey('is_full_bill_return')) {
+      context.handle(
+          _isFullBillReturnMeta,
+          isFullBillReturn.isAcceptableOrUnknown(
+              data['is_full_bill_return']!, _isFullBillReturnMeta));
+    }
+    if (data.containsKey('returned_by')) {
+      context.handle(
+          _returnedByMeta,
+          returnedBy.isAcceptableOrUnknown(
+              data['returned_by']!, _returnedByMeta));
+    }
+    if (data.containsKey('device_id')) {
+      context.handle(_deviceIdMeta,
+          deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta));
+    }
+    if (data.containsKey('returned_at')) {
+      context.handle(
+          _returnedAtMeta,
+          returnedAt.isAcceptableOrUnknown(
+              data['returned_at']!, _returnedAtMeta));
+    } else if (isInserting) {
+      context.missing(_returnedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SalesReturnEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SalesReturnEntry(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      salesBillId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sales_bill_id'])!,
+      billNo: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}bill_no'])!,
+      lineNumber: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}line_number'])!,
+      materialId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}material_id']),
+      barcodeNo: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}barcode_no'])!,
+      materialName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}material_name'])!,
+      quantity: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}quantity'])!,
+      rate: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}rate'])!,
+      amount: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}amount'])!,
+      isFullBillReturn: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool, data['${effectivePrefix}is_full_bill_return'])!,
+      returnedBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}returned_by']),
+      deviceId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}device_id']),
+      returnedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}returned_at'])!,
+    );
+  }
+
+  @override
+  $SalesReturnEntriesTable createAlias(String alias) {
+    return $SalesReturnEntriesTable(attachedDatabase, alias);
+  }
+}
+
+class SalesReturnEntry extends DataClass
+    implements Insertable<SalesReturnEntry> {
+  final String id;
+  final String salesBillId;
+  final String billNo;
+  final int lineNumber;
+  final String? materialId;
+  final String barcodeNo;
+  final String materialName;
+  final int quantity;
+  final double rate;
+  final double amount;
+  final bool isFullBillReturn;
+  final String? returnedBy;
+  final String? deviceId;
+  final DateTime returnedAt;
+  const SalesReturnEntry(
+      {required this.id,
+      required this.salesBillId,
+      required this.billNo,
+      required this.lineNumber,
+      this.materialId,
+      required this.barcodeNo,
+      required this.materialName,
+      required this.quantity,
+      required this.rate,
+      required this.amount,
+      required this.isFullBillReturn,
+      this.returnedBy,
+      this.deviceId,
+      required this.returnedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['sales_bill_id'] = Variable<String>(salesBillId);
+    map['bill_no'] = Variable<String>(billNo);
+    map['line_number'] = Variable<int>(lineNumber);
+    if (!nullToAbsent || materialId != null) {
+      map['material_id'] = Variable<String>(materialId);
+    }
+    map['barcode_no'] = Variable<String>(barcodeNo);
+    map['material_name'] = Variable<String>(materialName);
+    map['quantity'] = Variable<int>(quantity);
+    map['rate'] = Variable<double>(rate);
+    map['amount'] = Variable<double>(amount);
+    map['is_full_bill_return'] = Variable<bool>(isFullBillReturn);
+    if (!nullToAbsent || returnedBy != null) {
+      map['returned_by'] = Variable<String>(returnedBy);
+    }
+    if (!nullToAbsent || deviceId != null) {
+      map['device_id'] = Variable<String>(deviceId);
+    }
+    map['returned_at'] = Variable<DateTime>(returnedAt);
+    return map;
+  }
+
+  SalesReturnEntriesCompanion toCompanion(bool nullToAbsent) {
+    return SalesReturnEntriesCompanion(
+      id: Value(id),
+      salesBillId: Value(salesBillId),
+      billNo: Value(billNo),
+      lineNumber: Value(lineNumber),
+      materialId: materialId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(materialId),
+      barcodeNo: Value(barcodeNo),
+      materialName: Value(materialName),
+      quantity: Value(quantity),
+      rate: Value(rate),
+      amount: Value(amount),
+      isFullBillReturn: Value(isFullBillReturn),
+      returnedBy: returnedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(returnedBy),
+      deviceId: deviceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deviceId),
+      returnedAt: Value(returnedAt),
+    );
+  }
+
+  factory SalesReturnEntry.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SalesReturnEntry(
+      id: serializer.fromJson<String>(json['id']),
+      salesBillId: serializer.fromJson<String>(json['salesBillId']),
+      billNo: serializer.fromJson<String>(json['billNo']),
+      lineNumber: serializer.fromJson<int>(json['lineNumber']),
+      materialId: serializer.fromJson<String?>(json['materialId']),
+      barcodeNo: serializer.fromJson<String>(json['barcodeNo']),
+      materialName: serializer.fromJson<String>(json['materialName']),
+      quantity: serializer.fromJson<int>(json['quantity']),
+      rate: serializer.fromJson<double>(json['rate']),
+      amount: serializer.fromJson<double>(json['amount']),
+      isFullBillReturn: serializer.fromJson<bool>(json['isFullBillReturn']),
+      returnedBy: serializer.fromJson<String?>(json['returnedBy']),
+      deviceId: serializer.fromJson<String?>(json['deviceId']),
+      returnedAt: serializer.fromJson<DateTime>(json['returnedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'salesBillId': serializer.toJson<String>(salesBillId),
+      'billNo': serializer.toJson<String>(billNo),
+      'lineNumber': serializer.toJson<int>(lineNumber),
+      'materialId': serializer.toJson<String?>(materialId),
+      'barcodeNo': serializer.toJson<String>(barcodeNo),
+      'materialName': serializer.toJson<String>(materialName),
+      'quantity': serializer.toJson<int>(quantity),
+      'rate': serializer.toJson<double>(rate),
+      'amount': serializer.toJson<double>(amount),
+      'isFullBillReturn': serializer.toJson<bool>(isFullBillReturn),
+      'returnedBy': serializer.toJson<String?>(returnedBy),
+      'deviceId': serializer.toJson<String?>(deviceId),
+      'returnedAt': serializer.toJson<DateTime>(returnedAt),
+    };
+  }
+
+  SalesReturnEntry copyWith(
+          {String? id,
+          String? salesBillId,
+          String? billNo,
+          int? lineNumber,
+          Value<String?> materialId = const Value.absent(),
+          String? barcodeNo,
+          String? materialName,
+          int? quantity,
+          double? rate,
+          double? amount,
+          bool? isFullBillReturn,
+          Value<String?> returnedBy = const Value.absent(),
+          Value<String?> deviceId = const Value.absent(),
+          DateTime? returnedAt}) =>
+      SalesReturnEntry(
+        id: id ?? this.id,
+        salesBillId: salesBillId ?? this.salesBillId,
+        billNo: billNo ?? this.billNo,
+        lineNumber: lineNumber ?? this.lineNumber,
+        materialId: materialId.present ? materialId.value : this.materialId,
+        barcodeNo: barcodeNo ?? this.barcodeNo,
+        materialName: materialName ?? this.materialName,
+        quantity: quantity ?? this.quantity,
+        rate: rate ?? this.rate,
+        amount: amount ?? this.amount,
+        isFullBillReturn: isFullBillReturn ?? this.isFullBillReturn,
+        returnedBy: returnedBy.present ? returnedBy.value : this.returnedBy,
+        deviceId: deviceId.present ? deviceId.value : this.deviceId,
+        returnedAt: returnedAt ?? this.returnedAt,
+      );
+  SalesReturnEntry copyWithCompanion(SalesReturnEntriesCompanion data) {
+    return SalesReturnEntry(
+      id: data.id.present ? data.id.value : this.id,
+      salesBillId:
+          data.salesBillId.present ? data.salesBillId.value : this.salesBillId,
+      billNo: data.billNo.present ? data.billNo.value : this.billNo,
+      lineNumber:
+          data.lineNumber.present ? data.lineNumber.value : this.lineNumber,
+      materialId:
+          data.materialId.present ? data.materialId.value : this.materialId,
+      barcodeNo: data.barcodeNo.present ? data.barcodeNo.value : this.barcodeNo,
+      materialName: data.materialName.present
+          ? data.materialName.value
+          : this.materialName,
+      quantity: data.quantity.present ? data.quantity.value : this.quantity,
+      rate: data.rate.present ? data.rate.value : this.rate,
+      amount: data.amount.present ? data.amount.value : this.amount,
+      isFullBillReturn: data.isFullBillReturn.present
+          ? data.isFullBillReturn.value
+          : this.isFullBillReturn,
+      returnedBy:
+          data.returnedBy.present ? data.returnedBy.value : this.returnedBy,
+      deviceId: data.deviceId.present ? data.deviceId.value : this.deviceId,
+      returnedAt:
+          data.returnedAt.present ? data.returnedAt.value : this.returnedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SalesReturnEntry(')
+          ..write('id: $id, ')
+          ..write('salesBillId: $salesBillId, ')
+          ..write('billNo: $billNo, ')
+          ..write('lineNumber: $lineNumber, ')
+          ..write('materialId: $materialId, ')
+          ..write('barcodeNo: $barcodeNo, ')
+          ..write('materialName: $materialName, ')
+          ..write('quantity: $quantity, ')
+          ..write('rate: $rate, ')
+          ..write('amount: $amount, ')
+          ..write('isFullBillReturn: $isFullBillReturn, ')
+          ..write('returnedBy: $returnedBy, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('returnedAt: $returnedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      salesBillId,
+      billNo,
+      lineNumber,
+      materialId,
+      barcodeNo,
+      materialName,
+      quantity,
+      rate,
+      amount,
+      isFullBillReturn,
+      returnedBy,
+      deviceId,
+      returnedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SalesReturnEntry &&
+          other.id == this.id &&
+          other.salesBillId == this.salesBillId &&
+          other.billNo == this.billNo &&
+          other.lineNumber == this.lineNumber &&
+          other.materialId == this.materialId &&
+          other.barcodeNo == this.barcodeNo &&
+          other.materialName == this.materialName &&
+          other.quantity == this.quantity &&
+          other.rate == this.rate &&
+          other.amount == this.amount &&
+          other.isFullBillReturn == this.isFullBillReturn &&
+          other.returnedBy == this.returnedBy &&
+          other.deviceId == this.deviceId &&
+          other.returnedAt == this.returnedAt);
+}
+
+class SalesReturnEntriesCompanion extends UpdateCompanion<SalesReturnEntry> {
+  final Value<String> id;
+  final Value<String> salesBillId;
+  final Value<String> billNo;
+  final Value<int> lineNumber;
+  final Value<String?> materialId;
+  final Value<String> barcodeNo;
+  final Value<String> materialName;
+  final Value<int> quantity;
+  final Value<double> rate;
+  final Value<double> amount;
+  final Value<bool> isFullBillReturn;
+  final Value<String?> returnedBy;
+  final Value<String?> deviceId;
+  final Value<DateTime> returnedAt;
+  final Value<int> rowid;
+  const SalesReturnEntriesCompanion({
+    this.id = const Value.absent(),
+    this.salesBillId = const Value.absent(),
+    this.billNo = const Value.absent(),
+    this.lineNumber = const Value.absent(),
+    this.materialId = const Value.absent(),
+    this.barcodeNo = const Value.absent(),
+    this.materialName = const Value.absent(),
+    this.quantity = const Value.absent(),
+    this.rate = const Value.absent(),
+    this.amount = const Value.absent(),
+    this.isFullBillReturn = const Value.absent(),
+    this.returnedBy = const Value.absent(),
+    this.deviceId = const Value.absent(),
+    this.returnedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SalesReturnEntriesCompanion.insert({
+    required String id,
+    required String salesBillId,
+    required String billNo,
+    required int lineNumber,
+    this.materialId = const Value.absent(),
+    required String barcodeNo,
+    required String materialName,
+    required int quantity,
+    required double rate,
+    required double amount,
+    this.isFullBillReturn = const Value.absent(),
+    this.returnedBy = const Value.absent(),
+    this.deviceId = const Value.absent(),
+    required DateTime returnedAt,
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        salesBillId = Value(salesBillId),
+        billNo = Value(billNo),
+        lineNumber = Value(lineNumber),
+        barcodeNo = Value(barcodeNo),
+        materialName = Value(materialName),
+        quantity = Value(quantity),
+        rate = Value(rate),
+        amount = Value(amount),
+        returnedAt = Value(returnedAt);
+  static Insertable<SalesReturnEntry> custom({
+    Expression<String>? id,
+    Expression<String>? salesBillId,
+    Expression<String>? billNo,
+    Expression<int>? lineNumber,
+    Expression<String>? materialId,
+    Expression<String>? barcodeNo,
+    Expression<String>? materialName,
+    Expression<int>? quantity,
+    Expression<double>? rate,
+    Expression<double>? amount,
+    Expression<bool>? isFullBillReturn,
+    Expression<String>? returnedBy,
+    Expression<String>? deviceId,
+    Expression<DateTime>? returnedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (salesBillId != null) 'sales_bill_id': salesBillId,
+      if (billNo != null) 'bill_no': billNo,
+      if (lineNumber != null) 'line_number': lineNumber,
+      if (materialId != null) 'material_id': materialId,
+      if (barcodeNo != null) 'barcode_no': barcodeNo,
+      if (materialName != null) 'material_name': materialName,
+      if (quantity != null) 'quantity': quantity,
+      if (rate != null) 'rate': rate,
+      if (amount != null) 'amount': amount,
+      if (isFullBillReturn != null) 'is_full_bill_return': isFullBillReturn,
+      if (returnedBy != null) 'returned_by': returnedBy,
+      if (deviceId != null) 'device_id': deviceId,
+      if (returnedAt != null) 'returned_at': returnedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SalesReturnEntriesCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? salesBillId,
+      Value<String>? billNo,
+      Value<int>? lineNumber,
+      Value<String?>? materialId,
+      Value<String>? barcodeNo,
+      Value<String>? materialName,
+      Value<int>? quantity,
+      Value<double>? rate,
+      Value<double>? amount,
+      Value<bool>? isFullBillReturn,
+      Value<String?>? returnedBy,
+      Value<String?>? deviceId,
+      Value<DateTime>? returnedAt,
+      Value<int>? rowid}) {
+    return SalesReturnEntriesCompanion(
+      id: id ?? this.id,
+      salesBillId: salesBillId ?? this.salesBillId,
+      billNo: billNo ?? this.billNo,
+      lineNumber: lineNumber ?? this.lineNumber,
+      materialId: materialId ?? this.materialId,
+      barcodeNo: barcodeNo ?? this.barcodeNo,
+      materialName: materialName ?? this.materialName,
+      quantity: quantity ?? this.quantity,
+      rate: rate ?? this.rate,
+      amount: amount ?? this.amount,
+      isFullBillReturn: isFullBillReturn ?? this.isFullBillReturn,
+      returnedBy: returnedBy ?? this.returnedBy,
+      deviceId: deviceId ?? this.deviceId,
+      returnedAt: returnedAt ?? this.returnedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (salesBillId.present) {
+      map['sales_bill_id'] = Variable<String>(salesBillId.value);
+    }
+    if (billNo.present) {
+      map['bill_no'] = Variable<String>(billNo.value);
+    }
+    if (lineNumber.present) {
+      map['line_number'] = Variable<int>(lineNumber.value);
+    }
+    if (materialId.present) {
+      map['material_id'] = Variable<String>(materialId.value);
+    }
+    if (barcodeNo.present) {
+      map['barcode_no'] = Variable<String>(barcodeNo.value);
+    }
+    if (materialName.present) {
+      map['material_name'] = Variable<String>(materialName.value);
+    }
+    if (quantity.present) {
+      map['quantity'] = Variable<int>(quantity.value);
+    }
+    if (rate.present) {
+      map['rate'] = Variable<double>(rate.value);
+    }
+    if (amount.present) {
+      map['amount'] = Variable<double>(amount.value);
+    }
+    if (isFullBillReturn.present) {
+      map['is_full_bill_return'] = Variable<bool>(isFullBillReturn.value);
+    }
+    if (returnedBy.present) {
+      map['returned_by'] = Variable<String>(returnedBy.value);
+    }
+    if (deviceId.present) {
+      map['device_id'] = Variable<String>(deviceId.value);
+    }
+    if (returnedAt.present) {
+      map['returned_at'] = Variable<DateTime>(returnedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SalesReturnEntriesCompanion(')
+          ..write('id: $id, ')
+          ..write('salesBillId: $salesBillId, ')
+          ..write('billNo: $billNo, ')
+          ..write('lineNumber: $lineNumber, ')
+          ..write('materialId: $materialId, ')
+          ..write('barcodeNo: $barcodeNo, ')
+          ..write('materialName: $materialName, ')
+          ..write('quantity: $quantity, ')
+          ..write('rate: $rate, ')
+          ..write('amount: $amount, ')
+          ..write('isFullBillReturn: $isFullBillReturn, ')
+          ..write('returnedBy: $returnedBy, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('returnedAt: $returnedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -7359,6 +8143,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $CachedLicenseHoldersTable(this);
   late final $AppSettingsTable appSettings = $AppSettingsTable(this);
   late final $AppUsersTable appUsers = $AppUsersTable(this);
+  late final $SalesReturnEntriesTable salesReturnEntries =
+      $SalesReturnEntriesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -7377,7 +8163,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         cachedSaleLineItems,
         cachedLicenseHolders,
         appSettings,
-        appUsers
+        appUsers,
+        salesReturnEntries
       ];
 }
 
@@ -8933,6 +9720,8 @@ typedef $$CachedSalesBillsTableCreateCompanionBuilder
   Value<String?> permitHolderName,
   Value<String?> deviceId,
   required String payMode,
+  Value<DateTime?> returnedAt,
+  Value<String?> returnedBy,
   required String status,
   required double totalAmount,
   required double balanceDue,
@@ -8952,6 +9741,8 @@ typedef $$CachedSalesBillsTableUpdateCompanionBuilder
   Value<String?> permitHolderName,
   Value<String?> deviceId,
   Value<String> payMode,
+  Value<DateTime?> returnedAt,
+  Value<String?> returnedBy,
   Value<String> status,
   Value<double> totalAmount,
   Value<double> balanceDue,
@@ -8993,6 +9784,12 @@ class $$CachedSalesBillsTableFilterComposer
 
   ColumnFilters<String> get payMode => $composableBuilder(
       column: $table.payMode, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get returnedAt => $composableBuilder(
+      column: $table.returnedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get returnedBy => $composableBuilder(
+      column: $table.returnedBy, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get status => $composableBuilder(
       column: $table.status, builder: (column) => ColumnFilters(column));
@@ -9050,6 +9847,12 @@ class $$CachedSalesBillsTableOrderingComposer
   ColumnOrderings<String> get payMode => $composableBuilder(
       column: $table.payMode, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<DateTime> get returnedAt => $composableBuilder(
+      column: $table.returnedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get returnedBy => $composableBuilder(
+      column: $table.returnedBy, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get status => $composableBuilder(
       column: $table.status, builder: (column) => ColumnOrderings(column));
 
@@ -9104,6 +9907,12 @@ class $$CachedSalesBillsTableAnnotationComposer
 
   GeneratedColumn<String> get payMode =>
       $composableBuilder(column: $table.payMode, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get returnedAt => $composableBuilder(
+      column: $table.returnedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get returnedBy => $composableBuilder(
+      column: $table.returnedBy, builder: (column) => column);
 
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
@@ -9164,6 +9973,8 @@ class $$CachedSalesBillsTableTableManager extends RootTableManager<
             Value<String?> permitHolderName = const Value.absent(),
             Value<String?> deviceId = const Value.absent(),
             Value<String> payMode = const Value.absent(),
+            Value<DateTime?> returnedAt = const Value.absent(),
+            Value<String?> returnedBy = const Value.absent(),
             Value<String> status = const Value.absent(),
             Value<double> totalAmount = const Value.absent(),
             Value<double> balanceDue = const Value.absent(),
@@ -9182,6 +9993,8 @@ class $$CachedSalesBillsTableTableManager extends RootTableManager<
             permitHolderName: permitHolderName,
             deviceId: deviceId,
             payMode: payMode,
+            returnedAt: returnedAt,
+            returnedBy: returnedBy,
             status: status,
             totalAmount: totalAmount,
             balanceDue: balanceDue,
@@ -9200,6 +10013,8 @@ class $$CachedSalesBillsTableTableManager extends RootTableManager<
             Value<String?> permitHolderName = const Value.absent(),
             Value<String?> deviceId = const Value.absent(),
             required String payMode,
+            Value<DateTime?> returnedAt = const Value.absent(),
+            Value<String?> returnedBy = const Value.absent(),
             required String status,
             required double totalAmount,
             required double balanceDue,
@@ -9218,6 +10033,8 @@ class $$CachedSalesBillsTableTableManager extends RootTableManager<
             permitHolderName: permitHolderName,
             deviceId: deviceId,
             payMode: payMode,
+            returnedAt: returnedAt,
+            returnedBy: returnedBy,
             status: status,
             totalAmount: totalAmount,
             balanceDue: balanceDue,
@@ -10926,6 +11743,319 @@ typedef $$AppUsersTableProcessedTableManager = ProcessedTableManager<
     (AppUserRow, BaseReferences<_$AppDatabase, $AppUsersTable, AppUserRow>),
     AppUserRow,
     PrefetchHooks Function()>;
+typedef $$SalesReturnEntriesTableCreateCompanionBuilder
+    = SalesReturnEntriesCompanion Function({
+  required String id,
+  required String salesBillId,
+  required String billNo,
+  required int lineNumber,
+  Value<String?> materialId,
+  required String barcodeNo,
+  required String materialName,
+  required int quantity,
+  required double rate,
+  required double amount,
+  Value<bool> isFullBillReturn,
+  Value<String?> returnedBy,
+  Value<String?> deviceId,
+  required DateTime returnedAt,
+  Value<int> rowid,
+});
+typedef $$SalesReturnEntriesTableUpdateCompanionBuilder
+    = SalesReturnEntriesCompanion Function({
+  Value<String> id,
+  Value<String> salesBillId,
+  Value<String> billNo,
+  Value<int> lineNumber,
+  Value<String?> materialId,
+  Value<String> barcodeNo,
+  Value<String> materialName,
+  Value<int> quantity,
+  Value<double> rate,
+  Value<double> amount,
+  Value<bool> isFullBillReturn,
+  Value<String?> returnedBy,
+  Value<String?> deviceId,
+  Value<DateTime> returnedAt,
+  Value<int> rowid,
+});
+
+class $$SalesReturnEntriesTableFilterComposer
+    extends Composer<_$AppDatabase, $SalesReturnEntriesTable> {
+  $$SalesReturnEntriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get salesBillId => $composableBuilder(
+      column: $table.salesBillId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get billNo => $composableBuilder(
+      column: $table.billNo, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get lineNumber => $composableBuilder(
+      column: $table.lineNumber, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get materialId => $composableBuilder(
+      column: $table.materialId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get barcodeNo => $composableBuilder(
+      column: $table.barcodeNo, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get materialName => $composableBuilder(
+      column: $table.materialName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get quantity => $composableBuilder(
+      column: $table.quantity, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get rate => $composableBuilder(
+      column: $table.rate, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get amount => $composableBuilder(
+      column: $table.amount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isFullBillReturn => $composableBuilder(
+      column: $table.isFullBillReturn,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get returnedBy => $composableBuilder(
+      column: $table.returnedBy, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get deviceId => $composableBuilder(
+      column: $table.deviceId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get returnedAt => $composableBuilder(
+      column: $table.returnedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$SalesReturnEntriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $SalesReturnEntriesTable> {
+  $$SalesReturnEntriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get salesBillId => $composableBuilder(
+      column: $table.salesBillId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get billNo => $composableBuilder(
+      column: $table.billNo, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get lineNumber => $composableBuilder(
+      column: $table.lineNumber, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get materialId => $composableBuilder(
+      column: $table.materialId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get barcodeNo => $composableBuilder(
+      column: $table.barcodeNo, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get materialName => $composableBuilder(
+      column: $table.materialName,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get quantity => $composableBuilder(
+      column: $table.quantity, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get rate => $composableBuilder(
+      column: $table.rate, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get amount => $composableBuilder(
+      column: $table.amount, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isFullBillReturn => $composableBuilder(
+      column: $table.isFullBillReturn,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get returnedBy => $composableBuilder(
+      column: $table.returnedBy, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get deviceId => $composableBuilder(
+      column: $table.deviceId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get returnedAt => $composableBuilder(
+      column: $table.returnedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$SalesReturnEntriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SalesReturnEntriesTable> {
+  $$SalesReturnEntriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get salesBillId => $composableBuilder(
+      column: $table.salesBillId, builder: (column) => column);
+
+  GeneratedColumn<String> get billNo =>
+      $composableBuilder(column: $table.billNo, builder: (column) => column);
+
+  GeneratedColumn<int> get lineNumber => $composableBuilder(
+      column: $table.lineNumber, builder: (column) => column);
+
+  GeneratedColumn<String> get materialId => $composableBuilder(
+      column: $table.materialId, builder: (column) => column);
+
+  GeneratedColumn<String> get barcodeNo =>
+      $composableBuilder(column: $table.barcodeNo, builder: (column) => column);
+
+  GeneratedColumn<String> get materialName => $composableBuilder(
+      column: $table.materialName, builder: (column) => column);
+
+  GeneratedColumn<int> get quantity =>
+      $composableBuilder(column: $table.quantity, builder: (column) => column);
+
+  GeneratedColumn<double> get rate =>
+      $composableBuilder(column: $table.rate, builder: (column) => column);
+
+  GeneratedColumn<double> get amount =>
+      $composableBuilder(column: $table.amount, builder: (column) => column);
+
+  GeneratedColumn<bool> get isFullBillReturn => $composableBuilder(
+      column: $table.isFullBillReturn, builder: (column) => column);
+
+  GeneratedColumn<String> get returnedBy => $composableBuilder(
+      column: $table.returnedBy, builder: (column) => column);
+
+  GeneratedColumn<String> get deviceId =>
+      $composableBuilder(column: $table.deviceId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get returnedAt => $composableBuilder(
+      column: $table.returnedAt, builder: (column) => column);
+}
+
+class $$SalesReturnEntriesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $SalesReturnEntriesTable,
+    SalesReturnEntry,
+    $$SalesReturnEntriesTableFilterComposer,
+    $$SalesReturnEntriesTableOrderingComposer,
+    $$SalesReturnEntriesTableAnnotationComposer,
+    $$SalesReturnEntriesTableCreateCompanionBuilder,
+    $$SalesReturnEntriesTableUpdateCompanionBuilder,
+    (
+      SalesReturnEntry,
+      BaseReferences<_$AppDatabase, $SalesReturnEntriesTable, SalesReturnEntry>
+    ),
+    SalesReturnEntry,
+    PrefetchHooks Function()> {
+  $$SalesReturnEntriesTableTableManager(
+      _$AppDatabase db, $SalesReturnEntriesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SalesReturnEntriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SalesReturnEntriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SalesReturnEntriesTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> salesBillId = const Value.absent(),
+            Value<String> billNo = const Value.absent(),
+            Value<int> lineNumber = const Value.absent(),
+            Value<String?> materialId = const Value.absent(),
+            Value<String> barcodeNo = const Value.absent(),
+            Value<String> materialName = const Value.absent(),
+            Value<int> quantity = const Value.absent(),
+            Value<double> rate = const Value.absent(),
+            Value<double> amount = const Value.absent(),
+            Value<bool> isFullBillReturn = const Value.absent(),
+            Value<String?> returnedBy = const Value.absent(),
+            Value<String?> deviceId = const Value.absent(),
+            Value<DateTime> returnedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              SalesReturnEntriesCompanion(
+            id: id,
+            salesBillId: salesBillId,
+            billNo: billNo,
+            lineNumber: lineNumber,
+            materialId: materialId,
+            barcodeNo: barcodeNo,
+            materialName: materialName,
+            quantity: quantity,
+            rate: rate,
+            amount: amount,
+            isFullBillReturn: isFullBillReturn,
+            returnedBy: returnedBy,
+            deviceId: deviceId,
+            returnedAt: returnedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String salesBillId,
+            required String billNo,
+            required int lineNumber,
+            Value<String?> materialId = const Value.absent(),
+            required String barcodeNo,
+            required String materialName,
+            required int quantity,
+            required double rate,
+            required double amount,
+            Value<bool> isFullBillReturn = const Value.absent(),
+            Value<String?> returnedBy = const Value.absent(),
+            Value<String?> deviceId = const Value.absent(),
+            required DateTime returnedAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              SalesReturnEntriesCompanion.insert(
+            id: id,
+            salesBillId: salesBillId,
+            billNo: billNo,
+            lineNumber: lineNumber,
+            materialId: materialId,
+            barcodeNo: barcodeNo,
+            materialName: materialName,
+            quantity: quantity,
+            rate: rate,
+            amount: amount,
+            isFullBillReturn: isFullBillReturn,
+            returnedBy: returnedBy,
+            deviceId: deviceId,
+            returnedAt: returnedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$SalesReturnEntriesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $SalesReturnEntriesTable,
+    SalesReturnEntry,
+    $$SalesReturnEntriesTableFilterComposer,
+    $$SalesReturnEntriesTableOrderingComposer,
+    $$SalesReturnEntriesTableAnnotationComposer,
+    $$SalesReturnEntriesTableCreateCompanionBuilder,
+    $$SalesReturnEntriesTableUpdateCompanionBuilder,
+    (
+      SalesReturnEntry,
+      BaseReferences<_$AppDatabase, $SalesReturnEntriesTable, SalesReturnEntry>
+    ),
+    SalesReturnEntry,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -10959,4 +12089,6 @@ class $AppDatabaseManager {
       $$AppSettingsTableTableManager(_db, _db.appSettings);
   $$AppUsersTableTableManager get appUsers =>
       $$AppUsersTableTableManager(_db, _db.appUsers);
+  $$SalesReturnEntriesTableTableManager get salesReturnEntries =>
+      $$SalesReturnEntriesTableTableManager(_db, _db.salesReturnEntries);
 }

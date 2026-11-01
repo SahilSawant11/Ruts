@@ -127,6 +127,10 @@ void main() {
 
     final queued = await (env.db.select(env.db.syncQueueItems)..where((t) => t.entityType.equals('sale'))).get();
     final fullyReturned = await _fullyReturned(env.db, billIds);
+    expect(await env.db.select(env.db.cachedSalesBills).get(), hasLength(billIds.length),
+        reason: 'no bill is ever deleted');
+    final audit = await env.db.select(env.db.salesReturnEntries).get();
+    expect(audit.fold<int>(0, (s, e) => s + e.quantity), greaterThan(0));
     expect(queued.where((q) => q.operation == 'create').length, billIds.length - fullyReturned);
 
     // ── Restore the midday backup into a fresh database ──────────────
@@ -147,9 +151,11 @@ void main() {
   }, timeout: const Timeout(Duration(minutes: 10)));
 }
 
-/// Full returns delete the bill and its pending create job, so they drop
-/// out of the queue count.
+/// Fully returned bills stay in the table (status 'returned') but their
+/// pending create job is dropped from the sync queue.
 Future<int> _fullyReturned(AppDatabase db, List<String> billIds) async {
-  final remaining = (await db.select(db.cachedSalesBills).get()).map((b) => b.id).toSet();
-  return billIds.where((id) => !remaining.contains(id)).length;
+  final returned = await (db.select(db.cachedSalesBills)
+        ..where((t) => t.status.equals(AppDatabase.saleStatusReturned)))
+      .get();
+  return returned.length;
 }

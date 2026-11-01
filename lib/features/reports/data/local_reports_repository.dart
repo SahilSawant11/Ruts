@@ -61,7 +61,10 @@ class LocalReportsRepository {
     final normalizedManufacturer = manufacturer?.trim();
 
     final bills = await (_db.select(_db.cachedSalesBills)
-          ..where((tbl) => tbl.billDate.isBiggerOrEqualValue(start) & tbl.billDate.isSmallerOrEqualValue(end)))
+          ..where((tbl) =>
+              _db.isActiveSaleBill(tbl) &
+              tbl.billDate.isBiggerOrEqualValue(start) &
+              tbl.billDate.isSmallerOrEqualValue(end)))
         .get();
 
     if (bills.isEmpty) {
@@ -78,9 +81,8 @@ class LocalReportsRepository {
       );
     }
 
-    final billIds = bills.map((b) => b.id).toList();
     final lines = await (_db.select(_db.cachedSaleLineItems)
-          ..where((tbl) => tbl.salesBillId.isIn(billIds)))
+          ..where((tbl) => _db.lineOfActiveBillBetween(tbl, start, end, endInclusive: true)))
         .get();
     final materials = await _db.select(_db.cachedMaterials).get();
     final inactiveMaterialIds = {

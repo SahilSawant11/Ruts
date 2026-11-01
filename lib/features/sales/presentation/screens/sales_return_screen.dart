@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/auth/auth_controller.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -209,6 +210,7 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
       await ref.read(salesRepositoryProvider).returnSalesBill(
             bill.id,
             lineQuantities: quantitiesToReturn,
+            returnedBy: ref.read(currentUserProvider)?.username,
           );
 
       ref.invalidate(salesBillsListProvider);

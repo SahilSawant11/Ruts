@@ -39,14 +39,15 @@ class LocalDashboardRepository {
     final last30Start = today.subtract(const Duration(days: 29));
 
     final bills = await (_db.select(_db.cachedSalesBills)
-          ..where((tbl) => tbl.billDate.isBiggerOrEqualValue(last365Start))
+          ..where((tbl) => _db.isActiveSaleBill(tbl) & tbl.billDate.isBiggerOrEqualValue(last365Start))
           ..orderBy([(tbl) => OrderingTerm.desc(tbl.createdAt)]))
         .get();
 
-    final billIds = bills.map((b) => b.id).toList();
-    final lines = billIds.isEmpty
+    final lines = bills.isEmpty
         ? <CachedSaleLineItem>[]
-        : await (_db.select(_db.cachedSaleLineItems)..where((tbl) => tbl.salesBillId.isIn(billIds))).get();
+        : await (_db.select(_db.cachedSaleLineItems)
+              ..where((tbl) => _db.lineOfActiveBillBetween(tbl, last365Start, DateTime(9999))))
+            .get();
     final materials = await _db.select(_db.cachedMaterials).get();
     final manufacturerByMaterialId = {
       for (final material in materials) material.id: material.manufacturer,

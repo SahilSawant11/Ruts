@@ -135,17 +135,10 @@ Future<CounterBrandwiseReportDto?> _buildLocalCounterBrandwiseReport(AppDatabase
   if (materials.isEmpty) return null;
 
   // Load sales for this day
-  final saleBills = await (db.select(db.cachedSalesBills)
-        ..where((t) => t.billDate.isBiggerOrEqualValue(start) & t.billDate.isSmallerThanValue(endExclusive)))
+  // Fully returned bills are kept for audit but never counted.
+  final saleLines = await (db.select(db.cachedSaleLineItems)
+        ..where((t) => db.lineOfActiveBillBetween(t, start, endExclusive)))
       .get();
-  final saleBillIds = saleBills.map((b) => b.id).toList();
-
-  List<CachedSaleLineItem> saleLines = [];
-  if (saleBillIds.isNotEmpty) {
-    saleLines = await (db.select(db.cachedSaleLineItems)
-          ..where((t) => t.salesBillId.isIn(saleBillIds)))
-        .get();
-  }
 
   // Load purchases for this day
   final purchaseBills = await (db.select(db.cachedPurchaseBills)
