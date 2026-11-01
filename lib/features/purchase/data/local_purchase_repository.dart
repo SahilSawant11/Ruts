@@ -321,7 +321,9 @@ class LocalPurchaseRepository {
         );
 
         await (_db.delete(_db.syncQueueItems)..where((tbl) => tbl.entityId.equals(billId))).go();
-        if (!remoteSucceeded && !billId.startsWith('local-')) {
+        // Never-synced bills just drop their pending create; bills the server
+        // already has (synced, whatever their id) need a return job.
+        if (!remoteSucceeded && (bill.syncStatus == 'synced' || !billId.startsWith('local-'))) {
           await _db.into(_db.syncQueueItems).insert(
                 SyncQueueItemsCompanion.insert(
                   entityType: 'purchase',

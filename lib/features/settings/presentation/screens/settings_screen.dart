@@ -12,6 +12,8 @@ import '../../../../core/local/backup_service.dart';
 import '../../../../core/local/db_paths.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/network/api_exception.dart';
+import '../../../../core/sync/online_sync_service.dart';
+import '../../../../core/sync/sync_providers.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -47,6 +49,10 @@ class SettingsScreen extends ConsumerWidget {
               if (Permissions.canManageUsers(user.role)) ...[
                 const SizedBox(height: AppSpacing.lg),
                 _UsersCard(user: user),
+              ],
+              if (Permissions.canManageUsers(user.role)) ...[
+                const SizedBox(height: AppSpacing.lg),
+                const _OnlineSyncCard(),
               ],
               if (user.role != UserRole.cashier) ...[
                 const SizedBox(height: AppSpacing.lg),
@@ -622,6 +628,130 @@ class _UserDialogState extends ConsumerState<_UserDialog> {
         SecondaryButton(label: 'Cancel', onPressed: () => Navigator.of(context).pop()),
         PrimaryButton(label: _busy ? 'Saving…' : 'Save', onPressed: _busy ? null : _save),
       ],
+    );
+  }
+}
+
+// ─── Online sync (owner, optional) ─────────────────────────────────────────
+
+class _OnlineSyncCard extends ConsumerStatefulWidget {
+  const _OnlineSyncCard();
+
+  @override
+  ConsumerState<_OnlineSyncCard> createState() => _OnlineSyncCardState();
+}
+
+class _OnlineSyncCardState extends ConsumerState<_OnlineSyncCard> {
+  final _url = TextEditingController();
+  final _store = TextEditingController();
+  final _code = TextEditingController();
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _url.dispose();
+    _store.dispose();
+    _code.dispose();
+    super.dispose();
+  }
+
+  Future<void> _connect() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final service = ref.read(onlineSyncServiceProvider);
+      await service.connect(serverUrl: _url.text, storeName: _store.text, enrollmentCode: _code.text);
+      final r = await service.syncNow();
+      if (mounted) _toast(context, 'Connected. ${r.toString()}', error: !r.ok);
+    } on SyncException catch (e) {
+      setState(() => _error = e.message);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+      ref.invalidate(onlineSyncStatusProvider);
+    }
+  }
+
+  Future<void> _syncNow() async {
+    setState(() => _busy = true);
+    final r = await ref.read(onlineSyncServiceProvider).syncNow();
+    if (mounted) {
+      setState(() => _busy = false);
+      _toast(context, r.toString(), error: !r.ok);
+    }
+    ref.invalidate(onlineSyncStatusProvider);
+  }
+
+  Future<void> _disconnect() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Disconnect from server?'),
+        content: const Text('This counter keeps working offline. Bills not yet sent stay queued until you reconnect.'),
+        actions: [
+          SecondaryButton(label: 'Cancel', onPressed: () => Navigator.of(ctx).pop(false)),
+          DangerButton(label: 'Disconnect', onPressed: () => Navigator.of(ctx).pop(true)),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await ref.read(onlineSyncServiceProvider).disconnect();
+    ref.invalidate(onlineSyncStatusProvider);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final status = ref.watch(onlineSyncStatusProvider).valueOrNull;
+    final connected = status?.connected ?? false;
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SectionHeader(
+            icon: AppIcons.sync,
+            title: 'Online sync',
+            trailing: StatusChip(
+              label: connected ? 'Connected' : 'Offline only',
+              tone: connected ? StatusChipTone.success : StatusChipTone.neutral,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          const _Explain(
+            'Optional. Connect this counter to a Caskly server to combine several counters and see the store '
+            'from anywhere. Billing never waits for the server — bills are sent in the background every few minutes.',
+          ),
+          const SizedBox(height: AppSpacing.md),
+          if (connected) ...[
+            _Row('Server', status?.url ?? ''),
+            _Row('Store', status?.store ?? ''),
+            _Row('Last sync', _formatDateTime(status?.lastAt)),
+            if (status?.lastResult != null) _Row('Result', status!.lastResult!),
+            const SizedBox(height: AppSpacing.md),
+            Wrap(spacing: AppSpacing.sm, runSpacing: AppSpacing.sm, children: [
+              PrimaryButton(label: _busy ? 'Syncing…' : 'Sync now', icon: AppIcons.sync, onPressed: _busy ? null : _syncNow),
+              SecondaryButton(label: 'Disconnect', icon: AppIcons.close, onPressed: _busy ? null : _disconnect),
+            ]),
+          ] else ...[
+            AppTextField(label: 'SERVER ADDRESS', hint: 'e.g. 192.168.1.10:5080', controller: _url),
+            const SizedBox(height: AppSpacing.md),
+            AppTextField(label: 'STORE NAME', controller: _store),
+            const SizedBox(height: AppSpacing.md),
+            AppTextField(label: 'ENROLLMENT CODE', controller: _code, obscureText: true, onSubmitted: (_) => _connect()),
+            if (_error != null) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Text(_error!, style: AppTypography.caption.copyWith(color: AppColors.danger)),
+            ],
+            const SizedBox(height: AppSpacing.md),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: PrimaryButton(label: _busy ? 'Connecting…' : 'Connect', icon: AppIcons.sync, onPressed: _busy ? null : _connect),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
