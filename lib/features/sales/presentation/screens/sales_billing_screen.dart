@@ -11,7 +11,7 @@ import '../widgets/scan_add_item_card.dart';
 /// - Connects directly below AppTopHeader with no duplicate utility bar,
 ///   allowing the workbench and line items table to start at the very top.
 /// - Preserves the application's signature pebble-like rounded aesthetic,
-///   brand purple accents (#6C5CE7), and soft ambient shadows.
+///   brand gold accents (AppColors.primary), and soft ambient shadows.
 /// - Left Workbench: Pebble container with 1-row metadata strip, inline scan bar,
 ///   and full-height line items table.
 /// - Right Sidebar: Pebble summary & payment cards.

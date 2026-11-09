@@ -19,7 +19,7 @@ class CategorySalesCard extends ConsumerWidget {
     AppColors.chartIndigo,
     AppColors.chartBlue,
     AppColors.chartTeal,
-    AppColors.chartAmber,
+    AppColors.chartRose,
     AppColors.success,
   ];
 

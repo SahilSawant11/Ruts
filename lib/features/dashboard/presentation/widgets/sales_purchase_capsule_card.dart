@@ -32,10 +32,10 @@ class _SalesPurchaseCapsuleCardState extends ConsumerState<SalesPurchaseCapsuleC
     final isDark = AppColors.isDark(context);
 
     // Color tokens matching screenshot
-    const purchaseColor = Color(0xFF6E56CF); // Solid Purple
+    const purchaseColor = AppColors.primary; // brand gold
     final saleColor = isDark
-        ? const Color(0xFF433D6B) // Dark mode muted lavender
-        : const Color(0xFFE4E1FC); // Light mode soft lavender
+        ? const Color(0xFF5A4720) // Dark mode muted gold
+        : const Color(0xFFF8E4B8); // Light mode soft gold
 
     return Container(
       decoration: BoxDecoration(
@@ -55,7 +55,7 @@ class _SalesPurchaseCapsuleCardState extends ConsumerState<SalesPurchaseCapsuleC
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: isDark ? purchaseColor.withValues(alpha: 0.20) : const Color(0xFFF1EEFE),
+                  color: isDark ? purchaseColor.withValues(alpha: 0.20) : AppColors.primarySoftLight,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const AppIcon(
@@ -391,7 +391,7 @@ class _SideBySideCapsuleColumn extends StatelessWidget {
           const TextSpan(
             text: '● Total Sale: ',
             style: TextStyle(
-              color: Color(0xFFC7BFF8),
+              color: Color(0xFFF8D88E),
               fontWeight: FontWeight.w700,
               fontSize: 12,
               height: 1.5,

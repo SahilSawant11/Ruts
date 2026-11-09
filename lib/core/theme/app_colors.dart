@@ -6,11 +6,17 @@ import 'app_typography.dart';
 class AppColors {
   AppColors._();
 
-  // Brand
-  static const Color primary = Color(0xFF6C5CE7);
-  static const Color primaryDark = Color(0xFF5A46D6);
-  static const Color primarySoftLight = Color(0xFFEFECFE);
-  static const Color primarySoftDark = Color(0xFF28233C);
+  // Brand: gold. Text and icons on gold use [textOnPrimary] (ink), since
+  // white on gold is hard to read.
+  static const Color primary = Color(0xFFF2A51D);
+  static const Color primaryDark = Color(0xFFD48B0C);
+  static const Color primarySoftLight = Color(0xFFFDF3DE);
+  static const Color primarySoftDark = Color(0xFF332914);
+  /// Gold for text and small icons. Bright gold is too faint on light
+  /// backgrounds, so light mode uses a deeper gold.
+  static const Color primaryInkLight = Color(0xFFA36A00);
+  static Color get primaryInk => AppTypography.isDark ? primary : primaryInkLight;
+
   static Color get primarySoft =>
       AppTypography.isDark ? primarySoftDark : primarySoftLight;
 
@@ -19,8 +25,9 @@ class AppColors {
   static const Color successSoft = Color(0xFFE7F8EE);
   static const Color danger = Color(0xFFE0393E);
   static const Color dangerSoft = Color(0xFFFBEAEA);
-  static const Color warning = Color(0xFFF5A524);
-  static const Color warningSoft = Color(0xFFFEF3E2);
+  // Orange, kept clearly apart from the gold brand colour.
+  static const Color warning = Color(0xFFEA6A0C);
+  static const Color warningSoft = Color(0xFFFFEDE0);
   static const Color info = Color(0xFF3B82F6);
 
   // Neutrals - light theme
@@ -34,7 +41,7 @@ class AppColors {
   static const Color textPrimary = Color(0xFF16161F);
   static const Color textSecondary = Color(0xFF6B6B7B);
   static const Color textMuted = Color(0xFF9B9BAC);
-  static const Color textOnPrimary = Color(0xFFFFFFFF);
+  static const Color textOnPrimary = Color(0xFF141218);
 
   // Dark theme neutrals
   static const Color backgroundDark = Color(0xFF12141B);
@@ -57,6 +64,9 @@ class AppColors {
   static const Color chartBlue = Color(0xFF0EA5E9);
   static const Color chartTeal = Color(0xFF14B8A6);
   static const Color chartAmber = Color(0xFFF59E0B);
+  /// Distinct from the gold brand colour; use instead of amber in palettes
+  /// that also contain [primary].
+  static const Color chartRose = Color(0xFFE96560);
 
   // Highlight for totals
   static const Color totalDark = Color(0xFF15151F);
@@ -101,7 +111,7 @@ class AppColors {
       isDark(context) ? shellTextMuted : textSecondary;
 
   static Color totalSurfaceFor(BuildContext context) =>
-      isDark(context) ? const Color(0xFF2E2660) : totalDark;
+      isDark(context) ? const Color(0xFF2E2616) : totalDark;
 
   static Color workspaceCanvasFor(BuildContext context) => isDark(context)
       ? const Color(0xFF11131A)

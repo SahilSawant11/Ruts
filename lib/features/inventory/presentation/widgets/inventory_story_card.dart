@@ -73,7 +73,7 @@ class InventoryStoryCard extends ConsumerWidget {
                                   const Color(0xFF23283A),
                                 ]
                               : [
-                                  const Color(0xFFF5F2FF),
+                                  AppColors.primarySoftLight,
                                   Colors.white,
                                 ],
                         ),

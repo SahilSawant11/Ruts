@@ -15,7 +15,7 @@ import '../../../../shared/keyboard/screen_key_guard.dart';
 /// - Connects directly below AppTopHeader with no duplicate utility bar,
 ///   allowing the inward workbench and records table to start at the very top.
 /// - Preserves the application's signature pebble-like rounded aesthetic,
-///   brand purple accents (#6C5CE7), and soft ambient shadows.
+///   brand gold accents (AppColors.primary), and soft ambient shadows.
 /// - Left Workbench: Pebble container with 1-row metadata strip, inline quick-add bar,
 ///   and full-height high-density line items table.
 /// - Right Sidebar: Pebble summary & settlement cards with F8 save capability.

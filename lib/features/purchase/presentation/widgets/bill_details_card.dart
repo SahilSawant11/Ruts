@@ -230,7 +230,7 @@ class _BillDetailsCardState extends ConsumerState<BillDetailsCard> {
                         Text(
                           formState.payMode.toUpperCase(),
                           style: TextStyle(
-                            color: AppColors.primary,
+                            color: AppColors.primaryInk,
                             fontWeight: FontWeight.w800,
                             fontSize: 10.5,
                             fontFamily: AppTypography.mono.fontFamily,

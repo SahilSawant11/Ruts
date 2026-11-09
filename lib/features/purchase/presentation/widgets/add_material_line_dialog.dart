@@ -428,7 +428,7 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
                   'Quick create a new item right here.',
                   style: AppTypography.body.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: AppColors.primary,
+                    color: AppColors.primaryInk,
                   ),
                 ),
               ),
@@ -517,7 +517,7 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
                   '${_material!.name} · ${_material!.packing}',
                   style: AppTypography.body.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: AppColors.primary,
+                    color: AppColors.primaryInk,
                   ),
                 ),
               ),

@@ -11,7 +11,7 @@ import '../../../../core/format/money.dart';
 class PaymentMixCard extends ConsumerWidget {
   const PaymentMixCard({super.key});
 
-  static const _palette = [AppColors.primary, AppColors.chartBlue, AppColors.chartTeal, AppColors.chartAmber];
+  static const _palette = [AppColors.primary, AppColors.chartBlue, AppColors.chartTeal, AppColors.chartRose];
 
   Color _colorFor(String payMode, int index) {
     switch (payMode.toLowerCase()) {

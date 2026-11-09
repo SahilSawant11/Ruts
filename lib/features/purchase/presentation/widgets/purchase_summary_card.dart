@@ -65,10 +65,10 @@ class PurchaseSummaryCard extends ConsumerWidget {
                 ),
                 child: Text(
                   '$lineCount line${lineCount == 1 ? '' : 's'}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10.5,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.primary,
+                    color: AppColors.primaryInk,
                   ),
                 ),
               ),

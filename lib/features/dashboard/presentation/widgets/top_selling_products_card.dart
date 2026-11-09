@@ -163,7 +163,7 @@ class _ProductRow extends StatelessWidget {
             style: AppTypography.mono.copyWith(
               fontSize: 13,
               fontWeight: FontWeight.w800,
-              color: AppColors.primary,
+              color: AppColors.primaryInk,
             ),
           ),
         ),
@@ -212,7 +212,7 @@ class _ProductRow extends StatelessWidget {
               style: AppTypography.mono.copyWith(
                 fontSize: 10.5,
                 fontWeight: FontWeight.w700,
-                color: AppColors.primary,
+                color: AppColors.primaryInk,
               ),
             ),
           ),

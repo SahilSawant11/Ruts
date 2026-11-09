@@ -71,9 +71,10 @@ class AppTopHeader extends ConsumerWidget {
       const SnackBar(
         content: Row(
           children: [
-            AppIcon(AppIcons.checkCircle, color: Colors.white, size: 16),
+            AppIcon(AppIcons.checkCircle, color: AppColors.textOnPrimary, size: 16),
             SizedBox(width: 8),
-            Text('Data refreshed successfully', style: TextStyle(fontWeight: FontWeight.w600)),
+            Text('Data refreshed successfully',
+                style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textOnPrimary)),
           ],
         ),
         backgroundColor: AppColors.primary,
@@ -198,7 +199,7 @@ class AppTopHeader extends ConsumerWidget {
           fontSize: 11,
           fontWeight: FontWeight.w700,
           letterSpacing: 0.2,
-          color: isDark ? const Color(0xFFD0C7FF) : AppColors.primary,
+          color: isDark ? AppColors.primary : AppColors.primaryInkLight,
         ),
       ),
     );

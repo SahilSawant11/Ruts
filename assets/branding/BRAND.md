@@ -25,7 +25,8 @@ and installs the macOS iconset and Windows `.ico`.
 |---|---|
 | Ink (tile, mark on light) | `#141218` |
 | Cream (glass) | `#F3EFE6` |
-| Brand purple (UI primary only, not in the mark) | `#6C5CE7` |
+| Caskly gold (UI primary only, not in the mark) | `#F2A51D` |
+| Gold ink (gold text on light backgrounds) | `#A36A00` |
 
 **Type:** Manrope (UI), JetBrains Mono (numbers).
 

@@ -618,7 +618,7 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
                     ),
                     Text(
                       Money.inr(selectedRefundAmount),
-                      style: AppTypography.h1.copyWith(color: AppColors.primary),
+                      style: AppTypography.h1.copyWith(color: AppColors.primaryInk),
                     ),
                   ],
                 ),
@@ -796,7 +796,7 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
                                                     '$currentReturnQty',
                                                     style: AppTypography.caption.copyWith(
                                                       fontWeight: FontWeight.bold,
-                                                      color: AppColors.primary,
+                                                      color: AppColors.primaryInk,
                                                     ),
                                                   ),
                                                 ),

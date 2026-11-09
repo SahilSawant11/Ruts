@@ -335,7 +335,7 @@ class _SidebarHeader extends StatelessWidget {
                               'Caskly',
                               style: AppTypography.sectionTitle.copyWith(
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.primary,
+                                color: AppColors.primaryInk,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.clip,
@@ -514,7 +514,7 @@ class _AvatarBadge extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF6C5CE7), Color(0xFF5A46D6)],
+          colors: [AppColors.primary, AppColors.primaryDark],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -525,7 +525,7 @@ class _AvatarBadge extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF6C5CE7).withValues(alpha: 0.28),
+            color: AppColors.primary.withValues(alpha: 0.28),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -535,7 +535,7 @@ class _AvatarBadge extends StatelessWidget {
         child: Text(
           initials,
           style: const TextStyle(
-            color: Colors.white,
+            color: AppColors.textOnPrimary,
             fontSize: 11,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.4,

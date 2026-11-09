@@ -621,7 +621,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                     ),
                     Text(
                       Money.inr((allSelected ? bill.netAmount : selectedItemAmount)),
-                      style: AppTypography.h1.copyWith(color: AppColors.primary),
+                      style: AppTypography.h1.copyWith(color: AppColors.primaryInk),
                     ),
                   ],
                 ),
@@ -799,7 +799,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                                                     '$currentReturnQty',
                                                     style: AppTypography.caption.copyWith(
                                                       fontWeight: FontWeight.bold,
-                                                      color: AppColors.primary,
+                                                      color: AppColors.primaryInk,
                                                     ),
                                                   ),
                                                 ),

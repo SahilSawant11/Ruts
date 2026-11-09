@@ -282,7 +282,7 @@ class _LicenseHolderField extends StatelessWidget {
                           style: AppTypography.mono.copyWith(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.primary,
+                            color: AppColors.primaryInk,
                           ),
                         ),
                         const SizedBox(width: 8),

@@ -62,10 +62,10 @@ class BillSummaryCard extends ConsumerWidget {
                 ),
                 child: Text(
                   '$itemCount items',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10.5,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.primary,
+                    color: AppColors.primaryInk,
                   ),
                 ),
               ),

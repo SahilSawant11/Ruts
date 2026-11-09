@@ -149,8 +149,8 @@ class _SidebarItemState extends State<SidebarItem> {
                                       : FontWeight.w500,
                                   color: widget.active
                                       ? (isDark
-                                          ? const Color(0xFFC4B8FF)
-                                          : AppColors.primary)
+                                          ? AppColors.primary
+                                          : AppColors.primaryInkLight)
                                       : AppColors.textPrimaryFor(context),
                                 ),
                                 maxLines: 1,
@@ -190,7 +190,7 @@ class _SidebarItemState extends State<SidebarItem> {
             : Colors.black.withValues(alpha: 0.05));
 
     final badgeTextColor = widget.active
-        ? (isDark ? const Color(0xFFD6CEFF) : AppColors.primary)
+        ? (isDark ? AppColors.primary : AppColors.primaryInkLight)
         : (isDark ? const Color(0xFF8B93A7) : const Color(0xFF7E8494));
 
     final badgeBorderColor = widget.active

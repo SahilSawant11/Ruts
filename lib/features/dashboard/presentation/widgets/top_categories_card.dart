@@ -15,8 +15,8 @@ class TopCategoriesCard extends ConsumerWidget {
 
   static const _barColors = [
     Color(0xFF2EBD85),
-    Color(0xFF6C5CE7),
-    Color(0xFFF5A623),
+    AppColors.primary,
+    AppColors.chartIndigo,
     Color(0xFF4A9FF5),
     Color(0xFFE96560),
   ];

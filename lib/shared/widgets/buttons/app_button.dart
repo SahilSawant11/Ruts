@@ -34,8 +34,8 @@ class AppButton extends StatelessWidget {
     switch (variant) {
       case AppButtonVariant.primary:
         return const _ButtonColors(
-          Color(0xFF6554E8),
-          Colors.white,
+          AppColors.primary,
+          AppColors.textOnPrimary,
           null,
         );
       case AppButtonVariant.success:

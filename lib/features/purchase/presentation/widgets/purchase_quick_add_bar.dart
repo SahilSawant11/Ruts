@@ -406,12 +406,12 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
                             child: const Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                AppIcon(AppIcons.barcode, size: 14, color: Colors.white),
+                                AppIcon(AppIcons.barcode, size: 14, color: AppColors.textOnPrimary),
                                 SizedBox(width: 4),
                                 Text(
                                   'BARCODE / SKU',
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: AppColors.textOnPrimary,
                                     fontWeight: FontWeight.w700,
                                     fontSize: 10,
                                     letterSpacing: 0.3,
@@ -468,10 +468,10 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
                                 children: [
                                   Text(
                                     _selectedMaterial!.id,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 10.5,
                                       fontWeight: FontWeight.w700,
-                                      color: AppColors.primary,
+                                      color: AppColors.primaryInk,
                                     ),
                                   ),
                                   const SizedBox(width: 4),
@@ -786,14 +786,14 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimaryFor(context),
                         ),
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           isDense: true,
                           filled: false,
                           prefixText: '₹',
                           prefixStyle: TextStyle(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.primary,
+                            color: AppColors.primaryInk,
                           ),
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
@@ -926,7 +926,7 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
                         fontSize: 9,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.5,
-                        color: AppColors.primary.withValues(alpha: 0.8),
+                        color: AppColors.primaryInk.withValues(alpha: 0.8),
                       ),
                     ),
                     const SizedBox(width: 5),
@@ -935,7 +935,7 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
                       style: AppTypography.mono.copyWith(
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.primary,
+                        color: AppColors.primaryInk,
                       ),
                     ),
                   ],
@@ -1001,11 +1001,11 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
                         'No item found for "${_searchController.text.trim()}"',
                         style: AppTypography.body.copyWith(fontSize: 12),
                       ),
-                      subtitle: const Text(
+                      subtitle: Text(
                         'Tap here to Quick-Create this item (F2)',
                         style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.primary,
+                          color: AppColors.primaryInk,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -1043,10 +1043,10 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
                                   ),
                                   child: Text(
                                     item.id,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w700,
-                                      color: AppColors.primary,
+                                      color: AppColors.primaryInk,
                                     ),
                                   ),
                                 ),
@@ -1090,7 +1090,7 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
                                       style: AppTypography.mono.copyWith(
                                         fontSize: 12.5,
                                         fontWeight: FontWeight.w700,
-                                        color: AppColors.primary,
+                                        color: AppColors.primaryInk,
                                       ),
                                     ),
                                     if (item.taxPercent > 0)

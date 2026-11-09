@@ -274,11 +274,11 @@ class _HotkeyPill extends StatelessWidget {
             : const Color(0xFFE9E9F0));
 
     final keycapText = isAccent
-        ? (isDark ? const Color(0xFFDCD4FF) : AppColors.primary)
+        ? (isDark ? AppColors.primary : AppColors.primaryInkLight)
         : (isDark ? const Color(0xFFBAC2D6) : const Color(0xFF4A4A58));
 
     final actionText = isAccent
-        ? (isDark ? const Color(0xFFDCD4FF) : AppColors.primary)
+        ? (isDark ? AppColors.primary : AppColors.primaryInkLight)
         : (isDark ? const Color(0xFF8B93A7) : const Color(0xFF656575));
 
     return Container(

@@ -147,13 +147,13 @@ class InventoryItemProfile extends StatelessWidget {
 
     return _spiritSpec(
       packing,
-      foreground: AppColors.primary,
+      foreground: AppColors.primaryInk,
       background: isDark
           ? AppColors.primary.withValues(alpha: 0.18)
           : AppColors.primarySoftLight,
       border: isDark
           ? AppColors.primary.withValues(alpha: 0.38)
-          : const Color(0xFFD8D0FB),
+          : const Color(0xFFF2DBA6),
     );
   }
 
@@ -163,13 +163,13 @@ class InventoryItemProfile extends StatelessWidget {
         : AppColors.primarySoftLight;
     final bdr = isDark
         ? AppColors.primary.withValues(alpha: 0.38)
-        : const Color(0xFFD8D0FB);
+        : const Color(0xFFF2DBA6);
     final ml = _extractMl(packing);
     if (ml != null && ml <= 100) {
       return _ProfileSpec(
         icon: AppIcons.wine,
         badge: '90',
-        foreground: AppColors.primary,
+        foreground: AppColors.primaryInk,
         background: bg,
         border: bdr,
         iconSize: 17,
@@ -179,7 +179,7 @@ class InventoryItemProfile extends StatelessWidget {
       return _ProfileSpec(
         icon: AppIcons.wine,
         badge: '180',
-        foreground: AppColors.primary,
+        foreground: AppColors.primaryInk,
         background: bg,
         border: bdr,
         iconSize: 20,
@@ -189,7 +189,7 @@ class InventoryItemProfile extends StatelessWidget {
       return _ProfileSpec(
         icon: AppIcons.beer,
         badge: '375',
-        foreground: AppColors.primary,
+        foreground: AppColors.primaryInk,
         background: bg,
         border: bdr,
         iconSize: 19,
@@ -198,7 +198,7 @@ class InventoryItemProfile extends StatelessWidget {
     return _ProfileSpec(
       icon: AppIcons.liquorBottle,
       badge: '750',
-      foreground: AppColors.primary,
+      foreground: AppColors.primaryInk,
       background: bg,
       border: bdr,
       iconSize: 20,

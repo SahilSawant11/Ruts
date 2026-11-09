@@ -67,7 +67,7 @@ class SalesTrendCard extends ConsumerWidget {
                       valueLabel: _formatAmount(point.amount),
                       fraction: maxAmount > 0 ? point.amount / maxAmount : 0,
                       color: point.date.day == DateTime.now().day && point.date.month == DateTime.now().month
-                          ? AppColors.chartAmber
+                          ? AppColors.chartIndigo
                           : null,
                     ),
                 ],

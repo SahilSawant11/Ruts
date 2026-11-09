@@ -350,12 +350,12 @@ Future<void> _triggerAutoCheckout() async {
                             child: const Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                AppIcon(AppIcons.barcode, size: 15, color: Colors.white),
+                                AppIcon(AppIcons.barcode, size: 15, color: AppColors.textOnPrimary),
                                 SizedBox(width: 5),
                                 Text(
                                   'BARCODE',
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: AppColors.textOnPrimary,
                                     fontWeight: FontWeight.w700,
                                     fontSize: 11,
                                     letterSpacing: 0.3,
@@ -490,12 +490,12 @@ Future<void> _triggerAutoCheckout() async {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const AppIcon(AppIcons.add, size: 17, color: Colors.white),
+                          const AppIcon(AppIcons.add, size: 17, color: AppColors.textOnPrimary),
                           const SizedBox(width: 6),
                           Text(
                             'Add',
                             style: AppTypography.body.copyWith(
-                              color: Colors.white,
+                              color: AppColors.textOnPrimary,
                               fontWeight: FontWeight.w700,
                               fontSize: 12.5,
                             ),

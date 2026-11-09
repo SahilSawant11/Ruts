@@ -317,12 +317,12 @@ class _TableRowState extends ConsumerState<_TableRow> {
                             color: AppColors.primarySoftFor(context),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: const Text(
+                          child: Text(
                             'Double-click to edit',
                             style: TextStyle(
                               fontSize: 9,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.primary,
+                              color: AppColors.primaryInk,
                             ),
                           ),
                         ),

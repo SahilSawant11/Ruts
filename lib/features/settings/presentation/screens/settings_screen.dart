@@ -502,7 +502,7 @@ class _UsersCard extends ConsumerWidget {
                     contentPadding: EdgeInsets.zero,
                     leading: CircleAvatar(
                       backgroundColor: AppColors.primarySoftFor(context),
-                      child: Text(u.initials, style: AppTypography.label.copyWith(color: AppColors.primary)),
+                      child: Text(u.initials, style: AppTypography.label.copyWith(color: AppColors.primaryInk)),
                     ),
                     title: Text('${u.displayName}${u.id == user.id ? '  (you)' : ''}', style: AppTypography.body),
                     subtitle: Text('${u.username} · ${u.roleLabel}'

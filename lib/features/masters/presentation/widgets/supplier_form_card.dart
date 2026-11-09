@@ -388,7 +388,7 @@ class _SupplierFormCardState extends ConsumerState<SupplierFormCard> {
         Text(
           text,
           style: AppTypography.label.copyWith(
-            color: AppColors.primary,
+            color: AppColors.primaryInk,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.5,
           ),

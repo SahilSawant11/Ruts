@@ -146,7 +146,7 @@ class DashboardPeriodSelector extends StatelessWidget {
                     style: AppTypography.caption.copyWith(
                       fontSize: 11.5,
                       fontWeight: FontWeight.w700,
-                      color: p == value ? Colors.white : AppColors.textSecondaryFor(context),
+                      color: p == value ? AppColors.textOnPrimary : AppColors.textSecondaryFor(context),
                     ),
                   ),
                 ),

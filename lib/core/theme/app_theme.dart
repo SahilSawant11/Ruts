@@ -74,7 +74,7 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         dividerColor: AppColors.border,
         headerBackgroundColor: AppColors.primary,
-        headerForegroundColor: Colors.white,
+        headerForegroundColor: AppColors.textOnPrimary,
       ),
       timePickerTheme: const TimePickerThemeData(
         backgroundColor: AppColors.background,
@@ -196,14 +196,14 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         dividerColor: AppColors.borderDark,
         headerBackgroundColor: AppColors.primary,
-        headerForegroundColor: Colors.white,
+        headerForegroundColor: AppColors.textOnPrimary,
         dayForegroundColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return Colors.white;
+          if (states.contains(WidgetState.selected)) return AppColors.textOnPrimary;
           if (states.contains(WidgetState.disabled)) return AppColors.textMutedDark;
           return AppColors.textPrimaryDark;
         }),
         yearForegroundColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return Colors.white;
+          if (states.contains(WidgetState.selected)) return AppColors.textOnPrimary;
           if (states.contains(WidgetState.disabled)) return AppColors.textMutedDark;
           return AppColors.textPrimaryDark;
         }),

@@ -490,7 +490,7 @@ Widget _buildGeneralTab(
                   style: AppTypography.body.copyWith(
                     fontSize: 11.5,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    color: isSelected ? Colors.white : AppColors.textPrimaryFor(ctx),
+                    color: isSelected ? AppColors.textOnPrimary : AppColors.textPrimaryFor(ctx),
                   ),
                 ),
               ),

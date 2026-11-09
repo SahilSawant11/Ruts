@@ -154,17 +154,17 @@ class PurchaseItemTable extends ConsumerWidget {
                 border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  AppIcon(AppIcons.addCircle, size: 16, color: AppColors.primary),
-                  SizedBox(width: 6),
+                  const AppIcon(AppIcons.addCircle, size: 16, color: AppColors.primary),
+                  const SizedBox(width: 6),
                   Text(
                     'Add First Line (F2)',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
+                      color: AppColors.primaryInk,
                     ),
                   ),
                 ],
