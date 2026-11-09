@@ -91,7 +91,7 @@ void main() {
   vec3 rdl = inv * rd;
   gLiqN = inv * normalize(vec3(uSlosh.x, 1.0, uSlosh.y));
   vec3 light = inv * normalize(vec3(-0.5, 0.8, 0.6));
-  float pix = 1.6 / uSize.y;
+  float pix = 1.0 / (uSize.y * 2.55); // world size of one pixel per unit distance
 
   // Liquid (opaque).
   float t = 0.0, edge = 1e9;

@@ -105,7 +105,7 @@ void main() {
   gLiqN = inv * normalize(vec3(uSlosh.x, 1.0, uSlosh.y));
   vec3 light = inv * normalize(vec3(-0.55, 0.75, 0.65));
 
-  float pix = 1.0 / uSize.y * 1.6; // one pixel's angular size, for edge AA
+  float pix = 1.0 / (uSize.y * 1.65); // world size of one pixel per unit distance (edge AA)
 
   // Solid parts.
   float t = 0.0, id = 0.0, edge = 1e9;
