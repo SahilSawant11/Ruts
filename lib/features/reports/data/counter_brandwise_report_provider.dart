@@ -14,6 +14,7 @@ import 'brandwise_report_provider.dart';
 import 'counter_brandwise_excel_exporter.dart';
 import 'models/brandwise_report_dto.dart';
 import 'models/counter_brandwise_report_dto.dart';
+import 'stock_as_of.dart';
 
 // ---------------------------------------------------------------------------
 //  Providers
@@ -156,9 +157,9 @@ Future<CounterBrandwiseReportDto?> _buildLocalCounterBrandwiseReport(AppDatabase
         .get();
   }
 
-  // Load current inventory stock
-  final inventoryStocks = await db.select(db.cachedInventoryStocks).get();
-  final stockByMaterialId = {for (final s in inventoryStocks) s.materialId: s.qtyOnHand};
+  // Stock at the end of the report day (not today's stock), so past
+  // days report their own closing and opening balances.
+  final stockByMaterialId = await closingStockAsOf(db, endExclusive);
 
   // Aggregate sale qty per materialId
   final saleQtyByMaterial = <String, int>{};
