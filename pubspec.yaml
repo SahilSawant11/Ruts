@@ -42,3 +42,7 @@ flutter:
     - assets/fonts/
     - assets/branding/
 
+  # GPU shaders (login screen 3D martini).
+  shaders:
+    - shaders/martini.frag
+

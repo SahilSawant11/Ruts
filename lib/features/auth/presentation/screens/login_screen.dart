@@ -11,6 +11,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
 import '../../../../shared/widgets/layout/caskly_logo.dart';
+import '../widgets/martini_glass.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -52,94 +53,48 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
-    final isDark = AppColors.isDark(context);
-
     return Scaffold(
       backgroundColor: AppColors.backgroundFor(context),
-      body: Stack(
-        children: [
-          _background(context, isDark),
-          Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(AppSpacing.xl),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 430),
-                child: Container(
-                      padding: const EdgeInsets.fromLTRB(34, 34, 34, 30),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? const Color(0xFF181B23).withValues(alpha: 0.92)
-                            : Colors.white.withValues(alpha: 0.88),
-                        borderRadius: BorderRadius.circular(32),
-                        border: Border.all(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.07)
-                              : Colors.white.withValues(alpha: 0.96),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.08),
-                            blurRadius: 40,
-                            offset: const Offset(0, 24),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _brandMark(context, isDark),
-                          const SizedBox(height: 28),
-                          Text(
-                            'Welcome back',
-                            style: AppTypography.h1.copyWith(
-                              fontSize: 34,
-                              height: 1.05,
-                              letterSpacing: -0.4,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Sign in to continue to your store workspace.',
-                            style: AppTypography.body.copyWith(
-                              fontSize: 15,
-                              height: 1.5,
-                              color: AppColors.textSecondaryFor(context),
-                            ),
-                          ),
-                          const SizedBox(height: 26),
-                          _fieldShell(
-                            context,
-                            child: AppTextField(
-                              label: 'USERNAME',
-                              controller: _usernameController,
-                              textInputAction: TextInputAction.next,
-                              onSubmitted: (_) => _passwordFocusNode.requestFocus(),
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          _fieldShell(
-                            context,
-                            child: AppTextField(
-                              label: 'PASSWORD',
-                              controller: _passwordController,
-                              focusNode: _passwordFocusNode,
-                              textInputAction: TextInputAction.done,
-                              obscureText: true,
-                              onSubmitted: (_) => _submit(),
-                            ),
-                          ),
-                          const SizedBox(height: 22),
-                          PrimaryButton(
-                            label: auth.isLoading ? 'Signing in…' : 'Enter Caskly',
-                            icon: AppIcons.arrowForward,
-                            expand: true,
-                            onPressed: auth.isLoading ? null : _submit,
-                          ),
+      body: LayoutBuilder(builder: (context, constraints) {
+        // Wide windows: the 3D martini on the left, sign-in on the right.
+        // Small windows (or very short ones) get the form alone.
+        final showGlass = constraints.maxWidth >= 880 && constraints.maxHeight >= 520;
+        final form = _form(context, auth.isLoading, showLogo: !showGlass);
+        if (!showGlass) return Center(child: form);
+        return Row(
+          children: [
+            Expanded(flex: 46, child: _glassPanel(context)),
+            Expanded(flex: 54, child: Center(child: form)),
+          ],
+        );
+      }),
+    );
+  }
 
-                        ],
-                      ),
-                ),
+  Widget _glassPanel(BuildContext context) {
+    const cream = Color(0xFFF3EFE6);
+    return ColoredBox(
+      color: const Color(0xFF141218),
+      child: Stack(
+        children: [
+          const Positioned.fill(child: MartiniGlass()),
+          Positioned(
+            left: 40,
+            right: 40,
+            bottom: 34,
+            child: IgnorePointer(
+              child: Row(
+                children: [
+                  Text(
+                    'C A S K L Y',
+                    style: AppTypography.label.copyWith(color: cream, fontSize: 12, letterSpacing: 2),
+                  ),
+                  const Spacer(),
+                  Text(
+                    'Built for the bottle counter.',
+                    style: AppTypography.caption.copyWith(color: cream.withValues(alpha: 0.5)),
+                  ),
+                ],
               ),
             ),
           ),
@@ -148,120 +103,58 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  Widget _background(BuildContext context, bool isDark) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: isDark
-                  ? [
-                      const Color(0xFF11141B),
-                      const Color(0xFF161922),
-                      const Color(0xFF1B1F2A),
-                    ]
-                  : [
-                      const Color(0xFFF8F8F6),
-                      const Color(0xFFF3F2EE),
-                      const Color(0xFFFAFAF8),
-                    ],
+  Widget _form(BuildContext context, bool loading, {required bool showLogo}) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 380),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (showLogo) ...[
+              const CasklyLogo(size: 60),
+              const SizedBox(height: 28),
+            ],
+            Text(
+              'Welcome back',
+              style: AppTypography.h1.copyWith(fontSize: 34, height: 1.05, letterSpacing: -0.4),
             ),
-          ),
-        ),
-        Positioned(
-          top: -140,
-          right: -120,
-          child: Container(
-            width: 360,
-            height: 360,
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                colors: [
-                  AppColors.primary.withValues(alpha: isDark ? 0.12 : 0.08),
-                  Colors.transparent,
-                ],
+            const SizedBox(height: 8),
+            Text(
+              'Sign in to continue to your store.',
+              style: AppTypography.body.copyWith(
+                fontSize: 15,
+                height: 1.5,
+                color: AppColors.textSecondaryFor(context),
               ),
             ),
-          ),
-        ),
-        Positioned(
-          left: -140,
-          bottom: -140,
-          child: Container(
-            width: 320,
-            height: 320,
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                colors: [
-                  const Color(0xFFE7DDD0).withValues(alpha: isDark ? 0.07 : 0.32),
-                  Colors.transparent,
-                ],
-              ),
+            const SizedBox(height: 32),
+            AppTextField(
+              label: 'USERNAME',
+              controller: _usernameController,
+              textInputAction: TextInputAction.next,
+              onSubmitted: (_) => _passwordFocusNode.requestFocus(),
             ),
-          ),
-        ),
-        Positioned.fill(
-          child: CustomPaint(
-            painter: _BackdropGridPainter(
-              lineColor: isDark
-                  ? Colors.white.withValues(alpha: 0.018)
-                  : const Color(0xFFDBD7CF).withValues(alpha: 0.24),
+            const SizedBox(height: AppSpacing.md),
+            AppTextField(
+              label: 'PASSWORD',
+              controller: _passwordController,
+              focusNode: _passwordFocusNode,
+              textInputAction: TextInputAction.done,
+              obscureText: true,
+              onSubmitted: (_) => _submit(),
             ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _brandMark(BuildContext context, bool isDark) => const CasklyLogo(size: 68);
-
-  Widget _fieldShell(
-    BuildContext context, {
-    required Widget child,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundFor(context).withValues(alpha: AppColors.isDark(context) ? 0.18 : 0.42),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.isDark(context)
-              ? Colors.white.withValues(alpha: 0.06)
-              : const Color(0xFFEAE6DF),
+            const SizedBox(height: 24),
+            PrimaryButton(
+              label: loading ? 'Signing in…' : 'Enter Caskly',
+              icon: AppIcons.arrowForward,
+              expand: true,
+              onPressed: loading ? null : _submit,
+            ),
+          ],
         ),
       ),
-      child: child,
     );
-  }
-}
-
-class _BackdropGridPainter extends CustomPainter {
-  const _BackdropGridPainter({required this.lineColor});
-
-  final Color lineColor;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = lineColor
-      ..strokeWidth = 1;
-
-    const gap = 88.0;
-
-    for (double x = 0; x <= size.width; x += gap) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-
-    for (double y = 0; y <= size.height; y += gap) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _BackdropGridPainter oldDelegate) {
-    return oldDelegate.lineColor != lineColor;
   }
 }
