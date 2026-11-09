@@ -10,6 +10,8 @@ import '../core/theme/theme_mode_provider.dart';
 import '../features/auth/presentation/screens/activation_screen.dart';
 import '../features/auth/presentation/screens/change_password_screen.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
+import '../features/onboarding/data/onboarding_providers.dart';
+import '../features/onboarding/presentation/onboarding_screen.dart';
 import 'router.dart';
 
 class PosApp extends ConsumerWidget {
@@ -92,6 +94,11 @@ class PosApp extends ConsumerWidget {
     if (!auth.isAuthenticated) return simple(const LoginScreen());
 
     if (auth.user!.mustChangePassword) return simple(const ChangePasswordScreen());
+
+    // First run: the store enters its opening stock once, then continues.
+    final needsSetup = ref.watch(needsOnboardingProvider);
+    if (needsSetup.isLoading) return simple(const _BootstrapScreen());
+    if (needsSetup.valueOrNull == true) return simple(const OnboardingScreen());
 
     return MaterialApp.router(
       title: 'Caskly - Liquor Store POS',

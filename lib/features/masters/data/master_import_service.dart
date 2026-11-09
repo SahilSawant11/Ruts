@@ -65,7 +65,7 @@ class MasterImportService {
   }
 
   Future<MasterImportSummary> importFile(MasterImportTarget target, XFile file) async {
-    final rows = await _readRows(file);
+    final rows = await readRows(file);
     if (rows.length < 2) {
       throw const ApiException('The selected file does not contain any data rows.');
     }
@@ -308,7 +308,9 @@ class MasterImportService {
     );
   }
 
-  Future<List<List<String>>> _readRows(XFile file) async {
+  /// Rows of the first non-empty sheet (or the CSV), as trimmed strings.
+  /// Also used by onboarding to read a closing-stock sheet.
+  Future<List<List<String>>> readRows(XFile file) async {
     final extension = file.name.split('.').last.toLowerCase();
     final bytes = await file.readAsBytes();
     if (extension == 'csv') {
