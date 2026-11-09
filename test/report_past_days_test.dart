@@ -36,10 +36,10 @@ void main() {
     await saleOn(d2, 5);
     final partly = await saleOn(d2, 10);
     // Day -1: delivery of 24, sell 3, and a bill that is later fully returned.
-    await env.purchases.createPurchase(CreatePurchaseRequest(
+    await env.purchases.createPurchase(const CreatePurchaseRequest(
       supplierId: 'SUP-1', billNo: 'INV-1', payMode: 'Credit', discount: 0, vat: 0, stamp: 0, tcs: 0,
       loadingFreight: 0, netAmount: 0, totalAmount: 0,
-      lineItems: const [
+      lineItems: [
         CreatePurchaseLineItemRequest(
             materialId: 'M1', batchNo: 'B1', qty: 24, rate: 60, disPercent: 0, disAmount: 0,
             taxPercent: 0, taxAmount: 0, amount: 24 * 60),

@@ -45,4 +45,5 @@ flutter:
   # GPU shaders (login screen 3D martini).
   shaders:
     - shaders/martini.frag
+    - shaders/bottle.frag
 

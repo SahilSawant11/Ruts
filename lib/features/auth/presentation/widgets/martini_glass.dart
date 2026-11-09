@@ -1,9 +1,10 @@
-import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+
+import '../../../../shared/widgets/three_d/glass_motion.dart';
 
 /// The Caskly martini, in 3D, for the login screen.
 ///
@@ -31,7 +32,7 @@ class _MartiniGlassState extends State<MartiniGlass> with SingleTickerProviderSt
   ui.FragmentShader? _shader;
   bool _failed = false;
   late final Ticker _ticker;
-  final _motion = MartiniMotion();
+  final _motion = GlassMotion();
   Duration _last = Duration.zero;
 
   @override
@@ -103,71 +104,11 @@ class _MartiniGlassState extends State<MartiniGlass> with SingleTickerProviderSt
   }
 }
 
-/// The glass's motion: springs toward where the pointer is, with the drink
-/// sloshing from the glass's angular acceleration. Pure Dart, so it can be
-/// tested without a GPU.
-class MartiniMotion {
-  /// Pointer over the glass in -1..1 (x right, y down), or null if away.
-  Offset? pointer;
-
-  double pitch = 0, yaw = 0, roll = 0;
-  double _pitchV = 0, _yawV = 0, _rollV = 0;
-  double _spin = 0; // extra yaw from dragging
-  double sloshX = 0, sloshZ = 0;
-  double _sloshXV = 0, _sloshZV = 0;
-  double wave = 0;
-  double time = 0;
-
-  static const _k = 38.0; // glass spring stiffness
-  static const _c = 10.5; // glass damping (just under critical)
-  static const _ks = 70.0; // drink stiffness
-  static const _cs = 2.6; // drink damping: low, so it wobbles
-  static const _maxSlosh = 0.32;
-
-  void drag(double dxFraction) {
-    _spin += dxFraction * math.pi * 1.6;
-    wave = math.min(1.0, wave + dxFraction.abs() * 6);
-  }
-
-  void ripple() => wave = math.min(1.0, wave + 0.6);
-
-  void step(double dt, double t) {
-    time = t;
-    if (dt <= 0) return;
-    final p = pointer;
-    // Where the glass wants to be: tilted toward the pointer, or a slow sway.
-    final tPitch = p == null ? 0.06 * math.sin(t * 0.7) : p.dy * 0.2;
-    final tRoll = p == null ? 0.05 * math.sin(t * 0.53) : -p.dx * 0.15;
-    final tYaw = (p == null ? 0.35 * math.sin(t * 0.31) : p.dx * 0.55) + _spin;
-    _spin *= math.exp(-0.35 * dt); // drift back to facing front
-
-    final pitchA = _k * (tPitch - pitch) - _c * _pitchV;
-    final rollA = _k * (tRoll - roll) - _c * _rollV;
-    final yawA = _k * (tYaw - yaw) - _c * _yawV;
-    _pitchV += pitchA * dt;
-    _rollV += rollA * dt;
-    _yawV += yawA * dt;
-    pitch += _pitchV * dt;
-    roll += _rollV * dt;
-    yaw += _yawV * dt;
-
-    // The drink lags the glass: angular acceleration pushes its surface.
-    final sxA = -_ks * sloshX - _cs * _sloshXV + 0.5 * rollA;
-    final szA = -_ks * sloshZ - _cs * _sloshZV - 0.5 * pitchA;
-    _sloshXV += sxA * dt;
-    _sloshZV += szA * dt;
-    sloshX = (sloshX + _sloshXV * dt).clamp(-_maxSlosh, _maxSlosh);
-    sloshZ = (sloshZ + _sloshZV * dt).clamp(-_maxSlosh, _maxSlosh);
-
-    wave *= math.exp(-1.8 * dt);
-  }
-}
-
 class _MartiniPainter extends CustomPainter {
   _MartiniPainter(this.shader, this.m, this.bg, this.fg);
 
   final ui.FragmentShader shader;
-  final MartiniMotion m;
+  final GlassMotion m;
   final Color bg;
   final Color fg;
 

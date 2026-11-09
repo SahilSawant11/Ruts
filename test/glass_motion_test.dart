@@ -1,11 +1,10 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pos_app/features/auth/presentation/widgets/martini_glass.dart';
+import 'package:pos_app/shared/widgets/three_d/glass_motion.dart';
 
 void main() {
-  void run(MartiniMotion m, double seconds, {double from = 0}) {
+  void run(GlassMotion m, double seconds, {double from = 0}) {
     const dt = 1 / 60;
     for (var t = 0.0; t < seconds; t += dt) {
       m.step(dt, from + t);
@@ -13,7 +12,7 @@ void main() {
   }
 
   test('glass tilts toward the pointer and settles there', () {
-    final m = MartiniMotion()..pointer = const Offset(1, -1);
+    final m = GlassMotion()..pointer = const Offset(1, -1);
     run(m, 3);
     expect(m.pitch, closeTo(-0.2, 0.01));
     expect(m.roll, closeTo(-0.15, 0.01));
@@ -21,7 +20,7 @@ void main() {
   });
 
   test('a sudden move sloshes the drink, which then settles level', () {
-    final m = MartiniMotion()..pointer = Offset.zero;
+    final m = GlassMotion()..pointer = Offset.zero;
     run(m, 2);
     m.pointer = const Offset(1, 1);
     var peak = 0.0;
@@ -36,7 +35,7 @@ void main() {
   });
 
   test('ripples fade', () {
-    final m = MartiniMotion()..ripple();
+    final m = GlassMotion()..ripple();
     expect(m.wave, greaterThan(0.5));
     run(m, 4);
     expect(m.wave, lessThan(0.01));
