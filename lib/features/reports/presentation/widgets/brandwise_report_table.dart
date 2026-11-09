@@ -131,7 +131,7 @@ class _FrozenColumnTableState extends State<_FrozenColumnTable> {
 
   Color get _headerBg => widget.isDark ? const Color(0xFF1E263E) : const Color(0xFF3B4872);
   Color get _subHeaderBg => widget.isDark ? const Color(0xFF26304D) : const Color(0xFF4F5D8A);
-  Color get _catBg => widget.isDark ? const Color(0xFF282236) : const Color(0xFFF2EAF6);
+  Color get _catBg => widget.isDark ? const Color(0xFF2E2616) : const Color(0xFFFBF1DC);
   Color get _subtotalBg => widget.isDark ? const Color(0xFF1C2233) : const Color(0xFFEBF0F8);
 
   Color _rowBg(bool even) =>
@@ -282,7 +282,7 @@ class _FrozenColumnTableState extends State<_FrozenColumnTable> {
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w800,
-            color: widget.isDark ? const Color(0xFFD4B2E5) : const Color(0xFF5E3278),
+            color: widget.isDark ? AppColors.primary : AppColors.primaryInkLight,
             letterSpacing: 1.1,
           ),
         ),
