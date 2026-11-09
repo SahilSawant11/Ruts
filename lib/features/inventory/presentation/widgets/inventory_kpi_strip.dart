@@ -130,58 +130,49 @@ class _KpiCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadius.lg),
           splashColor: iconColor.withValues(alpha: 0.08),
           highlightColor: iconColor.withValues(alpha: 0.04),
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Icon badge
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? iconColor.withValues(alpha: 0.15)
-                            : iconColor.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      alignment: Alignment.center,
-                      child: AppIcon(icon, size: 20, color: iconColor),
+          // One line: icon · value · label, with the explanation as a
+          // tooltip, so the strip stays short and the table gets the room.
+          child: Tooltip(
+            message: sub ?? '',
+            waitDuration: const Duration(milliseconds: 500),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
+              child: Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: iconColor.withValues(alpha: isDark ? 0.15 : 0.10),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    const Spacer(),
-                    if (trailingAction != null) trailingAction!,
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  value,
-                  style: AppTypography.h1.copyWith(
-                    fontSize: 28,
-                    height: 1.1,
-                    color: AppColors.textPrimaryFor(context),
+                    alignment: Alignment.center,
+                    child: AppIcon(icon, size: 17, color: iconColor),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  label,
-                  style: AppTypography.label.copyWith(
-                    fontSize: 11,
-                    color: AppColors.textSecondaryFor(context),
-                  ),
-                ),
-                if (sub != null) ...[
-                  const SizedBox(height: 2),
+                  const SizedBox(width: 12),
                   Text(
-                    sub!,
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.textMutedFor(context),
+                    value,
+                    style: AppTypography.h1.copyWith(
+                      fontSize: 22,
+                      height: 1.1,
+                      color: AppColors.textPrimaryFor(context),
                     ),
                   ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.label.copyWith(
+                        fontSize: 11,
+                        color: AppColors.textSecondaryFor(context),
+                      ),
+                    ),
+                  ),
+                  if (trailingAction != null) trailingAction!,
                 ],
-              ],
+              ),
             ),
           ),
         ),
@@ -660,37 +651,39 @@ class _SkeletonCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
       decoration: BoxDecoration(
         color: AppColors.backgroundFor(context),
         borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: AppColors.borderFor(context)),
         boxShadow: AppColors.cardShadowFor(context),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: 34,
+            height: 34,
             decoration: BoxDecoration(
               color: AppColors.surfaceFor(context),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(width: 12),
           Container(
-            width: 80,
-            height: 30,
+            width: 56,
+            height: 22,
             decoration: BoxDecoration(
               color: AppColors.surfaceFor(context),
               borderRadius: BorderRadius.circular(6),
             ),
           ),
-          const SizedBox(height: 6),
-          Text(label,
-              style: AppTypography.label
-                  .copyWith(color: AppColors.textMutedFor(context))),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.label.copyWith(color: AppColors.textMutedFor(context))),
+          ),
         ],
       ),
     );

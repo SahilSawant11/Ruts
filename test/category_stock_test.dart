@@ -70,8 +70,8 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
 
     expect(find.text('Whisky'), findsOneWidget);
-    expect(find.text('2/4 healthy'), findsOneWidget);
-    expect(find.text('1 all healthy'), findsOneWidget);
+    expect(find.text('2/4'), findsOneWidget);
+    expect(find.text('1/1'), findsOneWidget);
 
     await tester.tap(find.text('Beer'));
     await tester.pump();

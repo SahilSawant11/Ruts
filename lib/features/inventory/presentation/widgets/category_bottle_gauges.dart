@@ -82,7 +82,6 @@ class _Gauge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final muted = AppTypography.caption.copyWith(color: AppColors.textMutedFor(context), fontSize: 11);
-    final issues = stat.low + stat.out;
     return Tooltip(
       waitDuration: const Duration(milliseconds: 400),
       message: '${stat.category}: ${stat.healthy} of ${stat.products} products healthy'
@@ -100,14 +99,14 @@ class _Gauge extends StatelessWidget {
           ),
           child: Column(
             children: [
-              Expanded(child: BottleGauge(fill: stat.fill, liquid: _liquidFor(stat.health))),
+              Expanded(child: BottleGauge(fill: stat.fill, liquid: _liquidFor(stat.health), shape: BottleShape.forCategory(stat.category))),
               Text(stat.category,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AppTypography.caption.copyWith(
                       fontWeight: FontWeight.w700, color: AppColors.textPrimaryFor(context), height: 1.2)),
               Text(
-                issues == 0 ? '${stat.products} all healthy' : '${stat.healthy}/${stat.products} healthy',
+                '${stat.healthy}/${stat.products}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: muted.copyWith(height: 1.2),
@@ -123,6 +122,27 @@ class _Gauge extends StatelessWidget {
 
 // ── the bottle ──────────────────────────────────────────────────────────
 
+/// Bottle silhouettes; the index is the shader's `uShape`.
+enum BottleShape {
+  whisky, wine, beer, rum, vodka, gin, brandy, can, generic;
+
+  /// Picks a shape from a category name ("Strong Beer" → beer, ...).
+  static BottleShape forCategory(String category) {
+    final c = category.toLowerCase();
+    bool has(List<String> words) => words.any(c.contains);
+    // Mixers first, so "Ginger Ale" isn't read as gin or beer.
+    if (has(['soft', 'soda', 'water', 'mixer', 'juice', 'cola', 'energy', 'tonic', 'ginger'])) return can;
+    if (has(['whisk', 'scotch', 'bourbon'])) return whisky;
+    if (has(['wine', 'champagne', 'sparkling'])) return wine;
+    if (has(['beer', 'lager', 'ale', 'breezer'])) return beer;
+    if (has(['rum'])) return rum;
+    if (has(['vodka'])) return vodka;
+    if (has(['gin'])) return gin;
+    if (has(['brandy', 'cognac'])) return brandy;
+    return generic;
+  }
+}
+
 Future<ui.FragmentProgram?>? _program;
 Future<ui.FragmentProgram?> _loadBottle() => _program ??= ui.FragmentProgram.fromAsset('shaders/bottle.frag')
     .then<ui.FragmentProgram?>((p) => p)
@@ -133,10 +153,11 @@ Future<ui.FragmentProgram?> _loadBottle() => _program ??= ui.FragmentProgram.fro
 /// them costs nothing when idle. Falls back to a flat drawing if the GPU
 /// shader can't load.
 class BottleGauge extends StatefulWidget {
-  const BottleGauge({super.key, required this.fill, required this.liquid});
+  const BottleGauge({super.key, required this.fill, required this.liquid, this.shape = BottleShape.generic});
 
   final double fill;
   final Color liquid;
+  final BottleShape shape;
 
   @override
   State<BottleGauge> createState() => _BottleGaugeState();
@@ -226,7 +247,7 @@ class _BottleGaugeState extends State<BottleGauge> with SingleTickerProviderStat
         child: RepaintBoundary(
           child: CustomPaint(
             size: size,
-            painter: _BottlePainter(shader, _motion, _shown, bg, glass, widget.liquid),
+            painter: _BottlePainter(shader, _motion, _shown, bg, glass, widget.liquid, widget.shape),
           ),
         ),
       );
@@ -235,12 +256,13 @@ class _BottleGaugeState extends State<BottleGauge> with SingleTickerProviderStat
 }
 
 class _BottlePainter extends CustomPainter {
-  _BottlePainter(this.shader, this.m, this.level, this.bg, this.glass, this.liquid);
+  _BottlePainter(this.shader, this.m, this.level, this.bg, this.glass, this.liquid, this.shape);
 
   final ui.FragmentShader shader;
   final GlassMotion m;
   final double level;
   final Color bg, glass, liquid;
+  final BottleShape shape;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -262,6 +284,7 @@ class _BottlePainter extends CustomPainter {
       f(c.g);
       f(c.b);
     }
+    f(shape.index.toDouble());
     canvas.drawRect(Offset.zero & size, Paint()..shader = shader);
   }
 

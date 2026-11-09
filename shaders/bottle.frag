@@ -17,11 +17,10 @@ uniform float uLevel;   // fill 0..1
 uniform vec3 uBg;       // card background
 uniform vec3 uGlass;    // glass edge colour
 uniform vec3 uLiquid;   // liquid colour
+uniform float uShape;   // 0 whisky, 1 wine, 2 beer, 3 rum, 4 vodka, 5 gin, 6 brandy, 7 can, 8 generic
 
 out vec4 fragColor;
 
-const float RB = 0.40;       // body radius
-const float BODY_TOP = 1.02; // where the shoulder starts
 const float T = 0.022;       // wall half-thickness
 const vec3 CENTER = vec3(0.0, 0.88, 0.0);
 
@@ -42,22 +41,67 @@ float sdRCyl(vec2 q, float r, float y0, float y1, float e) {
   return min(max(d.x, d.y), 0.0) + length(max(d, 0.0)) - e;
 }
 
-// The bottle as a solid (outer surface).
+// Rounded box, centred at c, half-size b, corner radius e.
+float sdRBox(vec3 p, vec3 c, vec3 b, float e) {
+  vec3 d = abs(p - c) - b + e;
+  return length(max(d, 0.0)) + min(max(d.x, max(d.y, d.z)), 0.0) - e;
+}
+
+// Neck + lip shared by most bottles.
+float neckLip(vec2 q, float r, float y0, float y1) {
+  float neck = sdRCyl(q, r, y0, y1, 0.03);
+  float lip = length(vec2(q.x - r - 0.005, q.y - y1 + 0.02)) - 0.03;
+  return min(neck, lip);
+}
+
+// The bottle as a solid (outer surface), by category shape.
 float sdBottle(vec3 p) {
   vec2 q = vec2(length(p.xz), p.y);
-  float body = sdRCyl(q, RB, 0.0, BODY_TOP, 0.07);
-  float neck = sdRCyl(q, 0.12, 0.9, 1.78, 0.03);
-  float b = smin(body, neck, 0.32);
-  float lip = length(vec2(q.x - 0.125, q.y - 1.76)) - 0.035;
-  return min(b, lip);
+  if (uShape < 0.5) {         // whisky: square decanter, short neck, stopper
+    float body = sdRBox(p, vec3(0.0, 0.44, 0.0), vec3(0.40, 0.44, 0.40), 0.08);
+    float b = smin(body, sdRCyl(q, 0.13, 0.7, 1.24, 0.03), 0.12);
+    return min(b, sdRCyl(q, 0.17, 1.2, 1.4, 0.05));
+  } else if (uShape < 1.5) {  // wine: Bordeaux, high shoulders, long neck
+    return smin(sdRCyl(q, 0.32, 0.0, 1.06, 0.05), neckLip(q, 0.105, 0.95, 1.86), 0.13);
+  } else if (uShape < 2.5) {  // beer: longneck, long sloping shoulder
+    return smin(sdRCyl(q, 0.30, 0.0, 0.86, 0.05), neckLip(q, 0.095, 0.7, 1.8), 0.5);
+  } else if (uShape < 3.5) {  // rum: short round-shouldered flask
+    return smin(sdRCyl(q, 0.42, 0.0, 0.78, 0.1), neckLip(q, 0.12, 0.6, 1.5), 0.42);
+  } else if (uShape < 4.5) {  // vodka: tall slim column
+    return smin(sdRCyl(q, 0.28, 0.0, 1.34, 0.05), neckLip(q, 0.12, 1.25, 1.78), 0.1);
+  } else if (uShape < 5.5) {  // gin: tall square bottle
+    float body = sdRBox(p, vec3(0.0, 0.58, 0.0), vec3(0.33, 0.58, 0.33), 0.05);
+    return smin(body, neckLip(q, 0.12, 1.05, 1.62), 0.1);
+  } else if (uShape < 6.5) {  // brandy: round cognac body
+    float body = (length((p - vec3(0.0, 0.36, 0.0)) * vec3(1.0, 1.45, 1.0)) - 0.5) / 1.45;
+    return smin(body, neckLip(q, 0.1, 0.55, 1.25), 0.2);
+  } else if (uShape < 7.5) {  // can
+    float body = sdRCyl(q, 0.33, 0.0, 1.16, 0.06);
+    float top = sdRCyl(q, 0.28, 1.08, 1.26, 0.04);
+    return smin(body, top, 0.05);
+  }
+  // generic
+  return smin(sdRCyl(q, 0.40, 0.0, 1.02, 0.07), neckLip(q, 0.12, 0.9, 1.76), 0.32);
+}
+
+// Height the liquid can reach (top of the body, below the shoulder).
+float bodyTop() {
+  if (uShape < 0.5) return 0.8;
+  if (uShape < 1.5) return 1.0;
+  if (uShape < 2.5) return 0.78;
+  if (uShape < 3.5) return 0.72;
+  if (uShape < 4.5) return 1.28;
+  if (uShape < 5.5) return 1.08;
+  if (uShape < 6.5) return 0.6;
+  if (uShape < 7.5) return 1.08;
+  return 0.96;
 }
 
 float sdShell(vec3 p) { return abs(sdBottle(p)) - T; }
 
 float sdLiquid(vec3 p) {
-  vec2 q = vec2(length(p.xz), p.y);
-  float inner = sdRCyl(q, RB - T * 2.2, T * 2.2, BODY_TOP, 0.05);
-  float level = mix(0.08, BODY_TOP - 0.06, clamp(uLevel, 0.0, 1.0));
+  float inner = sdBottle(p) + T * 2.2;
+  float level = mix(0.08, bodyTop(), clamp(uLevel, 0.0, 1.0));
   float w = uWave * sin(9.0 * p.x + uTime * 3.4) * sin(8.0 * p.z - uTime * 2.7);
   float plane = dot(p - vec3(0.0, level, 0.0), gLiqN) - w;
   return max(inner, plane);
