@@ -18,6 +18,8 @@ class AllMastersScreen extends ConsumerWidget {
     final packingsAsync = ref.watch(packingsListProvider);
     final licenseHoldersAsync = ref.watch(licenseHoldersListProvider);
 
+    String? count(AsyncValue<List<dynamic>> async) => async.whenOrNull(data: (l) => '${l.length}');
+
     String countLabel(AsyncValue<List<dynamic>> async, String noun) {
       final plural = noun.endsWith('y') ? '${noun.substring(0, noun.length - 1)}ies' : '${noun}s';
       return async.when(
@@ -36,7 +38,7 @@ class AllMastersScreen extends ConsumerWidget {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
           maxCrossAxisExtent: 320,
-          mainAxisExtent: 136,
+          mainAxisExtent: 168,
           crossAxisSpacing: AppSpacing.md,
           mainAxisSpacing: AppSpacing.md,
         ),
@@ -45,30 +47,40 @@ class AllMastersScreen extends ConsumerWidget {
             icon: AppIcons.suppliers,
             title: 'Supplier Master',
             subtitle: countLabel(suppliersAsync, 'supplier'),
+            count: count(suppliersAsync),
+            unit: 'suppliers',
             onTap: () => context.go('/supplier'),
           ),
           MasterTile(
             icon: AppIcons.materials,
             title: 'Material Master',
             subtitle: countLabel(materialsAsync, 'material'),
+            count: count(materialsAsync),
+            unit: 'SCM codes',
             onTap: () => context.go('/material'),
           ),
           MasterTile(
             icon: AppIcons.categories,
             title: 'Category Master',
             subtitle: countLabel(categoriesAsync, 'category'),
+            count: count(categoriesAsync),
+            unit: 'categories',
             onTap: () => context.go('/category'),
           ),
           MasterTile(
             icon: AppIcons.manufacturers,
             title: 'Manufacturer Master',
             subtitle: countLabel(manufacturersAsync, 'manufacturer'),
+            count: count(manufacturersAsync),
+            unit: 'brands',
             onTap: () => context.go('/manufacturer'),
           ),
           MasterTile(
             icon: AppIcons.packagings,
             title: 'Packaging Master',
             subtitle: countLabel(packingsAsync, 'packaging'),
+            count: count(packingsAsync),
+            unit: 'sizes',
             onTap: () => context.go('/packaging'),
           ),
           const MasterTile(
@@ -93,6 +105,8 @@ class AllMastersScreen extends ConsumerWidget {
             icon: AppIcons.licenseHolders,
             title: 'License Holder Master',
             subtitle: countLabel(licenseHoldersAsync, 'permit'),
+            count: count(licenseHoldersAsync),
+            unit: 'permits',
             onTap: () => context.go('/license-holder'),
           ),
           MasterTile(

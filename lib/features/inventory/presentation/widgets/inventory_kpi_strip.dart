@@ -6,6 +6,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../masters/data/masters_providers.dart';
 import '../../data/inventory_providers.dart';
+import '../../../../shared/widgets/data/figure.dart';
 import '../../../../core/format/money.dart';
 
 /// Three-card KPI strip for the Inventory screen.
@@ -51,7 +52,7 @@ class InventoryKpiStrip extends ConsumerWidget {
               Expanded(
                 child: _KpiCard(
                   icon: AppIcons.rupee,
-                  iconColor: AppColors.success,
+                  iconColor: AppColors.primary,
                   label: 'Net Inventory Worth',
                   value: _rupees(netWorth),
                   sub: 'at current sale rates',
@@ -110,7 +111,6 @@ class _KpiCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = AppColors.isDark(context);
     final borderColor =
         isPinned ? AppColors.warning : AppColors.borderFor(context);
 
@@ -140,24 +140,14 @@ class _KpiCard extends StatelessWidget {
               child: Row(
                 children: [
                   Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: iconColor.withValues(alpha: isDark ? 0.15 : 0.10),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(color: iconColor, shape: BoxShape.circle),
                     alignment: Alignment.center,
-                    child: AppIcon(icon, size: 17, color: iconColor),
+                    child: AppIcon(icon, size: 15, color: AppColors.ink),
                   ),
                   const SizedBox(width: 12),
-                  Text(
-                    value,
-                    style: AppTypography.h1.copyWith(
-                      fontSize: 22,
-                      height: 1.1,
-                      color: AppColors.textPrimaryFor(context),
-                    ),
-                  ),
+                  Figure(value, size: 28, weight: FontWeight.w400),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(

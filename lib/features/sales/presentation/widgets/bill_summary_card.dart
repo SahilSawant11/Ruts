@@ -5,6 +5,7 @@ import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../cart_controller.dart';
+import '../../../../shared/widgets/data/figure.dart';
 import '../../../../core/format/money.dart';
 
 /// Right-column summary panel: displays breakdown rows and a prominent
@@ -101,13 +102,11 @@ class BillSummaryCard extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 3),
-                    Text(
-                      Money.inr(totalAmount),
-                      style: AppTypography.mono.copyWith(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                      ),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Figure(Money.inr(totalAmount, symbol: false),
+                          prefix: '₹', size: 36, weight: FontWeight.w400, color: AppColors.cream),
                     ),
                   ],
                 ),

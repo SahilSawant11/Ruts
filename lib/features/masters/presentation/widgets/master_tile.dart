@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_icons.dart';
-import '../../../../core/theme/app_spacing.dart';
-import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/badges/tag_pill.dart';
-import '../../../../shared/widgets/layout/app_card.dart';
+import '../../../../shared/widgets/data/fact_card.dart';
 
+/// A masters hub tile: a fact card whose figure is the record count
+/// ("3" suppliers), or the subtitle when there is no count.
 class MasterTile extends StatelessWidget {
   const MasterTile({
     super.key,
     required this.icon,
     required this.title,
     required this.subtitle,
+    this.count,
+    this.unit,
     this.onTap,
     this.comingSoon = false,
   });
@@ -19,59 +20,32 @@ class MasterTile extends StatelessWidget {
   final AppIconData icon;
   final String title;
   final String subtitle;
+
+  /// Shown as the big figure, e.g. '8'. Null shows [subtitle] instead.
+  final String? count;
+  final String? unit;
   final VoidCallback? onTap;
   final bool comingSoon;
 
   @override
   Widget build(BuildContext context) {
-    final isDark = AppColors.isDark(context);
-
-    return InkWell(
-      onTap: comingSoon ? null : onTap,
-      borderRadius: BorderRadius.circular(AppRadius.md),
-      child: Opacity(
-        opacity: comingSoon ? 0.55 : 1,
-        child: AppCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? AppColors.primarySoftDark
-                          : AppColors.primarySoft,
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                    ),
-                    alignment: Alignment.center,
-                    child: AppIcon(icon, size: 19, color: AppColors.primary),
-                  ),
-                  if (comingSoon) const TagPill(label: 'SOON', tone: TagPillTone.neutral),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                title,
-                style: AppTypography.sectionTitle.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimaryFor(context),
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: AppTypography.bodyMuted.copyWith(
-                  color: AppColors.textSecondaryFor(context),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    final card = count != null
+        ? FactCard(
+            icon: icon,
+            title: title,
+            value: count!,
+            unit: unit,
+            onTap: comingSoon ? null : onTap,
+            badge: comingSoon ? const TagPill(label: 'SOON', tone: TagPillTone.neutral) : null,
+          )
+        : FactCard(
+            icon: icon,
+            title: title,
+            value: '',
+            caption: subtitle,
+            onTap: comingSoon ? null : onTap,
+            badge: comingSoon ? const TagPill(label: 'SOON', tone: TagPillTone.neutral) : null,
+          );
+    return Opacity(opacity: comingSoon ? 0.5 : 1, child: card);
   }
 }

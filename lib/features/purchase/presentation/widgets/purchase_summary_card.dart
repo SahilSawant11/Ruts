@@ -6,6 +6,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../purchase_cart_controller.dart';
 import '../purchase_form_controller.dart';
+import '../../../../shared/widgets/data/figure.dart';
 import '../../../../core/format/money.dart';
 
 /// Right-column summary panel for Purchase: displays breakdown rows and a
@@ -107,13 +108,6 @@ class PurchaseSummaryCard extends ConsumerWidget {
             decoration: BoxDecoration(
               color: AppColors.totalSurfaceFor(context),
               borderRadius: BorderRadius.circular(AppRadius.md),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.12),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -141,13 +135,11 @@ class PurchaseSummaryCard extends ConsumerWidget {
                     ),
                   ],
                 ),
-                Text(
-                  Money.inr(netAmount),
-                  style: AppTypography.mono.copyWith(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.5,
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Figure(Money.inr(netAmount, symbol: false),
+                        prefix: '₹', size: 30, weight: FontWeight.w400, color: AppColors.cream),
                   ),
                 ),
               ],

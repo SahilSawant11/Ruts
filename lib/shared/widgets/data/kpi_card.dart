@@ -120,11 +120,7 @@ class KpiCard extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               value,
-              style: AppTypography.h1.copyWith(
-                fontSize: 29,
-                height: 1.05,
-                color: AppColors.textPrimaryFor(context),
-              ),
+              style: AppTypography.figure(size: 34, weight: FontWeight.w400, color: AppColors.textPrimaryFor(context)),
             ),
           ),
           if (trendText != null) ...[

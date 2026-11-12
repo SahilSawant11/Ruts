@@ -9,6 +9,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/badges/tag_pill.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
+import '../../../../shared/widgets/data/figure.dart';
 import '../../data/sync_providers.dart';
 
 class SyncCenterScreen extends ConsumerStatefulWidget {
@@ -175,17 +176,19 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
 
   Widget _metricCard(String label, String value, Color accent) {
     return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: AppTypography.bodyMuted.copyWith(
-              color: AppColors.textSecondaryFor(context),
-            ),
+          Row(
+            children: [
+              Container(width: 8, height: 8, decoration: BoxDecoration(color: accent, shape: BoxShape.circle)),
+              const SizedBox(width: 8),
+              Text(label, style: AppTypography.bodyMuted.copyWith(color: AppColors.textSecondaryFor(context))),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(value, style: AppTypography.h1.copyWith(color: accent)),
+          const SizedBox(height: 14),
+          Figure(value, size: 40),
         ],
       ),
     );

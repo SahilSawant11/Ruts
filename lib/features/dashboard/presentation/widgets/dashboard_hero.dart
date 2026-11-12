@@ -7,6 +7,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../shared/widgets/data/fact_card.dart';
 import '../../../../shared/widgets/data/figure.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
 import '../../../inventory/data/inventory_providers.dart';
@@ -37,7 +38,11 @@ class DashboardHero extends ConsumerWidget {
         if (c.maxWidth < 900) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [SizedBox(height: 300, child: left), const SizedBox(height: AppSpacing.lg), SizedBox(height: 300, child: right)],
+            children: [
+              SizedBox(height: 300, child: left),
+              const SizedBox(height: AppSpacing.lg),
+              SizedBox(height: 300, child: right)
+            ],
           );
         }
         return SizedBox(
@@ -143,9 +148,7 @@ class _DeltaPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final d = delta;
-    final text = d == null
-        ? '— vs $against'
-        : '${d >= 0 ? '↑' : '↓'} ${d.abs().toStringAsFixed(0)}% vs $against';
+    final text = d == null ? '— vs $against' : '${d >= 0 ? '↑' : '↓'} ${d.abs().toStringAsFixed(0)}% vs $against';
     final dark = AppColors.isDark(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -175,7 +178,7 @@ class _FactGrid extends StatelessWidget {
     }
 
     final cards = [
-      _FactCard(
+      FactCard(
         icon: AppIcons.purchaseBill,
         title: 'Purchases',
         value: money(s?.purchases),
@@ -183,7 +186,7 @@ class _FactGrid extends StatelessWidget {
         trailing: _TrailText(delta(s?.purchases)),
         onTap: () => context.go('/purchase'),
       ),
-      _FactCard(
+      FactCard(
         icon: AppIcons.purchaseReturn,
         title: 'Purchase Returns',
         value: money(s?.purchaseReturns),
@@ -191,7 +194,7 @@ class _FactGrid extends StatelessWidget {
         trailing: _TrailText(delta(s?.purchaseReturns)),
         onTap: () => context.go('/purchase-return'),
       ),
-      _FactCard(
+      FactCard(
         icon: AppIcons.warning,
         iconFill: (lowStock ?? 0) > 0 ? AppColors.chartRose : null,
         title: 'Low Stock',
@@ -204,7 +207,7 @@ class _FactGrid extends StatelessWidget {
         ),
         onTap: () => context.go('/inventory'),
       ),
-      _FactCard(
+      FactCard(
         icon: AppIcons.materials,
         title: 'SCM Codes',
         value: summary == null ? '—' : '${summary!.materialCount}',
@@ -215,9 +218,11 @@ class _FactGrid extends StatelessWidget {
 
     return Column(
       children: [
-        Expanded(child: Row(children: [Expanded(child: cards[0]), const SizedBox(width: 12), Expanded(child: cards[1])])),
+        Expanded(
+            child: Row(children: [Expanded(child: cards[0]), const SizedBox(width: 12), Expanded(child: cards[1])])),
         const SizedBox(height: 12),
-        Expanded(child: Row(children: [Expanded(child: cards[2]), const SizedBox(width: 12), Expanded(child: cards[3])])),
+        Expanded(
+            child: Row(children: [Expanded(child: cards[2]), const SizedBox(width: 12), Expanded(child: cards[3])])),
       ],
     );
   }
@@ -230,87 +235,4 @@ class _TrailText extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       Text(text, style: AppTypography.caption.copyWith(color: AppColors.textSecondaryFor(context), fontSize: 12));
-}
-
-class _FactCard extends StatelessWidget {
-  const _FactCard({
-    required this.icon,
-    required this.title,
-    required this.value,
-    required this.trailing,
-    required this.onTap,
-    this.prefix,
-    this.unit,
-    this.iconFill,
-  });
-
-  final AppIconData icon;
-  final String title;
-  final String value;
-  final String? prefix;
-  final String? unit;
-  final Widget trailing;
-  final VoidCallback onTap;
-  final Color? iconFill;
-
-  @override
-  Widget build(BuildContext context) {
-    final dark = AppColors.isDark(context);
-    return Material(
-      color: dark ? AppColors.ink : Colors.white,
-      borderRadius: BorderRadius.circular(AppRadius.lg),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 30,
-                    height: 30,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(shape: BoxShape.circle, color: iconFill ?? AppColors.primary),
-                    child: AppIcon(icon, size: 15, color: AppColors.ink),
-                  ),
-                  const Spacer(),
-                  CircleIconButton(
-                    size: 28,
-                    onTap: onTap,
-                    tooltip: 'Open',
-                    child: AppIcon(AppIcons.northEast, size: 13, color: AppColors.textPrimaryFor(context)),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(title,
-                  style: AppTypography.body.copyWith(
-                      color: AppColors.textPrimaryFor(context), fontWeight: FontWeight.w600, fontSize: 13)),
-              const Spacer(),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.bottomLeft,
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.bottomLeft,
-                        child: Figure(value, prefix: prefix, unit: unit, size: 34),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  trailing,
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
