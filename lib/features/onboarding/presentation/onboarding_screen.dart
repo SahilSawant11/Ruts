@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,6 +9,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/auth/app_user.dart';
 import '../../../core/auth/auth_controller.dart';
 import '../../../core/format/money.dart';
+import '../../../core/local/backup_service.dart';
+import '../../../core/logging/app_logger.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_typography.dart';
@@ -14,6 +18,7 @@ import '../../../shared/widgets/buttons/named_buttons.dart';
 import '../../masters/data/master_import_service.dart';
 import '../../masters/data/masters_providers.dart';
 import '../../sales/data/models/material_dto.dart';
+import '../../settings/data/settings_providers.dart';
 import '../../auth/presentation/widgets/auth_panel.dart';
 import '../data/onboarding_providers.dart';
 import '../data/opening_stock_service.dart';
@@ -160,6 +165,61 @@ class _WizardState extends ConsumerState<_Wizard> {
     }
   }
 
+  /// Moving to a new or reinstalled computer: load a Caskly backup instead
+  /// of entering opening stock. The backup carries its own setup, users
+  /// and bills, so the wizard is skipped after the restart.
+  Future<void> _restoreBackup() async {
+    final picked = await openFile(acceptedTypeGroups: const [
+      XTypeGroup(label: 'Caskly backup', extensions: ['sqlite', 'db']),
+    ]);
+    if (picked == null || !mounted) return;
+    final file = File(picked.path);
+    final invalid = BackupService.validateBackup(file);
+    if (invalid != null) {
+      setState(() => _error = invalid);
+      return;
+    }
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Restore this backup?'),
+        content: Text(
+          'Caskly will load all products, stock, bills and users from\n${file.uri.pathSegments.last}.\n\n'
+          'After the restart, sign in with a username and password from that backup.',
+        ),
+        actions: [
+          SecondaryButton(label: 'Cancel', onPressed: () => Navigator.of(ctx).pop(false)),
+          PrimaryButton(label: 'Restore', onPressed: () => Navigator.of(ctx).pop(true)),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await ref.read(backupServiceProvider).stageRestore(file);
+      AppLogger.info('Onboarding', 'Restore staged from ${file.path}');
+    } catch (e, st) {
+      AppLogger.error('Onboarding', e, st);
+      if (mounted) setState(() => _error = 'Could not restore: $e');
+      return;
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Restart to finish restore'),
+        content: const Text('Caskly will now close. Open it again to load your data.'),
+        actions: [PrimaryButton(label: 'Close Caskly', onPressed: () => exit(0))],
+      ),
+    );
+  }
+
   Future<void> _pickDate() async {
     final today = DateUtils.dateOnly(DateTime.now());
     final picked = await showDatePicker(
@@ -272,7 +332,9 @@ class _WizardState extends ConsumerState<_Wizard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _heading(context, 'When did your old system close?',
+        _heading(
+            context,
+            'When did your old system close?',
             'Pick the last day you billed on your old software. You\'ll enter the stock you had at the end of that day, '
                 'and Caskly carries on from there.'),
         _Panel(
@@ -283,7 +345,8 @@ class _WizardState extends ConsumerState<_Wizard> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('CLOSING STOCK AS OF', style: AppTypography.label.copyWith(color: AppColors.textMutedFor(context))),
+                  Text('CLOSING STOCK AS OF',
+                      style: AppTypography.label.copyWith(color: AppColors.textMutedFor(context))),
                   const SizedBox(height: 4),
                   Text(_fmtDate(_asOf), style: AppTypography.h2),
                 ],
@@ -296,7 +359,46 @@ class _WizardState extends ConsumerState<_Wizard> {
         const SizedBox(height: 16),
         Text('Billing in Caskly starts ${_fmtDate(next)}.',
             style: AppTypography.body.copyWith(color: AppColors.textSecondaryFor(context))),
+        const Spacer(),
+        _restoreOffer(context),
+        const SizedBox(height: 28),
       ],
+    );
+  }
+
+  Widget _restoreOffer(BuildContext context) {
+    final isOwner = ref.watch(currentUserProvider)?.role == UserRole.owner;
+    final muted = AppTypography.body.copyWith(color: AppColors.textSecondaryFor(context));
+    return Container(
+      padding: const EdgeInsets.only(top: 20),
+      decoration: BoxDecoration(border: Border(top: BorderSide(color: AppColors.borderFor(context)))),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Already using Caskly on another computer?', style: AppTypography.sectionTitleFor(context)),
+                const SizedBox(height: 4),
+                Text(
+                  isOwner
+                      ? 'Restore a Caskly backup instead. Your products, stock, bills and users come with it.'
+                      : 'The owner can restore a Caskly backup here instead of entering stock.',
+                  style: muted,
+                ),
+              ],
+            ),
+          ),
+          if (isOwner) ...[
+            const SizedBox(width: 24),
+            SecondaryButton(
+              label: 'Restore from backup…',
+              icon: AppIcons.upload,
+              onPressed: _busy ? null : _restoreBackup,
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -327,7 +429,8 @@ class _WizardState extends ConsumerState<_Wizard> {
         ),
         if (_productImportMessage != null) ...[
           const SizedBox(height: 12),
-          Text(_productImportMessage!, style: AppTypography.caption.copyWith(color: AppColors.textSecondaryFor(context))),
+          Text(_productImportMessage!,
+              style: AppTypography.caption.copyWith(color: AppColors.textSecondaryFor(context))),
         ],
       ],
     );
@@ -338,12 +441,15 @@ class _WizardState extends ConsumerState<_Wizard> {
     final rows = q.isEmpty
         ? _materials
         : _materials
-            .where((m) => m.name.toLowerCase().contains(q) || m.id.toLowerCase().contains(q) || m.barcode.toLowerCase() == q)
+            .where((m) =>
+                m.name.toLowerCase().contains(q) || m.id.toLowerCase().contains(q) || m.barcode.toLowerCase() == q)
             .toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _heading(context, 'Enter closing stock',
+        _heading(
+            context,
+            'Enter closing stock',
             'Import the closing stock report from your old software, or type the bottles on hand for each product. '
                 'Products you leave at 0 start with no stock.'),
         Row(
@@ -437,7 +543,8 @@ class _WizardState extends ConsumerState<_Wizard> {
                 _ReviewLine('Closing stock as of', _fmtDate(_asOf), text: true),
                 _ReviewLine('Billing starts', _fmtDate(_asOf.add(const Duration(days: 1))), text: true),
                 _ReviewLine('Products with stock', Money.group(_stockedProducts, decimals: 0)),
-                if (_newProducts.isNotEmpty) _ReviewLine('New products to add', Money.group(_newProducts.length, decimals: 0)),
+                if (_newProducts.isNotEmpty)
+                  _ReviewLine('New products to add', Money.group(_newProducts.length, decimals: 0)),
                 _ReviewLine('Total bottles', Money.group(_bottles, decimals: 0), strong: true),
               ],
             ),
@@ -510,7 +617,8 @@ class _Rail extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: s.index < step.index ? cream : Colors.transparent,
-                      border: Border.all(color: s.index <= step.index ? cream : cream.withValues(alpha: 0.25), width: 1.5),
+                      border:
+                          Border.all(color: s.index <= step.index ? cream : cream.withValues(alpha: 0.25), width: 1.5),
                     ),
                     child: s.index < step.index
                         ? const AppIcon(AppIcons.check, size: 14, color: ink)
@@ -586,10 +694,13 @@ class _SheetReport extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (sheet != null) Text('Imported $sheet', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700)),
+          if (sheet != null)
+            Text('Imported $sheet', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700)),
           if (newProducts.isNotEmpty)
-            Text('${newProducts.length} product${newProducts.length == 1 ? '' : 's'} from the sheet will be added '
-                '(${newProducts.take(3).map((p) => p.name).join(', ')}${newProducts.length > 3 ? ', …' : ''}).', style: muted),
+            Text(
+                '${newProducts.length} product${newProducts.length == 1 ? '' : 's'} from the sheet will be added '
+                '(${newProducts.take(3).map((p) => p.name).join(', ')}${newProducts.length > 3 ? ', …' : ''}).',
+                style: muted),
           if (problems.isNotEmpty)
             Theme(
               data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
@@ -603,7 +714,10 @@ class _SheetReport extends StatelessWidget {
                     constraints: const BoxConstraints(maxHeight: 140),
                     child: ListView(
                       shrinkWrap: true,
-                      children: [for (final p in problems) Padding(padding: const EdgeInsets.only(bottom: 4), child: Text(p, style: muted))],
+                      children: [
+                        for (final p in problems)
+                          Padding(padding: const EdgeInsets.only(bottom: 4), child: Text(p, style: muted))
+                      ],
                     ),
                   ),
                 ],
@@ -669,7 +783,9 @@ class _StockRowState extends State<_StockRow> {
       decoration: BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.borderFor(context)))),
       child: Row(
         children: [
-          SizedBox(width: 130, child: Text(m.id, style: AppTypography.mono.copyWith(fontSize: 12), overflow: TextOverflow.ellipsis)),
+          SizedBox(
+              width: 130,
+              child: Text(m.id, style: AppTypography.mono.copyWith(fontSize: 12), overflow: TextOverflow.ellipsis)),
           Expanded(child: Text(m.name, style: AppTypography.body, overflow: TextOverflow.ellipsis)),
           SizedBox(width: 110, child: Text(m.packing, style: muted, overflow: TextOverflow.ellipsis)),
           SizedBox(width: 140, child: Text(m.category, style: muted, overflow: TextOverflow.ellipsis)),
@@ -714,7 +830,11 @@ class _ReviewLine extends StatelessWidget {
             Text(label, style: AppTypography.body.copyWith(color: AppColors.textSecondaryFor(context))),
             const Spacer(),
             Text(value,
-                style: (strong ? AppTypography.h2 : text ? AppTypography.body : AppTypography.mono)
+                style: (strong
+                        ? AppTypography.h2
+                        : text
+                            ? AppTypography.body
+                            : AppTypography.mono)
                     .copyWith(fontWeight: FontWeight.w700)),
           ],
         ),
