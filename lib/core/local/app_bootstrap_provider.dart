@@ -4,6 +4,7 @@ import '../../features/masters/data/masters_providers.dart';
 import '../../features/settings/data/settings_providers.dart';
 import '../auth/auth_controller.dart';
 import '../logging/app_logger.dart';
+import '../theme/appearance_prefs.dart';
 import '../sync/sync_providers.dart';
 import 'material_lookup_cache.dart';
 
@@ -17,6 +18,7 @@ final appBootstrapProvider = FutureProvider<void>((ref) async {
   await db.ensureStarterData();
   await db.deviceId();
   await ref.read(authRepositoryProvider).ensureDefaultUsers();
+  await restoreAndPersistAppearance(ref, db);
 
   // ── Warm the in-memory material lookup cache ──────────────────────
   final cache = await MaterialLookupCache.load(db);

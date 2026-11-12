@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/auth/app_user.dart';
 import '../../../../core/auth/auth_controller.dart';
 import '../../../../core/auth/auth_repository.dart';
+import '../../../../core/config/app_config.dart';
 import '../../../../core/licensing/license_service.dart';
 import '../../../../core/local/backup_service.dart';
 import '../../../../core/local/db_paths.dart';
@@ -17,6 +18,8 @@ import '../../../../core/sync/sync_providers.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/font_scale_provider.dart';
+import '../../../../core/theme/theme_mode_provider.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/badges/status_chip.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
@@ -24,6 +27,23 @@ import '../../../../shared/widgets/inputs/app_dropdown.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
 import '../../data/settings_providers.dart';
+
+enum _Section {
+  account('Account', 'Your sign-in and password.', AppIcons.badge),
+  appearance('Appearance', 'Theme and text size on this computer.', AppIcons.tune),
+  users('Users', 'Who can sign in, and what they can open.', AppIcons.people),
+  backup('Backup & restore', 'Daily backups, a safety copy folder, and restore.', AppIcons.download),
+  online('Online sync', 'Connect this counter to a Caskly server. Optional.', AppIcons.sync),
+  about('About', 'Version, licence and support details.', AppIcons.info);
+
+  const _Section(this.label, this.description, this.icon);
+  final String label;
+  final String description;
+  final AppIconData icon;
+}
+
+/// Remembers the open section while moving around the app.
+final _openSectionProvider = StateProvider<_Section>((ref) => _Section.account);
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -33,32 +53,124 @@ class SettingsScreen extends ConsumerWidget {
     final user = ref.watch(currentUserProvider);
     if (user == null) return const SizedBox.shrink();
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Center(
+    final sections = [
+      _Section.account,
+      _Section.appearance,
+      if (Permissions.canManageUsers(user.role)) _Section.users,
+      if (Permissions.canBackup(user.role)) _Section.backup,
+      if (Permissions.canManageUsers(user.role)) _Section.online,
+      _Section.about,
+    ];
+    final picked = ref.watch(_openSectionProvider);
+    final current = sections.contains(picked) ? picked : sections.first;
+    void open(_Section s) => ref.read(_openSectionProvider.notifier).state = s;
+
+    final Widget body = switch (current) {
+      _Section.account => _AccountCard(user: user),
+      _Section.appearance => const _AppearanceCard(),
+      _Section.users => _UsersCard(user: user),
+      _Section.backup => _BackupCard(user: user),
+      _Section.online => const _OnlineSyncCard(),
+      _Section.about => _AboutCard(showLicence: user.role != UserRole.cashier),
+    };
+
+    final content = SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.lg, AppSpacing.xl, AppSpacing.xl),
+      child: Align(
+        alignment: Alignment.topLeft,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 980),
+          constraints: const BoxConstraints(maxWidth: 760),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _AccountCard(user: user),
-              if (Permissions.canBackup(user.role)) ...[
-                const SizedBox(height: AppSpacing.lg),
-                _BackupCard(user: user),
-              ],
-              if (Permissions.canManageUsers(user.role)) ...[
-                const SizedBox(height: AppSpacing.lg),
-                _UsersCard(user: user),
-              ],
-              if (Permissions.canManageUsers(user.role)) ...[
-                const SizedBox(height: AppSpacing.lg),
-                const _OnlineSyncCard(),
-              ],
-              if (user.role != UserRole.cashier) ...[
-                const SizedBox(height: AppSpacing.lg),
-                const _LicenseCard(),
-              ],
+              Text(current.label, style: AppTypography.h2For(context)),
+              const SizedBox(height: 4),
+              Text(current.description, style: AppTypography.bodyMutedFor(context)),
+              const SizedBox(height: AppSpacing.lg),
+              KeyedSubtree(key: ValueKey(current), child: body),
             ],
+          ),
+        ),
+      ),
+    );
+
+    return LayoutBuilder(builder: (context, constraints) {
+      if (constraints.maxWidth < 760) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, 0),
+              child: Row(children: [
+                for (final s in sections) _NavItem(section: s, selected: s == current, onTap: () => open(s)),
+              ]),
+            ),
+            Expanded(child: content),
+          ],
+        );
+      }
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            width: 232,
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(border: Border(right: BorderSide(color: AppColors.borderFor(context)))),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+                  child: Text('SETTINGS', style: AppTypography.label.copyWith(color: AppColors.textMutedFor(context))),
+                ),
+                for (final s in sections) _NavItem(section: s, selected: s == current, onTap: () => open(s)),
+              ],
+            ),
+          ),
+          Expanded(child: content),
+        ],
+      );
+    });
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  const _NavItem({required this.section, required this.selected, required this.onTap});
+  final _Section section;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected ? AppColors.textPrimaryFor(context) : AppColors.textSecondaryFor(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2, right: 4),
+      child: Material(
+        color: selected ? AppColors.primarySoftFor(context) : Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppIcon(section.icon, size: 18, color: selected ? AppColors.primaryInk : color),
+                const SizedBox(width: 10),
+                Flexible(
+                  child: Text(
+                    section.label,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.body.copyWith(
+                      color: color,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -150,8 +262,8 @@ class _AccountCard extends ConsumerWidget {
         children: [
           SectionHeader(
             icon: AppIcons.badge,
-            title: 'My account',
-            subtitle: 'Signed in as ${user.displayName}',
+            title: user.displayName,
+            subtitle: 'Signed in on this computer',
             trailing: StatusChip(label: user.roleLabel, tone: StatusChipTone.neutral),
           ),
           const SizedBox(height: AppSpacing.md),
@@ -359,12 +471,12 @@ class _BackupCardState extends ConsumerState<_BackupCard> {
     final pending = ref.watch(pendingRestoreProvider).valueOrNull ?? false;
     final backups = ref.watch(backupListProvider);
 
-    return AppCard(
+    final actions = AppCard(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SectionHeader(icon: AppIcons.download, title: 'Backup & restore'),
+          const SectionHeader(icon: AppIcons.download, title: 'Backups'),
           const SizedBox(height: AppSpacing.xs),
           const _Explain(
             'An automatic backup is taken every day when Caskly starts; the last '
@@ -388,7 +500,8 @@ class _BackupCardState extends ConsumerState<_BackupCard> {
             runSpacing: AppSpacing.sm,
             children: [
               PrimaryButton(label: 'Back up now', icon: AppIcons.save, onPressed: _busy ? null : _backupNow),
-              SecondaryButton(label: 'Back up to folder…', icon: AppIcons.download, onPressed: _busy ? null : _backupToFolder),
+              SecondaryButton(
+                  label: 'Back up to folder…', icon: AppIcons.download, onPressed: _busy ? null : _backupToFolder),
               SecondaryButton(
                 label: mirror == null ? 'Set copy folder…' : 'Change copy folder…',
                 icon: AppIcons.uploadFile,
@@ -398,12 +511,11 @@ class _BackupCardState extends ConsumerState<_BackupCard> {
                 SecondaryButton(
                   label: 'Stop copying',
                   icon: AppIcons.close,
-                  onPressed: _busy
-                      ? null
-                      : () => _run(() => ref.read(backupServiceProvider).setMirrorFolder(null)),
+                  onPressed: _busy ? null : () => _run(() => ref.read(backupServiceProvider).setMirrorFolder(null)),
                 ),
               if (canRestore)
-                SecondaryButton(label: 'Restore from file…', icon: AppIcons.upload, onPressed: _busy ? null : _restoreFromFile),
+                SecondaryButton(
+                    label: 'Restore from file…', icon: AppIcons.upload, onPressed: _busy ? null : _restoreFromFile),
               SecondaryButton(
                 label: 'Open backups folder',
                 icon: AppIcons.openInNew,
@@ -411,14 +523,23 @@ class _BackupCardState extends ConsumerState<_BackupCard> {
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.lg),
-          Text('RECENT BACKUPS', style: AppTypography.label.copyWith(color: AppColors.textSecondaryFor(context))),
+        ],
+      ),
+    );
+
+    final recent = AppCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SectionHeader(icon: AppIcons.time, title: 'Recent backups'),
           const SizedBox(height: AppSpacing.sm),
           backups.when(
             loading: () => const LinearProgressIndicator(minHeight: 2),
             error: (e, _) => Text('Could not list backups: $e'),
             data: (list) => list.isEmpty
-                ? Text('No backups yet.', style: AppTypography.body.copyWith(color: AppColors.textSecondaryFor(context)))
+                ? Text('No backups yet.',
+                    style: AppTypography.body.copyWith(color: AppColors.textSecondaryFor(context)))
                 : Column(
                     children: [
                       for (final b in list.take(10))
@@ -430,7 +551,8 @@ class _BackupCardState extends ConsumerState<_BackupCard> {
                           subtitle: Text('${_formatDateTime(b.createdAt)} · ${_formatSize(b.sizeBytes)}'
                               '${b.isAuto ? ' · automatic' : ''}'),
                           trailing: canRestore
-                              ? TextButton(onPressed: _busy ? null : () => _restore(b.file), child: const Text('Restore'))
+                              ? TextButton(
+                                  onPressed: _busy ? null : () => _restore(b.file), child: const Text('Restore'))
                               : null,
                         ),
                     ],
@@ -438,6 +560,11 @@ class _BackupCardState extends ConsumerState<_BackupCard> {
           ),
         ],
       ),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [actions, const SizedBox(height: AppSpacing.lg), recent],
     );
   }
 }
@@ -478,7 +605,7 @@ class _UsersCard extends ConsumerWidget {
         children: [
           SectionHeader(
             icon: AppIcons.people,
-            title: 'Users',
+            title: 'People',
             trailing: PrimaryButton(
               label: 'Add user',
               icon: AppIcons.add,
@@ -712,7 +839,7 @@ class _OnlineSyncCardState extends ConsumerState<_OnlineSyncCard> {
         children: [
           SectionHeader(
             icon: AppIcons.sync,
-            title: 'Online sync',
+            title: 'Server connection',
             trailing: StatusChip(
               label: connected ? 'Connected' : 'Offline only',
               tone: connected ? StatusChipTone.success : StatusChipTone.neutral,
@@ -731,7 +858,8 @@ class _OnlineSyncCardState extends ConsumerState<_OnlineSyncCard> {
             if (status?.lastResult != null) _Row('Result', status!.lastResult!),
             const SizedBox(height: AppSpacing.md),
             Wrap(spacing: AppSpacing.sm, runSpacing: AppSpacing.sm, children: [
-              PrimaryButton(label: _busy ? 'Syncing…' : 'Sync now', icon: AppIcons.sync, onPressed: _busy ? null : _syncNow),
+              PrimaryButton(
+                  label: _busy ? 'Syncing…' : 'Sync now', icon: AppIcons.sync, onPressed: _busy ? null : _syncNow),
               SecondaryButton(label: 'Disconnect', icon: AppIcons.close, onPressed: _busy ? null : _disconnect),
             ]),
           ] else ...[
@@ -739,7 +867,8 @@ class _OnlineSyncCardState extends ConsumerState<_OnlineSyncCard> {
             const SizedBox(height: AppSpacing.md),
             AppTextField(label: 'STORE NAME', controller: _store),
             const SizedBox(height: AppSpacing.md),
-            AppTextField(label: 'ENROLLMENT CODE', controller: _code, obscureText: true, onSubmitted: (_) => _connect()),
+            AppTextField(
+                label: 'ENROLLMENT CODE', controller: _code, obscureText: true, onSubmitted: (_) => _connect()),
             if (_error != null) ...[
               const SizedBox(height: AppSpacing.sm),
               Text(_error!, style: AppTypography.caption.copyWith(color: AppColors.danger)),
@@ -747,7 +876,8 @@ class _OnlineSyncCardState extends ConsumerState<_OnlineSyncCard> {
             const SizedBox(height: AppSpacing.md),
             Align(
               alignment: Alignment.centerLeft,
-              child: PrimaryButton(label: _busy ? 'Connecting…' : 'Connect', icon: AppIcons.sync, onPressed: _busy ? null : _connect),
+              child: PrimaryButton(
+                  label: _busy ? 'Connecting…' : 'Connect', icon: AppIcons.sync, onPressed: _busy ? null : _connect),
             ),
           ],
         ],
@@ -756,40 +886,152 @@ class _OnlineSyncCardState extends ConsumerState<_OnlineSyncCard> {
   }
 }
 
-// ─── License & support ──────────────────────────────────────────────────────
+// ─── Appearance ─────────────────────────────────────────────────────────────
 
-class _LicenseCard extends ConsumerWidget {
-  const _LicenseCard();
+class _AppearanceCard extends ConsumerWidget {
+  const _AppearanceCard();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final status = ref.watch(licenseStatusProvider).valueOrNull;
-    final data = status?.data;
+    final mode = ref.watch(appThemeModeProvider);
+    final scale = AppFontScale.fromScale(ref.watch(appFontScaleProvider));
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SectionHeader(icon: AppIcons.exciseSeal, title: 'License & support'),
+          const SectionHeader(icon: AppIcons.lightMode, title: 'Theme'),
           const SizedBox(height: AppSpacing.md),
-          _Row('Machine ID', status?.machineId ?? '…'),
-          if (status?.state == LicenseState.notEnforced) const _Row('License', 'Not checked in development builds'),
-          if (data != null) ...[
-            _Row('Licensed to', data.licensedTo),
-            _Row('License ID', data.licenseId),
-            _Row('Valid until', data.expiresAt == null ? 'Perpetual' : _formatDateTime(data.expiresAt).split(' ').first),
-          ],
+          _Choice<ThemeMode>(
+            value: mode,
+            options: const {ThemeMode.light: 'Light', ThemeMode.dark: 'Dark', ThemeMode.system: 'Match Windows'},
+            onChanged: (m) => ref.read(appThemeModeProvider.notifier).state = m,
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          const SectionHeader(icon: AppIcons.fontSize, title: 'Text size'),
           const SizedBox(height: AppSpacing.md),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: SecondaryButton(
-              label: 'Open error logs folder',
-              icon: AppIcons.openInNew,
-              onPressed: () async => _openFolder((await DbPaths.logsDir()).path),
+          _Choice<AppFontScale>(
+            value: scale,
+            options: {for (final p in AppFontScale.values) p: p.label},
+            onChanged: (p) => ref.read(appFontScaleProvider.notifier).setPreset(p),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          _Explain('${scale.description}. Saved on this computer; the header buttons change the same settings.'),
+        ],
+      ),
+    );
+  }
+}
+
+/// Flat segmented choice: ink border, gold fill on the chosen option.
+class _Choice<T> extends StatelessWidget {
+  const _Choice({required this.value, required this.options, required this.onChanged});
+  final T value;
+  final Map<T, String> options;
+  final ValueChanged<T> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: AppSpacing.xs,
+      runSpacing: AppSpacing.xs,
+      children: [
+        for (final e in options.entries)
+          Material(
+            color: e.key == value ? AppColors.primary : Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: BorderSide(color: e.key == value ? AppColors.primary : AppColors.borderFor(context)),
+            ),
+            child: InkWell(
+              onTap: () => onChanged(e.key),
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                child: Text(
+                  e.value,
+                  style: AppTypography.body.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: e.key == value ? AppColors.textOnPrimary : AppColors.textPrimaryFor(context),
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+// ─── About ──────────────────────────────────────────────────────────────────
+
+class _AboutCard extends ConsumerWidget {
+  const _AboutCard({required this.showLicence});
+  final bool showLicence;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final status = ref.watch(licenseStatusProvider).valueOrNull;
+    final data = status?.data;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AppCard(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SectionHeader(icon: AppIcons.store, title: 'Caskly'),
+              const SizedBox(height: AppSpacing.sm),
+              const _Row('Version', AppConfig.version),
+              _Row('Machine ID', status?.machineId ?? '…'),
+            ],
+          ),
+        ),
+        if (showLicence) ...[
+          const SizedBox(height: AppSpacing.lg),
+          AppCard(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SectionHeader(icon: AppIcons.exciseSeal, title: 'Licence'),
+                const SizedBox(height: AppSpacing.sm),
+                if (status?.state == LicenseState.notEnforced)
+                  const _Row('Licence', 'Not checked in development builds'),
+                if (data != null) ...[
+                  _Row('Licensed to', data.licensedTo),
+                  _Row('Licence ID', data.licenseId),
+                  _Row('Valid until',
+                      data.expiresAt == null ? 'Perpetual' : _formatDateTime(data.expiresAt).split(' ').first),
+                ],
+              ],
             ),
           ),
         ],
-      ),
+        const SizedBox(height: AppSpacing.lg),
+        AppCard(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SectionHeader(icon: AppIcons.openInNew, title: 'Support'),
+              const SizedBox(height: AppSpacing.xs),
+              const _Explain('If something goes wrong, send the newest file from the error logs folder to support, '
+                  'along with the Machine ID above.'),
+              const SizedBox(height: AppSpacing.md),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: SecondaryButton(
+                  label: 'Open error logs folder',
+                  icon: AppIcons.openInNew,
+                  onPressed: () async => _openFolder((await DbPaths.logsDir()).path),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

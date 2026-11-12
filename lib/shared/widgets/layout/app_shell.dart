@@ -39,7 +39,7 @@ const _branchMeta = [
   _BranchMeta('Purchase Return', 'Purchase · Return', 'Purchase Return'),
   _BranchMeta('Packaging', 'Master · Packaging', 'Packaging'),
   _BranchMeta('License Holder', 'Master · License Holder', 'License Holder'),
-  _BranchMeta('Settings', 'Settings · Backup & Users', 'Settings'),
+  _BranchMeta('Settings', 'App · Settings', 'Settings'),
 ];
 
 /// The persistent app chrome: fixed left sidebar, fixed top header,
