@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,7 +8,7 @@ import 'package:pos_app/features/dashboard/presentation/screens/dashboard_screen
 import 'package:pos_app/features/dashboard/presentation/widgets/dashboard_hero.dart';
 import 'package:pos_app/features/inventory/data/inventory_providers.dart';
 import 'package:pos_app/features/dashboard/presentation/widgets/top_categories_card.dart';
-import 'package:pos_app/features/dashboard/presentation/widgets/sales_purchase_capsule_card.dart';
+import 'package:pos_app/features/dashboard/presentation/widgets/sales_purchase_line_card.dart';
 import 'package:pos_app/features/dashboard/presentation/widgets/top_selling_products_card.dart';
 import 'package:pos_app/features/dashboard/presentation/widgets/recent_transactions_card.dart';
 
@@ -189,29 +190,28 @@ void main() {
       expect(find.text('Beer & Cider'), findsOneWidget);
     });
 
-    testWidgets('SalesPurchaseCapsuleCard renders side-by-side columns and time pills', (tester) async {
+    testWidgets('SalesPurchaseLineCard: title, range pills, totals; 1D explains its range', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             dashboardSummaryProvider.overrideWith((ref) async => mockSummary),
             dashboardSnapshotProvider.overrideWith((ref) async => mockSnapshot),
           ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: SalesPurchaseCapsuleCard(),
-            ),
-          ),
+          child: const MaterialApp(home: Scaffold(body: SingleChildScrollView(child: SalesPurchaseLineCard()))),
         ),
       );
       await tester.pumpAndSettle();
 
       expect(find.text('Sales & Purchase'), findsOneWidget);
-      expect(find.text('Total Sale'), findsOneWidget);
-      expect(find.text('Total Purchase'), findsOneWidget);
-      expect(find.text('1D'), findsOneWidget);
-      expect(find.text('1W'), findsOneWidget);
-      expect(find.text('1M'), findsOneWidget);
-      expect(find.text('1Y'), findsOneWidget);
+      expect(find.text('Sales'), findsOneWidget);
+      expect(find.text('Purchases'), findsOneWidget);
+      for (final r in ['1D', '1W', '1M', '1Y']) {
+        expect(find.text(r), findsOneWidget);
+      }
+      expect(find.text('Last 12 months'), findsOneWidget);
+      await tester.tap(find.text('1D'));
+      await tester.pumpAndSettle();
+      expect(find.text('Today'), findsOneWidget);
     });
 
     testWidgets('TopSellingProductsCard renders ranked items', (tester) async {
@@ -260,7 +260,7 @@ void main() {
       expect(find.text('Royal Challenge (2)'), findsOneWidget);
     });
 
-    testWidgets('SalesPurchaseCapsuleCard fits 12 monthly bars in a narrow card', (tester) async {
+    testWidgets('SalesPurchaseLineCard: 12 months in a narrow card, real totals, hover shows the month', (tester) async {
       tester.view.physicalSize = const Size(1366, 768);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -285,12 +285,22 @@ void main() {
         ProviderScope(
           overrides: [dashboardSummaryProvider.overrideWith((ref) async => year)],
           // A smaller window than 1366px (e.g. a laptop) gives the card ~600px.
-          child: const MaterialApp(home: Scaffold(body: Center(child: SizedBox(width: 600, child: SalesPurchaseCapsuleCard())))),
+          child: const MaterialApp(home: Scaffold(body: Center(child: SizedBox(width: 600, child: SalesPurchaseLineCard())))),
         ),
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
+      // Totals are the sum of the plotted months (Indian grouping).
+      expect(find.text('39,00,000'), findsOneWidget);
+      expect(find.text('19,80,000'), findsOneWidget);
+      // Hovering the right edge of the plot shows the last month.
+      final chart = find.byType(CustomPaint).last;
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer(location: tester.getCenter(chart));
+      await gesture.moveTo(tester.getTopRight(chart) + Offset(-14, tester.getSize(chart).height / 2));
+      await tester.pumpAndSettle();
       expect(find.text('M11'), findsOneWidget);
+      await gesture.removePointer();
     });
 
     testWidgets('DashboardScreen renders complete assembled hierarchy without overflow', (tester) async {
@@ -315,7 +325,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(DashboardHero), findsOneWidget);
-      expect(find.byType(SalesPurchaseCapsuleCard), findsOneWidget);
+      expect(find.byType(SalesPurchaseLineCard), findsOneWidget);
       expect(find.byType(TopCategoriesCard), findsOneWidget);
       expect(find.byType(TopSellingProductsCard), findsOneWidget);
       expect(find.byType(RecentTransactionsCard), findsOneWidget);

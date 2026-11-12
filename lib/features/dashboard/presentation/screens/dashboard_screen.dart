@@ -4,7 +4,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../data/dashboard_providers.dart';
 import '../widgets/dashboard_hero.dart';
 import '../widgets/recent_transactions_card.dart';
-import '../widgets/sales_purchase_capsule_card.dart';
+import '../widgets/sales_purchase_line_card.dart';
 import '../widgets/top_categories_card.dart';
 import '../widgets/top_selling_products_card.dart';
 import '../widgets/transaction_activity_heatmap_card.dart';
@@ -45,7 +45,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(flex: 7, child: SalesPurchaseCapsuleCard()),
+              Expanded(flex: 7, child: SalesPurchaseLineCard()),
               SizedBox(width: AppSpacing.lg),
               Expanded(flex: 5, child: TopCategoriesCard()),
             ],
