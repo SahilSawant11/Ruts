@@ -81,4 +81,33 @@ void main() {
     expect(container.read(inventoryCategoryFilterProvider), isNull);
     expect(tester.takeException(), isNull);
   });
+
+  // Regression: the strip had a fixed height and its explanation text
+  // overflowed at larger Text size settings.
+  for (final scale in const [0.90, 1.00, 1.12, 1.25, 1.35]) {
+    testWidgets('bottle strip has no overflow at text size ${(scale * 100).round()}%', (tester) async {
+      tester.view.physicalSize = const Size(1093, 400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final container = ProviderContainer(overrides: [
+        inventoryOverviewProvider.overrideWith((ref) async => items),
+      ]);
+      addTearDown(container.dispose);
+      await tester.pumpWidget(UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          theme: AppTheme.light,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)),
+            child: child!,
+          ),
+          home: const Scaffold(body: CategoryBottleGauges()),
+        ),
+      ));
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 300)));
+      await tester.pump(const Duration(seconds: 2));
+      expect(find.text('Stock by category'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
 }

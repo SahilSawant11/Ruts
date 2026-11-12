@@ -23,6 +23,7 @@ import 'package:pos_app/core/local/app_database.dart';
 import 'package:pos_app/core/local/material_lookup_cache.dart';
 import 'package:pos_app/core/theme/app_theme.dart';
 import 'package:pos_app/core/theme/app_typography.dart';
+import 'package:pos_app/core/theme/font_scale_provider.dart';
 import 'package:pos_app/core/theme/theme_mode_provider.dart';
 import 'package:pos_app/features/masters/data/masters_providers.dart';
 import 'package:pos_app/features/purchase/domain/purchase_line_item.dart';
@@ -58,6 +59,10 @@ Future<void> main() async {
     currentUserProvider.overrideWithValue(owner),
   ]);
   container.read(materialLookupCacheProvider.notifier).state = cache;
+  // --dart-define=SNAP_FONT_SCALE=1.35 renders at a larger Text size setting
+  // (overflow errors show up in the log).
+  const fontScale = String.fromEnvironment('SNAP_FONT_SCALE');
+  if (fontScale.isNotEmpty) container.read(appFontScaleProvider.notifier).setScale(double.parse(fontScale));
 
   final router = buildAppRouter(UserRole.owner);
   final sizeNotifier = ValueNotifier(_sizes.first);
@@ -80,7 +85,12 @@ Future<void> main() async {
             child: RepaintBoundary(
               key: _boundaryKey,
               child: MediaQuery(
-                data: MediaQueryData(size: size, devicePixelRatio: 1),
+                // Same text scaling the real app applies (Settings → Text size).
+                data: MediaQueryData(
+                  size: size,
+                  devicePixelRatio: 1,
+                  textScaler: TextScaler.linear(container.read(appFontScaleProvider)),
+                ),
                 child: MaterialApp.router(
                   debugShowCheckedModeBanner: false,
                   theme: AppTheme.light,

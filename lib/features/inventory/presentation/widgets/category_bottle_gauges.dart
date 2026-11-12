@@ -25,8 +25,11 @@ class CategoryBottleGauges extends ConsumerWidget {
     if (stats == null || stats.isEmpty) return const SizedBox.shrink();
     final selected = ref.watch(inventoryCategoryFilterProvider);
 
+    // 112px at the standard text size; grows a little with larger sizes.
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    const hint = 'Fill shows products above their low-stock level. Click to filter.';
     return Container(
-      height: 112,
+      height: 76 + 36 * textScale,
       padding: const EdgeInsets.fromLTRB(AppSpacing.md, 8, AppSpacing.sm, 6),
       decoration: BoxDecoration(
         color: AppColors.backgroundFor(context),
@@ -42,10 +45,21 @@ class CategoryBottleGauges extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Stock by category', style: AppTypography.label.copyWith(color: AppColors.textPrimaryFor(context))),
+                Text('Stock by category',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.label.copyWith(color: AppColors.textPrimaryFor(context))),
                 const SizedBox(height: 4),
-                Text('Fill shows products above their low-stock level. Click to filter.',
-                    style: AppTypography.caption.copyWith(color: AppColors.textMutedFor(context), fontSize: 11, height: 1.35)),
+                // Capped at 3 lines so large text sizes can't overflow the
+                // strip; the full sentence is always in the tooltip.
+                Tooltip(
+                  message: hint,
+                  child: Text(hint,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.caption
+                          .copyWith(color: AppColors.textMutedFor(context), fontSize: 11, height: 1.35)),
+                ),
               ],
             ),
           ),
@@ -166,7 +180,9 @@ class BottleGauge extends StatefulWidget {
 class _BottleGaugeState extends State<BottleGauge> with SingleTickerProviderStateMixin {
   ui.FragmentShader? _shader;
   bool _failed = false;
-  late final Ticker _ticker = createTicker(_tick);
+  // Created on first use; dispose() must not create it while the tree is
+  // being torn down (e.g. leaving Inventory before the shader loads).
+  Ticker? _ticker;
   final _motion = GlassMotion(idleSway: false);
   Duration _last = Duration.zero;
   double _shown = 0; // displayed level, eases toward widget.fill
@@ -194,9 +210,10 @@ class _BottleGaugeState extends State<BottleGauge> with SingleTickerProviderStat
   }
 
   void _wake() {
-    if (!_ticker.isActive) {
+    final t = _ticker ??= createTicker(_tick);
+    if (!t.isActive) {
       _last = Duration.zero;
-      _ticker.start();
+      t.start();
     }
   }
 
@@ -208,12 +225,12 @@ class _BottleGaugeState extends State<BottleGauge> with SingleTickerProviderStat
     if ((widget.fill - _shown).abs() < 0.002) _shown = widget.fill;
     _motion.step(dt, now.inMicroseconds / 1e6);
     setState(() {});
-    if (_motion.isSettled && _shown == widget.fill && before == _shown) _ticker.stop();
+    if (_motion.isSettled && _shown == widget.fill && before == _shown) _ticker?.stop();
   }
 
   @override
   void dispose() {
-    _ticker.dispose();
+    _ticker?.dispose();
     _shader?.dispose();
     super.dispose();
   }
