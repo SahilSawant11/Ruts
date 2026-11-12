@@ -519,6 +519,71 @@ class AppDatabase extends _$AppDatabase {
     await setSetting(_seededKey, DateTime.now().toUtc().toIso8601String());
   }
 
+  static const _demoPurgedKey = 'demo_data_purged';
+
+  /// Removes demo rows (fake sales history, sample items, stock and
+  /// suppliers) that a debug or demo build left in this database. Demo bills
+  /// are identified by their `seed-sale-` ids; sample items and suppliers are
+  /// removed only when no real bill, purchase or return refers to them.
+  /// Runs once per database; returns the number of demo bills removed.
+  Future<int> purgeDemoData() async {
+    if (await getSetting(_demoPurgedKey) != null) return 0;
+    var removed = 0;
+    await transaction(() async {
+      final bills = await customSelect(
+        "SELECT COUNT(*) AS c FROM cached_sales_bills WHERE id LIKE 'seed-sale-%'",
+      ).getSingle();
+      removed = bills.read<int>('c');
+      await customStatement("DELETE FROM sales_return_entries WHERE sales_bill_id LIKE 'seed-sale-%'");
+      await customStatement("DELETE FROM cached_sale_line_items WHERE sales_bill_id LIKE 'seed-sale-%'");
+      await customStatement("DELETE FROM cached_sales_bills WHERE id LIKE 'seed-sale-%'");
+      await customStatement("DELETE FROM sync_queue_items WHERE entity_id LIKE 'seed-sale-%'");
+
+      final materialIds = _starterMaterials.map((m) => m.id).toList();
+      final mPh = List.filled(materialIds.length, '?').join(', ');
+      const unusedMaterial = ' AND NOT EXISTS (SELECT 1 FROM cached_sale_line_items l WHERE l.material_id = x.id)'
+          ' AND NOT EXISTS (SELECT 1 FROM cached_purchase_line_items l WHERE l.material_id = x.id)'
+          ' AND NOT EXISTS (SELECT 1 FROM sales_return_entries r WHERE r.material_id = x.id)'
+          ' AND NOT EXISTS (SELECT 1 FROM purchase_return_entries r WHERE r.material_id = x.id)';
+      final unusedDemoMaterials = 'SELECT x.id FROM cached_materials x WHERE x.id IN ($mPh)$unusedMaterial';
+      final vars = [for (final id in materialIds) Variable.withString(id)];
+      await customUpdate(
+        'DELETE FROM cached_inventory_stocks WHERE material_id IN ($unusedDemoMaterials)',
+        variables: vars,
+        updates: {cachedInventoryStocks},
+        updateKind: UpdateKind.delete,
+      );
+      // Demo stock rows whose item was never created (or already removed).
+      await customUpdate(
+        'DELETE FROM cached_inventory_stocks WHERE material_id IN ($mPh) '
+        'AND material_id NOT IN (SELECT id FROM cached_materials)',
+        variables: vars,
+        updates: {cachedInventoryStocks},
+        updateKind: UpdateKind.delete,
+      );
+      await customUpdate(
+        'DELETE FROM cached_materials WHERE id IN ($unusedDemoMaterials)',
+        variables: vars,
+        updates: {cachedMaterials},
+        updateKind: UpdateKind.delete,
+      );
+
+      final supplierIds = _starterSuppliers.map((s) => s.id).toList();
+      final sPh = List.filled(supplierIds.length, '?').join(', ');
+      await customUpdate(
+        'DELETE FROM cached_suppliers WHERE id IN ($sPh) '
+        'AND NOT EXISTS (SELECT 1 FROM cached_purchase_bills b WHERE b.supplier_id = cached_suppliers.id) '
+        'AND NOT EXISTS (SELECT 1 FROM purchase_return_entries r WHERE r.supplier_id = cached_suppliers.id)',
+        variables: [for (final id in supplierIds) Variable.withString(id)],
+        updates: {cachedSuppliers},
+        updateKind: UpdateKind.delete,
+      );
+      await setSetting(_demoPurgedKey, DateTime.now().toUtc().toIso8601String());
+    });
+    if (removed > 0) notifyUpdates({TableUpdate.onTable(cachedSalesBills, kind: UpdateKind.delete)});
+    return removed;
+  }
+
   Future<bool> _hasAnyBusinessData() async {
     for (final t in const ['cached_materials', 'cached_sales_bills', 'cached_purchase_bills', 'cached_inventory_stocks']) {
       if (await _tableHasRows(t)) return true;

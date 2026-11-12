@@ -6,6 +6,7 @@ import '../auth/auth_controller.dart';
 import '../logging/app_logger.dart';
 import '../theme/appearance_prefs.dart';
 import '../sync/sync_providers.dart';
+import 'db_paths.dart';
 import 'material_lookup_cache.dart';
 
 final appBootstrapProvider = FutureProvider<void>((ref) async {
@@ -16,6 +17,10 @@ final appBootstrapProvider = FutureProvider<void>((ref) async {
 
   // ── Seed lookup data once (demo transactions only in demo builds) ──
   await db.ensureStarterData();
+  if (!DbPaths.seedDemoData) {
+    final purged = await db.purgeDemoData();
+    if (purged > 0) AppLogger.info('Startup', 'Removed $purged demo bills left by a debug build');
+  }
   await db.deviceId();
   await ref.read(authRepositoryProvider).ensureDefaultUsers();
   await restoreAndPersistAppearance(ref, db);

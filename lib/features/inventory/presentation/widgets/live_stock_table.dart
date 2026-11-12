@@ -120,8 +120,7 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
                 }
 
                 // Sort: Out of stock (0) first, then low stock (1), then in stock (2)
-                final sorted = [...items]
-                  ..sort((a, b) {
+                final sorted = [...items]..sort((a, b) {
                     final ar = a.isOutOfStock
                         ? 0
                         : (a.isAtRiskFor(thresholdConfig.getThresholdFor(a.category, a.packing)) ? 1 : 2);
@@ -162,12 +161,10 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
           const SizedBox(height: AppSpacing.sm),
           inventoryAsync.maybeWhen(
             data: (items) {
-              final totalValue =
-                  items.fold<double>(0, (s, i) => s + i.onHandValue);
+              final totalValue = items.fold<double>(0, (s, i) => s + i.onHandValue);
               final lowStockCount =
                   items.where((i) => i.isAtRiskFor(thresholdConfig.getThresholdFor(i.category, i.packing))).length;
-              return _footer(context, items.length, totalValue, lowStockCount,
-                  lowStockThreshold);
+              return _footer(context, items.length, totalValue, lowStockCount, lowStockThreshold);
             },
             orElse: () => const SizedBox.shrink(),
           ),
@@ -232,17 +229,14 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
                       onPressed: () {
                         _searchController.clear();
                         setState(() {});
-                        ref.read(inventorySearchFilterProvider.notifier).state =
-                            '';
+                        ref.read(inventorySearchFilterProvider.notifier).state = '';
                       },
                     )
                   : null,
-              suffixIconConstraints:
-                  const BoxConstraints(minWidth: 36, minHeight: 40),
+              suffixIconConstraints: const BoxConstraints(minWidth: 36, minHeight: 40),
               filled: true,
               fillColor: AppColors.surfaceFor(context),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.sm),
                 borderSide: BorderSide(color: AppColors.borderFor(context)),
@@ -253,8 +247,7 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.sm),
-                borderSide:
-                    const BorderSide(color: AppColors.primary, width: 1.3),
+                borderSide: const BorderSide(color: AppColors.primary, width: 1.3),
               ),
             ),
             onChanged: (val) {
@@ -270,9 +263,7 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
           width: 170,
           child: _FilterDropdown<String>(
             hint: 'All Categories',
-            value: categoryItems.contains(selectedCategory)
-                ? selectedCategory
-                : null,
+            value: categoryItems.contains(selectedCategory) ? selectedCategory : null,
             items: categoryItems,
             itemLabel: (v) => v,
             icon: AppIcons.categories,
@@ -288,15 +279,12 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
           width: 160,
           child: _FilterDropdown<String>(
             hint: 'All Brands',
-            value: manufacturerItems.contains(selectedManufacturer)
-                ? selectedManufacturer
-                : null,
+            value: manufacturerItems.contains(selectedManufacturer) ? selectedManufacturer : null,
             items: manufacturerItems,
             itemLabel: (v) => v,
             icon: AppIcons.storefront,
             onChanged: (val) {
-              ref.read(inventoryManufacturerFilterProvider.notifier).state =
-                  val;
+              ref.read(inventoryManufacturerFilterProvider.notifier).state = val;
             },
           ),
         ),
@@ -327,9 +315,7 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
           Tooltip(
             message: 'Reset all filters',
             child: Material(
-              color: isDark
-                  ? AppColors.danger.withValues(alpha: 0.15)
-                  : AppColors.dangerSoft,
+              color: isDark ? AppColors.danger.withValues(alpha: 0.15) : AppColors.dangerSoft,
               borderRadius: BorderRadius.circular(AppRadius.sm),
               child: InkWell(
                 onTap: _clearAllFilters,
@@ -390,14 +376,11 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
 
   // ── Active Low Stock Banner ──────────────────────────────────────────────
 
-  Widget _buildLowStockFilterBanner(
-      BuildContext context, int threshold) {
+  Widget _buildLowStockFilterBanner(BuildContext context, int threshold) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.isDark(context)
-            ? AppColors.warning.withValues(alpha: 0.15)
-            : AppColors.warningSoft,
+        color: AppColors.isDark(context) ? AppColors.warning.withValues(alpha: 0.15) : AppColors.warningSoft,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(
           color: AppColors.warning.withValues(alpha: 0.35),
@@ -473,8 +456,7 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
 
   // ── Data Row ─────────────────────────────────────────────────────────────
 
-  Widget _dataRow(BuildContext context, InventoryOverviewItem item,
-      {required int lowStockThreshold}) {
+  Widget _dataRow(BuildContext context, InventoryOverviewItem item, {required int lowStockThreshold}) {
     final priceText = Money.inr(item.saleRate);
     final valueText = Money.inr(item.onHandValue, decimals: 0);
     final isOutOfStock = item.isOutOfStock;
@@ -505,33 +487,39 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceAltFor(context),
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(
-                          color: AppColors.borderFor(context),
+                    Flexible(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceAltFor(context),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: AppColors.borderFor(context),
+                          ),
                         ),
-                      ),
-                      child: Text(
-                        'SCM: ${item.materialId}',
-                        style: AppTypography.mono.copyWith(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textSecondaryFor(context),
+                        child: Text(
+                          'SCM: ${item.materialId}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.mono.copyWith(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textSecondaryFor(context),
+                          ),
                         ),
                       ),
                     ),
-                    if (item.barcode.isNotEmpty &&
-                        item.barcode != item.materialId) ...[
+                    if (item.barcode.isNotEmpty && item.barcode != item.materialId) ...[
                       const SizedBox(width: 6),
-                      Text(
-                        item.barcode,
-                        style: AppTypography.mono.copyWith(
-                          fontSize: 10.5,
-                          color: AppColors.textMutedFor(context),
+                      Flexible(
+                        child: Text(
+                          item.barcode,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.mono.copyWith(
+                            fontSize: 10.5,
+                            color: AppColors.textMutedFor(context),
+                          ),
                         ),
                       ),
                     ],
@@ -645,8 +633,7 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
 
   // ── Empty State ──────────────────────────────────────────────────────────
 
-  Widget _emptyState(
-      BuildContext context, bool lowStockPinned, bool hasFilters) {
+  Widget _emptyState(BuildContext context, bool lowStockPinned, bool hasFilters) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -660,13 +647,9 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
             ),
             alignment: Alignment.center,
             child: AppIcon(
-              lowStockPinned
-                  ? AppIcons.checkCircle
-                  : AppIcons.searchOff,
+              lowStockPinned ? AppIcons.checkCircle : AppIcons.searchOff,
               size: 26,
-              color: lowStockPinned
-                  ? AppColors.success
-                  : AppColors.textMutedFor(context),
+              color: lowStockPinned ? AppColors.success : AppColors.textMutedFor(context),
             ),
           ),
           const SizedBox(height: 14),
@@ -696,8 +679,7 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
 
   // ── Footer ───────────────────────────────────────────────────────────────
 
-  Widget _footer(BuildContext context, int count, double totalValue,
-      int lowStockCount, int threshold) {
+  Widget _footer(BuildContext context, int count, double totalValue, int lowStockCount, int threshold) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Row(
@@ -713,9 +695,7 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
               decoration: BoxDecoration(
-                color: AppColors.isDark(context)
-                    ? AppColors.warning.withValues(alpha: 0.15)
-                    : AppColors.warningSoft,
+                color: AppColors.isDark(context) ? AppColors.warning.withValues(alpha: 0.15) : AppColors.warningSoft,
                 borderRadius: BorderRadius.circular(AppRadius.pill),
               ),
               child: Text(
@@ -744,8 +724,7 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
-  Widget _hCell(BuildContext context, String text,
-      {required int flex, bool alignEnd = false}) {
+  Widget _hCell(BuildContext context, String text, {required int flex, bool alignEnd = false}) {
     return Expanded(
       flex: flex,
       child: Text(
@@ -760,7 +739,6 @@ class _LiveStockTableState extends ConsumerState<LiveStockTable> {
       ),
     );
   }
-
 }
 
 // ── Compact Filter Dropdown ──────────────────────────────────────────────────
@@ -810,9 +788,7 @@ class _FilterDropdown<T> extends StatelessWidget {
               AppIcon(
                 icon,
                 size: 15,
-                color: isActive
-                    ? AppColors.primary
-                    : AppColors.textMutedFor(context),
+                color: isActive ? AppColors.primary : AppColors.textMutedFor(context),
               ),
               const SizedBox(width: 6),
               Expanded(
@@ -821,9 +797,7 @@ class _FilterDropdown<T> extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AppTypography.body.copyWith(
-                    color: isActive
-                        ? AppColors.primary
-                        : AppColors.textMutedFor(context),
+                    color: isActive ? AppColors.primary : AppColors.textMutedFor(context),
                     fontSize: 12.5,
                   ),
                 ),
@@ -883,9 +857,7 @@ class _PureStatusBadge extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: isDark
-              ? AppColors.danger.withValues(alpha: 0.16)
-              : AppColors.dangerSoft,
+          color: isDark ? AppColors.danger.withValues(alpha: 0.16) : AppColors.dangerSoft,
           borderRadius: BorderRadius.circular(AppRadius.pill),
           border: Border.all(
             color: AppColors.danger.withValues(alpha: 0.3),
@@ -920,9 +892,7 @@ class _PureStatusBadge extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: isDark
-              ? AppColors.warning.withValues(alpha: 0.16)
-              : AppColors.warningSoft,
+          color: isDark ? AppColors.warning.withValues(alpha: 0.16) : AppColors.warningSoft,
           borderRadius: BorderRadius.circular(AppRadius.pill),
           border: Border.all(
             color: AppColors.warning.withValues(alpha: 0.35),
@@ -954,9 +924,7 @@ class _PureStatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.success.withValues(alpha: 0.14)
-            : AppColors.successSoft,
+        color: isDark ? AppColors.success.withValues(alpha: 0.14) : AppColors.successSoft,
         borderRadius: BorderRadius.circular(AppRadius.pill),
         border: Border.all(
           color: AppColors.success.withValues(alpha: 0.25),

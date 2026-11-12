@@ -215,7 +215,7 @@ class _PurchaseTableRowState extends ConsumerState<_PurchaseTableRow> {
           onExit: (_) => setState(() => _isHovered = false),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 100),
-            height: 38,
+            height: MediaQuery.textScalerOf(context).scale(38).clamp(38, 58).toDouble(),
             color: rowBg,
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
             child: Row(

@@ -135,9 +135,11 @@ class PurchaseSummaryCard extends ConsumerWidget {
                     ),
                   ],
                 ),
+                const SizedBox(width: AppSpacing.md),
                 Flexible(
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
                     child: Figure(Money.inr(netAmount, symbol: false),
                         prefix: '₹', size: 30, weight: FontWeight.w400, color: AppColors.cream),
                   ),

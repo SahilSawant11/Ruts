@@ -6,13 +6,12 @@ import '../widgets/dashboard_hero.dart';
 import '../widgets/recent_transactions_card.dart';
 import '../widgets/sales_purchase_line_card.dart';
 import '../widgets/top_categories_card.dart';
-import '../widgets/today_card.dart';
 import '../widgets/top_selling_products_card.dart';
 import '../widgets/transaction_activity_heatmap_card.dart';
 
 /// Dashboard in the flat card system:
 ///  - Gold field: period sales (big figure) + purchases / returns / low stock / products
-///  - Sales & Purchase line chart on ink + "Today so far" gradient card
+///  - Sales & Purchase line chart on ink, full width
 ///  - Top categories + top selling products
 ///  - Recent transactions
 ///  - Yearly activity heatmap
@@ -34,7 +33,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Chart + Today card share a height that grows with the Text size setting.
+    // Chart height grows with the Text size setting.
     final rowHeight = 300 + 120 * MediaQuery.textScalerOf(context).scale(1);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -45,18 +44,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           const DashboardHero(),
           const SizedBox(height: AppSpacing.lg),
 
-          // 2. Sales & Purchase line chart (ink) + Today so far (gradient)
-          SizedBox(
-            height: rowHeight,
-            child: const Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(flex: 8, child: SalesPurchaseLineCard()),
-                SizedBox(width: AppSpacing.lg),
-                Expanded(flex: 4, child: TodayCard()),
-              ],
-            ),
-          ),
+          // 2. Sales & Purchase line chart (ink)
+          SizedBox(height: rowHeight, child: const SalesPurchaseLineCard()),
           const SizedBox(height: AppSpacing.lg),
 
           // 3. Top categories + top selling products

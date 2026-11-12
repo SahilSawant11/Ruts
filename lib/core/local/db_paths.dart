@@ -27,7 +27,10 @@ abstract final class DbPaths {
 
   static Future<Directory> root() async {
     final base = _rootOverride ?? await getApplicationSupportDirectory();
-    return _ensure(Directory(_join(base.path, 'caskly')));
+    // Debug builds keep their own folder so demo data can never reach the
+    // database a release build uses on the same machine.
+    final folder = kDebugMode && _rootOverride == null ? 'caskly-dev' : 'caskly';
+    return _ensure(Directory(_join(base.path, folder)));
   }
 
   static Future<Directory> dataDir() async => _ensure(Directory(_join((await root()).path, 'data')));

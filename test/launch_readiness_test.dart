@@ -92,6 +92,35 @@ void main() {
     });
   });
 
+  group('Demo data purge', () {
+    test('removes demo bills, items and suppliers; keeps real data', () async {
+      await env.db.ensureStarterData(includeDemoData: true);
+      expect(await env.db.select(env.db.cachedSalesBills).get(), isNotEmpty);
+      await env.addMaterial('REAL', stock: 3);
+
+      final removed = await env.db.purgeDemoData();
+      expect(removed, greaterThan(0));
+      expect(await env.db.select(env.db.cachedSalesBills).get(), isEmpty);
+      expect(await env.db.select(env.db.cachedSaleLineItems).get(), isEmpty);
+      expect(await env.db.select(env.db.cachedSuppliers).get(), isEmpty);
+      expect((await env.db.select(env.db.cachedMaterials).get()).map((m) => m.id), ['REAL']);
+      expect((await env.db.select(env.db.cachedInventoryStocks).get()).map((s) => s.materialId), ['REAL']);
+      expect(await env.stockOf('REAL'), 3);
+      expect(await env.db.select(env.db.cachedCategories).get(), isNotEmpty,
+          reason: 'lookup lists are not demo data');
+
+      expect(await env.db.purgeDemoData(), 0, reason: 'runs once');
+    });
+
+    test('keeps a demo item that a real sale used', () async {
+      await env.db.ensureStarterData(includeDemoData: true);
+      await env.sales.createSale(TestEnv.sale({'SKU-1001': 1}));
+      await env.db.purgeDemoData();
+      expect((await env.db.select(env.db.cachedMaterials).get()).map((m) => m.id), contains('SKU-1001'));
+      expect(await env.db.select(env.db.cachedSalesBills).get(), hasLength(1));
+    });
+  });
+
   group('Auth', () {
     late AuthRepository auth;
     setUp(() async {

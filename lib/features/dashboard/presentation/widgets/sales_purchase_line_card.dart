@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -341,7 +340,7 @@ class _LinePainter extends CustomPainter {
       );
     }
 
-    // Sales: soft fill, then the gradient stroke on top.
+    // Sales: flat tinted fill, then a solid gold stroke on top.
     final line = _smooth(salesPts);
     final fill = Path.from(line)
       ..lineTo(salesPts.last.dx, plot.bottom)
@@ -349,12 +348,7 @@ class _LinePainter extends CustomPainter {
       ..close();
     canvas.drawPath(
       fill,
-      Paint()
-        ..shader = ui.Gradient.linear(
-          Offset(0, plot.top),
-          Offset(0, plot.bottom),
-          [AppColors.primary.withValues(alpha: 0.28), AppColors.primary.withValues(alpha: 0.0)],
-        ),
+      Paint()..color = AppColors.primary.withValues(alpha: 0.12),
     );
     canvas.drawPath(
       line,
@@ -363,12 +357,7 @@ class _LinePainter extends CustomPainter {
         ..strokeWidth = 2.6
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round
-        ..shader = ui.Gradient.linear(
-          Offset(plot.left, 0),
-          Offset(plot.right, 0),
-          const [Color(0xFFC2550A), AppColors.primary, Color(0xFFF8D88E)],
-          const [0.0, 0.6, 1.0],
-        ),
+        ..color = AppColors.primary,
     );
 
     // Markers: dashed drop line + dot at the peak and the latest point.

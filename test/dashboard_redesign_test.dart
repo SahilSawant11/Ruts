@@ -9,7 +9,6 @@ import 'package:pos_app/features/dashboard/presentation/widgets/dashboard_hero.d
 import 'package:pos_app/features/inventory/data/inventory_providers.dart';
 import 'package:pos_app/features/dashboard/presentation/widgets/top_categories_card.dart';
 import 'package:pos_app/features/dashboard/presentation/widgets/sales_purchase_line_card.dart';
-import 'package:pos_app/features/dashboard/presentation/widgets/today_card.dart';
 import 'package:pos_app/features/dashboard/presentation/widgets/top_selling_products_card.dart';
 import 'package:pos_app/features/dashboard/presentation/widgets/recent_transactions_card.dart';
 
@@ -360,38 +359,4 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
-
-  group('TodayCard', () {
-    test('busiest slot names the 2-hour window with the most sales', () {
-      const slots = [
-        MonthlyComparisonPointDto(month: '11 AM', salesAmount: 500, purchaseAmount: 0),
-        MonthlyComparisonPointDto(month: '7 PM', salesAmount: 9000, purchaseAmount: 0),
-        MonthlyComparisonPointDto(month: '9 PM', salesAmount: 4000, purchaseAmount: 0),
-      ];
-      expect(TodayCard.busiestSlot(slots), '7 PM – 9 PM');
-      expect(TodayCard.busiestSlot(const [MonthlyComparisonPointDto(month: '11 AM', salesAmount: 1, purchaseAmount: 0)]),
-          '11 AM – 1 PM');
-      // Open-ended first / last slots.
-      const day = [
-        MonthlyComparisonPointDto(month: '9 AM', salesAmount: 0, purchaseAmount: 0),
-        MonthlyComparisonPointDto(month: '11 AM', salesAmount: 0, purchaseAmount: 0),
-        MonthlyComparisonPointDto(month: '9 PM', salesAmount: 0, purchaseAmount: 0),
-      ];
-      List<MonthlyComparisonPointDto> peakAt(int i) => [
-            for (var k = 0; k < day.length; k++)
-              MonthlyComparisonPointDto(month: day[k].month, salesAmount: k == i ? 10 : 1, purchaseAmount: 0),
-          ];
-      expect(TodayCard.busiestSlot(peakAt(0)), 'Until 11 AM');
-      expect(TodayCard.busiestSlot(peakAt(2)), 'After 9 PM');
-      expect(TodayCard.busiestSlot(const [MonthlyComparisonPointDto(month: '9 AM', salesAmount: 0, purchaseAmount: 0)]),
-          isNull);
-    });
-
-    test("yesterday is the full previous day from the 7-day series", () {
-      final week = [
-        for (var i = 0; i < 7; i++) MonthlyComparisonPointDto(month: 'D$i', salesAmount: 1000.0 * i, purchaseAmount: 0),
-      ];
-      expect(TodayCard.yesterdayLabel(week), '₹5,000');
-    });
-  });
 }

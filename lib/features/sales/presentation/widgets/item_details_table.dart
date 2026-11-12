@@ -249,7 +249,9 @@ class _TableRowState extends ConsumerState<_TableRow> {
           onEnter: (_) => setState(() => _isHovered = true),
           onExit: (_) => setState(() => _isHovered = false),
           child: Container(
-            height: 36,
+            // 36px at normal text size; grows with the Text size setting so
+            // the two-line compact cell never clips.
+            height: MediaQuery.textScalerOf(context).scale(36).clamp(36, 56).toDouble(),
             margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
             decoration: BoxDecoration(

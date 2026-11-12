@@ -227,13 +227,17 @@ class _BillDetailsCardState extends ConsumerState<BillDetailsCard> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          formState.payMode.toUpperCase(),
-                          style: TextStyle(
-                            color: AppColors.primaryInk,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 10.5,
-                            fontFamily: AppTypography.mono.fontFamily,
+                        Flexible(
+                          child: Text(
+                            formState.payMode.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: AppColors.primaryInk,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 10.5,
+                              fontFamily: AppTypography.mono.fontFamily,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 4),
@@ -277,9 +281,7 @@ class _BillDetailsCardState extends ConsumerState<BillDetailsCard> {
                       const SizedBox(width: 4),
                       Text(
                         hasShippingInfo
-                            ? (formState.tpNo != null && formState.tpNo!.isNotEmpty
-                                ? formState.tpNo!
-                                : 'Configured')
+                            ? (formState.tpNo != null && formState.tpNo!.isNotEmpty ? formState.tpNo! : 'Configured')
                             : 'Add TP/ST',
                         style: TextStyle(
                           fontSize: 11,
