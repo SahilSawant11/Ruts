@@ -205,8 +205,23 @@ class LocalDashboardRepository {
     final salesByHour = {for (final r in hourRows) r.read<int>('h'): r.read<double>('amount')};
     final todayPurchases = purchasesByDay[key(today)] ?? 0;
     final dailyComparison = <MonthlyComparisonPointDto>[];
+    // Two-hour slots from 9 AM; the first also takes anything before 9 AM
+    // and the last anything after 11 PM, so no bill of the day is dropped.
+    double slotSales(int hour) {
+      var total = 0.0;
+      salesByHour.forEach((h, v) {
+        final inSlot = switch (hour) {
+          9 => h <= 10,
+          21 => h >= 21,
+          _ => h == hour || h == hour + 1,
+        };
+        if (inSlot) total += v;
+      });
+      return total;
+    }
+
     for (final hour in const [9, 11, 13, 15, 17, 19, 21]) {
-      final sales = (salesByHour[hour] ?? 0) + (salesByHour[hour + 1] ?? 0);
+      final sales = slotSales(hour);
       final label = '${hour > 12 ? hour - 12 : hour} ${hour >= 12 ? 'PM' : 'AM'}';
       // Purchases are dated by day only, so today's total sits in the first bucket.
       dailyComparison.add(MonthlyComparisonPointDto(

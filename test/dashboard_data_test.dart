@@ -64,4 +64,21 @@ void main() {
     final summary = await dash.getSummary();
     expect(summary.lowStockCount, 1);
   });
+
+  test('hourly slots keep early-morning and late-night bills (no bill of the day dropped)', () async {
+    final now = DateTime.now();
+    final early = await env.sales.createSale(TestEnv.sale({'A': 1})); // 100 at 7 AM
+    await backdate(early.id, DateTime(now.year, now.month, now.day, 7));
+    final late = await env.sales.createSale(TestEnv.sale({'A': 2})); // 200 at 11:30 PM
+    await backdate(late.id, DateTime(now.year, now.month, now.day, 23, 30));
+    final mid = await env.sales.createSale(TestEnv.sale({'A': 4})); // 400 at 2 PM
+    await backdate(mid.id, DateTime(now.year, now.month, now.day, 14));
+
+    final slots = (await dash.getSummary()).dailyComparison;
+    expect(slots.first.month, '9 AM');
+    expect(slots.first.salesAmount, 100);
+    expect(slots.last.month, '9 PM');
+    expect(slots.last.salesAmount, 200);
+    expect(slots.fold<double>(0, (t, p) => t + p.salesAmount), 700, reason: 'every bill of the day is counted');
+  });
 }

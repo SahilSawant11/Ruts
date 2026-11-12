@@ -52,96 +52,104 @@ class _SalesPurchaseLineCardState extends ConsumerState<SalesPurchaseLineCard> {
     final summary = ref.watch(dashboardSummaryProvider);
     final muted = AppColors.cream.withValues(alpha: 0.55);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.ink,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: const Color(0xFF2C2933)),
-      ),
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: summary.when(
-        loading: () => const SizedBox(height: 330, child: Center(child: CircularProgressIndicator(strokeWidth: 2))),
-        error: (e, _) => SizedBox(
-          height: 330,
-          child: Center(child: Text('Could not load chart data', style: AppTypography.body.copyWith(color: muted))),
+    return LayoutBuilder(builder: (context, constraints) {
+      final bounded = constraints.hasBoundedHeight;
+      return Container(
+        decoration: BoxDecoration(
+          color: AppColors.ink,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: const Color(0xFF2C2933)),
         ),
-        data: (s) {
-          final points = pointsFor(s, _range);
-          // Purchases carry a date but no time, so an hourly purchase line
-          // would be a fake spike; on 1D they are shown as a total only.
-          final showPurchaseLine = _range != SalesRange.day;
-          final sales = points.fold<double>(0, (t, p) => t + p.salesAmount);
-          final purchases = points.fold<double>(0, (t, p) => t + p.purchaseAmount);
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: summary.when(
+          loading: () => const SizedBox(height: 330, child: Center(child: CircularProgressIndicator(strokeWidth: 2))),
+          error: (e, _) => SizedBox(
+            height: 330,
+            child: Center(child: Text('Could not load chart data', style: AppTypography.body.copyWith(color: muted))),
+          ),
+          data: (s) {
+            final points = pointsFor(s, _range);
+            // Purchases carry a date but no time, so an hourly purchase line
+            // would be a fake spike; on 1D they are shown as a total only.
+            final showPurchaseLine = _range != SalesRange.day;
+            final sales = points.fold<double>(0, (t, p) => t + p.salesAmount);
+            final purchases = points.fold<double>(0, (t, p) => t + p.purchaseAmount);
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Sales & Purchase',
-                            style: AppTypography.sectionTitle
-                                .copyWith(color: AppColors.cream, fontWeight: FontWeight.w700, fontSize: 17)),
-                        const SizedBox(height: 2),
-                        Text(_range.description, style: AppTypography.caption.copyWith(color: muted)),
-                      ],
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Sales & Purchase',
+                              style: AppTypography.sectionTitle
+                                  .copyWith(color: AppColors.cream, fontWeight: FontWeight.w700, fontSize: 17)),
+                          const SizedBox(height: 2),
+                          Text(_range.description, style: AppTypography.caption.copyWith(color: muted)),
+                        ],
+                      ),
                     ),
-                  ),
-                  PillTabs<SalesRange>(
-                    values: SalesRange.values,
-                    selected: _range,
-                    label: (r) => r.label,
-                    onSelected: (r) => setState(() {
-                      _range = r;
-                      _hover = null;
-                    }),
-                    onInk: true,
-                    dense: true,
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Wrap(
-                spacing: AppSpacing.xl,
-                runSpacing: AppSpacing.sm,
-                children: [
-                  _Total(label: 'Sales', value: sales, dot: _gold),
-                  _Total(label: 'Purchases', value: purchases, dot: _purchase),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.md),
-              SizedBox(
-                height: 210,
-                child: points.isEmpty
-                    ? Center(child: Text('No data yet', style: AppTypography.body.copyWith(color: muted)))
-                    : LayoutBuilder(builder: (context, c) {
-                        final chart = _ChartGeometry(points, c.biggest, showPurchases: showPurchaseLine);
-                        return MouseRegion(
-                          onHover: (e) => setState(() => _hover = chart.nearestIndex(e.localPosition.dx)),
-                          onExit: (_) => setState(() => _hover = null),
-                          child: Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              CustomPaint(
-                                size: c.biggest,
-                                painter: _LinePainter(chart, hover: _hover, labelStyle: _axisStyle(context)),
-                              ),
-                              ..._callouts(chart),
-                              if (_hover != null) _tooltip(chart, _hover!, showPurchaseLine),
-                            ],
-                          ),
-                        );
+                    PillTabs<SalesRange>(
+                      values: SalesRange.values,
+                      selected: _range,
+                      label: (r) => r.label,
+                      onSelected: (r) => setState(() {
+                        _range = r;
+                        _hover = null;
                       }),
-              ),
-            ],
-          );
-        },
-      ),
-    );
+                      onInk: true,
+                      dense: true,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Wrap(
+                  spacing: AppSpacing.xl,
+                  runSpacing: AppSpacing.sm,
+                  children: [
+                    _Total(label: 'Sales', value: sales, dot: _gold),
+                    _Total(label: 'Purchases', value: purchases, dot: _purchase),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                // Fills the card when the dashboard gives it a height (to line
+                // up with the card beside it); 210px tall otherwise.
+                Flexible(
+                  flex: bounded ? 1 : 0,
+                  child: SizedBox(
+                    height: bounded ? null : 210,
+                    child: points.isEmpty
+                        ? Center(child: Text('No data yet', style: AppTypography.body.copyWith(color: muted)))
+                        : LayoutBuilder(builder: (context, c) {
+                            final chart = _ChartGeometry(points, c.biggest, showPurchases: showPurchaseLine);
+                            return MouseRegion(
+                              onHover: (e) => setState(() => _hover = chart.nearestIndex(e.localPosition.dx)),
+                              onExit: (_) => setState(() => _hover = null),
+                              child: Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  CustomPaint(
+                                    size: c.biggest,
+                                    painter: _LinePainter(chart, hover: _hover, labelStyle: _axisStyle(context)),
+                                  ),
+                                  ..._callouts(chart),
+                                  if (_hover != null) _tooltip(chart, _hover!, showPurchaseLine),
+                                ],
+                              ),
+                            );
+                          }),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      );
+    });
   }
 
   TextStyle _axisStyle(BuildContext context) =>
