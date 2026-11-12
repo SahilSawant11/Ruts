@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pos_app/core/local/app_database.dart';
 import 'package:pos_app/features/masters/data/local_masters_repository.dart';
 import 'package:pos_app/features/masters/data/masters_providers.dart';
+import 'package:pos_app/features/masters/presentation/screens/all_masters_screen.dart';
 import 'package:pos_app/features/masters/presentation/widgets/categories_table.dart';
 import 'package:pos_app/features/purchase/data/models/create_purchase_request.dart';
 
@@ -136,4 +137,32 @@ void main() {
     expect(left!.map((c) => c.name), ['Whisky']);
     expect(find.text('1 selected'), findsOneWidget);
   });
+
+  // The masters hub tiles have a fixed height; they must fit every
+  // text-size preset.
+  for (final scale in const [0.90, 1.00, 1.12, 1.25, 1.35]) {
+    testWidgets('masters hub has no overflow at text size ${(scale * 100).round()}%', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1093, 614));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          suppliersListProvider.overrideWith((ref) async => []),
+          materialsListProvider.overrideWith((ref) async => []),
+          categoriesListProvider.overrideWith((ref) async => []),
+          manufacturersListProvider.overrideWith((ref) async => []),
+          packingsListProvider.overrideWith((ref) async => []),
+          licenseHoldersListProvider.overrideWith((ref) async => []),
+        ],
+        child: MaterialApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)),
+            child: child!,
+          ),
+          home: const Scaffold(body: AllMastersScreen()),
+        ),
+      ));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+  }
 }

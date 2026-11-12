@@ -33,20 +33,24 @@ class DashboardHero extends ConsumerWidget {
       radius: AppRadius.xl,
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: LayoutBuilder(builder: (context, c) {
+        // Height grows with the Text size setting: a fixed part (padding,
+        // icons, gaps) plus a part for text that scales with it.
+        final textScale = MediaQuery.textScalerOf(context).scale(1);
+        final height = 120 + 212 * textScale;
         final left = _SalesBlock(period: period, snapshot: snapshot);
         final right = _FactGrid(snapshot: snapshot, summary: summary, lowStock: lowStock);
         if (c.maxWidth < 900) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              SizedBox(height: 300, child: left),
+              SizedBox(height: height, child: left),
               const SizedBox(height: AppSpacing.lg),
-              SizedBox(height: 300, child: right)
+              SizedBox(height: height, child: right)
             ],
           );
         }
         return SizedBox(
-          height: 318,
+          height: height,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

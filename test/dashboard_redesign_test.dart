@@ -321,4 +321,32 @@ void main() {
       expect(find.byType(RecentTransactionsCard), findsOneWidget);
     });
   });
+
+  // Regression: the hero had a fixed 318px height and overflowed at
+  // 100% (by 1px) and at larger text sizes. Every text-size preset at the
+  // smallest supported window must lay out cleanly.
+  for (final scale in const [0.90, 1.00, 1.12, 1.25, 1.35]) {
+    testWidgets('DashboardScreen has no overflow at text size ${(scale * 100).round()}%', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1093, 614)); // 1366x768 @125%
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            dashboardSummaryProvider.overrideWith((ref) async => mockSummary),
+            dashboardSnapshotProvider.overrideWith((ref) async => mockSnapshot),
+            inventoryLowStockCountProvider.overrideWith((ref) async => 6),
+          ],
+          child: MaterialApp(
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)),
+              child: child!,
+            ),
+            home: const Scaffold(body: DashboardScreen()),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+  }
 }
