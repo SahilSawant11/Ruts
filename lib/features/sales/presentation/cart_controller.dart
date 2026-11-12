@@ -81,6 +81,15 @@ class CartController extends StateNotifier<CartState> {
       return false;
     }
 
+    // Products added from a brandwise report start without an MRP; never
+    // bill them at ₹0.
+    if (material.saleRate <= 0) {
+      state = state.copyWith(
+        scanError: '"${material.name}" has no MRP yet. Set its price in Masters → Materials first.',
+      );
+      return false;
+    }
+
     // Check inventory stock availability — do not allow selling items not present in inventory.
     final availableStock = material.stockQty;
     if (availableStock <= 0) {

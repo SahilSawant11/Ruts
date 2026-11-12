@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:path_provider/path_provider.dart';
 
 import 'models/brandwise_report_dto.dart';
@@ -13,7 +14,7 @@ class BrandwiseExcelExporter {
 
     final fileName = 'brandwise_stock_report_${_dateStamp(report.reportDate)}.xls';
     final file = File('${outputDir.path}${Platform.pathSeparator}$fileName');
-    await file.writeAsString(_buildWorkbook(report));
+    await file.writeAsString(buildWorkbook(report));
     return file;
   }
 
@@ -37,7 +38,8 @@ class BrandwiseExcelExporter {
 
   static const _totalColumns = 31;
 
-  String _buildWorkbook(BrandwiseReportDto report) {
+  @visibleForTesting
+  String buildWorkbook(BrandwiseReportDto report) {
     final buf = StringBuffer()
       ..writeln('<?xml version="1.0"?>')
       ..writeln('<?mso-application progid="Excel.Sheet"?>')

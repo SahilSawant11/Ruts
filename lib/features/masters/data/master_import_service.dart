@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:excel_community/excel_community.dart';
 import 'package:file_selector/file_selector.dart';
+import 'package:xml/xml.dart';
 
 import '../../../core/network/api_exception.dart';
 import 'local_masters_repository.dart';
@@ -316,6 +317,17 @@ class MasterImportService {
     if (extension == 'csv') {
       return _parseCsv(utf8.decode(bytes));
     }
+    // "XML Spreadsheet 2003" — what Caskly's own report exports (.xls).
+    final head = utf8.decode(bytes.take(512).toList(), allowMalformed: true).trimLeft();
+    if (head.startsWith('<?xml') || head.startsWith('<Workbook')) {
+      return readSpreadsheetMl(utf8.decode(bytes, allowMalformed: true));
+    }
+    // Old binary .xls (Excel 97–2003) can't be read directly.
+    if (bytes.length > 4 && bytes[0] == 0xD0 && bytes[1] == 0xCF && bytes[2] == 0x11 && bytes[3] == 0xE0) {
+      throw const FormatException(
+          'This is an old-style Excel file (.xls). Open it in Excel, choose File → Save As → '
+          'Excel Workbook (.xlsx), and import that copy.');
+    }
 
     final workbook = Excel.decodeBytes(bytes);
     for (final table in workbook.tables.values) {
@@ -330,6 +342,44 @@ class MasterImportService {
     }
     return const [];
   }
+
+  /// Rows of the first worksheet of an XML Spreadsheet 2003 file. Honors
+  /// `ss:Index` (absolute column) and `ss:MergeAcross` (merged cells), so
+  /// columns line up exactly as Excel shows them.
+  static List<List<String>> readSpreadsheetMl(String source) {
+    final doc = XmlDocument.parse(source);
+    final sheet = doc.descendants.whereType<XmlElement>().where((e) => e.name.local == 'Worksheet').firstOrNull;
+    if (sheet == null) return const [];
+    final out = <List<String>>[];
+    for (final row in sheet.descendants.whereType<XmlElement>().where((e) => e.name.local == 'Row')) {
+      final rowIndex = _ssAttr(row, 'Index');
+      if (rowIndex != null) {
+        while (out.length < int.parse(rowIndex) - 1) {
+          out.add(<String>[]);
+        }
+      }
+      final cells = <String>[];
+      for (final cell in row.childElements.where((e) => e.name.local == 'Cell')) {
+        final index = _ssAttr(cell, 'Index');
+        if (index != null) {
+          while (cells.length < int.parse(index) - 1) {
+            cells.add('');
+          }
+        }
+        final data = cell.childElements.where((e) => e.name.local == 'Data').firstOrNull;
+        cells.add(data?.innerText.trim() ?? '');
+        final merge = int.tryParse(_ssAttr(cell, 'MergeAcross') ?? '') ?? 0;
+        for (var i = 0; i < merge; i++) {
+          cells.add('');
+        }
+      }
+      out.add(cells);
+    }
+    return out;
+  }
+
+  static String? _ssAttr(XmlElement e, String name) =>
+      e.attributes.where((a) => a.name.local == name).firstOrNull?.value;
 
   List<List<String>> _parseCsv(String raw) {
     final lines = const LineSplitter().convert(raw).where((line) => line.trim().isNotEmpty).toList();

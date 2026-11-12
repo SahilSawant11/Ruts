@@ -20,6 +20,7 @@ dependencies:
   sqlite3_flutter_libs: ^0.6.0+eol
   file_selector: ^1.1.0
   excel_community: ^2.1.7
+  xml: ^7.0.1
   path_provider: ^2.1.6
   phosphoricons_flutter: ^1.1.1
   flutter_svg: ^2.3.0

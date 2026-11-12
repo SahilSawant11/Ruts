@@ -231,6 +231,11 @@ class _WizardState extends ConsumerState<_Wizard> {
     if (picked != null) setState(() => _asOf = picked);
   }
 
+  /// Products that will have stock but no price after setup.
+  int get _unpriced =>
+      _materials.where((m) => m.saleRate <= 0 && (_qty[m.id] ?? 0) > 0).length +
+      _newProducts.where((p) => p.saleRate <= 0).length;
+
   bool get _canContinue => switch (_step) {
         _Step.date => true,
         _Step.products => true,
@@ -411,8 +416,8 @@ class _WizardState extends ConsumerState<_Wizard> {
           context,
           count == 0 ? 'Add your products' : 'Your products',
           count == 0
-              ? 'Import your brand list from Excel (SCM code, name, category, size, MRP). If your closing stock sheet '
-                  'already has those columns, you can skip this — products are added from it in the next step.'
+              ? 'Uploading your Brandwise Stock Report in the next step? Skip this — every brand and size in it is '
+                  'added for you. Or import a product list from Excel (SCM code, name, category, size, MRP).'
               : 'These are the products Caskly knows about. Import more if anything is missing; '
                   'your closing stock sheet can also add products it finds.',
         ),
@@ -450,12 +455,12 @@ class _WizardState extends ConsumerState<_Wizard> {
         _heading(
             context,
             'Enter closing stock',
-            'Import the closing stock report from your old software, or type the bottles on hand for each product. '
-                'Products you leave at 0 start with no stock.'),
+            'Upload the Brandwise Stock Report from your old software — the closing balance becomes your stock, '
+                'and its brands, sizes and categories become your products. Or type the bottles on hand.'),
         Row(
           children: [
             PrimaryButton(
-              label: _busy ? 'Reading…' : 'Import closing stock',
+              label: _busy ? 'Reading…' : 'Upload brandwise report',
               icon: AppIcons.uploadFile,
               onPressed: _busy ? null : _importStock,
             ),
@@ -495,7 +500,7 @@ class _WizardState extends ConsumerState<_Wizard> {
                       ? Center(
                           child: Text(
                               _materials.isEmpty
-                                  ? 'No products yet. Import your closing stock sheet to add them.'
+                                  ? 'No products yet. Upload your brandwise stock report to add them.'
                                   : 'No product matches "$_search".',
                               style: AppTypography.bodyMuted))
                       : ListView.builder(
@@ -556,6 +561,13 @@ class _WizardState extends ConsumerState<_Wizard> {
             _Panel(
               child: Column(children: [for (final c in cats) _ReviewLine(c.key, Money.group(c.value, decimals: 0))]),
             ),
+          ],
+          if (_unpriced > 0) ...[
+            const SizedBox(height: 16),
+            Text(
+                '$_unpriced product${_unpriced == 1 ? ' has' : 's have'} no MRP yet (the brandwise report doesn\'t '
+                'carry prices). Set them in Masters → Materials — they can\'t be billed until then.',
+                style: AppTypography.body.copyWith(color: AppColors.warning)),
           ],
           if (_bottles == 0) ...[
             const SizedBox(height: 16),

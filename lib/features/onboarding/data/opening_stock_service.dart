@@ -8,6 +8,7 @@ import '../../masters/data/local_masters_repository.dart';
 import '../../masters/data/master_import_service.dart';
 import '../../masters/data/models/save_material_request.dart';
 import '../../sales/data/models/material_dto.dart';
+import 'brandwise_stock_parser.dart';
 
 /// One data row of a closing-stock sheet exported from the store's old
 /// software (or typed up by hand).
@@ -115,8 +116,17 @@ class OpeningStockService {
 
   /// Parses rows (header first). Needs a quantity column and a code or
   /// name column; everything else is optional.
+  /// A brandwise stock register (brand rows × size columns) is detected
+  /// and read first; otherwise the sheet is one row per product.
   static List<ClosingStockRow> parseRows(List<List<String>> rows, {List<String>? problems}) {
     if (rows.length < 2) throw const FormatException('The file has no data rows.');
+    final brandwise = BrandwiseStockParser.tryParse(rows, problems: problems);
+    if (brandwise != null) {
+      if (brandwise.isEmpty) {
+        throw const FormatException('This brandwise report has no brands with stock in it.');
+      }
+      return brandwise;
+    }
     final header = <String, int>{};
     for (var i = 0; i < rows.first.length; i++) {
       final key = _norm(rows.first[i]);
