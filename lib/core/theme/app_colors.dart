@@ -68,6 +68,20 @@ class AppColors {
   /// that also contain [primary].
   static const Color chartRose = Color(0xFFE96560);
 
+  // Brand ink & cream (the martini mark's two tones). Used for the flat
+  // card system: gold field, ink cards, cream cards.
+  static const Color ink = Color(0xFF141218);
+  static const Color inkSoft = Color(0xFF221F27);
+  static const Color cream = Color(0xFFF3EFE6);
+  static const Color creamDeep = Color(0xFFE9E2D3);
+
+  /// The toned-down gold field behind hero sections: pale wheat in light,
+  /// deep warm brown in dark. Solid [primary] stays for small accents.
+  static Color goldFieldFor(BuildContext context) =>
+      isDark(context) ? const Color(0xFF2A2318) : const Color(0xFFF9E8C2);
+
+  static Color creamFor(BuildContext context) => isDark(context) ? const Color(0xFF1E1C22) : cream;
+
   // Highlight for totals
   static const Color totalDark = Color(0xFF15151F);
 
@@ -129,26 +143,9 @@ class AppColors {
       ? Colors.white.withValues(alpha: 0.07)
       : Colors.white.withValues(alpha: 0.98);
 
-  static List<BoxShadow> cardShadowFor(BuildContext context) => isDark(context)
-      ? [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.30),
-            blurRadius: 6,
-            offset: const Offset(0, 4),
-          ),
-        ]
-      : [
-          const BoxShadow(
-            color: Color(0x220F172A),
-            blurRadius: 8,
-            offset: Offset(0, 4),
-          ),
-          BoxShadow(
-            color: Colors.white.withValues(alpha: 0.50),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
-        ];
+  /// Cards are flat: separation comes from colour and a hairline border,
+  /// not shadows.
+  static List<BoxShadow> cardShadowFor(BuildContext context) => const [];
 
   static List<BoxShadow> buttonShadowFor(BuildContext context, Color color) =>
       isDark(context)

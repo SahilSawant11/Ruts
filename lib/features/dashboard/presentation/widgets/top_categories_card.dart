@@ -3,99 +3,84 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/format/money.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../shared/widgets/data/figure.dart';
+import '../../../../shared/widgets/layout/app_card.dart';
 import '../../data/dashboard_providers.dart';
 
-/// Top categories for the selected dashboard period, ranked by sales, with
-/// each category's share of total sales in that period.
+/// Top categories for the selected dashboard period as rounded bar blocks:
+/// value above, category pill below. The leader is ink, the rest gold tones.
 class TopCategoriesCard extends ConsumerWidget {
   const TopCategoriesCard({super.key});
 
-  static const _barColors = [
-    Color(0xFF2EBD85),
-    AppColors.primary,
-    AppColors.chartIndigo,
-    Color(0xFF4A9FF5),
-    Color(0xFFE96560),
-  ];
+  static const double _chartHeight = 236;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDark = AppColors.isDark(context);
     final snapshot = ref.watch(dashboardSnapshotProvider);
     final period = ref.watch(dashboardPeriodProvider);
+    final dark = AppColors.isDark(context);
+    final fills = [
+      dark ? AppColors.cream : AppColors.ink,
+      AppColors.primary,
+      AppColors.primary.withValues(alpha: 0.6),
+      AppColors.primary.withValues(alpha: 0.35),
+      AppColors.primary.withValues(alpha: 0.2),
+    ];
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.backgroundFor(context),
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.borderFor(context)),
-        boxShadow: AppColors.cardShadowFor(context),
-      ),
-      padding: const EdgeInsets.all(AppSpacing.md),
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2EBD85).withValues(alpha: isDark ? 0.20 : 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                alignment: Alignment.center,
-                child: const AppIcon(AppIcons.categories, size: 16, color: Color(0xFF2EBD85)),
-              ),
-              const SizedBox(width: 10),
               Expanded(
-                child: Text(
-                  'Top Categories',
-                  style: AppTypography.sectionTitle.copyWith(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
-                    color: AppColors.textPrimaryFor(context),
-                  ),
-                ),
+                child: Text('Top Categories',
+                    style: AppTypography.sectionTitle
+                        .copyWith(fontWeight: FontWeight.w700, fontSize: 17, color: AppColors.textPrimaryFor(context))),
               ),
               Text(period.label, style: AppTypography.caption.copyWith(color: AppColors.textMutedFor(context))),
             ],
           ),
-          const SizedBox(height: 14),
-          snapshot.when(
-            loading: () => const SizedBox(height: 120, child: Center(child: CircularProgressIndicator(strokeWidth: 2))),
-            error: (e, _) => SizedBox(height: 120, child: Center(child: Text('Could not load: $e'))),
-            data: (s) {
-              final cats = s.categoryBreakdown;
-              final total = cats.fold<double>(0, (t, c) => t + c.amount);
-              if (cats.isEmpty || total <= 0) {
-                return SizedBox(
-                  height: 120,
-                  child: Center(
-                    child: Text(
-                      'No sales in this period',
-                      style: AppTypography.body.copyWith(color: AppColors.textMutedFor(context)),
-                    ),
-                  ),
-                );
-              }
-              return Column(
-                children: [
-                  for (var i = 0; i < cats.length && i < 5; i++) ...[
-                    if (i > 0) const SizedBox(height: 10),
-                    _CategoryBar(
-                      name: cats[i].category.isEmpty ? 'Uncategorised' : cats[i].category,
-                      amount: cats[i].amount,
-                      share: cats[i].amount / total,
-                      color: _barColors[i % _barColors.length],
-                    ),
+          const SizedBox(height: AppSpacing.md),
+          SizedBox(
+            height: _chartHeight,
+            child: snapshot.when(
+              loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+              error: (e, _) => Center(child: Text('Could not load: $e')),
+              data: (s) {
+                final cats = s.categoryBreakdown.take(5).toList();
+                final total = s.categoryBreakdown.fold<double>(0, (t, c) => t + c.amount);
+                if (cats.isEmpty || total <= 0) {
+                  return Center(
+                    child: Text('No sales in this period',
+                        style: AppTypography.body.copyWith(color: AppColors.textMutedFor(context))),
+                  );
+                }
+                final maxAmount = cats.map((c) => c.amount).reduce((a, b) => a > b ? a : b);
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    for (var i = 0; i < cats.length; i++) ...[
+                      if (i > 0) const SizedBox(width: 10),
+                      Expanded(
+                        child: _BarBlock(
+                          name: cats[i].category.isEmpty ? 'Uncategorised' : cats[i].category,
+                          amount: cats[i].amount,
+                          share: cats[i].amount / total,
+                          height: cats[i].amount / maxAmount,
+                          fill: fills[i],
+                          onFillText: i == 0 ? (dark ? AppColors.ink : AppColors.cream) : AppColors.ink,
+                          leader: i == 0,
+                        ),
+                      ),
+                    ],
                   ],
-                ],
-              );
-            },
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -103,65 +88,78 @@ class TopCategoriesCard extends ConsumerWidget {
   }
 }
 
-class _CategoryBar extends StatelessWidget {
-  const _CategoryBar({required this.name, required this.amount, required this.share, required this.color});
+class _BarBlock extends StatelessWidget {
+  const _BarBlock({
+    required this.name,
+    required this.amount,
+    required this.share,
+    required this.height,
+    required this.fill,
+    required this.onFillText,
+    required this.leader,
+  });
 
   final String name;
   final double amount;
   final double share;
-  final Color color;
+  final double height; // 0–1 relative to the leader
+  final Color fill;
+  final Color onFillText;
+  final bool leader;
 
   @override
   Widget build(BuildContext context) {
     return Tooltip(
       message: '$name · ${Money.inr(amount)} · ${(share * 100).toStringAsFixed(1)}% of sales',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.body.copyWith(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimaryFor(context),
-                  ),
-                ),
+      child: LayoutBuilder(builder: (context, c) {
+        const labelH = 34.0, valueH = 24.0;
+        final barMax = c.maxHeight - labelH - valueH - 8;
+        final barH = (barMax * height).clamp(28.0, barMax);
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            SizedBox(
+              height: valueH,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Figure(Money.compact(amount, symbol: false), prefix: '₹', size: 17,
+                    weight: leader ? FontWeight.w600 : FontWeight.w400),
               ),
-              Text(
-                Money.compact(amount),
-                style: AppTypography.mono.copyWith(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimaryFor(context),
-                ),
-              ),
-              SizedBox(
-                width: 48,
-                child: Text(
-                  '${(share * 100).round()}%',
-                  textAlign: TextAlign.right,
-                  style: AppTypography.mono.copyWith(fontSize: 11, color: AppColors.textMutedFor(context)),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 5),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.pill),
-            child: LinearProgressIndicator(
-              value: share.clamp(0.0, 1.0),
-              minHeight: 6,
-              color: color,
-              backgroundColor: AppColors.surfaceAltFor(context),
             ),
-          ),
-        ],
-      ),
+            Container(
+              height: barH,
+              width: double.infinity,
+              alignment: Alignment.topCenter,
+              padding: const EdgeInsets.only(top: 8),
+              decoration: BoxDecoration(color: fill, borderRadius: BorderRadius.circular(16)),
+              child: barH > 40
+                  ? Text('${(share * 100).round()}%',
+                      style: AppTypography.caption.copyWith(color: onFillText, fontWeight: FontWeight.w700))
+                  : null,
+            ),
+            const SizedBox(height: 8),
+            Container(
+              height: labelH - 4,
+              width: double.infinity,
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              decoration: ShapeDecoration(
+                color: leader ? AppColors.textPrimaryFor(context) : Colors.transparent,
+                shape: StadiumBorder(side: BorderSide(color: leader ? Colors.transparent : AppColors.borderFor(context))),
+              ),
+              child: Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.caption.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: leader ? AppColors.backgroundFor(context) : AppColors.textPrimaryFor(context),
+                ),
+              ),
+            ),
+          ],
+        );
+      }),
     );
   }
 }

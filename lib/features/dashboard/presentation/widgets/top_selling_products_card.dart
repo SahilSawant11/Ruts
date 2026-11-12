@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../../core/format/money.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../data/dashboard_providers.dart';
@@ -21,16 +20,15 @@ class _TopSellingProductsCardState extends ConsumerState<TopSellingProductsCard>
   @override
   Widget build(BuildContext context) {
     final summaryAsync = ref.watch(dashboardSnapshotProvider);
-    final isDark = AppColors.isDark(context);
 
     return Container(
       decoration: BoxDecoration(
         color: AppColors.backgroundFor(context),
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: AppColors.borderFor(context)),
         boxShadow: AppColors.cardShadowFor(context),
       ),
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -40,26 +38,11 @@ class _TopSellingProductsCardState extends ConsumerState<TopSellingProductsCard>
             children: [
               Row(
                 children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFFE96560).withValues(alpha: 0.20) : const Color(0xFFFFECEB),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    alignment: Alignment.center,
-                    child: const AppIcon(
-                      AppIcons.crate,
-                      size: 16,
-                      color: Color(0xFFE96560),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
+                                    Text(
                     'Top Selling Products',
                     style: AppTypography.sectionTitle.copyWith(
                       fontWeight: FontWeight.w700,
-                      fontSize: 16,
+                      fontSize: 17,
                       color: AppColors.textPrimaryFor(context),
                     ),
                   ),

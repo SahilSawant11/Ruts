@@ -93,6 +93,18 @@ class AppTypography {
         height: 1.25,
       );
 
+  /// Big display numbers ("₹1,19,450", "17"): Urbanist, light and wide.
+  /// Falls back to Manrope for glyphs Urbanist lacks (₹).
+  static TextStyle figure({double size = 40, FontWeight weight = FontWeight.w300, Color? color}) =>
+      GoogleFonts.urbanist(
+        fontSize: size,
+        fontWeight: weight,
+        color: color ?? _textPrimary,
+        height: 1.0,
+        letterSpacing: -size * 0.02,
+        fontFeatures: const [FontFeature.tabularFigures()],
+      ).copyWith(fontFamilyFallback: [GoogleFonts.manrope().fontFamily!]);
+
   // Context-aware getters
   static TextStyle h1For(BuildContext context) =>
       h1.copyWith(color: AppColors.textPrimaryFor(context));

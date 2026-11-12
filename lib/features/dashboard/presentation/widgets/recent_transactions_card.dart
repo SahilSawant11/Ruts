@@ -25,11 +25,11 @@ class RecentTransactionsCard extends ConsumerWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.backgroundFor(context),
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: AppColors.borderFor(context)),
         boxShadow: AppColors.cardShadowFor(context),
       ),
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -39,26 +39,11 @@ class RecentTransactionsCard extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: isDark ? AppColors.chartAmber.withValues(alpha: 0.20) : const Color(0xFFFEF3E2),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    alignment: Alignment.center,
-                    child: const AppIcon(
-                      AppIcons.receipt,
-                      size: 16,
-                      color: AppColors.chartAmber,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
+                                    Text(
                     'Recent Transactions',
                     style: AppTypography.sectionTitle.copyWith(
                       fontWeight: FontWeight.w700,
-                      fontSize: 16,
+                      fontSize: 17,
                       color: AppColors.textPrimaryFor(context),
                     ),
                   ),

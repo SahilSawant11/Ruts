@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pos_app/features/dashboard/data/dashboard_providers.dart';
 import 'package:pos_app/features/dashboard/data/models/dashboard_summary_dto.dart';
 import 'package:pos_app/features/dashboard/presentation/screens/dashboard_screen.dart';
-import 'package:pos_app/features/dashboard/presentation/widgets/kpi_row.dart';
-import 'package:pos_app/features/dashboard/presentation/widgets/overall_information_card.dart';
+import 'package:pos_app/features/dashboard/presentation/widgets/dashboard_hero.dart';
+import 'package:pos_app/features/inventory/data/inventory_providers.dart';
 import 'package:pos_app/features/dashboard/presentation/widgets/top_categories_card.dart';
 import 'package:pos_app/features/dashboard/presentation/widgets/sales_purchase_capsule_card.dart';
 import 'package:pos_app/features/dashboard/presentation/widgets/top_selling_products_card.dart';
@@ -131,16 +131,19 @@ void main() {
   });
 
   group('Dashboard Presentation Widgets', () {
-    testWidgets('DashboardKpiRow displays all 4 elevated KPI cards and syncs timeframe uniformly', (tester) async {
+    testWidgets('DashboardHero: period sales figure, comparison, fact cards and one period selector', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1400, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             dashboardSummaryProvider.overrideWith((ref) async => mockSummary),
             dashboardSnapshotProvider.overrideWith((ref) async => mockSnapshot),
+            inventoryLowStockCountProvider.overrideWith((ref) async => 6),
           ],
           child: const MaterialApp(
             home: Scaffold(
-              body: DashboardKpiRow(),
+              body: SingleChildScrollView(child: DashboardHero()),
             ),
           ),
         ),
@@ -151,38 +154,18 @@ void main() {
       expect(find.text('Sales Returns'), findsOneWidget);
       expect(find.text('Purchases'), findsOneWidget);
       expect(find.text('Purchase Returns'), findsOneWidget);
-      // Real comparisons: +18.7% sales (shown rounded); returns had no previous data → "—".
-      expect(find.text('19%'), findsOneWidget);
-      expect(find.text('—'), findsOneWidget);
-      expect(find.text('₹89,000'), findsOneWidget);
+      // Sales figure and its real comparison (+18.7%, shown rounded).
+      expect(find.text('89,000'), findsOneWidget);
+      expect(find.text('↑ 19% vs previous 7 days'), findsOneWidget);
+      // Products / suppliers / low stock facts.
+      expect(find.text('SCM Codes'), findsOneWidget);
+      expect(find.text('75'), findsOneWidget);
+      expect(find.text('18 Suppliers'), findsOneWidget);
+      expect(find.text('Low Stock'), findsOneWidget);
+      expect(find.text('6'), findsOneWidget);
       // One shared period selector.
       expect(find.text('7 days'), findsOneWidget);
       expect(find.text('Today'), findsOneWidget);
-    });
-
-    testWidgets('OverallInformationCard renders Suppliers, SCM Codes, and Low Stock', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            dashboardSummaryProvider.overrideWith((ref) async => mockSummary),
-            dashboardSnapshotProvider.overrideWith((ref) async => mockSnapshot),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: OverallInformationCard(),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('Overall Information'), findsOneWidget);
-      expect(find.text('Suppliers'), findsOneWidget);
-      expect(find.text('SCM Codes'), findsOneWidget);
-      expect(find.text('Low Stock'), findsOneWidget);
-      expect(find.text('18'), findsOneWidget);
-      expect(find.text('75'), findsOneWidget);
-      expect(find.text('6'), findsOneWidget);
     });
 
     testWidgets('TopCategoriesCard renders dynamic categories', (tester) async {
@@ -320,6 +303,7 @@ void main() {
           overrides: [
             dashboardSummaryProvider.overrideWith((ref) async => mockSummary),
             dashboardSnapshotProvider.overrideWith((ref) async => mockSnapshot),
+            inventoryLowStockCountProvider.overrideWith((ref) async => 6),
           ],
           child: const MaterialApp(
             home: Scaffold(
@@ -330,9 +314,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(DashboardKpiRow), findsOneWidget);
+      expect(find.byType(DashboardHero), findsOneWidget);
       expect(find.byType(SalesPurchaseCapsuleCard), findsOneWidget);
-      expect(find.byType(OverallInformationCard), findsOneWidget);
       expect(find.byType(TopCategoriesCard), findsOneWidget);
       expect(find.byType(TopSellingProductsCard), findsOneWidget);
       expect(find.byType(RecentTransactionsCard), findsOneWidget);

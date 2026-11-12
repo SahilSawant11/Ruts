@@ -4,28 +4,57 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 
-/// White, rounded, soft-shadow container. Every panel on the Sale
-/// screen (Invoice Details, Scan / Add Item, Bill Summary, ...) sits
-/// inside one of these.
+/// Card surfaces of the flat card system.
+/// - [plain]: white (dark: surface) with a hairline border — the default.
+/// - [ink]: near-black brand ink, cream text — for charts and emphasis.
+/// - [cream]: warm off-white — secondary groups on a plain canvas.
+/// - [gold]: the toned-down brand field (pale wheat / warm brown).
+enum CardTone { plain, ink, cream, gold }
+
+/// Rounded, flat container. Every panel in the app sits inside one.
 class AppCard extends StatelessWidget {
   const AppCard({
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(AppSpacing.md),
+    this.tone = CardTone.plain,
+    this.radius = AppRadius.lg,
   });
 
   final Widget child;
   final EdgeInsets padding;
+  final CardTone tone;
+  final double radius;
+
+  static Color fillFor(BuildContext context, CardTone tone) => switch (tone) {
+        CardTone.plain => AppColors.backgroundFor(context),
+        CardTone.ink => AppColors.isDark(context) ? AppColors.inkSoft : AppColors.ink,
+        CardTone.cream => AppColors.creamFor(context),
+        CardTone.gold => AppColors.goldFieldFor(context),
+      };
+
+  /// Main text colour on a [tone] surface.
+  static Color onColorFor(BuildContext context, CardTone tone) => switch (tone) {
+        CardTone.plain || CardTone.cream => AppColors.textPrimaryFor(context),
+        CardTone.ink => AppColors.cream,
+        CardTone.gold => AppColors.isDark(context) ? AppColors.cream : AppColors.ink,
+      };
+
+  /// Secondary text colour on a [tone] surface.
+  static Color mutedOnFor(BuildContext context, CardTone tone) => switch (tone) {
+        CardTone.plain || CardTone.cream => AppColors.textSecondaryFor(context),
+        CardTone.ink => AppColors.cream.withValues(alpha: 0.6),
+        CardTone.gold => (AppColors.isDark(context) ? AppColors.cream : AppColors.ink).withValues(alpha: 0.62),
+      };
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: AppColors.backgroundFor(context),
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.borderFor(context)),
-        boxShadow: AppColors.cardShadowFor(context),
+        color: fillFor(context, tone),
+        borderRadius: BorderRadius.circular(radius),
+        border: tone == CardTone.plain ? Border.all(color: AppColors.borderFor(context)) : null,
       ),
       child: child,
     );

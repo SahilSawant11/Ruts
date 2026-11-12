@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../data/dashboard_providers.dart';
 import '../../data/models/dashboard_summary_dto.dart';
@@ -29,22 +30,33 @@ class _SalesPurchaseCapsuleCardState extends ConsumerState<SalesPurchaseCapsuleC
   @override
   Widget build(BuildContext context) {
     final summaryAsync = ref.watch(dashboardSummaryProvider);
-    final isDark = AppColors.isDark(context);
+    // On ink: purchases in cream, sales in brand gold.
+    const purchaseColor = AppColors.cream;
+    const saleColor = AppColors.primary;
 
-    // Color tokens matching screenshot
-    const purchaseColor = AppColors.primary; // brand gold
-    final saleColor = isDark
-        ? const Color(0xFF5A4720) // Dark mode muted gold
-        : const Color(0xFFF8E4B8); // Light mode soft gold
+    // Ink card: render the contents with the dark theme so every
+    // context-aware colour reads correctly on the ink surface.
+    return Theme(
+      data: AppTheme.dark,
+      child: Builder(builder: (context) => _buildCard(context, summaryAsync, purchaseColor, saleColor, true)),
+    );
+  }
 
+  Widget _buildCard(
+    BuildContext context,
+    AsyncValue<DashboardSummaryDto> summaryAsync,
+    Color purchaseColor,
+    Color saleColor,
+    bool isDark,
+  ) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.backgroundFor(context),
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.borderFor(context)),
-        boxShadow: AppColors.cardShadowFor(context),
+        color: AppColors.ink,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        // Hairline edge so the ink card still reads on the dark canvas.
+        border: Border.all(color: const Color(0xFF2C2933)),
       ),
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -54,15 +66,8 @@ class _SalesPurchaseCapsuleCardState extends ConsumerState<SalesPurchaseCapsuleC
               Container(
                 width: 32,
                 height: 32,
-                decoration: BoxDecoration(
-                  color: isDark ? purchaseColor.withValues(alpha: 0.20) : AppColors.primarySoftLight,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const AppIcon(
-                  AppIcons.tag,
-                  size: 16,
-                  color: purchaseColor,
-                ),
+                decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
+                child: const AppIcon(AppIcons.tag, size: 15, color: AppColors.ink),
               ),
               const SizedBox(width: 10),
               Text(
@@ -336,15 +341,9 @@ class _SideBySideCapsuleColumn extends StatelessWidget {
   final bool isDark;
 
   static const double beadWidth = 22.0;
-  static const double beadHeight = 11.0;
 
   @override
   Widget build(BuildContext context) {
-    // 0 value records must have 0 beads so they sit on 0K baseline
-    final purchaseBeads =
-        (purchaseAmount > 0 && maxScale > 0) ? ((purchaseAmount / maxScale) * 10).round().clamp(1, 10) : 0;
-    final saleBeads = (salesAmount > 0 && maxScale > 0) ? ((salesAmount / maxScale) * 10).round().clamp(1, 10) : 0;
-
     return Tooltip(
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E212E) : const Color(0xFF161822),
@@ -411,56 +410,27 @@ class _SideBySideCapsuleColumn extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          // Shrink beads to the slot width (12 monthly slots are narrow at 1366px).
-          LayoutBuilder(builder: (context, constraints) {
-            final beadW = constraints.maxWidth.isFinite
-                ? ((constraints.maxWidth - 4 - 3.5) / 2).clamp(4.0, beadWidth)
-                : beadWidth;
-            return AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 2),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: isHovered
-                    ? [
-                        BoxShadow(
-                          color: purchaseColor.withValues(alpha: 0.25),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
+          // Solid rounded bars at true height (purchase left, sale right).
+          Expanded(
+            child: LayoutBuilder(builder: (context, constraints) {
+              final w = ((constraints.maxWidth - 4 - 3) / 2).clamp(4.0, beadWidth);
+              double h(double v) => (v <= 0 || maxScale <= 0) ? 3 : (v / maxScale * constraints.maxHeight).clamp(4.0, constraints.maxHeight);
+              Widget bar(double v, Color c) => AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    width: w,
+                    height: h(v),
+                    decoration: BoxDecoration(
+                      color: v <= 0 ? c.withValues(alpha: 0.25) : c,
+                      borderRadius: BorderRadius.circular(w / 2.4),
+                    ),
+                  );
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  // Left Column: Total Purchase (Purple beads)
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: purchaseBeads > 0
-                        ? List.generate(
-                            purchaseBeads,
-                            (_) => _bead(purchaseColor, beadW),
-                          )
-                        : [_emptyBase(purchaseColor, beadW)],
-                  ),
-                  const SizedBox(width: 3.5),
-
-                  // Right Column: Total Sale (Lavender beads)
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: saleBeads > 0
-                        ? List.generate(
-                            saleBeads,
-                            (_) => _bead(saleColor, beadW),
-                          )
-                        : [_emptyBase(saleColor, beadW)],
-                  ),
-                ],
-              ),
-            );
-          }),
+                children: [bar(purchaseAmount, purchaseColor), const SizedBox(width: 3), bar(salesAmount, saleColor)],
+              );
+            }),
+          ),
           const SizedBox(height: 8),
 
           // Label
@@ -477,29 +447,6 @@ class _SideBySideCapsuleColumn extends StatelessWidget {
     );
   }
 
-  Widget _bead(Color color, double width) {
-    return Container(
-      width: width,
-      height: beadHeight,
-      margin: const EdgeInsets.symmetric(vertical: 1.5),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(6),
-      ),
-    );
-  }
-
-  Widget _emptyBase(Color color, double width) {
-    return Container(
-      width: width,
-      height: 2.5,
-      margin: const EdgeInsets.symmetric(vertical: 1.5),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.25),
-        borderRadius: BorderRadius.circular(2),
-      ),
-    );
-  }
 }
 
 // ── Dashed Line Painter ──────────────────────────────────────────────────────
