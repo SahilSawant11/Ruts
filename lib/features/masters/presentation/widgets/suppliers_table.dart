@@ -11,6 +11,8 @@ import '../../../../shared/widgets/inputs/app_text_field.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
 import '../../data/master_import_service.dart';
 import '../../data/masters_providers.dart';
+import '../../data/local_masters_repository.dart';
+import 'bulk_select.dart';
 import '../../data/models/supplier_dto.dart';
 import '../supplier_browser_controller.dart';
 import '../../../../core/format/money.dart';
@@ -26,7 +28,7 @@ class SuppliersTable extends ConsumerStatefulWidget {
   ConsumerState<SuppliersTable> createState() => _SuppliersTableState();
 }
 
-class _SuppliersTableState extends ConsumerState<SuppliersTable> {
+class _SuppliersTableState extends ConsumerState<SuppliersTable> with BulkSelection {
   final _search = TextEditingController();
   bool _isImporting = false;
   _SupplierSortField _sortField = _SupplierSortField.name;
@@ -99,48 +101,60 @@ class _SuppliersTableState extends ConsumerState<SuppliersTable> {
     final cardContent = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Top Toolbar
-        Row(
-          children: [
-            Expanded(
-              child: SectionHeader(
-                title: 'Suppliers Directory',
-                subtitle: widget.isSplitView
-                    ? 'Select a supplier to inspect details'
-                    : 'Tap a row to load it below',
+        // Top toolbar; becomes the bulk action bar while rows are selected
+        if (selectedIds.isNotEmpty)
+          BulkActionBar(
+            count: selectedIds.length,
+            busy: bulkDeleting,
+            onClear: clearSelection,
+            onDelete: () => deleteSelected(
+              ref: ref,
+              kind: MasterKind.supplier,
+              singular: 'supplier',
+              plural: 'suppliers',
+              listProvider: suppliersListProvider,
+            ),
+          )
+        else
+          Row(
+            children: [
+              Expanded(
+                child: SectionHeader(
+                  title: 'Suppliers Directory',
+                  subtitle: widget.isSplitView ? 'Select a supplier to inspect details' : 'Tap a row to load it below',
+                ),
               ),
-            ),
-            suppliersAsync.maybeWhen(
-              data: (suppliers) => Padding(
-                padding: const EdgeInsets.only(right: AppSpacing.xs),
-                child: StatusChip(label: '${suppliers.length} vendors'),
+              suppliersAsync.maybeWhen(
+                data: (suppliers) => Padding(
+                  padding: const EdgeInsets.only(right: AppSpacing.xs),
+                  child: StatusChip(label: '${suppliers.length} vendors'),
+                ),
+                orElse: () => const SizedBox.shrink(),
               ),
-              orElse: () => const SizedBox.shrink(),
-            ),
-            pendingSyncAsync.maybeWhen(
-              data: (count) => count > 0
-                  ? Padding(
-                      padding: const EdgeInsets.only(right: AppSpacing.xs),
-                      child: StatusChip(label: '$count pending sync', tone: StatusChipTone.neutral),
-                    )
-                  : const SizedBox.shrink(),
-              orElse: () => const SizedBox.shrink(),
-            ),
-            SecondaryButton(
-              label: _isImporting ? 'Importing…' : 'Import Excel',
-              icon: AppIcons.uploadFile,
-              dense: true,
-              onPressed: _isImporting ? null : _import,
-            ),
-            const SizedBox(width: AppSpacing.xs),
-            SecondaryButton(
-              label: 'New',
-              icon: AppIcons.add,
-              dense: true,
-              onPressed: () => ref.read(supplierBrowserProvider.notifier).startNew(),
-            ),
-          ],
-        ),
+              pendingSyncAsync.maybeWhen(
+                data: (count) => count > 0
+                    ? Padding(
+                        padding: const EdgeInsets.only(right: AppSpacing.xs),
+                        child: StatusChip(label: '$count pending sync', tone: StatusChipTone.neutral),
+                      )
+                    : const SizedBox.shrink(),
+                orElse: () => const SizedBox.shrink(),
+              ),
+              SecondaryButton(
+                label: _isImporting ? 'Importing…' : 'Import Excel',
+                icon: AppIcons.uploadFile,
+                dense: true,
+                onPressed: _isImporting ? null : _import,
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              SecondaryButton(
+                label: 'New',
+                icon: AppIcons.add,
+                dense: true,
+                onPressed: () => ref.read(supplierBrowserProvider.notifier).startNew(),
+              ),
+            ],
+          ),
         const SizedBox(height: AppSpacing.sm),
 
         // Search Input
@@ -151,10 +165,6 @@ class _SuppliersTableState extends ConsumerState<SuppliersTable> {
           suffix: const AppIcon(AppIcons.search, size: 18),
         ),
         const SizedBox(height: AppSpacing.sm),
-
-        // Table Header
-        _headerRow(context),
-        Divider(height: 1, color: AppColors.borderFor(context)),
 
         // Table Body
         suppliersAsync.when(
@@ -170,8 +180,7 @@ class _SuppliersTableState extends ConsumerState<SuppliersTable> {
             ),
           ),
           data: (suppliers) {
-            if (suppliers.isNotEmpty &&
-                (browser.suppliers.isEmpty || browser.suppliers.length != suppliers.length)) {
+            if (suppliers.isNotEmpty && (browser.suppliers.isEmpty || browser.suppliers.length != suppliers.length)) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (!mounted) return;
                 ref.read(supplierBrowserProvider.notifier).syncList(suppliers);
@@ -204,6 +213,16 @@ class _SuppliersTableState extends ConsumerState<SuppliersTable> {
               }
               return _sortAscending ? cmp : -cmp;
             });
+
+            final visibleIds = [for (final x in filtered) x.id];
+            final head = Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _headerRow(context, visibleIds),
+                Divider(height: 1, color: AppColors.borderFor(context)),
+              ],
+            );
 
             if (filtered.isEmpty) {
               return Padding(
@@ -238,11 +257,23 @@ class _SuppliersTableState extends ConsumerState<SuppliersTable> {
             );
 
             if (widget.isSplitView) {
-              return Expanded(child: listWidget);
+              return Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [head, Expanded(child: listWidget)],
+                ),
+              );
             } else {
-              return ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 380),
-                child: listWidget,
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  head,
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 380),
+                    child: listWidget,
+                  ),
+                ],
               );
             }
           },
@@ -256,12 +287,13 @@ class _SuppliersTableState extends ConsumerState<SuppliersTable> {
     );
   }
 
-  Widget _headerRow(BuildContext context) {
+  Widget _headerRow(BuildContext context, List<String> visibleIds) {
     if (widget.isSplitView) {
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
         child: Row(
           children: [
+            SelectBox(value: selectAllState(visibleIds), onChanged: () => toggleSelectAll(visibleIds)),
             _sortableHeader('SUPPLIER / CONTACT', _SupplierSortField.name, flex: 6),
             _sortableHeader('VAT NO.', _SupplierSortField.vat, flex: 3),
             _sortableHeader('BALANCE (₹)', _SupplierSortField.balance, flex: 3, alignEnd: true),
@@ -271,9 +303,10 @@ class _SuppliersTableState extends ConsumerState<SuppliersTable> {
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
       child: Row(
         children: [
+          SelectBox(value: selectAllState(visibleIds), onChanged: () => toggleSelectAll(visibleIds)),
           _sortableHeader('NAME', _SupplierSortField.name, flex: 3),
           _cell('CONTACT', flex: 2, header: true),
           _cell('EMAIL', flex: 3, header: true),
@@ -322,9 +355,7 @@ class _SuppliersTableState extends ConsumerState<SuppliersTable> {
 
   Widget _dataRow(SupplierDto s, List<SupplierDto> allSuppliers, {required bool isSelected}) {
     final isDark = AppColors.isDark(context);
-    final selectedBg = isDark
-        ? AppColors.primary.withValues(alpha: 0.18)
-        : AppColors.primary.withValues(alpha: 0.08);
+    final selectedBg = isDark ? AppColors.primary.withValues(alpha: 0.18) : AppColors.primary.withValues(alpha: 0.08);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
@@ -350,6 +381,7 @@ class _SuppliersTableState extends ConsumerState<SuppliersTable> {
           child: widget.isSplitView
               ? Row(
                   children: [
+                    SelectBox(value: selectedIds.contains(s.id), onChanged: () => toggleSelected(s.id)),
                     Expanded(
                       flex: 6,
                       child: Column(
@@ -365,72 +397,73 @@ class _SuppliersTableState extends ConsumerState<SuppliersTable> {
                               color: AppColors.textPrimaryFor(context),
                             ),
                           ),
-                        if ((s.contactNo ?? '').isNotEmpty)
+                          if ((s.contactNo ?? '').isNotEmpty)
+                            Text(
+                              s.contactNo!,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.caption.copyWith(
+                                fontSize: 11,
+                                color: AppColors.textMutedFor(context),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    _cell(s.vatNo ?? '—', flex: 3, mono: true, selected: isSelected),
+                    Expanded(
+                      flex: 3,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
                           Text(
-                            s.contactNo!,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.caption.copyWith(
-                              fontSize: 11,
-                              color: AppColors.textMutedFor(context),
+                            Money.inr(s.openingBalance, decimals: 0),
+                            style: AppTypography.body.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: isSelected ? AppColors.primary : AppColors.textPrimaryFor(context),
                             ),
                           ),
-                      ],
-                    ),
-                  ),
-                  _cell(s.vatNo ?? '—', flex: 3, mono: true, selected: isSelected),
-                  Expanded(
-                    flex: 3,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          Money.inr(s.openingBalance, decimals: 0),
-                          style: AppTypography.body.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: isSelected ? AppColors.primary : AppColors.textPrimaryFor(context),
+                          Text(
+                            s.balanceType,
+                            style: AppTypography.caption.copyWith(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: s.balanceType == 'Credit' ? AppColors.danger : AppColors.success,
+                            ),
                           ),
-                        ),
-                        Text(
-                          s.balanceType,
-                          style: AppTypography.caption.copyWith(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: s.balanceType == 'Credit' ? AppColors.danger : AppColors.success,
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              )
-            : Row(
-                children: [
-                  _cell(s.name, flex: 3, bold: true, selected: isSelected),
-                  _cell(s.contactNo ?? '—', flex: 2, selected: isSelected),
-                  _cell(s.email ?? '—', flex: 3, selected: isSelected),
-                  _cell(s.vatNo ?? '—', flex: 2, mono: true, selected: isSelected),
-                  _cell(
-                    Money.inr(s.openingBalance, decimals: 0),
-                    flex: 2,
-                    alignEnd: true,
-                    selected: isSelected,
-                  ),
-                  Expanded(
-                    flex: 1,
-                    child: TagPill(
-                      label: s.balanceType,
-                      tone: s.balanceType == 'Credit' ? TagPillTone.danger : TagPillTone.success,
+                  ],
+                )
+              : Row(
+                  children: [
+                    SelectBox(value: selectedIds.contains(s.id), onChanged: () => toggleSelected(s.id)),
+                    _cell(s.name, flex: 3, bold: true, selected: isSelected),
+                    _cell(s.contactNo ?? '—', flex: 2, selected: isSelected),
+                    _cell(s.email ?? '—', flex: 3, selected: isSelected),
+                    _cell(s.vatNo ?? '—', flex: 2, mono: true, selected: isSelected),
+                    _cell(
+                      Money.inr(s.openingBalance, decimals: 0),
+                      flex: 2,
+                      alignEnd: true,
+                      selected: isSelected,
                     ),
-                  ),
-                  Expanded(
-                    flex: 1,
-                    child: s.isPendingSync
-                        ? const TagPill(label: 'Pending', tone: TagPillTone.amber)
-                        : const SizedBox.shrink(),
-                  ),
-                ],
-              ),
+                    Expanded(
+                      flex: 1,
+                      child: TagPill(
+                        label: s.balanceType,
+                        tone: s.balanceType == 'Credit' ? TagPillTone.danger : TagPillTone.success,
+                      ),
+                    ),
+                    Expanded(
+                      flex: 1,
+                      child: s.isPendingSync
+                          ? const TagPill(label: 'Pending', tone: TagPillTone.amber)
+                          : const SizedBox.shrink(),
+                    ),
+                  ],
+                ),
         ),
       ),
     );

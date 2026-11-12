@@ -98,7 +98,7 @@ class AllMastersScreen extends ConsumerWidget {
           MasterTile(
             icon: AppIcons.settings,
             title: 'App Settings',
-            subtitle: 'Backup, restore & users',
+            subtitle: 'Appearance, backup & users',
             onTap: () => context.go('/settings'),
           ),
         ],

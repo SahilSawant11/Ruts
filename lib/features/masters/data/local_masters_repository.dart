@@ -312,6 +312,84 @@ class LocalMastersRepository {
     await (_db.delete(_db.cachedLicenseHolders)..where((tbl) => tbl.id.equals(id))).go();
   }
 
+  // ── Bulk delete ─────────────────────────────────────────────────────
+
+  /// Deletes the given master records, skipping any that are still in use
+  /// so bills, stock and reports never point at a missing record:
+  /// - material: on any sale/purchase/return line, or stock on hand ≠ 0
+  /// - supplier: on any purchase bill or purchase return
+  /// - category / manufacturer / packaging: used by any material
+  /// - license holder: always deletable (bills keep the permit as text)
+  ///
+  /// [ids] are ids for materials, suppliers and license holders, and names
+  /// for categories, manufacturers and packagings.
+  Future<BulkDeleteResult> deleteMasters(MasterKind kind, Iterable<String> ids) async {
+    final deleted = <String>[];
+    final kept = <String, String>{};
+
+    Future<bool> any(String sql, String value) async =>
+        (await _db.customSelect('$sql LIMIT 1', variables: [Variable.withString(value)]).get()).isNotEmpty;
+
+    await _db.transaction(() async {
+      for (final id in ids.toSet()) {
+        final String? reason = switch (kind) {
+          MasterKind.material => await any('SELECT 1 FROM cached_sale_line_items WHERE material_id = ?', id) ||
+                  await any('SELECT 1 FROM cached_purchase_line_items WHERE material_id = ?', id) ||
+                  await any('SELECT 1 FROM sales_return_entries WHERE material_id = ?', id) ||
+                  await any('SELECT 1 FROM purchase_return_entries WHERE material_id = ?', id)
+              ? 'on bills'
+              : await any('SELECT 1 FROM cached_inventory_stocks WHERE material_id = ? AND qty_on_hand <> 0', id)
+                  ? 'has stock'
+                  : null,
+          MasterKind.supplier => await any('SELECT 1 FROM cached_purchase_bills WHERE supplier_id = ?', id) ||
+                  await any('SELECT 1 FROM purchase_return_entries WHERE supplier_id = ?', id)
+              ? 'on purchase bills'
+              : null,
+          MasterKind.category =>
+            await any('SELECT 1 FROM cached_materials WHERE TRIM(category) = TRIM(?) COLLATE NOCASE', id)
+                ? 'used by products'
+                : null,
+          MasterKind.manufacturer =>
+            await any('SELECT 1 FROM cached_materials WHERE TRIM(manufacturer) = TRIM(?) COLLATE NOCASE', id)
+                ? 'used by products'
+                : null,
+          MasterKind.packaging =>
+            await any('SELECT 1 FROM cached_materials WHERE TRIM(packing) = TRIM(?) COLLATE NOCASE', id)
+                ? 'used by products'
+                : null,
+          MasterKind.licenseHolder => null,
+        };
+        if (reason != null) {
+          kept[id] = reason;
+          continue;
+        }
+
+        switch (kind) {
+          case MasterKind.material:
+            await (_db.delete(_db.cachedMaterials)..where((t) => t.id.equals(id))).go();
+            await (_db.delete(_db.cachedInventoryStocks)..where((t) => t.materialId.equals(id))).go();
+            await _clearQueueFor('material', id);
+          case MasterKind.supplier:
+            await (_db.delete(_db.cachedSuppliers)..where((t) => t.id.equals(id))).go();
+            await _clearQueueFor('supplier', id);
+          case MasterKind.category:
+            await (_db.delete(_db.cachedCategories)..where((t) => t.name.equals(id))).go();
+            await _clearQueueFor('category', id);
+          case MasterKind.manufacturer:
+            await (_db.delete(_db.cachedManufacturers)..where((t) => t.name.equals(id))).go();
+          case MasterKind.packaging:
+            await (_db.delete(_db.cachedPackings)..where((t) => t.name.equals(id))).go();
+          case MasterKind.licenseHolder:
+            await (_db.delete(_db.cachedLicenseHolders)..where((t) => t.id.equals(id))).go();
+        }
+        deleted.add(id);
+      }
+    });
+
+    if (kind == MasterKind.material && deleted.isNotEmpty) await onMaterialsChanged?.call();
+    return BulkDeleteResult(deleted: deleted, kept: kept);
+  }
+
   Future<void> batchUpsertLicenseHolders(List<SaveLicenseHolderRequest> requests) async {
     final now = DateTime.now().toUtc();
     await _db.batch((batch) {
@@ -1370,4 +1448,15 @@ class LocalMastersRepository {
       ),
     );
   }
+}
+
+enum MasterKind { material, supplier, category, manufacturer, packaging, licenseHolder }
+
+class BulkDeleteResult {
+  const BulkDeleteResult({required this.deleted, required this.kept});
+
+  final List<String> deleted;
+
+  /// Records that were skipped because they are still in use, with why.
+  final Map<String, String> kept;
 }

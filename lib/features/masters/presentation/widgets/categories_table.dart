@@ -8,7 +8,9 @@ import '../../../../shared/widgets/badges/status_chip.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
+import '../../data/local_masters_repository.dart';
 import '../../data/masters_providers.dart';
+import 'bulk_select.dart';
 import '../../data/models/category_dto.dart';
 import '../category_browser_controller.dart';
 
@@ -21,7 +23,7 @@ class CategoriesTable extends ConsumerStatefulWidget {
   ConsumerState<CategoriesTable> createState() => _CategoriesTableState();
 }
 
-class _CategoriesTableState extends ConsumerState<CategoriesTable> {
+class _CategoriesTableState extends ConsumerState<CategoriesTable> with BulkSelection {
   final _search = TextEditingController();
   bool _sortAscending = true;
 
@@ -45,32 +47,44 @@ class _CategoriesTableState extends ConsumerState<CategoriesTable> {
     final cardContent = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Top Toolbar
-        Row(
-          children: [
-            Expanded(
-              child: SectionHeader(
-                title: 'Categories Directory',
-                subtitle: widget.isSplitView
-                    ? 'Select a category to view & edit'
-                    : 'Tap a row to load it below',
+        // Top toolbar; becomes the bulk action bar while rows are selected
+        if (selectedIds.isNotEmpty)
+          BulkActionBar(
+            count: selectedIds.length,
+            busy: bulkDeleting,
+            onClear: clearSelection,
+            onDelete: () => deleteSelected(
+              ref: ref,
+              kind: MasterKind.category,
+              singular: 'category',
+              plural: 'categories',
+              listProvider: categoriesListProvider,
+            ),
+          )
+        else
+          Row(
+            children: [
+              Expanded(
+                child: SectionHeader(
+                  title: 'Categories Directory',
+                  subtitle: widget.isSplitView ? 'Select a category to view & edit' : 'Tap a row to load it below',
+                ),
               ),
-            ),
-            categoriesAsync.maybeWhen(
-              data: (categories) => Padding(
-                padding: const EdgeInsets.only(right: AppSpacing.xs),
-                child: StatusChip(label: '${categories.length} categories'),
+              categoriesAsync.maybeWhen(
+                data: (categories) => Padding(
+                  padding: const EdgeInsets.only(right: AppSpacing.xs),
+                  child: StatusChip(label: '${categories.length} categories'),
+                ),
+                orElse: () => const SizedBox.shrink(),
               ),
-              orElse: () => const SizedBox.shrink(),
-            ),
-            SecondaryButton(
-              label: 'New',
-              icon: AppIcons.add,
-              dense: true,
-              onPressed: () => ref.read(categoryBrowserProvider.notifier).startNew(),
-            ),
-          ],
-        ),
+              SecondaryButton(
+                label: 'New',
+                icon: AppIcons.add,
+                dense: true,
+                onPressed: () => ref.read(categoryBrowserProvider.notifier).startNew(),
+              ),
+            ],
+          ),
         const SizedBox(height: AppSpacing.sm),
 
         // Search Input
@@ -81,10 +95,6 @@ class _CategoriesTableState extends ConsumerState<CategoriesTable> {
           suffix: const AppIcon(AppIcons.search, size: 18),
         ),
         const SizedBox(height: AppSpacing.sm),
-
-        // Table Header
-        _headerRow(context),
-        Divider(height: 1, color: AppColors.borderFor(context)),
 
         // Table Body
         categoriesAsync.when(
@@ -119,6 +129,16 @@ class _CategoriesTableState extends ConsumerState<CategoriesTable> {
               return _sortAscending ? cmp : -cmp;
             });
 
+            final visibleIds = [for (final x in filtered) x.name];
+            final head = Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _headerRow(context, visibleIds),
+                Divider(height: 1, color: AppColors.borderFor(context)),
+              ],
+            );
+
             if (filtered.isEmpty) {
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
@@ -151,11 +171,23 @@ class _CategoriesTableState extends ConsumerState<CategoriesTable> {
             );
 
             if (widget.isSplitView) {
-              return Expanded(child: listWidget);
+              return Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [head, Expanded(child: listWidget)],
+                ),
+              );
             } else {
-              return ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 380),
-                child: listWidget,
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  head,
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 380),
+                    child: listWidget,
+                  ),
+                ],
               );
             }
           },
@@ -169,11 +201,12 @@ class _CategoriesTableState extends ConsumerState<CategoriesTable> {
     );
   }
 
-  Widget _headerRow(BuildContext context) {
+  Widget _headerRow(BuildContext context, List<String> visibleIds) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
       child: Row(
         children: [
+          SelectBox(value: selectAllState(visibleIds), onChanged: () => toggleSelectAll(visibleIds)),
           Expanded(
             flex: 3,
             child: InkWell(
@@ -213,9 +246,7 @@ class _CategoriesTableState extends ConsumerState<CategoriesTable> {
     required bool isSelected,
   }) {
     final isDark = AppColors.isDark(context);
-    final selectedBg = isDark
-        ? AppColors.primary.withValues(alpha: 0.18)
-        : AppColors.primary.withValues(alpha: 0.08);
+    final selectedBg = isDark ? AppColors.primary.withValues(alpha: 0.18) : AppColors.primary.withValues(alpha: 0.08);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -240,6 +271,7 @@ class _CategoriesTableState extends ConsumerState<CategoriesTable> {
           ),
           child: Row(
             children: [
+              SelectBox(value: selectedIds.contains(category.name), onChanged: () => toggleSelected(category.name)),
               _cell(
                 category.name,
                 flex: 3,

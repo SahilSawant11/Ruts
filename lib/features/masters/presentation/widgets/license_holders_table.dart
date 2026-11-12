@@ -10,6 +10,8 @@ import '../../../../shared/widgets/inputs/app_text_field.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
 import '../../data/master_import_service.dart';
 import '../../data/masters_providers.dart';
+import '../../data/local_masters_repository.dart';
+import 'bulk_select.dart';
 import '../../data/models/license_holder_dto.dart';
 import '../license_holder_browser_controller.dart';
 
@@ -24,7 +26,7 @@ class LicenseHoldersTable extends ConsumerStatefulWidget {
   ConsumerState<LicenseHoldersTable> createState() => _LicenseHoldersTableState();
 }
 
-class _LicenseHoldersTableState extends ConsumerState<LicenseHoldersTable> {
+class _LicenseHoldersTableState extends ConsumerState<LicenseHoldersTable> with BulkSelection {
   final _search = TextEditingController();
   _LicenseSortField _sortField = _LicenseSortField.permitNo;
   bool _sortAscending = true;
@@ -45,9 +47,7 @@ class _LicenseHoldersTableState extends ConsumerState<LicenseHoldersTable> {
   Future<void> _import() async {
     setState(() => _isImporting = true);
     try {
-      final summary = await ref
-          .read(masterImportServiceProvider)
-          .pickAndImport(MasterImportTarget.licenseHolders);
+      final summary = await ref.read(masterImportServiceProvider).pickAndImport(MasterImportTarget.licenseHolders);
       if (!mounted || summary == null) return;
 
       ref.invalidate(licenseHoldersListProvider);
@@ -98,39 +98,52 @@ class _LicenseHoldersTableState extends ConsumerState<LicenseHoldersTable> {
     final cardContent = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Top Toolbar
-        Row(
-          children: [
-            Expanded(
-              child: SectionHeader(
-                title: 'License Holders Directory',
-                subtitle: widget.isSplitView
-                    ? 'Permit holders for excise retail sales'
-                    : 'Tap a row to view or edit below',
+        // Top toolbar; becomes the bulk action bar while rows are selected
+        if (selectedIds.isNotEmpty)
+          BulkActionBar(
+            count: selectedIds.length,
+            busy: bulkDeleting,
+            onClear: clearSelection,
+            onDelete: () => deleteSelected(
+              ref: ref,
+              kind: MasterKind.licenseHolder,
+              singular: 'license holder',
+              plural: 'license holders',
+              listProvider: licenseHoldersListProvider,
+            ),
+          )
+        else
+          Row(
+            children: [
+              Expanded(
+                child: SectionHeader(
+                  title: 'License Holders Directory',
+                  subtitle:
+                      widget.isSplitView ? 'Permit holders for excise retail sales' : 'Tap a row to view or edit below',
+                ),
               ),
-            ),
-            holdersAsync.maybeWhen(
-              data: (holders) => Padding(
-                padding: const EdgeInsets.only(right: AppSpacing.xs),
-                child: StatusChip(label: '${holders.length} permits'),
+              holdersAsync.maybeWhen(
+                data: (holders) => Padding(
+                  padding: const EdgeInsets.only(right: AppSpacing.xs),
+                  child: StatusChip(label: '${holders.length} permits'),
+                ),
+                orElse: () => const SizedBox.shrink(),
               ),
-              orElse: () => const SizedBox.shrink(),
-            ),
-            SecondaryButton(
-              label: _isImporting ? 'Importing…' : 'Import Excel',
-              icon: AppIcons.uploadFile,
-              dense: true,
-              onPressed: _isImporting ? null : _import,
-            ),
-            const SizedBox(width: AppSpacing.xs),
-            SecondaryButton(
-              label: 'New',
-              icon: AppIcons.add,
-              dense: true,
-              onPressed: () => ref.read(licenseHolderBrowserProvider.notifier).startNew(),
-            ),
-          ],
-        ),
+              SecondaryButton(
+                label: _isImporting ? 'Importing…' : 'Import Excel',
+                icon: AppIcons.uploadFile,
+                dense: true,
+                onPressed: _isImporting ? null : _import,
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              SecondaryButton(
+                label: 'New',
+                icon: AppIcons.add,
+                dense: true,
+                onPressed: () => ref.read(licenseHolderBrowserProvider.notifier).startNew(),
+              ),
+            ],
+          ),
         const SizedBox(height: AppSpacing.sm),
 
         // Search Input
@@ -141,10 +154,6 @@ class _LicenseHoldersTableState extends ConsumerState<LicenseHoldersTable> {
           suffix: const AppIcon(AppIcons.search, size: 18),
         ),
         const SizedBox(height: AppSpacing.sm),
-
-        // Table Header
-        _headerRow(context),
-        Divider(height: 1, color: AppColors.borderFor(context)),
 
         // Table Body
         holdersAsync.when(
@@ -158,8 +167,7 @@ class _LicenseHoldersTableState extends ConsumerState<LicenseHoldersTable> {
           ),
           data: (holders) {
             if (holders.isNotEmpty &&
-                (browser.licenseHolders.isEmpty ||
-                    browser.licenseHolders.length != holders.length)) {
+                (browser.licenseHolders.isEmpty || browser.licenseHolders.length != holders.length)) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted) {
                   ref.read(licenseHolderBrowserProvider.notifier).syncList(holders);
@@ -180,11 +188,20 @@ class _LicenseHoldersTableState extends ConsumerState<LicenseHoldersTable> {
               final cmp = switch (_sortField) {
                 _LicenseSortField.permitNo => a.permitNo.compareTo(b.permitNo),
                 _LicenseSortField.name => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-                _LicenseSortField.issuedDate =>
-                  (a.issuedDate ?? '').compareTo(b.issuedDate ?? ''),
+                _LicenseSortField.issuedDate => (a.issuedDate ?? '').compareTo(b.issuedDate ?? ''),
               };
               return _sortAscending ? cmp : -cmp;
             });
+
+            final visibleIds = [for (final x in filtered) x.id];
+            final head = Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _headerRow(context, visibleIds),
+                Divider(height: 1, color: AppColors.borderFor(context)),
+              ],
+            );
 
             if (filtered.isEmpty) {
               return Expanded(
@@ -198,93 +215,98 @@ class _LicenseHoldersTableState extends ConsumerState<LicenseHoldersTable> {
             }
 
             return Expanded(
-              child: ListView.separated(
-                itemCount: filtered.length,
-                separatorBuilder: (_, __) =>
-                    Divider(height: 1, color: AppColors.borderFor(context)),
-                itemBuilder: (context, index) {
-                  final holder = filtered[index];
-                  final isSelected = browser.current?.id == holder.id;
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  head,
+                  Expanded(
+                    child: ListView.separated(
+                      itemCount: filtered.length,
+                      separatorBuilder: (_, __) => Divider(height: 1, color: AppColors.borderFor(context)),
+                      itemBuilder: (context, index) {
+                        final holder = filtered[index];
+                        final isSelected = browser.current?.id == holder.id;
 
-                  return InkWell(
-                    onTap: () {
-                      ref
-                          .read(licenseHolderBrowserProvider.notifier)
-                          .selectById(holder.id, holders);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.sm,
-                        vertical: 10,
-                      ),
-                      color: isSelected
-                          ? AppColors.primarySoftFor(context)
-                          : Colors.transparent,
-                      child: Row(
-                        children: [
-                          Expanded(
-                            flex: 3,
-                            child: Text(
-                              holder.permitNo,
-                              style: AppTypography.mono.copyWith(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimaryFor(context),
-                              ),
-                              overflow: TextOverflow.ellipsis,
+                        return InkWell(
+                          onTap: () {
+                            ref.read(licenseHolderBrowserProvider.notifier).selectById(holder.id, holders);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.sm,
+                              vertical: 10,
                             ),
-                          ),
-                          Expanded(
-                            flex: 5,
-                            child: Text(
-                              holder.name,
-                              style: AppTypography.body.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimaryFor(context),
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          Expanded(
-                            flex: 3,
-                            child: Text(
-                              holder.issuedDate ?? '—',
-                              style: AppTypography.bodyMutedFor(context).copyWith(fontSize: 12),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          Expanded(
-                            flex: 3,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: AppColors.surfaceAltFor(context),
-                                borderRadius: BorderRadius.circular(AppRadius.pill),
-                              ),
-                              child: Text(
-                                holder.whereGranted ?? 'Life Time',
-                                style: AppTypography.captionFor(context).copyWith(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
+                            color: isSelected ? AppColors.primarySoftFor(context) : Colors.transparent,
+                            child: Row(
+                              children: [
+                                SelectBox(
+                                    value: selectedIds.contains(holder.id), onChanged: () => toggleSelected(holder.id)),
+                                Expanded(
+                                  flex: 3,
+                                  child: Text(
+                                    holder.permitNo,
+                                    style: AppTypography.mono.copyWith(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textPrimaryFor(context),
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                                Expanded(
+                                  flex: 5,
+                                  child: Text(
+                                    holder.name,
+                                    style: AppTypography.body.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimaryFor(context),
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 3,
+                                  child: Text(
+                                    holder.issuedDate ?? '—',
+                                    style: AppTypography.bodyMutedFor(context).copyWith(fontSize: 12),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 3,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.surfaceAltFor(context),
+                                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                                    ),
+                                    child: Text(
+                                      holder.whereGranted ?? 'Life Time',
+                                      style: AppTypography.captionFor(context).copyWith(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 36,
+                                  child: IconButton(
+                                    icon: const AppIcon(AppIcons.delete, size: 16),
+                                    color: AppColors.textMutedFor(context),
+                                    tooltip: 'Delete permit',
+                                    onPressed: () => _confirmDelete(holder),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          SizedBox(
-                            width: 36,
-                            child: IconButton(
-                              icon: const AppIcon(AppIcons.delete, size: 16),
-                              color: AppColors.textMutedFor(context),
-                              tooltip: 'Delete permit',
-                              onPressed: () => _confirmDelete(holder),
-                            ),
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
-                  );
-                },
+                  ),
+                ],
               ),
             );
           },
@@ -304,12 +326,13 @@ class _LicenseHoldersTableState extends ConsumerState<LicenseHoldersTable> {
     );
   }
 
-  Widget _headerRow(BuildContext context) {
+  Widget _headerRow(BuildContext context, List<String> visibleIds) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 8),
       color: AppColors.surfaceAltFor(context),
       child: Row(
         children: [
+          SelectBox(value: selectAllState(visibleIds), onChanged: () => toggleSelectAll(visibleIds)),
           Expanded(
             flex: 3,
             child: _sortableColumn('Permit No.', _LicenseSortField.permitNo),
@@ -344,9 +367,7 @@ class _LicenseHoldersTableState extends ConsumerState<LicenseHoldersTable> {
               label,
               style: AppTypography.captionFor(context).copyWith(
                 fontWeight: active ? FontWeight.w700 : FontWeight.w600,
-                color: active
-                    ? AppColors.primary
-                    : AppColors.textMutedFor(context),
+                color: active ? AppColors.primary : AppColors.textMutedFor(context),
               ),
               overflow: TextOverflow.ellipsis,
             ),

@@ -12,6 +12,8 @@ import '../../../../shared/widgets/layout/app_card.dart';
 import '../../../sales/data/models/material_dto.dart';
 import '../../data/master_import_service.dart';
 import '../../data/masters_providers.dart';
+import '../../data/local_masters_repository.dart';
+import 'bulk_select.dart';
 import '../material_browser_controller.dart';
 import '../../../../core/format/money.dart';
 
@@ -29,7 +31,7 @@ class MaterialsTable extends ConsumerStatefulWidget {
   ConsumerState<MaterialsTable> createState() => _MaterialsTableState();
 }
 
-class _MaterialsTableState extends ConsumerState<MaterialsTable> {
+class _MaterialsTableState extends ConsumerState<MaterialsTable> with BulkSelection {
   final _search = TextEditingController();
   bool _isImporting = false;
   String _selectedCategory = 'All';
@@ -104,48 +106,60 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
     final cardContent = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Top Toolbar
-        Row(
-          children: [
-            Expanded(
-              child: SectionHeader(
-                title: 'Materials Directory',
-                subtitle: widget.isSplitView
-                    ? 'Select an item to inspect & modify'
-                    : 'Tap a row to load it below',
+        // Top toolbar; becomes the bulk action bar while rows are selected
+        if (selectedIds.isNotEmpty)
+          BulkActionBar(
+            count: selectedIds.length,
+            busy: bulkDeleting,
+            onClear: clearSelection,
+            onDelete: () => deleteSelected(
+              ref: ref,
+              kind: MasterKind.material,
+              singular: 'material',
+              plural: 'materials',
+              listProvider: materialsListProvider,
+            ),
+          )
+        else
+          Row(
+            children: [
+              Expanded(
+                child: SectionHeader(
+                  title: 'Materials Directory',
+                  subtitle: widget.isSplitView ? 'Select an item to inspect & modify' : 'Tap a row to load it below',
+                ),
               ),
-            ),
-            materialsAsync.maybeWhen(
-              data: (materials) => Padding(
-                padding: const EdgeInsets.only(right: AppSpacing.xs),
-                child: StatusChip(label: '${materials.length} SCM codes'),
+              materialsAsync.maybeWhen(
+                data: (materials) => Padding(
+                  padding: const EdgeInsets.only(right: AppSpacing.xs),
+                  child: StatusChip(label: '${materials.length} SCM codes'),
+                ),
+                orElse: () => const SizedBox.shrink(),
               ),
-              orElse: () => const SizedBox.shrink(),
-            ),
-            pendingSyncAsync.maybeWhen(
-              data: (count) => count > 0
-                  ? Padding(
-                      padding: const EdgeInsets.only(right: AppSpacing.xs),
-                      child: StatusChip(label: '$count pending sync', tone: StatusChipTone.neutral),
-                    )
-                  : const SizedBox.shrink(),
-              orElse: () => const SizedBox.shrink(),
-            ),
-            SecondaryButton(
-              label: _isImporting ? 'Importing…' : 'Import Excel',
-              icon: AppIcons.uploadFile,
-              dense: true,
-              onPressed: _isImporting ? null : _import,
-            ),
-            const SizedBox(width: AppSpacing.xs),
-            SecondaryButton(
-              label: 'New',
-              icon: AppIcons.add,
-              dense: true,
-              onPressed: () => ref.read(materialBrowserProvider.notifier).startNew(),
-            ),
-          ],
-        ),
+              pendingSyncAsync.maybeWhen(
+                data: (count) => count > 0
+                    ? Padding(
+                        padding: const EdgeInsets.only(right: AppSpacing.xs),
+                        child: StatusChip(label: '$count pending sync', tone: StatusChipTone.neutral),
+                      )
+                    : const SizedBox.shrink(),
+                orElse: () => const SizedBox.shrink(),
+              ),
+              SecondaryButton(
+                label: _isImporting ? 'Importing…' : 'Import Excel',
+                icon: AppIcons.uploadFile,
+                dense: true,
+                onPressed: _isImporting ? null : _import,
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              SecondaryButton(
+                label: 'New',
+                icon: AppIcons.add,
+                dense: true,
+                onPressed: () => ref.read(materialBrowserProvider.notifier).startNew(),
+              ),
+            ],
+          ),
         const SizedBox(height: AppSpacing.sm),
 
         // Search + Quick Filter Chips Row
@@ -183,23 +197,17 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
                             duration: const Duration(milliseconds: 150),
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
-                              color: isSelected
-                                  ? AppColors.primary
-                                  : AppColors.surfaceAltFor(context),
+                              color: isSelected ? AppColors.primary : AppColors.surfaceAltFor(context),
                               borderRadius: BorderRadius.circular(AppRadius.md),
                               border: Border.all(
-                                color: isSelected
-                                    ? AppColors.primary
-                                    : AppColors.borderFor(context),
+                                color: isSelected ? AppColors.primary : AppColors.borderFor(context),
                               ),
                             ),
                             child: Center(
                               child: Text(
                                 cat,
                                 style: AppTypography.caption.copyWith(
-                                  color: isSelected
-                                      ? Colors.white
-                                      : AppColors.textPrimaryFor(context),
+                                  color: isSelected ? Colors.white : AppColors.textPrimaryFor(context),
                                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                                 ),
                               ),
@@ -217,10 +225,6 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
         ),
         const SizedBox(height: AppSpacing.sm),
 
-        // Table Header
-        _headerRow(context),
-        Divider(height: 1, color: AppColors.borderFor(context)),
-
         // Table Body
         materialsAsync.when(
           loading: () => const Expanded(
@@ -232,8 +236,7 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
             ),
           ),
           data: (materials) {
-            if (materials.isNotEmpty &&
-                (browser.materials.isEmpty || browser.materials.length != materials.length)) {
+            if (materials.isNotEmpty && (browser.materials.isEmpty || browser.materials.length != materials.length)) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (!mounted) return;
                 ref.read(materialBrowserProvider.notifier).syncList(materials);
@@ -270,6 +273,16 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
               }
               return _sortAscending ? cmp : -cmp;
             });
+
+            final visibleIds = [for (final x in filtered) x.id];
+            final head = Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _headerRow(context, visibleIds),
+                Divider(height: 1, color: AppColors.borderFor(context)),
+              ],
+            );
 
             if (filtered.isEmpty) {
               return Padding(
@@ -311,11 +324,23 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
             );
 
             if (widget.isSplitView) {
-              return Expanded(child: listWidget);
+              return Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [head, Expanded(child: listWidget)],
+                ),
+              );
             } else {
-              return ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 380),
-                child: listWidget,
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  head,
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 380),
+                    child: listWidget,
+                  ),
+                ],
               );
             }
           },
@@ -329,12 +354,13 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
     );
   }
 
-  Widget _headerRow(BuildContext context) {
+  Widget _headerRow(BuildContext context, List<String> visibleIds) {
     if (widget.isSplitView) {
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
         child: Row(
           children: [
+            SelectBox(value: selectAllState(visibleIds), onChanged: () => toggleSelectAll(visibleIds)),
             _sortableHeader('SCM CODE', _SortField.id, flex: 3),
             _sortableHeader('NAME & BRAND', _SortField.name, flex: 6),
             _cell('PACKING', flex: 3, header: true),
@@ -346,9 +372,10 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
       child: Row(
         children: [
+          SelectBox(value: selectAllState(visibleIds), onChanged: () => toggleSelectAll(visibleIds)),
           _sortableHeader('SCM CODE', _SortField.id, flex: 2),
           _sortableHeader('NAME', _SortField.name, flex: 4),
           _cell('MANUFACTURER', flex: 2, header: true),
@@ -399,9 +426,7 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
 
   Widget _dataRow(MaterialDto m, List<MaterialDto> allMaterials, {required bool isSelected}) {
     final isDark = AppColors.isDark(context);
-    final selectedBg = isDark
-        ? AppColors.primary.withValues(alpha: 0.18)
-        : AppColors.primary.withValues(alpha: 0.08);
+    final selectedBg = isDark ? AppColors.primary.withValues(alpha: 0.18) : AppColors.primary.withValues(alpha: 0.08);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
@@ -427,6 +452,7 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
           child: widget.isSplitView
               ? Row(
                   children: [
+                    SelectBox(value: selectedIds.contains(m.id), onChanged: () => toggleSelected(m.id)),
                     _cell(m.id, flex: 3, mono: true, selected: isSelected),
                     Expanded(
                       flex: 6,
@@ -443,85 +469,86 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> {
                               color: AppColors.textPrimaryFor(context),
                             ),
                           ),
-                        if (m.manufacturer.isNotEmpty)
-                          Text(
-                            m.manufacturer,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.caption.copyWith(
-                              fontSize: 11,
-                              color: AppColors.textMutedFor(context),
+                          if (m.manufacturer.isNotEmpty)
+                            Text(
+                              m.manufacturer,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.caption.copyWith(
+                                fontSize: 11,
+                                color: AppColors.textMutedFor(context),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      flex: 3,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              m.packing,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.caption.copyWith(
+                                color: AppColors.textSecondaryFor(context),
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  Expanded(
-                    flex: 3,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            m.packing,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.caption.copyWith(
-                              color: AppColors.textSecondaryFor(context),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
+                    Expanded(
+                      flex: 2,
+                      child: m.isActive
+                          ? const TagPill(label: 'Active', tone: TagPillTone.success)
+                          : const TagPill(label: 'Inactive', tone: TagPillTone.neutral),
                     ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: m.isActive
-                        ? const TagPill(label: 'Active', tone: TagPillTone.success)
-                        : const TagPill(label: 'Inactive', tone: TagPillTone.neutral),
-                  ),
-                  _cell(
-                    m.saleRate == 0 ? '—' : Money.inr(m.saleRate, decimals: 0),
-                    flex: 2,
-                    alignEnd: true,
-                    bold: true,
-                    selected: isSelected,
-                  ),
-                ],
-              )
-            : Row(
-                children: [
-                  _cell(m.id, flex: 2, mono: true, selected: isSelected),
-                  _cell(m.name, flex: 4, bold: true, selected: isSelected),
-                  _cell(m.manufacturer, flex: 2, selected: isSelected),
-                  Expanded(flex: 1, child: TagPill(label: m.category, tone: TagPillTone.neutral)),
-                  _cell(m.packing, flex: 2, selected: isSelected),
-                  _cell(
-                    m.barcode,
-                    flex: 2,
-                    mono: true,
-                    muted: m.barcode == m.id,
-                    selected: isSelected,
-                  ),
-                  Expanded(
-                    flex: 1,
-                    child: m.isActive
-                        ? const TagPill(label: 'Active', tone: TagPillTone.success)
-                        : const TagPill(label: 'Inactive', tone: TagPillTone.neutral),
-                  ),
-                  Expanded(
-                    flex: 1,
-                    child: m.isPendingSync
-                        ? const TagPill(label: 'Pending', tone: TagPillTone.amber)
-                        : const SizedBox.shrink(),
-                  ),
-                  _cell(
-                    m.saleRate == 0 ? '—' : Money.inr(m.saleRate, decimals: 0),
-                    flex: 1,
-                    alignEnd: true,
-                    selected: isSelected,
-                  ),
-                ],
-              ),
+                    _cell(
+                      m.saleRate == 0 ? '—' : Money.inr(m.saleRate, decimals: 0),
+                      flex: 2,
+                      alignEnd: true,
+                      bold: true,
+                      selected: isSelected,
+                    ),
+                  ],
+                )
+              : Row(
+                  children: [
+                    SelectBox(value: selectedIds.contains(m.id), onChanged: () => toggleSelected(m.id)),
+                    _cell(m.id, flex: 2, mono: true, selected: isSelected),
+                    _cell(m.name, flex: 4, bold: true, selected: isSelected),
+                    _cell(m.manufacturer, flex: 2, selected: isSelected),
+                    Expanded(flex: 1, child: TagPill(label: m.category, tone: TagPillTone.neutral)),
+                    _cell(m.packing, flex: 2, selected: isSelected),
+                    _cell(
+                      m.barcode,
+                      flex: 2,
+                      mono: true,
+                      muted: m.barcode == m.id,
+                      selected: isSelected,
+                    ),
+                    Expanded(
+                      flex: 1,
+                      child: m.isActive
+                          ? const TagPill(label: 'Active', tone: TagPillTone.success)
+                          : const TagPill(label: 'Inactive', tone: TagPillTone.neutral),
+                    ),
+                    Expanded(
+                      flex: 1,
+                      child: m.isPendingSync
+                          ? const TagPill(label: 'Pending', tone: TagPillTone.amber)
+                          : const SizedBox.shrink(),
+                    ),
+                    _cell(
+                      m.saleRate == 0 ? '—' : Money.inr(m.saleRate, decimals: 0),
+                      flex: 1,
+                      alignEnd: true,
+                      selected: isSelected,
+                    ),
+                  ],
+                ),
         ),
       ),
     );
