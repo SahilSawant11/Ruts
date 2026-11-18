@@ -193,8 +193,14 @@ Future<CounterBrandwiseReportDto?> _buildLocalCounterBrandwiseReport(AppDatabase
     final counterName = mat.counterBrandName.trim();
     final manufacturerName = counterName.isNotEmpty ? counterName : mat.name.trim();
 
+    // Case / spacing variants of one counter brand are one line, shown
+    // with the first spelling met.
     final manufacturers = categoryItems.putIfAbsent(catName, () => {});
-    final agg = manufacturers.putIfAbsent(manufacturerName, _ManufacturerAgg.new);
+    final key = manufacturers.keys.firstWhere(
+      (k) => AppDatabase.normalizeCounterBrand(k) == AppDatabase.normalizeCounterBrand(manufacturerName),
+      orElse: () => manufacturerName,
+    );
+    final agg = manufacturers.putIfAbsent(key, _ManufacturerAgg.new);
     agg.opening[colIdx] += opening;
     agg.sale[colIdx] += saleQty;
     agg.closing[colIdx] += closing;

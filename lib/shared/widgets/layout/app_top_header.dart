@@ -62,7 +62,8 @@ class AppTopHeader extends ConsumerWidget {
     ref.invalidate(manufacturersListProvider);
     ref.invalidate(materialsListProvider);
     ref.invalidate(packingsListProvider);
-    ref.invalidate(materialLookupCacheProvider);
+    // Reload (never null) the scan cache, or every scan says "No item found".
+    ref.read(mastersRepositoryProvider).onMaterialsChanged?.call();
     ref.invalidate(todaysBillsProvider);
     ref.invalidate(purchaseBillsListProvider);
 

@@ -99,6 +99,13 @@ class CartController extends StateNotifier<CartState> {
       return false;
     }
 
+    if (!material.isActive) {
+      state = state.copyWith(
+        scanError: '"${material.name}" is marked inactive in Masters → Materials. Activate it to sell.',
+      );
+      return false;
+    }
+
     // Products added from a brandwise report start without an MRP; never
     // bill them at ₹0.
     if (material.saleRate <= 0) {

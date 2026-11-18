@@ -1052,6 +1052,21 @@ class AppDatabase extends _$AppDatabase {
   static String normalizeCounterBrand(String name) =>
       name.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
 
+  /// How counter brand [name] is already spelled on another material
+  /// (ignoring case and spacing), or null when it's a new counter brand.
+  Future<String?> existingCounterBrandName(String name) async {
+    final key = normalizeCounterBrand(name);
+    if (key.isEmpty) return null;
+    final rows = await customSelect(
+      "SELECT DISTINCT counter_brand_name AS n FROM cached_materials WHERE counter_brand_name != ''",
+    ).get();
+    for (final r in rows) {
+      final n = r.read<String>('n');
+      if (normalizeCounterBrand(n) == key) return n;
+    }
+    return null;
+  }
+
   /// The ID of counter brand [name]: the one its other materials already
   /// carry, else the next number. Empty name → empty ID.
   Future<String> counterBrandIdFor(String name) async {

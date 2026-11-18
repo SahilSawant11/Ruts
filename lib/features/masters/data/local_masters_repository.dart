@@ -295,7 +295,15 @@ class LocalMastersRepository {
 
     final now = DateTime.now().toUtc();
     // Frequent buyers have no permit; key them by a generated id.
-    final id = permitNo.isNotEmpty ? permitNo : 'FB-${DbPaths.newId()}';
+    // (A holder whose permit no was edited keeps its old id, so a new
+    // holder given that old number gets a fresh id instead of replacing it.)
+    final idTaken = permitNo.isNotEmpty &&
+        await (_db.select(_db.cachedLicenseHolders)..where((t) => t.id.equals(permitNo))).getSingleOrNull() != null;
+    final id = permitNo.isEmpty
+        ? 'FB-${DbPaths.newId()}'
+        : idTaken
+            ? 'LH-${DbPaths.newId()}'
+            : permitNo;
     await _db.into(_db.cachedLicenseHolders).insert(
           _holderCompanion(request).copyWith(id: Value(id), createdAt: Value(now), updatedAt: Value(now)),
           mode: InsertMode.insertOrReplace,
@@ -768,8 +776,11 @@ class LocalMastersRepository {
   Future<MaterialDto> _localMaterial(String id, SaveMaterialRequest r, CachedMaterial? cached) async {
     final cat = normalizeLiquorCategory(r.category, r.liquorType);
     final scm = (cached?.scmCode.isNotEmpty ?? false) ? cached!.scmCode : (r.scmCode ?? r.id).trim();
-    final counterName =
+    final typedName =
         r.counterBrandName.trim().isEmpty ? defaultCounterBrandName(r.name) : r.counterBrandName.trim();
+    // "KINGFISHER STRONG" and "Kingfisher Strong" are one counter brand:
+    // keep the spelling it already has so reports group it as one line.
+    final counterName = await _db.existingCounterBrandName(typedName) ?? typedName;
     final sameBrand = cached != null &&
         AppDatabase.normalizeCounterBrand(cached.counterBrandName) == AppDatabase.normalizeCounterBrand(counterName) &&
         cached.counterBrandId.isNotEmpty;
@@ -801,6 +812,17 @@ class LocalMastersRepository {
     await ensureCategoryExists(cat.category);
     final cached = await (_db.select(_db.cachedMaterials)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
     final local = await _localMaterial(id, request, cached);
+    // A new barcode must not recreate an SCM code + barcode pair that
+    // another material already is.
+    final clash = await (_db.select(_db.cachedMaterials)
+          ..where((t) =>
+              t.id.equals(id).not() &
+              (t.scmCode.equals(local.scmCode) | t.id.equals(local.scmCode)) &
+              t.barcode.equals(local.barcode)))
+        .get();
+    if (clash.isNotEmpty) {
+      throw ApiException('SCM code ${local.scmCode} with barcode ${local.barcode} already exists.');
+    }
     if (!AppConfig.offlineOnly) {
       try {
         final updated = await _remote.updateMaterial(id, request);

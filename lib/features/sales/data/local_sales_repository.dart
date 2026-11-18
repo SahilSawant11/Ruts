@@ -144,6 +144,17 @@ class LocalSalesRepository {
     Map<int, int>? lineQuantities,
     String? returnedBy,
   }) async {
+    await _returnSalesBill(billId, lineNumbers: lineNumbers, lineQuantities: lineQuantities, returnedBy: returnedBy);
+    // Stock changed: refresh what the Sales counter sees.
+    await _masters.onMaterialsChanged?.call();
+  }
+
+  Future<void> _returnSalesBill(
+    String billId, {
+    List<int>? lineNumbers,
+    Map<int, int>? lineQuantities,
+    String? returnedBy,
+  }) async {
     final deviceId = await _db.deviceId();
     await _db.transaction(() async {
       final bill = await (_db.select(_db.cachedSalesBills)..where((tbl) => tbl.id.equals(billId))).getSingleOrNull();

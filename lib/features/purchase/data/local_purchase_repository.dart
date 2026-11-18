@@ -210,6 +210,17 @@ class LocalPurchaseRepository {
     Map<int, int>? lineQuantities,
     String? returnedBy,
   }) async {
+    await _returnPurchaseBill(billId, lineNumbers: lineNumbers, lineQuantities: lineQuantities, returnedBy: returnedBy);
+    // Stock changed: refresh what the Sales counter sees.
+    await _masters.onMaterialsChanged?.call();
+  }
+
+  Future<void> _returnPurchaseBill(
+    String billId, {
+    List<int>? lineNumbers,
+    Map<int, int>? lineQuantities,
+    String? returnedBy,
+  }) async {
     final deviceId = await _db.deviceId();
     await _db.transaction(() async {
       final bill = await (_db.select(_db.cachedPurchaseBills)..where((tbl) => tbl.id.equals(billId))).getSingleOrNull();
@@ -354,6 +365,31 @@ class LocalPurchaseRepository {
   }
 
   Future<CreatePurchaseResult> createPurchase(CreatePurchaseRequest request) async {
+    await _checkTpNotUsed(request.tpNo);
+    final result = await _createPurchase(request);
+    // Stock changed: refresh what the Sales counter sees.
+    await _masters.onMaterialsChanged?.call();
+    return result;
+  }
+
+  /// One TP (transport permit) is one consignment: entering it on a second
+  /// purchase would double the stock. A fully returned purchase frees it.
+  Future<void> _checkTpNotUsed(String? rawTp) async {
+    final tp = rawTp?.trim() ?? '';
+    if (tp.isEmpty) return;
+    final used = await (_db.select(_db.cachedPurchaseBills)
+          ..where((t) => _db.isActivePurchaseBill(t) & t.tpNo.lower().equals(tp.toLowerCase()))
+          ..limit(1))
+        .getSingleOrNull();
+    if (used != null) {
+      final d = used.billDate;
+      final when = '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+      final bill = (used.billNo ?? '').trim().isEmpty ? '' : ' (bill ${used.billNo})';
+      throw ApiException('TP $tp was already entered on the purchase of $when$bill.');
+    }
+  }
+
+  Future<CreatePurchaseResult> _createPurchase(CreatePurchaseRequest request) async {
     if (AppConfig.offlineOnly) {
       // In offline mode, all IDs are already local — no _resolveDependencies needed.
       return _createLocalPurchase(request);
