@@ -30,6 +30,22 @@ MaterialDto? pickMaterialForCode(Iterable<MaterialDto> materials, String code) {
   return best(materials.where((m) => m.barcode == c)) ?? best(materials.where((m) => m.scmCode == c));
 }
 
+/// Every material an exact [code] stands for: the one whose id it is,
+/// otherwise all carrying it as barcode or SCM code. More than one means
+/// the code is shared and the person has to choose (e.g. in Purchase,
+/// where stock must land on the SCM code printed on the TP).
+List<MaterialDto> materialsForCode(Iterable<MaterialDto> materials, String code) {
+  final c = code.trim();
+  if (c.isEmpty) return const [];
+  for (final m in materials) {
+    if (m.id == c) return [m];
+  }
+  return [
+    for (final m in materials)
+      if (m.barcode == c || m.scmCode == c) m,
+  ];
+}
+
 /// In-memory lookup cache for materials, keyed by barcode, SCM code and id.
 /// Provides O(1)-ish scan lookup — no DB query, no network call.
 ///

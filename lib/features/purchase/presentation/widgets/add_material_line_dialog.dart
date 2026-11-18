@@ -18,6 +18,7 @@ import '../../domain/purchase_line_item.dart';
 import '../purchase_cart_controller.dart';
 import '../purchase_form_controller.dart';
 import '../../../../core/format/money.dart';
+import '../../../../core/local/material_lookup_cache.dart';
 
 Future<void> showAddMaterialLineDialog(BuildContext context) {
   return showDialog(
@@ -57,12 +58,17 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
   String _category = '';
   String _liquorType = '';
 
+  /// The materials of a shared barcode / SCM code, listed for the person to
+  /// pick from (null when the lookup isn't ambiguous).
+  List<MaterialDto>? _sharedChoices;
+
   /// Beer needs a type (Mild / Strong / Fermented) unless the category
   /// already says it (legacy "Strong Beer").
   bool get _needsBeerType => isBeerCategory(_category) && normalizeLiquorCategory(_category).type.isEmpty;
 
   void _selectMaterial(MaterialDto material) {
     setState(() {
+      _sharedChoices = null;
       _material = material;
       _showQuickCreate = false;
       _highlightedSuggestionIndex = 0;
@@ -99,6 +105,19 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
   Future<void> _search() async {
     final query = _lookupController.text.trim();
     if (query.isEmpty) return;
+
+    // Shared barcode / SCM code: don't guess which material gets the stock.
+    final shared = materialsForCode(ref.read(materialsListProvider).asData?.value ?? const <MaterialDto>[], query);
+    if (shared.length > 1) {
+      setState(() {
+        _sharedChoices = shared;
+        _material = null;
+        _showQuickCreate = false;
+        _highlightedSuggestionIndex = 0;
+        _error = '"$query" is on ${shared.length} items. Pick the SCM code from the TP below.';
+      });
+      return;
+    }
 
     setState(() {
       _isSearching = true;
@@ -156,6 +175,11 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
     }
 
     if (event.logicalKey == LogicalKeyboardKey.enter || event.logicalKey == LogicalKeyboardKey.numpadEnter) {
+      final listed = ref.read(materialsListProvider).asData?.value ?? const <MaterialDto>[];
+      if (_sharedChoices == null && materialsForCode(listed, _lookupController.text).length > 1) {
+        _search();
+        return KeyEventResult.handled;
+      }
       _selectMaterial(suggestions[_highlightedSuggestionIndex.clamp(0, suggestions.length - 1)]);
       return KeyEventResult.handled;
     }
@@ -267,7 +291,7 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
     final manufacturersAsync = ref.watch(manufacturersListProvider);
     final categoriesAsync = ref.watch(categoriesListProvider);
     final lookupQuery = _lookupController.text.trim().toLowerCase();
-    final suggestions = materialsAsync.maybeWhen(
+    final List<MaterialDto> suggestions = _sharedChoices ?? materialsAsync.maybeWhen<List<MaterialDto>>(
       data: (materials) {
         if (lookupQuery.isEmpty) return const <MaterialDto>[];
         return materials
@@ -275,7 +299,11 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
               final name = material.name.toLowerCase();
               final id = material.id.toLowerCase();
               final barcode = material.barcode.toLowerCase();
-              return name.contains(lookupQuery) || id.contains(lookupQuery) || barcode.contains(lookupQuery);
+              final scm = material.scmCode.toLowerCase();
+              return name.contains(lookupQuery) ||
+                  id.contains(lookupQuery) ||
+                  scm.contains(lookupQuery) ||
+                  barcode.contains(lookupQuery);
             })
             .take(6)
             .toList();
@@ -338,6 +366,7 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
                       selectAllOnFocus: true,
                       autofocus: true,
                       onChanged: (_) => setState(() {
+                        _sharedChoices = null;
                         _error = null;
                         _showQuickCreate = false;
                         _material = null;
@@ -399,7 +428,7 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
                             ),
                           ),
                           subtitle: Text(
-                            '${material.id} · ${material.packing.isEmpty ? material.category : material.packing}',
+                            '${material.scmCode} · ${material.barcode} · ${material.packing.isEmpty ? material.category : material.packing}',
                             style: AppTypography.caption.copyWith(
                               color: AppColors.textMutedFor(context),
                             ),

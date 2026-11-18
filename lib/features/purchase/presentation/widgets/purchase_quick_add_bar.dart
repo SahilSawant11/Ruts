@@ -14,6 +14,7 @@ import '../purchase_cart_controller.dart';
 import '../purchase_form_controller.dart';
 import 'add_material_line_dialog.dart';
 import '../../../../shared/keyboard/screen_key_guard.dart';
+import '../../../../core/local/material_lookup_cache.dart';
 
 /// Comprehensive POS Quick Add Bar for the Purchase Bill screen.
 /// Provides all capabilities and parameters from the OG screen:
@@ -32,6 +33,16 @@ class PurchaseQuickAddBar extends ConsumerStatefulWidget {
 
 class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
   final _searchController = TextEditingController();
+
+  /// True while the dropdown lists the materials of one shared code, so the
+  /// next Enter picks from them instead of re-checking.
+  bool _pickingShared = false;
+
+  List<MaterialDto> _candidatesFor(String code) {
+    final cache = ref.read(materialLookupCacheProvider);
+    final listed = ref.read(materialsListProvider).asData?.value ?? const <MaterialDto>[];
+    return cache?.allForCode(code) ?? materialsForCode(listed, code);
+  }
   final _packingController = TextEditingController();
   final _batchController = TextEditingController(text: 'B-1');
   final _qtyController = TextEditingController(text: '1');
@@ -133,6 +144,11 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
       }
       if (event.logicalKey == LogicalKeyboardKey.enter ||
           event.logicalKey == LogicalKeyboardKey.numpadEnter) {
+        final query = _searchController.text.trim();
+        if (!_pickingShared && _candidatesFor(query).length > 1) {
+          _handleSearchSubmit(query);
+          return KeyEventResult.handled;
+        }
         if (_highlightedSuggestionIndex < _suggestions.length) {
           _onMaterialSelected(_suggestions[_highlightedSuggestionIndex]);
           return KeyEventResult.handled;
@@ -160,6 +176,7 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
   }
 
   void _onSearchChanged(String query, List<MaterialDto> allMaterials) {
+    _pickingShared = false;
     final trimmed = query.trim();
     if (trimmed.isEmpty) {
       if (_portalController.isShowing) _portalController.hide();
@@ -173,6 +190,7 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
     final q = trimmed.toLowerCase();
     final matches = allMaterials.where((m) =>
         m.id.toLowerCase().contains(q) ||
+        m.scmCode.toLowerCase().contains(q) ||
         m.barcode.toLowerCase().contains(q) ||
         m.name.toLowerCase().contains(q) ||
         m.packing.toLowerCase().contains(q)).take(8).toList();
@@ -189,6 +207,7 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
   }
 
   void _onMaterialSelected(MaterialDto material) {
+    _pickingShared = false;
     if (_portalController.isShowing) _portalController.hide();
     setState(() {
       _selectedMaterial = material;
@@ -218,8 +237,22 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
 
     if (_portalController.isShowing) _portalController.hide();
 
-    // 1. Try O(1) in-memory cache lookup
+    // A barcode / SCM code shared by several materials: never guess in a
+    // purchase — stock must go to the SCM code on the TP. Let them pick.
     final cache = ref.read(materialLookupCacheProvider);
+    final candidates = _candidatesFor(trimmed);
+    if (candidates.length > 1) {
+      setState(() {
+        _pickingShared = true;
+        _suggestions = candidates;
+        _highlightedSuggestionIndex = 0;
+        _inlineError = '"$trimmed" is on ${candidates.length} items. Pick the SCM code from the TP.';
+      });
+      if (!_portalController.isShowing) _portalController.show();
+      return;
+    }
+
+    // 1. Try O(1) in-memory cache lookup
     MaterialDto? found = cache?.findByBarcodeOrId(trimmed);
 
     // 2. Try match from materials list provider
@@ -1044,7 +1077,7 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
                                     borderRadius: BorderRadius.circular(AppRadius.sm),
                                   ),
                                   child: Text(
-                                    item.id,
+                                    item.scmCode,
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w700,
