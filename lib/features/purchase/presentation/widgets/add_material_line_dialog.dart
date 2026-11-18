@@ -9,6 +9,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
 import '../../../../shared/widgets/inputs/app_dropdown.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
+import '../../../masters/data/liquor_type.dart';
 import '../../../masters/data/masters_providers.dart';
 import '../../../masters/data/models/save_material_request.dart';
 import '../../../sales/data/models/material_dto.dart';
@@ -54,6 +55,11 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
   String? _error;
   String _manufacturer = '';
   String _category = '';
+  String _liquorType = '';
+
+  /// Beer needs a type (Mild / Strong / Fermented) unless the category
+  /// already says it (legacy "Strong Beer").
+  bool get _needsBeerType => isBeerCategory(_category) && normalizeLiquorCategory(_category).type.isEmpty;
 
   void _selectMaterial(MaterialDto material) {
     setState(() {
@@ -144,14 +150,12 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
 
     if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
       setState(() {
-        _highlightedSuggestionIndex =
-            (_highlightedSuggestionIndex - 1 + suggestions.length) % suggestions.length;
+        _highlightedSuggestionIndex = (_highlightedSuggestionIndex - 1 + suggestions.length) % suggestions.length;
       });
       return KeyEventResult.handled;
     }
 
-    if (event.logicalKey == LogicalKeyboardKey.enter ||
-        event.logicalKey == LogicalKeyboardKey.numpadEnter) {
+    if (event.logicalKey == LogicalKeyboardKey.enter || event.logicalKey == LogicalKeyboardKey.numpadEnter) {
       _selectMaterial(suggestions[_highlightedSuggestionIndex.clamp(0, suggestions.length - 1)]);
       return KeyEventResult.handled;
     }
@@ -176,6 +180,10 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
       setState(() => _error = 'Enter a valid rate before creating the item.');
       return;
     }
+    if (_needsBeerType && _liquorType.isEmpty) {
+      setState(() => _error = 'Select the beer type (Mild / Strong / Fermented).');
+      return;
+    }
 
     setState(() {
       _isCreating = true;
@@ -190,6 +198,7 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
               name: itemName,
               manufacturer: _manufacturer,
               category: _category,
+              liquorType: _needsBeerType ? _liquorType : '',
               packing: _packingController.text.trim(),
               saleRate: rate,
               taxPercent: double.tryParse(_taxController.text) ?? 0,
@@ -261,19 +270,20 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
     final suggestions = materialsAsync.maybeWhen(
       data: (materials) {
         if (lookupQuery.isEmpty) return const <MaterialDto>[];
-        return materials.where((material) {
-          final name = material.name.toLowerCase();
-          final id = material.id.toLowerCase();
-          final barcode = material.barcode.toLowerCase();
-          return name.contains(lookupQuery) || id.contains(lookupQuery) || barcode.contains(lookupQuery);
-        }).take(6).toList();
+        return materials
+            .where((material) {
+              final name = material.name.toLowerCase();
+              final id = material.id.toLowerCase();
+              final barcode = material.barcode.toLowerCase();
+              return name.contains(lookupQuery) || id.contains(lookupQuery) || barcode.contains(lookupQuery);
+            })
+            .take(6)
+            .toList();
       },
       orElse: () => const <MaterialDto>[],
     );
     final hasSuggestions = suggestions.isNotEmpty;
-    final safeHighlightedIndex = hasSuggestions
-        ? _highlightedSuggestionIndex.clamp(0, suggestions.length - 1)
-        : 0;
+    final safeHighlightedIndex = hasSuggestions ? _highlightedSuggestionIndex.clamp(0, suggestions.length - 1) : 0;
     final manufacturers = manufacturersAsync.maybeWhen(
       data: (items) => items.map((item) => item.name).toList(),
       orElse: () => const <String>[],
@@ -398,9 +408,7 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
                             Money.inr(material.saleRate, decimals: 0),
                             style: AppTypography.caption.copyWith(
                               fontWeight: FontWeight.w700,
-                              color: isHighlighted
-                                  ? AppColors.primary
-                                  : AppColors.textSecondaryFor(context),
+                              color: isHighlighted ? AppColors.primary : AppColors.textSecondaryFor(context),
                             ),
                           ),
                           onTap: () => _selectMaterial(material),
@@ -468,7 +476,9 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
                       itemLabel: (value) => value,
                       value: manufacturers.contains(_manufacturer) ? _manufacturer : null,
                       hint: manufacturers.isEmpty ? 'Create manufacturers in Manufacturer Master' : null,
-                      onChanged: manufacturers.isEmpty ? null : (value) => setState(() => _manufacturer = value ?? _manufacturer),
+                      onChanged: manufacturers.isEmpty
+                          ? null
+                          : (value) => setState(() => _manufacturer = value ?? _manufacturer),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
@@ -494,17 +504,38 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
                 ],
               ),
               const SizedBox(height: AppSpacing.md),
-              AppDropdown<String>(
-                label: 'PACKING',
-                items: packings.contains(_packingController.text) || _packingController.text.isEmpty
-                    ? packings
-                    : [_packingController.text, ...packings],
-                itemLabel: (value) => value,
-                value: _packingController.text.isNotEmpty ? _packingController.text : null,
-                hint: packings.isEmpty ? 'Create packaging in Packaging Master' : null,
-                onChanged: packings.isEmpty
-                    ? null
-                    : (value) => setState(() => _packingController.text = value ?? ''),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (_needsBeerType) ...[
+                    Expanded(
+                      flex: 3,
+                      child: AppDropdown<String>(
+                        label: 'TYPE *',
+                        items: beerTypes,
+                        itemLabel: (value) => value,
+                        value: beerTypes.contains(_liquorType) ? _liquorType : null,
+                        hint: 'Mild / Strong / Fermented',
+                        onChanged: (value) => setState(() => _liquorType = value ?? _liquorType),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                  ],
+                  Expanded(
+                    flex: 8,
+                    child: AppDropdown<String>(
+                      label: 'PACKING',
+                      items: packings.contains(_packingController.text) || _packingController.text.isEmpty
+                          ? packings
+                          : [_packingController.text, ...packings],
+                      itemLabel: (value) => value,
+                      value: _packingController.text.isNotEmpty ? _packingController.text : null,
+                      hint: packings.isEmpty ? 'Create packaging in Packaging Master' : null,
+                      onChanged:
+                          packings.isEmpty ? null : (value) => setState(() => _packingController.text = value ?? ''),
+                    ),
+                  ),
+                ],
               ),
             ],
             if (_material != null) ...[
