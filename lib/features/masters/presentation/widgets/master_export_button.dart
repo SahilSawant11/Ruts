@@ -28,11 +28,12 @@ class MasterExportButton extends ConsumerWidget {
         return x.save(
           fileBaseName: 'materials',
           sheetName: 'Materials',
-          headers: [...t[MasterImportTarget.materials]!, 'Stock Qty', 'Active'],
+          headers: [...t[MasterImportTarget.materials]!, 'Counter Brand ID', 'Stock Qty', 'Active'],
           rows: [
             for (final m in list)
-              [m.id, m.name, m.manufacturer, m.category, m.packing, m.saleRate, m.taxPercent, m.barcode,
-                m.stockQty, m.isActive ? 'Yes' : 'No'],
+              [m.scmCode, m.barcode, m.name, m.category, m.liquorType, m.packing, m.manufacturer,
+                m.counterBrandName, m.saleRate, m.wholesaleRate, m.taxPercent, m.discountPercent,
+                m.counterBrandId, m.stockQty, m.isActive ? 'Yes' : 'No'],
           ],
         );
       case MasterExportKind.suppliers:
@@ -53,7 +54,10 @@ class MasterExportButton extends ConsumerWidget {
           fileBaseName: 'permit_holders',
           sheetName: 'Permit Holders',
           headers: t[MasterImportTarget.licenseHolders]!,
-          rows: [for (final h in list) [h.permitNo, h.name, h.issuedDate, h.whereGranted]],
+          rows: [
+            for (final h in list)
+              [h.permitNo, h.name, h.issuedDate, h.city, h.validity, h.address, h.contactNo, h.remark, h.category],
+          ],
         );
       case MasterExportKind.categories:
         final list = await ref.read(categoriesListProvider.future);

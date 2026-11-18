@@ -80,9 +80,51 @@ class _BrandwiseFiltersCardState extends ConsumerState<BrandwiseFiltersCard> {
               ),
               const SizedBox(width: AppSpacing.md),
               PrimaryButton(label: 'Generate', icon: AppIcons.search, onPressed: _generate),
+              const SizedBox(width: AppSpacing.md),
+              _showAllToggle(context),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  /// Off: only brands in stock (or moved that day). On: every active
+  /// material, even at zero. Inactive materials never show.
+  Widget _showAllToggle(BuildContext context) {
+    final on = ref.watch(brandwiseShowAllProvider);
+    return Tooltip(
+      message: on ? 'Showing every active material, even with no stock' : 'Showing only materials in stock',
+      child: InkWell(
+        onTap: () => ref.read(brandwiseShowAllProvider.notifier).state = !on,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: on ? AppColors.primary.withValues(alpha: 0.10) : AppColors.surfaceFor(context),
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: on ? AppColors.primary : AppColors.borderFor(context)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppIcon(
+                on ? AppIcons.checkCircle : AppIcons.liquorBottle,
+                size: 15,
+                color: on ? AppColors.primary : AppColors.textMutedFor(context),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Show all materials',
+                style: AppTypography.body.copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  color: on ? AppColors.primary : AppColors.textSecondaryFor(context),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -3,10 +3,11 @@
 /// Display order of the register's sections.
 const brandwiseSectionOrder = ['FERMENTED BEER', 'STRONG BEER', 'MILD BEER', 'WINE'];
 
-/// Maps a material's `category` (case-insensitive) to its register section,
-/// or `null` for items the register doesn't carry (e.g. soft drinks).
-String? brandwiseSection(String category) {
-  final lower = category.toLowerCase().trim();
+/// Maps a material's `category` + beer `type` (case-insensitive) to its
+/// register section, or `null` for items the register doesn't carry (e.g.
+/// soft drinks). Older rows with "Strong Beer" in the category still work.
+String? brandwiseSection(String category, [String type = '']) {
+  final lower = '$type $category'.toLowerCase().trim();
   if (lower.contains('fermented')) return 'FERMENTED BEER';
   if (lower.contains('strong')) return 'STRONG BEER';
   if (lower.contains('mild')) return 'MILD BEER';

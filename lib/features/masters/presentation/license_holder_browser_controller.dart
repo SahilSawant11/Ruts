@@ -83,8 +83,8 @@ class LicenseHolderBrowserController extends StateNotifier<LicenseHolderBrowserS
   void toggleEditing() => state = state.copyWith(isEditing: !state.isEditing);
   void setSaving(bool value) => state = state.copyWith(isSaving: value);
 
-  void afterSave(List<LicenseHolderDto> list, String savedPermitNo) {
-    final index = list.indexWhere((lh) => lh.permitNo == savedPermitNo);
+  void afterSave(List<LicenseHolderDto> list, String savedId) {
+    final index = list.indexWhere((lh) => lh.id == savedId);
     state = state.copyWith(
       licenseHolders: list,
       index: index == -1 ? 0 : index,

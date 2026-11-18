@@ -23,7 +23,7 @@ class ScmUploadExporter {
   /// Rows (without header) for each calendar day from [from] to [to].
   static Future<List<List<Object?>>> rows(AppDatabase db, DateTime from, DateTime to) async {
     final materials = (await db.select(db.cachedMaterials).get())
-        .where((m) => m.isActive && brandwiseSection(m.category) != null)
+        .where((m) => m.isActive && brandwiseSection(m.category, m.liquorType) != null)
         .toList()
       ..sort((a, b) {
         final byName = a.name.toLowerCase().compareTo(b.name.toLowerCase());
@@ -46,10 +46,18 @@ class ScmUploadExporter {
         loose[id] = (loose[id] ?? 0) + l.quantity;
       }
       final date = _slashDate(day);
+      // One portal row per SCM code: materials sharing an SCM code (same
+      // item, different barcode) are summed together.
+      final seen = <String>{};
       for (final m in materials) {
-        final c = cases[m.id] ?? 0;
-        final b = loose[m.id] ?? 0;
-        out.add([date, m.id, m.name, m.packing, c == 0 ? null : c, b == 0 ? null : b]);
+        final scm = m.scmCode.isEmpty ? m.id : m.scmCode;
+        if (!seen.add(scm)) continue;
+        var c = 0, b = 0;
+        for (final x in materials.where((x) => (x.scmCode.isEmpty ? x.id : x.scmCode) == scm)) {
+          c += cases[x.id] ?? 0;
+          b += loose[x.id] ?? 0;
+        }
+        out.add([date, scm, m.name, m.packing, c == 0 ? null : c, b == 0 ? null : b]);
       }
     }
     return out;

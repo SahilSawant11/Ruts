@@ -12,14 +12,16 @@ class MasterTemplateService {
   /// Column headers per master, in sheet order.
   static const headers = <MasterImportTarget, List<String>>{
     MasterImportTarget.materials: [
-      'Item Code', 'Name', 'Manufacturer', 'Category', 'Packing', 'Sale Rate', 'GST %', 'Barcode',
+      'SCM Code', 'Barcode', 'Brand Display Name', 'Liquor Category', 'Type', 'Packaging',
+      'Manufacturer', 'Counter Brand Name', 'Sale Rate', 'Wholesale Rate', 'VAT %', 'Discount %',
     ],
     MasterImportTarget.suppliers: [
       'Name', 'Address', 'Contact No', 'Email', 'VAT No', 'Bank Details',
       'Discount %', 'Opening Balance', 'Balance Type',
     ],
     MasterImportTarget.licenseHolders: [
-      'Permit No', 'Permit Holder Name', 'Issued Date', 'Where Granted',
+      'Permit No', 'Permit Holder Name', 'Issued Date', 'City', 'Validity', 'Address',
+      'Contact Number', 'Remark', 'Category',
     ],
   };
 
@@ -87,18 +89,24 @@ class MasterTemplateService {
     switch (target) {
       case MasterImportTarget.materials:
         rows.addAll([
-          ['Item Code', 'Required. SCM / item code, unique per brand + size (e.g. KFSTRONG-650).'],
-          ['Name', 'Required. Brand name as on the brandwise register (e.g. KINGFISHER STRONG).'],
-          ['Manufacturer', 'Company (e.g. United Breweries). Blank = first word of the name.'],
-          ['Category', 'Required. Decides the brandwise section — use one of the categories below.'],
-          ['Packing', 'Bottle size, e.g. 750 ML, 650 ML, 500 ML (CAN), 330 ML (CAN).'],
+          ['SCM Code', 'Required. The same SCM code may appear on several rows with different barcodes.'],
+          ['Barcode', 'Optional. Blank = SCM Code. SCM Code + Barcode together must be new.'],
+          ['Brand Display Name', 'Required. Name as on the bottle (e.g. KINGFISHER SUPER STRONG).'],
+          ['Liquor Category', 'Required. Beer, Wine, Whisky, Rum… — use one of the categories below.'],
+          ['Type', 'Beer only, required for beer: Mild, Strong or Fermented. Decides the brandwise section.'],
+          ['Packaging', 'Bottle size, e.g. 750 ML, 650 ML, 500 ML (CAN), 330 ML (CAN).'],
+          ['Manufacturer', 'The company, e.g. UB Group. Blank = first word of the name.'],
+          ['Counter Brand Name', 'Bottles that look the same share one (e.g. KINGFISHER STRONG). '
+              'Brandwise reports add them up under it. Blank = Brand Display Name. The ID is made for you.'],
           ['Sale Rate', 'MRP / selling price per bottle, numbers only.'],
-          ['GST %', 'Tax percent, numbers only. Blank = 0.'],
-          ['Barcode', 'Optional. Blank = Item Code.'],
+          ['Wholesale Rate', 'Optional, numbers only.'],
+          ['VAT %', 'Numbers only. Blank = 0.'],
+          ['Discount %', 'Applied automatically when billed. Blank = 0.'],
           ['', ''],
-          ['Categories', categories.isEmpty ? 'Fermented Beer, Strong Beer, Mild Beer, Wine' : categories.join(', ')],
+          ['Categories', categories.isEmpty ? 'Beer, Wine, Whisky, Rum, Vodka, Brandy, Gin' : categories.join(', ')],
           if (packings.isNotEmpty) ['Packings', packings.join(', ')],
-          ['Example', 'KFSTRONG-650 | KINGFISHER STRONG | United Breweries | Strong Beer | 650 ML | 190 | 0'],
+          ['Example', 'SCM1234 | 84549000 | KINGFISHER STRONG | Beer | Strong | 650 ML | UB Group | '
+              'KINGFISHER STRONG | 190 | 170 | 0 | 0'],
         ]);
       case MasterImportTarget.suppliers:
         rows.addAll([
@@ -112,10 +120,13 @@ class MasterTemplateService {
         ]);
       case MasterImportTarget.licenseHolders:
         rows.addAll([
-          ['Permit No', 'Required. Permit / licence number.'],
+          ['Permit No', 'Required for License Holders. Leave blank for Frequent Buyers.'],
           ['Permit Holder Name', 'Required.'],
-          ['Issued Date', 'Optional, e.g. 14-11-2026.'],
-          ['Where Granted', 'Optional, e.g. One day / Yearly / Lifetime.'],
+          ['Issued Date', 'Optional, e.g. 14-Nov-2026.'],
+          ['City', 'Optional.'],
+          ['Validity', 'One Time or Lifetime. Blank = Lifetime.'],
+          ['Address / Contact Number / Remark', 'Optional.'],
+          ['Category', 'License Holder or Frequent Buyer. Blank = License Holder.'],
         ]);
     }
     rows.addAll([

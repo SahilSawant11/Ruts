@@ -59,7 +59,7 @@ class SaleLineItem {
       pack: material.packing,
       qty: qty,
       rate: material.saleRate,
-      discountPercent: 0,
+      discountPercent: material.discountPercent,
       taxPercent: material.taxPercent,
     );
   }

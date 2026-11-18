@@ -39,12 +39,20 @@ class CartState {
 /// appends a row.
 /// Enforces the legal limit: 1 customer can take maximum 12 bottles per transaction.
 class CartController extends StateNotifier<CartState> {
-  CartController(this._findMaterial) : super(const CartState());
+  CartController(this._findMaterial, [this._findAll]) : super(const CartState());
 
   static const int maxBottlesLimit = 12;
 
   /// Synchronous material lookup function (backed by in-memory cache).
   final MaterialDto? Function(String code) _findMaterial;
+
+  /// Every material sharing a code (one barcode can sit on several SCM
+  /// rows of the same counter brand). Used to move on to the next row
+  /// when the first one's stock is all in the cart.
+  final List<MaterialDto> Function(String code)? _findAll;
+
+  int _inCart(String materialId) =>
+      state.items.where((i) => i.materialId == materialId).fold(0, (s, i) => s + i.qty);
 
   /// Looks up the barcode in the in-memory cache and adds it to the cart.
   /// Returns true if the item was added, false on error.
@@ -75,7 +83,17 @@ class CartController extends StateNotifier<CartState> {
     state = state.copyWith(clearError: true);
 
     // O(1) in-memory lookup — no DB query, no network call.
-    final material = _findMaterial(barcode);
+    var material = _findMaterial(barcode);
+    // Shared barcode: if this row's stock is already in the cart, use
+    // another active row of the same code that still has stock.
+    if (material != null && material.stockQty - _inCart(material.id) < addQty && _findAll != null) {
+      for (final alt in _findAll(barcode)) {
+        if (alt.isActive && alt.saleRate > 0 && alt.stockQty - _inCart(alt.id) >= addQty) {
+          material = alt;
+          break;
+        }
+      }
+    }
     if (material == null) {
       state = state.copyWith(scanError: 'No item found for barcode "$barcode".');
       return false;
@@ -101,7 +119,7 @@ class CartController extends StateNotifier<CartState> {
 
     // If it's already in the cart, bump the quantity instead of adding
     // a duplicate row, checking stock limits.
-    final existingIndex = state.items.indexWhere((i) => i.barcode == material.barcode);
+    final existingIndex = state.items.indexWhere((i) => i.materialId == material!.id);
     final currentInCart = existingIndex != -1 ? state.items[existingIndex].qty : 0;
     if (currentInCart + addQty > availableStock) {
       final remaining = availableStock - currentInCart;
@@ -155,7 +173,8 @@ class CartController extends StateNotifier<CartState> {
       return true;
     }
 
-    final material = _findMaterial(currentItem.barcode);
+    final material = (currentItem.materialId.isNotEmpty ? _findMaterial(currentItem.materialId) : null) ??
+        _findMaterial(currentItem.barcode);
     final availableStock = material?.stockQty ?? 0;
     if (newQty > currentItem.qty && newQty > availableStock) {
       state = state.copyWith(
@@ -194,9 +213,10 @@ class CartController extends StateNotifier<CartState> {
 }
 
 final cartControllerProvider = StateNotifierProvider<CartController, CartState>((ref) {
-  return CartController((code) {
-    return ref.read(materialLookupCacheProvider)?.findByBarcodeOrId(code);
-  });
+  return CartController(
+    (code) => ref.read(materialLookupCacheProvider)?.findByBarcodeOrId(code),
+    (code) => ref.read(materialLookupCacheProvider)?.allForCode(code) ?? const [],
+  );
 });
 
 /// Holds the line item currently moved up into the scan input row for editing.

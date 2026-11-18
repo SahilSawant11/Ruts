@@ -7,14 +7,20 @@ enum PaymentMethod { cash, card, upi }
 /// Which payment method is selected in the Payment card.
 final paymentMethodProvider = StateProvider<PaymentMethod>((ref) => PaymentMethod.cash);
 
-/// Which customer id (from customersProvider) is selected on the
-/// current bill. Null = walk-in / no customer selected yet.
+/// Which customer id is selected on the current bill — a Frequent Buyer's
+/// id from the License Holder master. Null = License Holder (rotation).
 final selectedCustomerIdProvider = StateProvider<String?>((ref) => null);
 
-/// Customer → NEW: the bill is for a walk-in whose permit isn't on file.
-/// While on, the invoice strip shows Name + License No boxes; saving the
-/// bill adds them to the License Holder master and stamps them on the bill.
+/// Customer → New → Walk in: the bill is for a walk-in whose permit isn't
+/// on file. While on, the invoice strip shows Name + License No boxes;
+/// saving the bill adds them to the License Holder master (One Time,
+/// issued on the sale date) and stamps them on the bill.
+///
+/// With [newFrequentBuyerProvider] also on, it's New → Frequent Buyer:
+/// only a name; the buyer is saved to the master and the bill still takes
+/// the rotating permit.
 final newPermitModeProvider = StateProvider<bool>((ref) => false);
+final newFrequentBuyerProvider = StateProvider<bool>((ref) => false);
 final newPermitNameProvider = StateProvider<String>((ref) => '');
 final newPermitNoProvider = StateProvider<String>((ref) => '');
 
@@ -29,7 +35,7 @@ final activeLicenseHolderProvider = Provider<LicenseHolderDto?>((ref) {
   final explicit = ref.watch(selectedLicenseHolderProvider);
   if (explicit != null) return explicit;
 
-  final holdersAsync = ref.watch(licenseHoldersListProvider);
+  final holdersAsync = ref.watch(rotationLicenseHoldersProvider);
   return holdersAsync.maybeWhen(
     data: (list) {
       if (list.isEmpty) return null;

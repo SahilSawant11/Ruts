@@ -10,6 +10,7 @@ import '../../../../shared/widgets/inputs/app_dropdown.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
 import '../../../sales/data/models/material_dto.dart';
+import '../../data/liquor_type.dart';
 import '../../data/masters_providers.dart';
 import '../../data/models/save_material_request.dart';
 import '../material_browser_controller.dart';
@@ -34,6 +35,12 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
   final _name = TextEditingController();
   final _saleRate = TextEditingController();
   final _taxPercent = TextEditingController();
+  final _wholesaleRate = TextEditingController();
+  final _discount = TextEditingController();
+  final _counterBrand = TextEditingController();
+  final _counterBrandFocus = FocusNode();
+  String _counterBrandId = '';
+  String _liquorType = '';
   String _manufacturer = '';
   String _category = '';
   String _packing = '';
@@ -49,16 +56,25 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
     _name.dispose();
     _saleRate.dispose();
     _taxPercent.dispose();
+    _wholesaleRate.dispose();
+    _discount.dispose();
+    _counterBrand.dispose();
+    _counterBrandFocus.dispose();
     super.dispose();
   }
 
   void _populateFrom(MaterialDto? material) {
-    _id.text = material?.id ?? '';
+    _id.text = material?.scmCode ?? '';
     _barcode.text = material?.barcode ?? '';
     _name.text = material?.name ?? '';
     _packing = material?.packing ?? '';
     _saleRate.text = material != null ? Money.editable(material.saleRate) : '0';
     _taxPercent.text = material != null ? Money.editable(material.taxPercent) : '5';
+    _wholesaleRate.text = material != null ? Money.editable(material.wholesaleRate) : '0';
+    _discount.text = material != null ? Money.editable(material.discountPercent) : '0';
+    _counterBrand.text = material?.counterBrandName ?? '';
+    _counterBrandId = material?.counterBrandId ?? '';
+    _liquorType = material?.liquorType ?? '';
     _manufacturer = material?.manufacturer ?? '';
     _category = material?.category ?? '';
     _isActive = material?.isActive ?? true;
@@ -72,7 +88,11 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
       return;
     }
     if (_name.text.trim().isEmpty) {
-      _showSnack('Name is required.', isError: true);
+      _showSnack('Brand display name is required.', isError: true);
+      return;
+    }
+    if (isBeerCategory(_category) && _liquorType.isEmpty) {
+      _showSnack('Pick the beer type (Mild, Strong or Fermented).', isError: true);
       return;
     }
 
@@ -88,6 +108,11 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
         saleRate: double.tryParse(_saleRate.text) ?? 0,
         taxPercent: double.tryParse(_taxPercent.text) ?? 0,
         isActive: _isActive,
+        scmCode: _id.text.trim(),
+        liquorType: isBeerCategory(_category) ? _liquorType : '',
+        counterBrandName: _counterBrand.text.trim(),
+        wholesaleRate: double.tryParse(_wholesaleRate.text) ?? 0,
+        discountPercent: double.tryParse(_discount.text) ?? 0,
       );
 
       final repo = ref.read(mastersRepositoryProvider);
@@ -297,7 +322,9 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
               Text(
                 browser.isNew
                     ? 'Fill in SCM code from client sheet'
-                    : 'SCM Code: ${_id.text.isEmpty ? '—' : _id.text} · ${browser.index + 1} of ${materials.length}',
+                    : 'SCM Code: ${_id.text.isEmpty ? '—' : _id.text}'
+                        '${_counterBrandId.isEmpty ? '' : ' · $_counterBrandId'}'
+                        ' · ${browser.index + 1} of ${materials.length}',
                 overflow: TextOverflow.ellipsis,
                 style: AppTypography.caption.copyWith(color: AppColors.textMutedFor(context)),
               ),
@@ -417,10 +444,10 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
         ),
         const SizedBox(height: AppSpacing.sm),
         AppTextField(
-          label: 'DISPLAY NAME *',
+          label: 'BRAND DISPLAY NAME *',
           controller: _name,
           enabled: editable,
-          hint: 'e.g. Jack Daniel\'s Old No. 7 Tennessee Whiskey',
+          hint: 'As printed on the bottle, e.g. Kingfisher Super Strong',
         ),
 
         const SizedBox(height: AppSpacing.md),
@@ -434,72 +461,123 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
               flex: 4,
               child: editable
                   ? AppDropdown<String>(
-                      label: 'CATEGORY',
+                      label: 'LIQUOR CATEGORY',
                       items: categories,
                       itemLabel: (v) => v,
                       value: categories.contains(_category) ? _category : null,
                       hint: categories.isEmpty ? 'Add categories' : null,
                       onChanged: categories.isEmpty ? null : (v) => setState(() => _category = v ?? _category),
                     )
-                  : AppTextField(label: 'CATEGORY', hint: _category, enabled: false),
+                  : AppTextField(label: 'LIQUOR CATEGORY', hint: _category, enabled: false),
             ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
               flex: 4,
+              child: !isBeerCategory(_category)
+                  ? const AppTextField(label: 'TYPE', hint: 'Beer only', enabled: false)
+                  : editable
+                      ? AppDropdown<String>(
+                          label: 'TYPE *',
+                          items: beerTypes,
+                          itemLabel: (v) => v,
+                          value: beerTypes.contains(_liquorType) ? _liquorType : null,
+                          hint: 'Mild / Strong / Fermented',
+                          onChanged: (v) => setState(() => _liquorType = v ?? _liquorType),
+                        )
+                      : AppTextField(label: 'TYPE', hint: _liquorType.isEmpty ? '—' : _liquorType, enabled: false),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Row(
+          children: [
+            Expanded(
+              flex: 4,
               child: editable
                   ? AppDropdown<String>(
-                      label: 'PACKING',
+                      label: 'PACKAGING',
                       items: dropdownPackings,
                       itemLabel: (v) => v,
                       value: dropdownPackings.contains(_packing) ? _packing : null,
                       hint: dropdownPackings.isEmpty ? 'Add packings' : null,
                       onChanged: dropdownPackings.isEmpty ? null : (v) => setState(() => _packing = v ?? _packing),
                     )
-                  : AppTextField(label: 'PACKING', hint: _packing, enabled: false),
+                  : AppTextField(label: 'PACKAGING', hint: _packing, enabled: false),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              flex: 4,
+              child: editable
+                  ? AppDropdown<String>(
+                      label: 'MANUFACTURER',
+                      items: manufacturers,
+                      itemLabel: (v) => v,
+                      value: manufacturers.contains(_manufacturer) ? _manufacturer : null,
+                      hint: manufacturers.isEmpty ? 'Add manufacturer' : 'e.g. UB Group',
+                      onChanged: manufacturers.isEmpty ? null : (v) => setState(() => _manufacturer = v ?? _manufacturer),
+                    )
+                  : AppTextField(label: 'MANUFACTURER', hint: _manufacturer, enabled: false),
             ),
           ],
         ),
-        const SizedBox(height: AppSpacing.sm),
-        editable
-            ? AppDropdown<String>(
-                label: 'MANUFACTURER / BRAND HOUSE',
-                items: manufacturers,
-                itemLabel: (v) => v,
-                value: manufacturers.contains(_manufacturer) ? _manufacturer : null,
-                hint: manufacturers.isEmpty ? 'Add manufacturer' : null,
-                onChanged: manufacturers.isEmpty ? null : (v) => setState(() => _manufacturer = v ?? _manufacturer),
-              )
-            : AppTextField(label: 'MANUFACTURER', hint: _manufacturer, enabled: false),
 
         const SizedBox(height: AppSpacing.md),
 
-        // Section 3: Pricing & Inventory
-        _sectionLabel(context, '3. Pricing & Stock Rates', AppIcons.rupee),
+        // Section 3: Counter brand
+        _sectionLabel(context, '3. Counter Brand', AppIcons.store),
         const SizedBox(height: 8),
         Row(
           children: [
             Expanded(
-              flex: 3,
-              child: AppTextField(
-                label: 'SALE RATE (₹)',
-                controller: _saleRate,
-                enabled: editable,
-                hint: '0.00',
-              ),
+              flex: 5,
+              child: _counterBrandField(context, editable, browser.materials),
             ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
               flex: 3,
               child: AppTextField(
-                label: 'GST SLAB %',
-                controller: _taxPercent,
-                enabled: editable,
-                hint: '5',
+                label: 'COUNTER BRAND ID',
+                hint: _counterBrandId.isEmpty ? 'Auto on save' : _counterBrandId,
+                enabled: false,
+                suffix: AppIcon(AppIcons.lock, size: 16, color: AppColors.textMutedFor(context)),
               ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Bottles that look the same share one counter brand. Brandwise reports add them up under this name.',
+          style: AppTypography.caption.copyWith(color: AppColors.textMutedFor(context)),
+        ),
+
+        const SizedBox(height: AppSpacing.md),
+
+        // Section 4: Pricing
+        _sectionLabel(context, '4. Pricing & Stock', AppIcons.rupee),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: AppTextField(label: 'SALE RATE (₹)', controller: _saleRate, enabled: editable, hint: '0.00'),
             ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
-              flex: 3,
+              child: AppTextField(label: 'WHOLESALE RATE (₹)', controller: _wholesaleRate, enabled: editable, hint: '0.00'),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Row(
+          children: [
+            Expanded(
+              child: AppTextField(label: 'VAT %', controller: _taxPercent, enabled: editable, hint: '5'),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: AppTextField(label: 'DISCOUNT %', controller: _discount, enabled: editable, hint: '0'),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
               child: AppTextField(
                 label: 'CURRENT STOCK',
                 hint: browser.current != null ? '${browser.current!.stockQty} units' : '—',
@@ -509,6 +587,61 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
           ],
         ),
       ],
+    );
+  }
+
+  /// Free text with suggestions from existing counter brands, so the same
+  /// brand isn't typed two ways. Blank = the display name.
+  Widget _counterBrandField(BuildContext context, bool editable, List<MaterialDto> materials) {
+    if (!editable) {
+      return AppTextField(
+        label: 'COUNTER BRAND NAME',
+        hint: _counterBrand.text.isEmpty ? '—' : _counterBrand.text,
+        enabled: false,
+      );
+    }
+    final names = <String>{
+      for (final m in materials)
+        if (m.counterBrandName.trim().isNotEmpty) m.counterBrandName.trim(),
+    }.toList()
+      ..sort();
+    return RawAutocomplete<String>(
+      textEditingController: _counterBrand,
+      focusNode: _counterBrandFocus,
+      optionsBuilder: (value) {
+        final q = value.text.trim().toLowerCase();
+        if (q.isEmpty) return const Iterable<String>.empty();
+        return names.where((n) => n.toLowerCase().contains(q) && n.toLowerCase() != q).take(8);
+      },
+      fieldViewBuilder: (context, controller, focusNode, onSubmit) => AppTextField(
+        label: 'COUNTER BRAND NAME',
+        controller: controller,
+        focusNode: focusNode,
+        hint: 'e.g. Kingfisher Strong (blank = display name)',
+      ),
+      optionsViewBuilder: (context, onSelected, options) => Align(
+        alignment: Alignment.topLeft,
+        child: Material(
+          elevation: 4,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          color: AppColors.backgroundFor(context),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 240, maxWidth: 360),
+            child: ListView(
+              padding: EdgeInsets.zero,
+              shrinkWrap: true,
+              children: [
+                for (final o in options)
+                  ListTile(
+                    dense: true,
+                    title: Text(o, style: AppTypography.body.copyWith(fontSize: 12.5)),
+                    onTap: () => onSelected(o),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 

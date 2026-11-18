@@ -21,6 +21,7 @@ class InvoiceDetailsCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final billNo = ref.watch(billNoProvider);
     final isNewPermit = ref.watch(newPermitModeProvider);
+    final isNewBuyer = isNewPermit && ref.watch(newFrequentBuyerProvider);
 
     final isDark = AppColors.isDark(context);
     final stripBg = isDark ? AppColors.surfaceFor(context) : AppColors.surfaceAltFor(context);
@@ -50,22 +51,31 @@ class InvoiceDetailsCard extends ConsumerWidget {
           _divider(borderColor),
 
           if (isNewPermit) ...[
-            // Customer → NEW: type the walk-in's name and license number.
-            const Expanded(
+            // New → Walk in: name + license number. New → Frequent Buyer:
+            // name only (the bill keeps the rotating permit).
+            Expanded(
               flex: 3,
-              child: _NewPermitBox(label: 'NAME', hint: 'Customer name', isName: true),
+              child: _NewPermitBox(
+                label: isNewBuyer ? 'FREQUENT BUYER NAME' : 'WALK-IN NAME',
+                hint: 'Customer name',
+                isName: true,
+              ),
             ),
             _divider(borderColor),
-            const Expanded(
-              flex: 3,
-              child: _NewPermitBox(label: 'LICENSE NO', hint: 'Permit / license no.', isName: false),
-            ),
+            if (isNewBuyer)
+              Expanded(flex: 3, child: _LicenseHolderField(ref: ref))
+            else
+              const Expanded(
+                flex: 3,
+                child: _NewPermitBox(label: 'LICENSE NO', hint: 'Permit / license no.', isName: false),
+              ),
             IconButton(
               tooltip: 'Cancel new customer',
               visualDensity: VisualDensity.compact,
               icon: AppIcon(AppIcons.close, size: 16, color: AppColors.textSecondaryFor(context)),
               onPressed: () {
                 ref.read(newPermitModeProvider.notifier).state = false;
+                ref.read(newFrequentBuyerProvider.notifier).state = false;
                 ref.read(newPermitNameProvider.notifier).state = '';
                 ref.read(newPermitNoProvider.notifier).state = '';
               },
@@ -92,7 +102,9 @@ class InvoiceDetailsCard extends ConsumerWidget {
             flex: 2,
             child: _MetaField(
               label: 'PERMIT TYPE',
-              value: isNewPermit ? 'New' : ref.watch(activeLicenseHolderProvider)?.whereGranted ?? 'Life Time',
+              value: isNewPermit && !isNewBuyer
+                  ? LicenseHolderDto.oneTime
+                  : ref.watch(activeLicenseHolderProvider)?.validity ?? LicenseHolderDto.lifetime,
             ),
           ),
         ],
@@ -155,6 +167,8 @@ class _MetaField extends StatelessWidget {
 
 const _walkIn = '__walk_in__';
 const _newCustomer = '__new__';
+const _newFrequentBuyer = '__new_frequent_buyer__';
+const _licenseHolderLabel = 'License Holder';
 
 /// One of the two inline boxes shown for Customer → NEW.
 class _NewPermitBox extends ConsumerStatefulWidget {
@@ -235,111 +249,110 @@ class _CustomerField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final customersAsync = ref.watch(customersProvider);
+    final buyers = ref.watch(frequentBuyersProvider).valueOrNull ?? const <LicenseHolderDto>[];
+    final remoteCustomers = ref.watch(customersProvider).valueOrNull ?? const [];
     final selectedId = ref.watch(selectedCustomerIdProvider);
+    final options = <(String, String)>[
+      for (final b in buyers) (b.id, b.name),
+      for (final c in remoteCustomers) (c.id, c.name),
+    ];
+    final selectedName = options.where((o) => o.$1 == selectedId).map((o) => o.$2).firstOrNull;
 
-    return customersAsync.when(
-      loading: () => const _MetaField(label: 'CUSTOMER', value: 'Loading…'),
-      error: (_, __) => const _MetaField(label: 'CUSTOMER', value: 'Counter Sale (Walk-in)'),
-      data: (customers) {
-        final matches = customers.where((c) => c.id == selectedId);
-        final selected = matches.isEmpty ? null : matches.first;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
+    Widget newItem(String label) => Row(
           children: [
+            const AppIcon(AppIcons.add, size: 16, color: AppColors.primary),
+            const SizedBox(width: 6),
             Text(
-              'CUSTOMER',
-              style: AppTypography.label.copyWith(
-                fontSize: 9.5,
-                letterSpacing: 0.5,
-                color: AppColors.textSecondaryFor(context),
-              ),
-            ),
-            const SizedBox(height: 2),
-            PopupMenuButton<String>(
-              tooltip: 'Select Customer',
-              initialValue: selected?.id ?? _walkIn,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                side: BorderSide(color: AppColors.borderFor(context)),
-              ),
-              color: AppColors.backgroundFor(context),
-              onSelected: (value) {
-                if (value == _newCustomer) {
-                  ref.read(selectedCustomerIdProvider.notifier).state = null;
-                  ref.read(newPermitModeProvider.notifier).state = true;
-                  return;
-                }
-                ref.read(selectedCustomerIdProvider.notifier).state = value == _walkIn ? null : value;
-              },
-              itemBuilder: (context) => [
-                PopupMenuItem<String>(
-                  value: _newCustomer,
-                  child: Row(
-                    children: [
-                      const AppIcon(AppIcons.add, size: 16, color: AppColors.primary),
-                      const SizedBox(width: 6),
-                      Text(
-                        'NEW',
-                        style: AppTypography.body.copyWith(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12,
-                          color: AppColors.primaryInk,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                PopupMenuItem<String>(
-                  value: _walkIn,
-                  child: Text(
-                    'Counter Sale (Walk-in)',
-                    style: AppTypography.body.copyWith(fontWeight: FontWeight.w700, fontSize: 12),
-                  ),
-                ),
-                ...customers.map(
-                  (c) => PopupMenuItem<String>(
-                    value: c.id,
-                    child: Text(c.name, style: AppTypography.body.copyWith(fontSize: 12)),
-                  ),
-                ),
-              ],
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppColors.backgroundFor(context),
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                  border: Border.all(color: AppColors.borderFor(context)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        selected?.name ?? 'Counter Sale (Walk-in)',
-                        style: AppTypography.body.copyWith(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimaryFor(context),
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const AppIcon(
-                      AppIcons.arrowDropDown,
-                      size: 16,
-                      color: AppColors.primary,
-                    ),
-                  ],
-                ),
+              'New → $label',
+              style: AppTypography.body.copyWith(
+                fontWeight: FontWeight.w800,
+                fontSize: 12,
+                color: AppColors.primaryInk,
               ),
             ),
           ],
         );
-      },
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'CUSTOMER',
+          style: AppTypography.label.copyWith(
+            fontSize: 9.5,
+            letterSpacing: 0.5,
+            color: AppColors.textSecondaryFor(context),
+          ),
+        ),
+        const SizedBox(height: 2),
+        PopupMenuButton<String>(
+          tooltip: 'Select Customer',
+          initialValue: selectedName != null ? selectedId : _walkIn,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            side: BorderSide(color: AppColors.borderFor(context)),
+          ),
+          color: AppColors.backgroundFor(context),
+          onSelected: (value) {
+            if (value == _newCustomer || value == _newFrequentBuyer) {
+              ref.read(selectedCustomerIdProvider.notifier).state = null;
+              ref.read(newFrequentBuyerProvider.notifier).state = value == _newFrequentBuyer;
+              ref.read(newPermitModeProvider.notifier).state = true;
+              return;
+            }
+            ref.read(selectedCustomerIdProvider.notifier).state = value == _walkIn ? null : value;
+          },
+          itemBuilder: (context) => [
+            PopupMenuItem<String>(value: _newCustomer, child: newItem('Walk in')),
+            PopupMenuItem<String>(value: _newFrequentBuyer, child: newItem('Frequent Buyer')),
+            PopupMenuItem<String>(
+              value: _walkIn,
+              child: Text(
+                _licenseHolderLabel,
+                style: AppTypography.body.copyWith(fontWeight: FontWeight.w700, fontSize: 12),
+              ),
+            ),
+            if (options.isNotEmpty) const PopupMenuDivider(),
+            ...options.map(
+              (o) => PopupMenuItem<String>(
+                value: o.$1,
+                child: Text(o.$2, style: AppTypography.body.copyWith(fontSize: 12)),
+              ),
+            ),
+          ],
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: AppColors.backgroundFor(context),
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              border: Border.all(color: AppColors.borderFor(context)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    selectedName ?? _licenseHolderLabel,
+                    style: AppTypography.body.copyWith(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimaryFor(context),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const AppIcon(
+                  AppIcons.arrowDropDown,
+                  size: 16,
+                  color: AppColors.primary,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -352,7 +365,7 @@ class _LicenseHolderField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final activeHolder = ref.watch(activeLicenseHolderProvider);
-    final holdersAsync = ref.watch(licenseHoldersListProvider);
+    final holdersAsync = ref.watch(rotationLicenseHoldersProvider);
 
     final displayValue = activeHolder != null
         ? '${activeHolder.permitNo} · ${activeHolder.name}'

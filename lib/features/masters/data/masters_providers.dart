@@ -69,6 +69,20 @@ final licenseHoldersListProvider = FutureProvider<List<LicenseHolderDto>>((ref) 
   return ref.watch(mastersRepositoryProvider).getLicenseHolders();
 });
 
+/// Permits the sales screen rotates through (License Holders only, minus
+/// used One Time permits). Refreshes with the master list; invalidate it
+/// after each bill too.
+final rotationLicenseHoldersProvider = FutureProvider<List<LicenseHolderDto>>((ref) async {
+  await ref.watch(licenseHoldersListProvider.future);
+  return ref.watch(mastersRepositoryProvider).getRotationLicenseHolders();
+});
+
+/// Frequent Buyers (name only) for the sales screen's customer menu.
+final frequentBuyersProvider = FutureProvider<List<LicenseHolderDto>>((ref) async {
+  final all = await ref.watch(licenseHoldersListProvider.future);
+  return all.where((h) => h.isFrequentBuyer).toList();
+});
+
 final pendingMastersSyncCountProvider = StreamProvider<int>((ref) {
   return ref.watch(mastersRepositoryProvider).watchPendingSyncCount();
 });

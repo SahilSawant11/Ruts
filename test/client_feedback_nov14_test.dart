@@ -108,8 +108,8 @@ void main() {
 
       final csv = [
         MasterTemplateService.headers[MasterImportTarget.materials]!.join(','),
-        'KS-650,KINGFISHER STRONG,United Breweries,Strong Beer,650 ML,190,0,',
-        'KM-650,KINGFISHER PREMIUM,United Breweries,,650 ML,170,0,',
+        'KS-650,,KINGFISHER STRONG,Beer,Strong,650 ML,United Breweries,,190,,0,',
+        'KM-650,,KINGFISHER PREMIUM,,,650 ML,United Breweries,,170,,0,',
       ].join('\n');
       final summary = await container.read(masterImportServiceProvider).importFile(
             MasterImportTarget.materials,

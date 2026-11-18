@@ -517,7 +517,9 @@ class LocalSalesRepository {
         if (item.materialId != null && item.materialId!.isNotEmpty) {
           query.where((tbl) => tbl.materialId.equals(item.materialId!));
         } else {
-          query.where((tbl) => tbl.barcode.equals(item.barcodeNo));
+          query
+            ..where((tbl) => tbl.barcode.equals(item.barcodeNo))
+            ..limit(1);
         }
         final stock = await query.getSingleOrNull();
 
@@ -544,7 +546,9 @@ class LocalSalesRepository {
         if (item.materialId != null && item.materialId!.isNotEmpty) {
           query.where((tbl) => tbl.materialId.equals(item.materialId!));
         } else {
-          query.where((tbl) => tbl.barcode.equals(item.barcodeNo));
+          query
+            ..where((tbl) => tbl.barcode.equals(item.barcodeNo))
+            ..limit(1);
         }
         final stock = await query.getSingleOrNull();
 

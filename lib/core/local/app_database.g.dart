@@ -65,6 +65,54 @@ class $CachedMaterialsTable extends CachedMaterials
       type: DriftSqlType.int,
       requiredDuringInsert: false,
       defaultValue: const Constant(0));
+  static const VerificationMeta _scmCodeMeta =
+      const VerificationMeta('scmCode');
+  @override
+  late final GeneratedColumn<String> scmCode = GeneratedColumn<String>(
+      'scm_code', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(''));
+  static const VerificationMeta _liquorTypeMeta =
+      const VerificationMeta('liquorType');
+  @override
+  late final GeneratedColumn<String> liquorType = GeneratedColumn<String>(
+      'liquor_type', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(''));
+  static const VerificationMeta _counterBrandNameMeta =
+      const VerificationMeta('counterBrandName');
+  @override
+  late final GeneratedColumn<String> counterBrandName = GeneratedColumn<String>(
+      'counter_brand_name', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(''));
+  static const VerificationMeta _counterBrandIdMeta =
+      const VerificationMeta('counterBrandId');
+  @override
+  late final GeneratedColumn<String> counterBrandId = GeneratedColumn<String>(
+      'counter_brand_id', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(''));
+  static const VerificationMeta _wholesaleRateMeta =
+      const VerificationMeta('wholesaleRate');
+  @override
+  late final GeneratedColumn<double> wholesaleRate = GeneratedColumn<double>(
+      'wholesale_rate', aliasedName, false,
+      type: DriftSqlType.double,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _discountPercentMeta =
+      const VerificationMeta('discountPercent');
+  @override
+  late final GeneratedColumn<double> discountPercent = GeneratedColumn<double>(
+      'discount_percent', aliasedName, false,
+      type: DriftSqlType.double,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
   static const VerificationMeta _isActiveMeta =
       const VerificationMeta('isActive');
   @override
@@ -116,6 +164,12 @@ class $CachedMaterialsTable extends CachedMaterials
         saleRate,
         taxPercent,
         stockQty,
+        scmCode,
+        liquorType,
+        counterBrandName,
+        counterBrandId,
+        wholesaleRate,
+        discountPercent,
         isActive,
         syncStatus,
         createdAt,
@@ -185,6 +239,40 @@ class $CachedMaterialsTable extends CachedMaterials
       context.handle(_stockQtyMeta,
           stockQty.isAcceptableOrUnknown(data['stock_qty']!, _stockQtyMeta));
     }
+    if (data.containsKey('scm_code')) {
+      context.handle(_scmCodeMeta,
+          scmCode.isAcceptableOrUnknown(data['scm_code']!, _scmCodeMeta));
+    }
+    if (data.containsKey('liquor_type')) {
+      context.handle(
+          _liquorTypeMeta,
+          liquorType.isAcceptableOrUnknown(
+              data['liquor_type']!, _liquorTypeMeta));
+    }
+    if (data.containsKey('counter_brand_name')) {
+      context.handle(
+          _counterBrandNameMeta,
+          counterBrandName.isAcceptableOrUnknown(
+              data['counter_brand_name']!, _counterBrandNameMeta));
+    }
+    if (data.containsKey('counter_brand_id')) {
+      context.handle(
+          _counterBrandIdMeta,
+          counterBrandId.isAcceptableOrUnknown(
+              data['counter_brand_id']!, _counterBrandIdMeta));
+    }
+    if (data.containsKey('wholesale_rate')) {
+      context.handle(
+          _wholesaleRateMeta,
+          wholesaleRate.isAcceptableOrUnknown(
+              data['wholesale_rate']!, _wholesaleRateMeta));
+    }
+    if (data.containsKey('discount_percent')) {
+      context.handle(
+          _discountPercentMeta,
+          discountPercent.isAcceptableOrUnknown(
+              data['discount_percent']!, _discountPercentMeta));
+    }
     if (data.containsKey('is_active')) {
       context.handle(_isActiveMeta,
           isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta));
@@ -236,6 +324,18 @@ class $CachedMaterialsTable extends CachedMaterials
           .read(DriftSqlType.double, data['${effectivePrefix}tax_percent'])!,
       stockQty: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}stock_qty'])!,
+      scmCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}scm_code'])!,
+      liquorType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}liquor_type'])!,
+      counterBrandName: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}counter_brand_name'])!,
+      counterBrandId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}counter_brand_id'])!,
+      wholesaleRate: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}wholesale_rate'])!,
+      discountPercent: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}discount_percent'])!,
       isActive: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_active'])!,
       syncStatus: attachedDatabase.typeMapping
@@ -263,8 +363,29 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
   final String category;
   final String packing;
   final double saleRate;
+
+  /// VAT % (shown as "VAT %"; was "GST slab").
   final double taxPercent;
   final int stockQty;
+
+  /// The SCM code. Not unique: one SCM code can come with several
+  /// barcodes. [id] is the unique key (the SCM code itself for the first
+  /// material that uses it, `SCM/barcode` for the others).
+  final String scmCode;
+
+  /// Beer only: Mild / Strong / Fermented. Empty for everything else.
+  final String liquorType;
+
+  /// Counter brand — the bottle the counter sees ("Kingfisher Strong").
+  /// Several materials share one. The brandwise register groups by it.
+  final String counterBrandName;
+
+  /// Auto-generated `<shop prefix>-0001`, one per counter brand.
+  final String counterBrandId;
+  final double wholesaleRate;
+
+  /// Discount % applied automatically when the item is billed.
+  final double discountPercent;
   final bool isActive;
   final String syncStatus;
   final DateTime createdAt;
@@ -280,6 +401,12 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
       required this.saleRate,
       required this.taxPercent,
       required this.stockQty,
+      required this.scmCode,
+      required this.liquorType,
+      required this.counterBrandName,
+      required this.counterBrandId,
+      required this.wholesaleRate,
+      required this.discountPercent,
       required this.isActive,
       required this.syncStatus,
       required this.createdAt,
@@ -297,6 +424,12 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
     map['sale_rate'] = Variable<double>(saleRate);
     map['tax_percent'] = Variable<double>(taxPercent);
     map['stock_qty'] = Variable<int>(stockQty);
+    map['scm_code'] = Variable<String>(scmCode);
+    map['liquor_type'] = Variable<String>(liquorType);
+    map['counter_brand_name'] = Variable<String>(counterBrandName);
+    map['counter_brand_id'] = Variable<String>(counterBrandId);
+    map['wholesale_rate'] = Variable<double>(wholesaleRate);
+    map['discount_percent'] = Variable<double>(discountPercent);
     map['is_active'] = Variable<bool>(isActive);
     map['sync_status'] = Variable<String>(syncStatus);
     map['created_at'] = Variable<DateTime>(createdAt);
@@ -318,6 +451,12 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
       saleRate: Value(saleRate),
       taxPercent: Value(taxPercent),
       stockQty: Value(stockQty),
+      scmCode: Value(scmCode),
+      liquorType: Value(liquorType),
+      counterBrandName: Value(counterBrandName),
+      counterBrandId: Value(counterBrandId),
+      wholesaleRate: Value(wholesaleRate),
+      discountPercent: Value(discountPercent),
       isActive: Value(isActive),
       syncStatus: Value(syncStatus),
       createdAt: Value(createdAt),
@@ -341,6 +480,12 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
       saleRate: serializer.fromJson<double>(json['saleRate']),
       taxPercent: serializer.fromJson<double>(json['taxPercent']),
       stockQty: serializer.fromJson<int>(json['stockQty']),
+      scmCode: serializer.fromJson<String>(json['scmCode']),
+      liquorType: serializer.fromJson<String>(json['liquorType']),
+      counterBrandName: serializer.fromJson<String>(json['counterBrandName']),
+      counterBrandId: serializer.fromJson<String>(json['counterBrandId']),
+      wholesaleRate: serializer.fromJson<double>(json['wholesaleRate']),
+      discountPercent: serializer.fromJson<double>(json['discountPercent']),
       isActive: serializer.fromJson<bool>(json['isActive']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -361,6 +506,12 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
       'saleRate': serializer.toJson<double>(saleRate),
       'taxPercent': serializer.toJson<double>(taxPercent),
       'stockQty': serializer.toJson<int>(stockQty),
+      'scmCode': serializer.toJson<String>(scmCode),
+      'liquorType': serializer.toJson<String>(liquorType),
+      'counterBrandName': serializer.toJson<String>(counterBrandName),
+      'counterBrandId': serializer.toJson<String>(counterBrandId),
+      'wholesaleRate': serializer.toJson<double>(wholesaleRate),
+      'discountPercent': serializer.toJson<double>(discountPercent),
       'isActive': serializer.toJson<bool>(isActive),
       'syncStatus': serializer.toJson<String>(syncStatus),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -379,6 +530,12 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
           double? saleRate,
           double? taxPercent,
           int? stockQty,
+          String? scmCode,
+          String? liquorType,
+          String? counterBrandName,
+          String? counterBrandId,
+          double? wholesaleRate,
+          double? discountPercent,
           bool? isActive,
           String? syncStatus,
           DateTime? createdAt,
@@ -394,6 +551,12 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
         saleRate: saleRate ?? this.saleRate,
         taxPercent: taxPercent ?? this.taxPercent,
         stockQty: stockQty ?? this.stockQty,
+        scmCode: scmCode ?? this.scmCode,
+        liquorType: liquorType ?? this.liquorType,
+        counterBrandName: counterBrandName ?? this.counterBrandName,
+        counterBrandId: counterBrandId ?? this.counterBrandId,
+        wholesaleRate: wholesaleRate ?? this.wholesaleRate,
+        discountPercent: discountPercent ?? this.discountPercent,
         isActive: isActive ?? this.isActive,
         syncStatus: syncStatus ?? this.syncStatus,
         createdAt: createdAt ?? this.createdAt,
@@ -415,6 +578,21 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
       taxPercent:
           data.taxPercent.present ? data.taxPercent.value : this.taxPercent,
       stockQty: data.stockQty.present ? data.stockQty.value : this.stockQty,
+      scmCode: data.scmCode.present ? data.scmCode.value : this.scmCode,
+      liquorType:
+          data.liquorType.present ? data.liquorType.value : this.liquorType,
+      counterBrandName: data.counterBrandName.present
+          ? data.counterBrandName.value
+          : this.counterBrandName,
+      counterBrandId: data.counterBrandId.present
+          ? data.counterBrandId.value
+          : this.counterBrandId,
+      wholesaleRate: data.wholesaleRate.present
+          ? data.wholesaleRate.value
+          : this.wholesaleRate,
+      discountPercent: data.discountPercent.present
+          ? data.discountPercent.value
+          : this.discountPercent,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
       syncStatus:
           data.syncStatus.present ? data.syncStatus.value : this.syncStatus,
@@ -438,6 +616,12 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
           ..write('saleRate: $saleRate, ')
           ..write('taxPercent: $taxPercent, ')
           ..write('stockQty: $stockQty, ')
+          ..write('scmCode: $scmCode, ')
+          ..write('liquorType: $liquorType, ')
+          ..write('counterBrandName: $counterBrandName, ')
+          ..write('counterBrandId: $counterBrandId, ')
+          ..write('wholesaleRate: $wholesaleRate, ')
+          ..write('discountPercent: $discountPercent, ')
           ..write('isActive: $isActive, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('createdAt: $createdAt, ')
@@ -458,6 +642,12 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
       saleRate,
       taxPercent,
       stockQty,
+      scmCode,
+      liquorType,
+      counterBrandName,
+      counterBrandId,
+      wholesaleRate,
+      discountPercent,
       isActive,
       syncStatus,
       createdAt,
@@ -476,6 +666,12 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
           other.saleRate == this.saleRate &&
           other.taxPercent == this.taxPercent &&
           other.stockQty == this.stockQty &&
+          other.scmCode == this.scmCode &&
+          other.liquorType == this.liquorType &&
+          other.counterBrandName == this.counterBrandName &&
+          other.counterBrandId == this.counterBrandId &&
+          other.wholesaleRate == this.wholesaleRate &&
+          other.discountPercent == this.discountPercent &&
           other.isActive == this.isActive &&
           other.syncStatus == this.syncStatus &&
           other.createdAt == this.createdAt &&
@@ -493,6 +689,12 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
   final Value<double> saleRate;
   final Value<double> taxPercent;
   final Value<int> stockQty;
+  final Value<String> scmCode;
+  final Value<String> liquorType;
+  final Value<String> counterBrandName;
+  final Value<String> counterBrandId;
+  final Value<double> wholesaleRate;
+  final Value<double> discountPercent;
   final Value<bool> isActive;
   final Value<String> syncStatus;
   final Value<DateTime> createdAt;
@@ -509,6 +711,12 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
     this.saleRate = const Value.absent(),
     this.taxPercent = const Value.absent(),
     this.stockQty = const Value.absent(),
+    this.scmCode = const Value.absent(),
+    this.liquorType = const Value.absent(),
+    this.counterBrandName = const Value.absent(),
+    this.counterBrandId = const Value.absent(),
+    this.wholesaleRate = const Value.absent(),
+    this.discountPercent = const Value.absent(),
     this.isActive = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -526,6 +734,12 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
     required double saleRate,
     required double taxPercent,
     this.stockQty = const Value.absent(),
+    this.scmCode = const Value.absent(),
+    this.liquorType = const Value.absent(),
+    this.counterBrandName = const Value.absent(),
+    this.counterBrandId = const Value.absent(),
+    this.wholesaleRate = const Value.absent(),
+    this.discountPercent = const Value.absent(),
     this.isActive = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -549,6 +763,12 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
     Expression<double>? saleRate,
     Expression<double>? taxPercent,
     Expression<int>? stockQty,
+    Expression<String>? scmCode,
+    Expression<String>? liquorType,
+    Expression<String>? counterBrandName,
+    Expression<String>? counterBrandId,
+    Expression<double>? wholesaleRate,
+    Expression<double>? discountPercent,
     Expression<bool>? isActive,
     Expression<String>? syncStatus,
     Expression<DateTime>? createdAt,
@@ -566,6 +786,12 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
       if (saleRate != null) 'sale_rate': saleRate,
       if (taxPercent != null) 'tax_percent': taxPercent,
       if (stockQty != null) 'stock_qty': stockQty,
+      if (scmCode != null) 'scm_code': scmCode,
+      if (liquorType != null) 'liquor_type': liquorType,
+      if (counterBrandName != null) 'counter_brand_name': counterBrandName,
+      if (counterBrandId != null) 'counter_brand_id': counterBrandId,
+      if (wholesaleRate != null) 'wholesale_rate': wholesaleRate,
+      if (discountPercent != null) 'discount_percent': discountPercent,
       if (isActive != null) 'is_active': isActive,
       if (syncStatus != null) 'sync_status': syncStatus,
       if (createdAt != null) 'created_at': createdAt,
@@ -585,6 +811,12 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
       Value<double>? saleRate,
       Value<double>? taxPercent,
       Value<int>? stockQty,
+      Value<String>? scmCode,
+      Value<String>? liquorType,
+      Value<String>? counterBrandName,
+      Value<String>? counterBrandId,
+      Value<double>? wholesaleRate,
+      Value<double>? discountPercent,
       Value<bool>? isActive,
       Value<String>? syncStatus,
       Value<DateTime>? createdAt,
@@ -601,6 +833,12 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
       saleRate: saleRate ?? this.saleRate,
       taxPercent: taxPercent ?? this.taxPercent,
       stockQty: stockQty ?? this.stockQty,
+      scmCode: scmCode ?? this.scmCode,
+      liquorType: liquorType ?? this.liquorType,
+      counterBrandName: counterBrandName ?? this.counterBrandName,
+      counterBrandId: counterBrandId ?? this.counterBrandId,
+      wholesaleRate: wholesaleRate ?? this.wholesaleRate,
+      discountPercent: discountPercent ?? this.discountPercent,
       isActive: isActive ?? this.isActive,
       syncStatus: syncStatus ?? this.syncStatus,
       createdAt: createdAt ?? this.createdAt,
@@ -640,6 +878,24 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
     if (stockQty.present) {
       map['stock_qty'] = Variable<int>(stockQty.value);
     }
+    if (scmCode.present) {
+      map['scm_code'] = Variable<String>(scmCode.value);
+    }
+    if (liquorType.present) {
+      map['liquor_type'] = Variable<String>(liquorType.value);
+    }
+    if (counterBrandName.present) {
+      map['counter_brand_name'] = Variable<String>(counterBrandName.value);
+    }
+    if (counterBrandId.present) {
+      map['counter_brand_id'] = Variable<String>(counterBrandId.value);
+    }
+    if (wholesaleRate.present) {
+      map['wholesale_rate'] = Variable<double>(wholesaleRate.value);
+    }
+    if (discountPercent.present) {
+      map['discount_percent'] = Variable<double>(discountPercent.value);
+    }
     if (isActive.present) {
       map['is_active'] = Variable<bool>(isActive.value);
     }
@@ -673,6 +929,12 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
           ..write('saleRate: $saleRate, ')
           ..write('taxPercent: $taxPercent, ')
           ..write('stockQty: $stockQty, ')
+          ..write('scmCode: $scmCode, ')
+          ..write('liquorType: $liquorType, ')
+          ..write('counterBrandName: $counterBrandName, ')
+          ..write('counterBrandId: $counterBrandId, ')
+          ..write('wholesaleRate: $wholesaleRate, ')
+          ..write('discountPercent: $discountPercent, ')
           ..write('isActive: $isActive, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('createdAt: $createdAt, ')
@@ -6398,6 +6660,44 @@ class $CachedLicenseHoldersTable extends CachedLicenseHolders
   late final GeneratedColumn<String> whereGranted = GeneratedColumn<String>(
       'where_granted', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _cityMeta = const VerificationMeta('city');
+  @override
+  late final GeneratedColumn<String> city = GeneratedColumn<String>(
+      'city', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _validityMeta =
+      const VerificationMeta('validity');
+  @override
+  late final GeneratedColumn<String> validity = GeneratedColumn<String>(
+      'validity', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('Lifetime'));
+  static const VerificationMeta _addressMeta =
+      const VerificationMeta('address');
+  @override
+  late final GeneratedColumn<String> address = GeneratedColumn<String>(
+      'address', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _contactNoMeta =
+      const VerificationMeta('contactNo');
+  @override
+  late final GeneratedColumn<String> contactNo = GeneratedColumn<String>(
+      'contact_no', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _remarkMeta = const VerificationMeta('remark');
+  @override
+  late final GeneratedColumn<String> remark = GeneratedColumn<String>(
+      'remark', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _categoryMeta =
+      const VerificationMeta('category');
+  @override
+  late final GeneratedColumn<String> category = GeneratedColumn<String>(
+      'category', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('License Holder'));
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -6415,8 +6715,21 @@ class $CachedLicenseHoldersTable extends CachedLicenseHolders
       requiredDuringInsert: false,
       defaultValue: currentDateAndTime);
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, permitNo, name, issuedDate, whereGranted, createdAt, updatedAt];
+  List<GeneratedColumn> get $columns => [
+        id,
+        permitNo,
+        name,
+        issuedDate,
+        whereGranted,
+        city,
+        validity,
+        address,
+        contactNo,
+        remark,
+        category,
+        createdAt,
+        updatedAt
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -6457,6 +6770,30 @@ class $CachedLicenseHoldersTable extends CachedLicenseHolders
           whereGranted.isAcceptableOrUnknown(
               data['where_granted']!, _whereGrantedMeta));
     }
+    if (data.containsKey('city')) {
+      context.handle(
+          _cityMeta, city.isAcceptableOrUnknown(data['city']!, _cityMeta));
+    }
+    if (data.containsKey('validity')) {
+      context.handle(_validityMeta,
+          validity.isAcceptableOrUnknown(data['validity']!, _validityMeta));
+    }
+    if (data.containsKey('address')) {
+      context.handle(_addressMeta,
+          address.isAcceptableOrUnknown(data['address']!, _addressMeta));
+    }
+    if (data.containsKey('contact_no')) {
+      context.handle(_contactNoMeta,
+          contactNo.isAcceptableOrUnknown(data['contact_no']!, _contactNoMeta));
+    }
+    if (data.containsKey('remark')) {
+      context.handle(_remarkMeta,
+          remark.isAcceptableOrUnknown(data['remark']!, _remarkMeta));
+    }
+    if (data.containsKey('category')) {
+      context.handle(_categoryMeta,
+          category.isAcceptableOrUnknown(data['category']!, _categoryMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -6484,6 +6821,18 @@ class $CachedLicenseHoldersTable extends CachedLicenseHolders
           .read(DriftSqlType.string, data['${effectivePrefix}issued_date']),
       whereGranted: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}where_granted']),
+      city: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}city']),
+      validity: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}validity'])!,
+      address: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}address']),
+      contactNo: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}contact_no']),
+      remark: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}remark']),
+      category: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}category'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
@@ -6504,6 +6853,16 @@ class CachedLicenseHolder extends DataClass
   final String name;
   final String? issuedDate;
   final String? whereGranted;
+  final String? city;
+
+  /// 'One Time' or 'Lifetime'.
+  final String validity;
+  final String? address;
+  final String? contactNo;
+  final String? remark;
+
+  /// 'License Holder' or 'Frequent Buyer' (name only, no permit).
+  final String category;
   final DateTime createdAt;
   final DateTime updatedAt;
   const CachedLicenseHolder(
@@ -6512,6 +6871,12 @@ class CachedLicenseHolder extends DataClass
       required this.name,
       this.issuedDate,
       this.whereGranted,
+      this.city,
+      required this.validity,
+      this.address,
+      this.contactNo,
+      this.remark,
+      required this.category,
       required this.createdAt,
       required this.updatedAt});
   @override
@@ -6526,6 +6891,20 @@ class CachedLicenseHolder extends DataClass
     if (!nullToAbsent || whereGranted != null) {
       map['where_granted'] = Variable<String>(whereGranted);
     }
+    if (!nullToAbsent || city != null) {
+      map['city'] = Variable<String>(city);
+    }
+    map['validity'] = Variable<String>(validity);
+    if (!nullToAbsent || address != null) {
+      map['address'] = Variable<String>(address);
+    }
+    if (!nullToAbsent || contactNo != null) {
+      map['contact_no'] = Variable<String>(contactNo);
+    }
+    if (!nullToAbsent || remark != null) {
+      map['remark'] = Variable<String>(remark);
+    }
+    map['category'] = Variable<String>(category);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -6542,6 +6921,17 @@ class CachedLicenseHolder extends DataClass
       whereGranted: whereGranted == null && nullToAbsent
           ? const Value.absent()
           : Value(whereGranted),
+      city: city == null && nullToAbsent ? const Value.absent() : Value(city),
+      validity: Value(validity),
+      address: address == null && nullToAbsent
+          ? const Value.absent()
+          : Value(address),
+      contactNo: contactNo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(contactNo),
+      remark:
+          remark == null && nullToAbsent ? const Value.absent() : Value(remark),
+      category: Value(category),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -6556,6 +6946,12 @@ class CachedLicenseHolder extends DataClass
       name: serializer.fromJson<String>(json['name']),
       issuedDate: serializer.fromJson<String?>(json['issuedDate']),
       whereGranted: serializer.fromJson<String?>(json['whereGranted']),
+      city: serializer.fromJson<String?>(json['city']),
+      validity: serializer.fromJson<String>(json['validity']),
+      address: serializer.fromJson<String?>(json['address']),
+      contactNo: serializer.fromJson<String?>(json['contactNo']),
+      remark: serializer.fromJson<String?>(json['remark']),
+      category: serializer.fromJson<String>(json['category']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -6569,6 +6965,12 @@ class CachedLicenseHolder extends DataClass
       'name': serializer.toJson<String>(name),
       'issuedDate': serializer.toJson<String?>(issuedDate),
       'whereGranted': serializer.toJson<String?>(whereGranted),
+      'city': serializer.toJson<String?>(city),
+      'validity': serializer.toJson<String>(validity),
+      'address': serializer.toJson<String?>(address),
+      'contactNo': serializer.toJson<String?>(contactNo),
+      'remark': serializer.toJson<String?>(remark),
+      'category': serializer.toJson<String>(category),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -6580,6 +6982,12 @@ class CachedLicenseHolder extends DataClass
           String? name,
           Value<String?> issuedDate = const Value.absent(),
           Value<String?> whereGranted = const Value.absent(),
+          Value<String?> city = const Value.absent(),
+          String? validity,
+          Value<String?> address = const Value.absent(),
+          Value<String?> contactNo = const Value.absent(),
+          Value<String?> remark = const Value.absent(),
+          String? category,
           DateTime? createdAt,
           DateTime? updatedAt}) =>
       CachedLicenseHolder(
@@ -6589,6 +6997,12 @@ class CachedLicenseHolder extends DataClass
         issuedDate: issuedDate.present ? issuedDate.value : this.issuedDate,
         whereGranted:
             whereGranted.present ? whereGranted.value : this.whereGranted,
+        city: city.present ? city.value : this.city,
+        validity: validity ?? this.validity,
+        address: address.present ? address.value : this.address,
+        contactNo: contactNo.present ? contactNo.value : this.contactNo,
+        remark: remark.present ? remark.value : this.remark,
+        category: category ?? this.category,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
       );
@@ -6602,6 +7016,12 @@ class CachedLicenseHolder extends DataClass
       whereGranted: data.whereGranted.present
           ? data.whereGranted.value
           : this.whereGranted,
+      city: data.city.present ? data.city.value : this.city,
+      validity: data.validity.present ? data.validity.value : this.validity,
+      address: data.address.present ? data.address.value : this.address,
+      contactNo: data.contactNo.present ? data.contactNo.value : this.contactNo,
+      remark: data.remark.present ? data.remark.value : this.remark,
+      category: data.category.present ? data.category.value : this.category,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -6615,6 +7035,12 @@ class CachedLicenseHolder extends DataClass
           ..write('name: $name, ')
           ..write('issuedDate: $issuedDate, ')
           ..write('whereGranted: $whereGranted, ')
+          ..write('city: $city, ')
+          ..write('validity: $validity, ')
+          ..write('address: $address, ')
+          ..write('contactNo: $contactNo, ')
+          ..write('remark: $remark, ')
+          ..write('category: $category, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -6623,7 +7049,19 @@ class CachedLicenseHolder extends DataClass
 
   @override
   int get hashCode => Object.hash(
-      id, permitNo, name, issuedDate, whereGranted, createdAt, updatedAt);
+      id,
+      permitNo,
+      name,
+      issuedDate,
+      whereGranted,
+      city,
+      validity,
+      address,
+      contactNo,
+      remark,
+      category,
+      createdAt,
+      updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -6633,6 +7071,12 @@ class CachedLicenseHolder extends DataClass
           other.name == this.name &&
           other.issuedDate == this.issuedDate &&
           other.whereGranted == this.whereGranted &&
+          other.city == this.city &&
+          other.validity == this.validity &&
+          other.address == this.address &&
+          other.contactNo == this.contactNo &&
+          other.remark == this.remark &&
+          other.category == this.category &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -6644,6 +7088,12 @@ class CachedLicenseHoldersCompanion
   final Value<String> name;
   final Value<String?> issuedDate;
   final Value<String?> whereGranted;
+  final Value<String?> city;
+  final Value<String> validity;
+  final Value<String?> address;
+  final Value<String?> contactNo;
+  final Value<String?> remark;
+  final Value<String> category;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -6653,6 +7103,12 @@ class CachedLicenseHoldersCompanion
     this.name = const Value.absent(),
     this.issuedDate = const Value.absent(),
     this.whereGranted = const Value.absent(),
+    this.city = const Value.absent(),
+    this.validity = const Value.absent(),
+    this.address = const Value.absent(),
+    this.contactNo = const Value.absent(),
+    this.remark = const Value.absent(),
+    this.category = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -6663,6 +7119,12 @@ class CachedLicenseHoldersCompanion
     required String name,
     this.issuedDate = const Value.absent(),
     this.whereGranted = const Value.absent(),
+    this.city = const Value.absent(),
+    this.validity = const Value.absent(),
+    this.address = const Value.absent(),
+    this.contactNo = const Value.absent(),
+    this.remark = const Value.absent(),
+    this.category = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -6675,6 +7137,12 @@ class CachedLicenseHoldersCompanion
     Expression<String>? name,
     Expression<String>? issuedDate,
     Expression<String>? whereGranted,
+    Expression<String>? city,
+    Expression<String>? validity,
+    Expression<String>? address,
+    Expression<String>? contactNo,
+    Expression<String>? remark,
+    Expression<String>? category,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -6685,6 +7153,12 @@ class CachedLicenseHoldersCompanion
       if (name != null) 'name': name,
       if (issuedDate != null) 'issued_date': issuedDate,
       if (whereGranted != null) 'where_granted': whereGranted,
+      if (city != null) 'city': city,
+      if (validity != null) 'validity': validity,
+      if (address != null) 'address': address,
+      if (contactNo != null) 'contact_no': contactNo,
+      if (remark != null) 'remark': remark,
+      if (category != null) 'category': category,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -6697,6 +7171,12 @@ class CachedLicenseHoldersCompanion
       Value<String>? name,
       Value<String?>? issuedDate,
       Value<String?>? whereGranted,
+      Value<String?>? city,
+      Value<String>? validity,
+      Value<String?>? address,
+      Value<String?>? contactNo,
+      Value<String?>? remark,
+      Value<String>? category,
       Value<DateTime>? createdAt,
       Value<DateTime>? updatedAt,
       Value<int>? rowid}) {
@@ -6706,6 +7186,12 @@ class CachedLicenseHoldersCompanion
       name: name ?? this.name,
       issuedDate: issuedDate ?? this.issuedDate,
       whereGranted: whereGranted ?? this.whereGranted,
+      city: city ?? this.city,
+      validity: validity ?? this.validity,
+      address: address ?? this.address,
+      contactNo: contactNo ?? this.contactNo,
+      remark: remark ?? this.remark,
+      category: category ?? this.category,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -6730,6 +7216,24 @@ class CachedLicenseHoldersCompanion
     if (whereGranted.present) {
       map['where_granted'] = Variable<String>(whereGranted.value);
     }
+    if (city.present) {
+      map['city'] = Variable<String>(city.value);
+    }
+    if (validity.present) {
+      map['validity'] = Variable<String>(validity.value);
+    }
+    if (address.present) {
+      map['address'] = Variable<String>(address.value);
+    }
+    if (contactNo.present) {
+      map['contact_no'] = Variable<String>(contactNo.value);
+    }
+    if (remark.present) {
+      map['remark'] = Variable<String>(remark.value);
+    }
+    if (category.present) {
+      map['category'] = Variable<String>(category.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -6750,6 +7254,12 @@ class CachedLicenseHoldersCompanion
           ..write('name: $name, ')
           ..write('issuedDate: $issuedDate, ')
           ..write('whereGranted: $whereGranted, ')
+          ..write('city: $city, ')
+          ..write('validity: $validity, ')
+          ..write('address: $address, ')
+          ..write('contactNo: $contactNo, ')
+          ..write('remark: $remark, ')
+          ..write('category: $category, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -8967,6 +9477,12 @@ typedef $$CachedMaterialsTableCreateCompanionBuilder = CachedMaterialsCompanion
   required double saleRate,
   required double taxPercent,
   Value<int> stockQty,
+  Value<String> scmCode,
+  Value<String> liquorType,
+  Value<String> counterBrandName,
+  Value<String> counterBrandId,
+  Value<double> wholesaleRate,
+  Value<double> discountPercent,
   Value<bool> isActive,
   Value<String> syncStatus,
   Value<DateTime> createdAt,
@@ -8985,6 +9501,12 @@ typedef $$CachedMaterialsTableUpdateCompanionBuilder = CachedMaterialsCompanion
   Value<double> saleRate,
   Value<double> taxPercent,
   Value<int> stockQty,
+  Value<String> scmCode,
+  Value<String> liquorType,
+  Value<String> counterBrandName,
+  Value<String> counterBrandId,
+  Value<double> wholesaleRate,
+  Value<double> discountPercent,
   Value<bool> isActive,
   Value<String> syncStatus,
   Value<DateTime> createdAt,
@@ -9028,6 +9550,27 @@ class $$CachedMaterialsTableFilterComposer
 
   ColumnFilters<int> get stockQty => $composableBuilder(
       column: $table.stockQty, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get scmCode => $composableBuilder(
+      column: $table.scmCode, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get liquorType => $composableBuilder(
+      column: $table.liquorType, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get counterBrandName => $composableBuilder(
+      column: $table.counterBrandName,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get counterBrandId => $composableBuilder(
+      column: $table.counterBrandId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get wholesaleRate => $composableBuilder(
+      column: $table.wholesaleRate, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get discountPercent => $composableBuilder(
+      column: $table.discountPercent,
+      builder: (column) => ColumnFilters(column));
 
   ColumnFilters<bool> get isActive => $composableBuilder(
       column: $table.isActive, builder: (column) => ColumnFilters(column));
@@ -9082,6 +9625,28 @@ class $$CachedMaterialsTableOrderingComposer
   ColumnOrderings<int> get stockQty => $composableBuilder(
       column: $table.stockQty, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get scmCode => $composableBuilder(
+      column: $table.scmCode, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get liquorType => $composableBuilder(
+      column: $table.liquorType, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get counterBrandName => $composableBuilder(
+      column: $table.counterBrandName,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get counterBrandId => $composableBuilder(
+      column: $table.counterBrandId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get wholesaleRate => $composableBuilder(
+      column: $table.wholesaleRate,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get discountPercent => $composableBuilder(
+      column: $table.discountPercent,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<bool> get isActive => $composableBuilder(
       column: $table.isActive, builder: (column) => ColumnOrderings(column));
 
@@ -9135,6 +9700,24 @@ class $$CachedMaterialsTableAnnotationComposer
   GeneratedColumn<int> get stockQty =>
       $composableBuilder(column: $table.stockQty, builder: (column) => column);
 
+  GeneratedColumn<String> get scmCode =>
+      $composableBuilder(column: $table.scmCode, builder: (column) => column);
+
+  GeneratedColumn<String> get liquorType => $composableBuilder(
+      column: $table.liquorType, builder: (column) => column);
+
+  GeneratedColumn<String> get counterBrandName => $composableBuilder(
+      column: $table.counterBrandName, builder: (column) => column);
+
+  GeneratedColumn<String> get counterBrandId => $composableBuilder(
+      column: $table.counterBrandId, builder: (column) => column);
+
+  GeneratedColumn<double> get wholesaleRate => $composableBuilder(
+      column: $table.wholesaleRate, builder: (column) => column);
+
+  GeneratedColumn<double> get discountPercent => $composableBuilder(
+      column: $table.discountPercent, builder: (column) => column);
+
   GeneratedColumn<bool> get isActive =>
       $composableBuilder(column: $table.isActive, builder: (column) => column);
 
@@ -9187,6 +9770,12 @@ class $$CachedMaterialsTableTableManager extends RootTableManager<
             Value<double> saleRate = const Value.absent(),
             Value<double> taxPercent = const Value.absent(),
             Value<int> stockQty = const Value.absent(),
+            Value<String> scmCode = const Value.absent(),
+            Value<String> liquorType = const Value.absent(),
+            Value<String> counterBrandName = const Value.absent(),
+            Value<String> counterBrandId = const Value.absent(),
+            Value<double> wholesaleRate = const Value.absent(),
+            Value<double> discountPercent = const Value.absent(),
             Value<bool> isActive = const Value.absent(),
             Value<String> syncStatus = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
@@ -9204,6 +9793,12 @@ class $$CachedMaterialsTableTableManager extends RootTableManager<
             saleRate: saleRate,
             taxPercent: taxPercent,
             stockQty: stockQty,
+            scmCode: scmCode,
+            liquorType: liquorType,
+            counterBrandName: counterBrandName,
+            counterBrandId: counterBrandId,
+            wholesaleRate: wholesaleRate,
+            discountPercent: discountPercent,
             isActive: isActive,
             syncStatus: syncStatus,
             createdAt: createdAt,
@@ -9221,6 +9816,12 @@ class $$CachedMaterialsTableTableManager extends RootTableManager<
             required double saleRate,
             required double taxPercent,
             Value<int> stockQty = const Value.absent(),
+            Value<String> scmCode = const Value.absent(),
+            Value<String> liquorType = const Value.absent(),
+            Value<String> counterBrandName = const Value.absent(),
+            Value<String> counterBrandId = const Value.absent(),
+            Value<double> wholesaleRate = const Value.absent(),
+            Value<double> discountPercent = const Value.absent(),
             Value<bool> isActive = const Value.absent(),
             Value<String> syncStatus = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
@@ -9238,6 +9839,12 @@ class $$CachedMaterialsTableTableManager extends RootTableManager<
             saleRate: saleRate,
             taxPercent: taxPercent,
             stockQty: stockQty,
+            scmCode: scmCode,
+            liquorType: liquorType,
+            counterBrandName: counterBrandName,
+            counterBrandId: counterBrandId,
+            wholesaleRate: wholesaleRate,
+            discountPercent: discountPercent,
             isActive: isActive,
             syncStatus: syncStatus,
             createdAt: createdAt,
@@ -11978,6 +12585,12 @@ typedef $$CachedLicenseHoldersTableCreateCompanionBuilder
   required String name,
   Value<String?> issuedDate,
   Value<String?> whereGranted,
+  Value<String?> city,
+  Value<String> validity,
+  Value<String?> address,
+  Value<String?> contactNo,
+  Value<String?> remark,
+  Value<String> category,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
   Value<int> rowid,
@@ -11989,6 +12602,12 @@ typedef $$CachedLicenseHoldersTableUpdateCompanionBuilder
   Value<String> name,
   Value<String?> issuedDate,
   Value<String?> whereGranted,
+  Value<String?> city,
+  Value<String> validity,
+  Value<String?> address,
+  Value<String?> contactNo,
+  Value<String?> remark,
+  Value<String> category,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
   Value<int> rowid,
@@ -12017,6 +12636,24 @@ class $$CachedLicenseHoldersTableFilterComposer
 
   ColumnFilters<String> get whereGranted => $composableBuilder(
       column: $table.whereGranted, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get city => $composableBuilder(
+      column: $table.city, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get validity => $composableBuilder(
+      column: $table.validity, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get address => $composableBuilder(
+      column: $table.address, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get contactNo => $composableBuilder(
+      column: $table.contactNo, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get remark => $composableBuilder(
+      column: $table.remark, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get category => $composableBuilder(
+      column: $table.category, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -12050,6 +12687,24 @@ class $$CachedLicenseHoldersTableOrderingComposer
       column: $table.whereGranted,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get city => $composableBuilder(
+      column: $table.city, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get validity => $composableBuilder(
+      column: $table.validity, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get address => $composableBuilder(
+      column: $table.address, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get contactNo => $composableBuilder(
+      column: $table.contactNo, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get remark => $composableBuilder(
+      column: $table.remark, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get category => $composableBuilder(
+      column: $table.category, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 
@@ -12080,6 +12735,24 @@ class $$CachedLicenseHoldersTableAnnotationComposer
 
   GeneratedColumn<String> get whereGranted => $composableBuilder(
       column: $table.whereGranted, builder: (column) => column);
+
+  GeneratedColumn<String> get city =>
+      $composableBuilder(column: $table.city, builder: (column) => column);
+
+  GeneratedColumn<String> get validity =>
+      $composableBuilder(column: $table.validity, builder: (column) => column);
+
+  GeneratedColumn<String> get address =>
+      $composableBuilder(column: $table.address, builder: (column) => column);
+
+  GeneratedColumn<String> get contactNo =>
+      $composableBuilder(column: $table.contactNo, builder: (column) => column);
+
+  GeneratedColumn<String> get remark =>
+      $composableBuilder(column: $table.remark, builder: (column) => column);
+
+  GeneratedColumn<String> get category =>
+      $composableBuilder(column: $table.category, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -12123,6 +12796,12 @@ class $$CachedLicenseHoldersTableTableManager extends RootTableManager<
             Value<String> name = const Value.absent(),
             Value<String?> issuedDate = const Value.absent(),
             Value<String?> whereGranted = const Value.absent(),
+            Value<String?> city = const Value.absent(),
+            Value<String> validity = const Value.absent(),
+            Value<String?> address = const Value.absent(),
+            Value<String?> contactNo = const Value.absent(),
+            Value<String?> remark = const Value.absent(),
+            Value<String> category = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -12133,6 +12812,12 @@ class $$CachedLicenseHoldersTableTableManager extends RootTableManager<
             name: name,
             issuedDate: issuedDate,
             whereGranted: whereGranted,
+            city: city,
+            validity: validity,
+            address: address,
+            contactNo: contactNo,
+            remark: remark,
+            category: category,
             createdAt: createdAt,
             updatedAt: updatedAt,
             rowid: rowid,
@@ -12143,6 +12828,12 @@ class $$CachedLicenseHoldersTableTableManager extends RootTableManager<
             required String name,
             Value<String?> issuedDate = const Value.absent(),
             Value<String?> whereGranted = const Value.absent(),
+            Value<String?> city = const Value.absent(),
+            Value<String> validity = const Value.absent(),
+            Value<String?> address = const Value.absent(),
+            Value<String?> contactNo = const Value.absent(),
+            Value<String?> remark = const Value.absent(),
+            Value<String> category = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -12153,6 +12844,12 @@ class $$CachedLicenseHoldersTableTableManager extends RootTableManager<
             name: name,
             issuedDate: issuedDate,
             whereGranted: whereGranted,
+            city: city,
+            validity: validity,
+            address: address,
+            contactNo: contactNo,
+            remark: remark,
+            category: category,
             createdAt: createdAt,
             updatedAt: updatedAt,
             rowid: rowid,

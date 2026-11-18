@@ -6,6 +6,8 @@ import 'package:xml/xml.dart';
 
 import '../../../core/network/api_exception.dart';
 import 'local_masters_repository.dart';
+import 'liquor_type.dart';
+import 'models/license_holder_dto.dart';
 import 'models/save_material_request.dart';
 import 'models/save_supplier_request.dart';
 import 'models/save_license_holder_request.dart';
@@ -102,7 +104,14 @@ class MasterImportService {
       'name'
     ]);
     final dateIndex = _findIndex(headerMap, const ['issueddate', 'dateissued', 'date', 'issued', 'issue_date', 'issued_date']);
-    final whereIndex = _findIndex(headerMap, const ['wheregranted', 'type', 'validity', 'granted', 'where', 'where_granted']);
+    final validityIndex = _findIndex(headerMap, const ['validity', 'type']);
+    // Older sheets put the validity ("Life Time") under Where Granted.
+    final whereIndex = _findIndex(headerMap, const ['wheregranted', 'granted', 'where', 'where_granted']);
+    final cityIndex = _findIndex(headerMap, const ['city', 'place']);
+    final addressIndex = _findIndex(headerMap, const ['address']);
+    final contactIndex = _findIndex(headerMap, const ['contactnumber', 'contactno', 'contact', 'mobile', 'phone']);
+    final remarkIndex = _findIndex(headerMap, const ['remark', 'remarks', 'note', 'notes']);
+    final categoryIndex = _findIndex(headerMap, const ['category']);
 
     var imported = 0;
     var skipped = 0;
@@ -117,20 +126,30 @@ class MasterImportService {
       final permitNo = _valueAt(row, permitIndex);
       final name = _valueAt(row, nameIndex);
 
-      if (permitNo.isEmpty || name.isEmpty) {
+      final isBuyer = _valueAt(row, categoryIndex).toLowerCase().contains('frequent');
+      if (name.isEmpty || (permitNo.isEmpty && !isBuyer)) {
         skipped++;
         continue;
       }
 
       final issuedDate = _nullable(_valueAt(row, dateIndex));
       final whereGranted = _nullable(_valueAt(row, whereIndex));
+      final validityText = '${_valueAt(row, validityIndex)} ${whereGranted ?? ''}'.toLowerCase().replaceAll(' ', '');
+      final whereIsValidity = whereGranted != null &&
+          RegExp(r'^(life|one)').hasMatch(whereGranted.toLowerCase().replaceAll(' ', ''));
 
       toUpsert.add(
         SaveLicenseHolderRequest(
-          permitNo: permitNo,
+          permitNo: isBuyer ? '' : permitNo,
           name: name,
           issuedDate: issuedDate,
           whereGranted: whereGranted,
+          city: _nullable(_valueAt(row, cityIndex)) ?? (whereIsValidity ? null : whereGranted),
+          validity: validityText.contains('onetime') ? LicenseHolderDto.oneTime : LicenseHolderDto.lifetime,
+          address: _nullable(_valueAt(row, addressIndex)),
+          contactNo: _nullable(_valueAt(row, contactIndex)),
+          remark: _nullable(_valueAt(row, remarkIndex)),
+          category: isBuyer ? LicenseHolderDto.frequentBuyer : LicenseHolderDto.licenseHolder,
         ),
       );
       imported++;
@@ -162,16 +181,23 @@ class MasterImportService {
     Map<String, int> headerMap,
   ) async {
     final codeIndex = _requiredIndex(headerMap, const ['localitemcode', 'itemcode', 'scmcode', 'id', 'materialcode']);
-    final nameIndex = _requiredIndex(headerMap, const ['name', 'materialname', 'brandname', 'itemname']);
+    final nameIndex = _requiredIndex(
+        headerMap, const ['branddisplayname', 'displayname', 'name', 'materialname', 'brandname', 'itemname']);
     final barcodeIndex = _findIndex(headerMap, const ['barcode', 'scancode']);
-    final manufacturerIndex = _findIndex(headerMap, const ['manufacturer', 'brand', 'maker', 'company']);
-    final categoryIndex = _findIndex(headerMap, const ['category', 'type']);
-    final packingIndex = _findIndex(headerMap, const ['packing', 'size']);
+    final manufacturerIndex = _findIndex(headerMap, const ['manufacturer', 'maker', 'company']);
+    final categoryIndex = _findIndex(headerMap, const ['liquorcategory', 'category']);
+    final typeIndex = _findIndex(headerMap, const ['type', 'beertype', 'liquortype']);
+    final packingIndex = _findIndex(headerMap, const ['packaging', 'packing', 'size']);
+    final counterIndex =
+        _findIndex(headerMap, const ['counterbrandname', 'counterbrand', 'countername', 'brandhouse', 'brand']);
     final saleRateIndex = _findIndex(headerMap, const ['salerate', 'rate', 'mrp']);
-    final taxIndex = _findIndex(headerMap, const ['taxpercent', 'gst', 'gstpercent', 'tax']);
+    final wholesaleIndex = _findIndex(headerMap, const ['wholesalerate', 'wholesale']);
+    final taxIndex = _findIndex(headerMap, const ['vat', 'vatpercent', 'taxpercent', 'gst', 'gstpercent', 'tax']);
+    final discountIndex = _findIndex(headerMap, const ['discountpercent', 'discount', 'dispercent']);
 
+    // A material is one SCM code + barcode pair; the same pair again is a skip.
     final existing = {
-      for (final material in await _repo.getMaterials()) material.id.trim().toLowerCase(): true,
+      for (final m in await _repo.getMaterials()) '${m.scmCode.trim().toLowerCase()}|${m.barcode.trim().toLowerCase()}': true,
     };
 
     var imported = 0;
@@ -196,11 +222,19 @@ class MasterImportService {
       final category = _nullable(_valueAt(row, categoryIndex));
       if (category == null) {
         failed++;
-        errors.add('Row ${rowNumber + 2}: Category is required (e.g. Strong Beer, Mild Beer, Wine).');
+        errors.add('Row ${rowNumber + 2}: Category is required (e.g. Beer, Wine, Whisky).');
+        continue;
+      }
+      final cat = normalizeLiquorCategory(category, _valueAt(row, typeIndex));
+      if (cat.category == 'Beer' && cat.type.isEmpty) {
+        failed++;
+        errors.add('Row ${rowNumber + 2}: Beer needs a Type (Mild, Strong or Fermented).');
         continue;
       }
 
-      if (existing.containsKey(code.toLowerCase())) {
+      final barcode = _nullable(_valueAt(row, barcodeIndex)) ?? code;
+      final pairKey = '${code.toLowerCase()}|${barcode.toLowerCase()}';
+      if (existing.containsKey(pairKey)) {
         skipped++;
         continue;
       }
@@ -209,16 +243,21 @@ class MasterImportService {
         await _repo.createMaterial(
           SaveMaterialRequest(
             id: code,
-            barcode: _nullable(_valueAt(row, barcodeIndex)) ?? code,
+            scmCode: code,
+            barcode: barcode,
             name: name,
             manufacturer: _nullable(_valueAt(row, manufacturerIndex)) ?? name.split(' ').first,
-            category: category,
+            category: cat.category,
+            liquorType: cat.type,
             packing: _valueAt(row, packingIndex),
+            counterBrandName: _valueAt(row, counterIndex),
             saleRate: _parseDouble(_valueAt(row, saleRateIndex)),
+            wholesaleRate: _parseDouble(_valueAt(row, wholesaleIndex)),
             taxPercent: _parseDouble(_valueAt(row, taxIndex)),
+            discountPercent: _parseDouble(_valueAt(row, discountIndex)),
           ),
         );
-        existing[code.toLowerCase()] = true;
+        existing[pairKey] = true;
         imported++;
       } on ApiException catch (e) {
         failed++;

@@ -185,7 +185,9 @@ class _LicenseHoldersTableState extends ConsumerState<LicenseHoldersTable> with 
               if (query.isEmpty) return true;
               return h.permitNo.toLowerCase().contains(query) ||
                   h.name.toLowerCase().contains(query) ||
-                  (h.whereGranted?.toLowerCase().contains(query) ?? false) ||
+                  (h.city?.toLowerCase().contains(query) ?? false) ||
+                  (h.contactNo?.toLowerCase().contains(query) ?? false) ||
+                  h.category.toLowerCase().contains(query) ||
                   (h.issuedDate?.toLowerCase().contains(query) ?? false);
             }).toList();
 
@@ -249,7 +251,7 @@ class _LicenseHoldersTableState extends ConsumerState<LicenseHoldersTable> with 
                                 Expanded(
                                   flex: 3,
                                   child: Text(
-                                    holder.permitNo,
+                                    holder.isFrequentBuyer ? 'Frequent buyer' : holder.permitNo,
                                     style: AppTypography.mono.copyWith(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w700,
@@ -272,6 +274,14 @@ class _LicenseHoldersTableState extends ConsumerState<LicenseHoldersTable> with 
                                 Expanded(
                                   flex: 3,
                                   child: Text(
+                                    holder.city ?? '—',
+                                    style: AppTypography.bodyMutedFor(context).copyWith(fontSize: 12),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 3,
+                                  child: Text(
                                     holder.issuedDate ?? '—',
                                     style: AppTypography.bodyMutedFor(context).copyWith(fontSize: 12),
                                     overflow: TextOverflow.ellipsis,
@@ -286,7 +296,7 @@ class _LicenseHoldersTableState extends ConsumerState<LicenseHoldersTable> with 
                                       borderRadius: BorderRadius.circular(AppRadius.pill),
                                     ),
                                     child: Text(
-                                      holder.whereGranted ?? 'Life Time',
+                                      holder.validity,
                                       style: AppTypography.captionFor(context).copyWith(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
@@ -348,11 +358,15 @@ class _LicenseHoldersTableState extends ConsumerState<LicenseHoldersTable> with 
           ),
           Expanded(
             flex: 3,
+            child: Text('City', style: AppTypography.captionFor(context)),
+          ),
+          Expanded(
+            flex: 3,
             child: _sortableColumn('Issued Date', _LicenseSortField.issuedDate),
           ),
           Expanded(
             flex: 3,
-            child: Text('Where Granted', style: AppTypography.captionFor(context)),
+            child: Text('Validity', style: AppTypography.captionFor(context)),
           ),
           const SizedBox(width: 36),
         ],

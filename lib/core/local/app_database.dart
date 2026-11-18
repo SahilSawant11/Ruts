@@ -1,4 +1,5 @@
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
@@ -14,8 +15,23 @@ class CachedMaterials extends Table {
   TextColumn get category => text()();
   TextColumn get packing => text()();
   RealColumn get saleRate => real()();
+  /// VAT % (shown as "VAT %"; was "GST slab").
   RealColumn get taxPercent => real()();
   IntColumn get stockQty => integer().withDefault(const Constant(0))();
+  /// The SCM code. Not unique: one SCM code can come with several
+  /// barcodes. [id] is the unique key (the SCM code itself for the first
+  /// material that uses it, `SCM/barcode` for the others).
+  TextColumn get scmCode => text().withDefault(const Constant(''))();
+  /// Beer only: Mild / Strong / Fermented. Empty for everything else.
+  TextColumn get liquorType => text().withDefault(const Constant(''))();
+  /// Counter brand — the bottle the counter sees ("Kingfisher Strong").
+  /// Several materials share one. The brandwise register groups by it.
+  TextColumn get counterBrandName => text().withDefault(const Constant(''))();
+  /// Auto-generated `<shop prefix>-0001`, one per counter brand.
+  TextColumn get counterBrandId => text().withDefault(const Constant(''))();
+  RealColumn get wholesaleRate => real().withDefault(const Constant(0))();
+  /// Discount % applied automatically when the item is billed.
+  RealColumn get discountPercent => real().withDefault(const Constant(0))();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
   TextColumn get syncStatus => text().withDefault(const Constant('synced'))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
@@ -82,6 +98,14 @@ class CachedLicenseHolders extends Table {
   TextColumn get name => text()();
   TextColumn get issuedDate => text().nullable()();
   TextColumn get whereGranted => text().nullable()();
+  TextColumn get city => text().nullable()();
+  /// 'One Time' or 'Lifetime'.
+  TextColumn get validity => text().withDefault(const Constant('Lifetime'))();
+  TextColumn get address => text().nullable()();
+  TextColumn get contactNo => text().nullable()();
+  TextColumn get remark => text().nullable()();
+  /// 'License Holder' or 'Frequent Buyer' (name only, no permit).
+  TextColumn get category => text().withDefault(const Constant('License Holder'))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 
@@ -316,7 +340,7 @@ class AppDatabase extends _$AppDatabase {
         ));
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 17;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -398,6 +422,9 @@ class AppDatabase extends _$AppDatabase {
                 [name],
               );
             }
+          }
+          if (from < 17) {
+            await _migrateToV17();
           }
           await _healMaterialsTable();
         },
@@ -882,6 +909,7 @@ class AppDatabase extends _$AppDatabase {
         });
       }
     });
+    if (demo && !hasMaterials) await _backfillMaterialFields();
   }
 
   Future<bool> _tableHasRows(String tableName) async {
@@ -903,6 +931,172 @@ class AppDatabase extends _$AppDatabase {
         await customStatement('ALTER TABLE $table ADD COLUMN $column $definition');
       }
     } catch (_) {}
+  }
+
+  /// v17 (client meeting 17 Nov): material master gets SCM code, beer type,
+  /// counter brand name/id, wholesale rate and discount; permit holders get
+  /// city, validity, address, contact, remark and category.
+  @visibleForTesting
+  Future<void> runV17MigrationForTest() => _migrateToV17();
+
+  Future<void> _migrateToV17() async {
+    const materialCols = {
+      'scm_code': "TEXT NOT NULL DEFAULT ''",
+      'liquor_type': "TEXT NOT NULL DEFAULT ''",
+      'counter_brand_name': "TEXT NOT NULL DEFAULT ''",
+      'counter_brand_id': "TEXT NOT NULL DEFAULT ''",
+      'wholesale_rate': 'REAL NOT NULL DEFAULT 0',
+      'discount_percent': 'REAL NOT NULL DEFAULT 0',
+    };
+    for (final e in materialCols.entries) {
+      await _ensureColumn('cached_materials', e.key, e.value);
+    }
+    const holderCols = {
+      'city': 'TEXT',
+      'validity': "TEXT NOT NULL DEFAULT 'Lifetime'",
+      'address': 'TEXT',
+      'contact_no': 'TEXT',
+      'remark': 'TEXT',
+      'category': "TEXT NOT NULL DEFAULT 'License Holder'",
+    };
+    for (final e in holderCols.entries) {
+      await _ensureColumn('cached_license_holders', e.key, e.value);
+    }
+
+    await _backfillMaterialFields();
+
+    // "Where granted" held the validity ("Life Time") on most rows; move
+    // it to validity, and anything else (a place) to city.
+    await customStatement(
+      "UPDATE cached_license_holders SET validity = 'One Time' "
+      "WHERE REPLACE(LOWER(where_granted), ' ', '') IN ('onetime', 'onetimepermit')",
+    );
+    await customStatement(
+      "UPDATE cached_license_holders SET city = where_granted "
+      "WHERE (city IS NULL OR city = '') AND TRIM(COALESCE(where_granted, '')) != '' "
+      "AND REPLACE(LOWER(where_granted), ' ', '') NOT IN ('lifetime', 'onetime', 'onetimepermit')",
+    );
+  }
+
+  /// Fills the v17 material fields from what older rows carry. Idempotent;
+  /// also run after demo seeding.
+  Future<void> _backfillMaterialFields() async {
+    await customStatement("UPDATE cached_materials SET scm_code = id WHERE scm_code = ''");
+
+    // "Fermented Beer" / "Strong Beer" / "Mild Beer" categories become
+    // category Beer + type.
+    for (final type in const ['Fermented', 'Strong', 'Mild']) {
+      await customStatement(
+        "UPDATE cached_materials SET category = 'Beer', liquor_type = ? "
+        "WHERE LOWER(category) LIKE '%beer%' AND LOWER(category) LIKE ?",
+        [type, '%${type.toLowerCase()}%'],
+      );
+    }
+    await customStatement(
+      'INSERT OR IGNORE INTO cached_categories (name, created_at, updated_at) '
+      "VALUES ('Beer', strftime('%s','now'), strftime('%s','now'))",
+    );
+    await customStatement(
+      "DELETE FROM cached_categories WHERE name IN ('Fermented Beer', 'Strong Beer', 'Mild Beer') "
+      'AND name NOT IN (SELECT category FROM cached_materials)',
+    );
+
+    // The counter register grouped by manufacturer until now, so that is the
+    // counter brand each item already had.
+    await customStatement(
+      "UPDATE cached_materials SET counter_brand_name = "
+      "CASE WHEN TRIM(manufacturer) != '' THEN TRIM(manufacturer) ELSE TRIM(name) END "
+      "WHERE counter_brand_name = ''",
+    );
+    await assignMissingCounterBrandIds();
+  }
+
+  // ── Counter brand IDs ──────────────────────────────────────────────
+  static const shopPrefixKey = 'shop_prefix';
+  static const _counterBrandSeqKey = 'counter_brand_seq';
+  static const defaultShopPrefix = 'CB';
+
+  Future<String> shopPrefix() async {
+    final v = (await getSetting(shopPrefixKey))?.trim() ?? '';
+    return v.isEmpty ? defaultShopPrefix : v;
+  }
+
+  /// Saves the store's prefix and re-prefixes every counter brand ID
+  /// (`OLD-0007` → `NEW-0007`), so the numbers never change.
+  Future<void> setShopPrefix(String raw) async {
+    final prefix = raw.trim().toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
+    if (prefix.isEmpty) throw ArgumentError('Shop prefix needs at least one letter or digit.');
+    await transaction(() async {
+      await setSetting(shopPrefixKey, prefix);
+      final rows = await customSelect(
+        "SELECT DISTINCT counter_brand_id AS cid FROM cached_materials WHERE counter_brand_id != ''",
+      ).get();
+      for (final r in rows) {
+        final old = r.read<String>('cid');
+        final dash = old.lastIndexOf('-');
+        final next = '$prefix-${dash < 0 ? old : old.substring(dash + 1)}';
+        if (next != old) {
+          await customStatement(
+            'UPDATE cached_materials SET counter_brand_id = ? WHERE counter_brand_id = ?',
+            [next, old],
+          );
+        }
+      }
+    });
+    notifyUpdates({TableUpdate.onTable(cachedMaterials, kind: UpdateKind.update)});
+  }
+
+  static String normalizeCounterBrand(String name) =>
+      name.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
+
+  /// The ID of counter brand [name]: the one its other materials already
+  /// carry, else the next number. Empty name → empty ID.
+  Future<String> counterBrandIdFor(String name) async {
+    final key = normalizeCounterBrand(name);
+    if (key.isEmpty) return '';
+    final rows = await customSelect(
+      "SELECT counter_brand_id AS cid, counter_brand_name AS n FROM cached_materials WHERE counter_brand_id != ''",
+    ).get();
+    for (final r in rows) {
+      if (normalizeCounterBrand(r.read<String>('n')) == key) return r.read<String>('cid');
+    }
+    return _nextCounterBrandId();
+  }
+
+  Future<String> _nextCounterBrandId() async {
+    final prefix = await shopPrefix();
+    var seq = int.tryParse(await getSetting(_counterBrandSeqKey) ?? '') ?? 0;
+    // Never reuse a number already on a material (e.g. after a restore).
+    final used = await customSelect(
+      "SELECT counter_brand_id AS cid FROM cached_materials WHERE counter_brand_id != ''",
+    ).get();
+    for (final r in used) {
+      final cid = r.read<String>('cid');
+      final n = int.tryParse(cid.substring(cid.lastIndexOf('-') + 1)) ?? 0;
+      if (n > seq) seq = n;
+    }
+    seq += 1;
+    await setSetting(_counterBrandSeqKey, '$seq');
+    return '$prefix-${seq.toString().padLeft(4, '0')}';
+  }
+
+  /// Gives every material with a counter brand name but no ID one — the
+  /// same ID for materials sharing a name. Used after migration and imports.
+  Future<void> assignMissingCounterBrandIds() async {
+    final rows = await customSelect(
+      "SELECT id, counter_brand_name AS n FROM cached_materials "
+      "WHERE counter_brand_id = '' AND TRIM(counter_brand_name) != '' ORDER BY counter_brand_name, id",
+    ).get();
+    if (rows.isEmpty) return;
+    final assigned = <String, String>{};
+    for (final r in rows) {
+      final key = normalizeCounterBrand(r.read<String>('n'));
+      final cid = assigned[key] ??= await counterBrandIdFor(r.read<String>('n'));
+      await customStatement(
+        'UPDATE cached_materials SET counter_brand_id = ? WHERE id = ?',
+        [cid, r.read<String>('id')],
+      );
+    }
   }
 
   Future<void> _healMaterialsTable() async {
@@ -1425,13 +1619,13 @@ const _starterManufacturers = <_StarterManufacturer>[
 ];
 
 const _starterCategories = <_StarterCategory>[
-  _StarterCategory(name: 'Fermented Beer', description: 'Fermented beer (brandwise register section)'),
-  _StarterCategory(name: 'Strong Beer', description: 'Strong beer, bottles and cans'),
-  _StarterCategory(name: 'Mild Beer', description: 'Mild / lager beer, bottles and cans'),
+  _StarterCategory(name: 'Beer', description: 'Pick the type: Mild, Strong or Fermented'),
   _StarterCategory(name: 'Wine', description: 'Red, white, rose, sparkling'),
   _StarterCategory(name: 'Whisky', description: 'Indian and imported whisky'),
   _StarterCategory(name: 'Rum', description: 'White and dark rum'),
   _StarterCategory(name: 'Vodka', description: 'Plain and flavored vodka'),
+  _StarterCategory(name: 'Brandy', description: 'Brandy and cognac'),
+  _StarterCategory(name: 'Gin', description: 'Dry and flavored gin'),
   _StarterCategory(name: 'Soft Drink', description: 'Mixers, soda and soft beverages'),
 ];
 

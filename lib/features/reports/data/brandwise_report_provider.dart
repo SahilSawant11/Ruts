@@ -33,6 +33,11 @@ final brandwiseReportDateProvider = StateProvider<DateTime>((ref) {
   return DateTime(now.year, now.month, now.day);
 });
 
+/// Off (default): only brands with stock or movement on the day.
+/// On: every active material in the register, even at zero.
+/// Inactive materials (Material Master status) never show.
+final brandwiseShowAllProvider = StateProvider<bool>((ref) => false);
+
 final brandwiseExcelExporterProvider = Provider<BrandwiseExcelExporter>((ref) {
   return BrandwiseExcelExporter();
 });
@@ -42,10 +47,11 @@ final brandwiseExcelExporterProvider = Provider<BrandwiseExcelExporter>((ref) {
 /// back to the remote API only if local data is empty.
 final brandwiseReportProvider = FutureProvider<BrandwiseReportDto>((ref) async {
   final date = ref.watch(brandwiseReportDateProvider);
+  final showAll = ref.watch(brandwiseShowAllProvider);
   final db = ref.watch(appDatabaseProvider);
 
   // 1. Try to build from local data first.
-  final local = await _buildLocalBrandwiseReport(db, date);
+  final local = await _buildLocalBrandwiseReport(db, date, showAll: showAll);
   if (local != null) return local;
 
   // 2. In offline mode, return empty report. Otherwise try remote.
@@ -117,7 +123,7 @@ int _packingIndex(String? packing) {
 }
 
 /// Returns `null` if there's no local data at all (triggers API fallback).
-Future<BrandwiseReportDto?> _buildLocalBrandwiseReport(AppDatabase db, DateTime date) async {
+Future<BrandwiseReportDto?> _buildLocalBrandwiseReport(AppDatabase db, DateTime date, {bool showAll = false}) async {
   final start = DateTime(date.year, date.month, date.day);
   final endExclusive = start.add(const Duration(days: 1));
 
@@ -186,7 +192,7 @@ Future<BrandwiseReportDto?> _buildLocalBrandwiseReport(AppDatabase db, DateTime 
   final categoryItems = <String, Map<String, _BrandAgg>>{};
 
   for (final mat in materials) {
-    final catName = brandwiseSection(mat.category);
+    final catName = brandwiseSection(mat.category, mat.liquorType);
     if (catName == null) continue;
 
     final colIdx = _packingIndex(mat.packing);
@@ -197,7 +203,7 @@ Future<BrandwiseReportDto?> _buildLocalBrandwiseReport(AppDatabase db, DateTime 
     final purchaseQty = purchaseQtyByMaterial[mat.id] ?? 0;
     final opening = closing + saleQty - purchaseQty;
 
-    if (opening == 0 && saleQty == 0 && purchaseQty == 0 && closing == 0) continue;
+    if (!showAll && opening == 0 && saleQty == 0 && purchaseQty == 0 && closing == 0) continue;
 
     final brands = categoryItems.putIfAbsent(catName, () => {});
     final agg = brands.putIfAbsent(mat.name, _BrandAgg.new);

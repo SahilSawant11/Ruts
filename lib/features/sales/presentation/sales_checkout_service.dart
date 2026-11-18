@@ -35,12 +35,15 @@ class SalesCheckoutService {
         PaymentMethod.upi => 'UPI',
       };
 
-      final isNewPermit = ref.read(newPermitModeProvider);
+      final isNewMode = ref.read(newPermitModeProvider);
+      final isNewBuyer = isNewMode && ref.read(newFrequentBuyerProvider);
+      final isNewPermit = isNewMode && !isNewBuyer;
       final activeHolder = isNewPermit ? await _resolveNewPermit() : ref.read(activeLicenseHolderProvider);
+      final customerId = isNewBuyer ? (await _resolveNewBuyer()).id : ref.read(selectedCustomerIdProvider);
 
       final request = CreateSaleRequest(
         billNo: ref.read(billNoProvider),
-        customerId: ref.read(selectedCustomerIdProvider),
+        customerId: customerId,
         permitNo: activeHolder?.permitNo,
         permitHolderName: activeHolder?.name,
         payMode: payMode,
@@ -80,14 +83,15 @@ class SalesCheckoutService {
       ref.read(cartControllerProvider.notifier).clear();
       ref.invalidate(nextBillNoProvider);
       ref.read(selectedCustomerIdProvider.notifier).state = null;
-      if (isNewPermit) {
+      if (isNewMode) {
         ref.read(newPermitModeProvider.notifier).state = false;
+        ref.read(newFrequentBuyerProvider.notifier).state = false;
         ref.read(newPermitNameProvider.notifier).state = '';
         ref.read(newPermitNoProvider.notifier).state = '';
       }
 
       // Advance license holder sequentially to the next one in rotation
-      final holdersList = ref.read(licenseHoldersListProvider).valueOrNull ?? [];
+      final holdersList = ref.read(rotationLicenseHoldersProvider).valueOrNull ?? [];
       if (holdersList.isNotEmpty) {
         final currentIdx = ref.read(activeLicenseHolderIndexProvider);
         ref.read(activeLicenseHolderIndexProvider.notifier).state =
@@ -108,7 +112,12 @@ class SalesCheckoutService {
       ref.invalidate(inventoryOverviewProvider);
       ref.invalidate(materialsListProvider);
       // After rotation advanced, so the new holder joins from the next bill.
-      if (isNewPermit) ref.invalidate(licenseHoldersListProvider);
+      // One Time permits leave the rotation once billed.
+      if (isNewMode) {
+        ref.invalidate(licenseHoldersListProvider);
+      } else {
+        ref.invalidate(rotationLicenseHoldersProvider);
+      }
 
       return result;
     } finally {
@@ -118,20 +127,50 @@ class SalesCheckoutService {
 }
 
 extension on SalesCheckoutService {
-  /// The NEW customer's permit: reuses the holder if that permit number is
-  /// already on file, otherwise adds it to the License Holder master (where
-  /// it joins the normal rotation).
+  /// New → Walk in: reuses the holder if that permit number is already on
+  /// file, otherwise adds it to the License Holder master as a One Time
+  /// permit issued today (it leaves the rotation after this bill).
   Future<LicenseHolderDto> _resolveNewPermit() async {
     final name = ref.read(newPermitNameProvider).trim();
     final permitNo = ref.read(newPermitNoProvider).trim();
     if (name.isEmpty || permitNo.isEmpty) {
-      throw const ApiException('Enter the new customer\'s name and license number, or pick Walk-in.');
+      throw const ApiException('Enter the walk-in\'s name and license number, or pick License Holder.');
     }
     final repo = ref.read(mastersRepositoryProvider);
     final existing = (await repo.getLicenseHolders())
         .where((h) => h.permitNo.trim().toLowerCase() == permitNo.toLowerCase());
     if (existing.isNotEmpty) return existing.first;
-    return repo.createLicenseHolder(SaveLicenseHolderRequest(permitNo: permitNo, name: name));
+    return repo.createLicenseHolder(SaveLicenseHolderRequest(
+      permitNo: permitNo,
+      name: name,
+      issuedDate: _today(),
+      validity: LicenseHolderDto.oneTime,
+    ));
+  }
+
+  /// New → Frequent Buyer: name only. Reuses a buyer with the same name.
+  Future<LicenseHolderDto> _resolveNewBuyer() async {
+    final name = ref.read(newPermitNameProvider).trim();
+    if (name.isEmpty) {
+      throw const ApiException('Enter the frequent buyer\'s name, or pick License Holder.');
+    }
+    final repo = ref.read(mastersRepositoryProvider);
+    final existing = (await repo.getLicenseHolders())
+        .where((h) => h.isFrequentBuyer && h.name.trim().toLowerCase() == name.toLowerCase());
+    if (existing.isNotEmpty) return existing.first;
+    return repo.createLicenseHolder(SaveLicenseHolderRequest(
+      permitNo: '',
+      name: name,
+      issuedDate: _today(),
+      category: LicenseHolderDto.frequentBuyer,
+    ));
+  }
+
+  static String _today() {
+    // Same style as the permit list: 24-Mar-2017.
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final d = DateTime.now();
+    return '${d.day.toString().padLeft(2, '0')}-${months[d.month - 1]}-${d.year}';
   }
 }
 

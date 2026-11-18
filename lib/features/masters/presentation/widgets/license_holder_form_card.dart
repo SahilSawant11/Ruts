@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
+import '../../../../shared/widgets/inputs/app_dropdown.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
 import '../../data/masters_providers.dart';
@@ -25,7 +26,15 @@ class _LicenseHolderFormCardState extends ConsumerState<LicenseHolderFormCard> {
   final _permitNo = TextEditingController();
   final _name = TextEditingController();
   final _issuedDate = TextEditingController();
-  final _whereGranted = TextEditingController(text: 'Life Time');
+  final _city = TextEditingController();
+  final _address = TextEditingController();
+  final _contactNo = TextEditingController();
+  final _remark = TextEditingController();
+  String _validity = LicenseHolderDto.lifetime;
+  String _category = LicenseHolderDto.licenseHolder;
+  String? _whereGranted;
+
+  bool get _isBuyer => _category == LicenseHolderDto.frequentBuyer;
 
   int? _lastIndex;
   bool? _lastIsNew;
@@ -35,7 +44,10 @@ class _LicenseHolderFormCardState extends ConsumerState<LicenseHolderFormCard> {
     _permitNo.dispose();
     _name.dispose();
     _issuedDate.dispose();
-    _whereGranted.dispose();
+    _city.dispose();
+    _address.dispose();
+    _contactNo.dispose();
+    _remark.dispose();
     super.dispose();
   }
 
@@ -43,28 +55,42 @@ class _LicenseHolderFormCardState extends ConsumerState<LicenseHolderFormCard> {
     _permitNo.text = holder?.permitNo ?? '';
     _name.text = holder?.name ?? '';
     _issuedDate.text = holder?.issuedDate ?? '';
-    _whereGranted.text = holder?.whereGranted ?? 'Life Time';
+    _whereGranted = holder?.whereGranted;
+    _city.text = holder?.city ?? '';
+    _address.text = holder?.address ?? '';
+    _contactNo.text = holder?.contactNo ?? '';
+    _remark.text = holder?.remark ?? '';
+    _validity = holder?.validity ?? LicenseHolderDto.lifetime;
+    _category = holder?.category ?? LicenseHolderDto.licenseHolder;
   }
+
+  static String? _t(TextEditingController c) => c.text.trim().isEmpty ? null : c.text.trim();
 
   Future<void> _save() async {
     final browser = ref.read(licenseHolderBrowserProvider);
 
-    if (_permitNo.text.trim().isEmpty) {
+    if (!_isBuyer && _permitNo.text.trim().isEmpty) {
       _showSnack('Permit number is required.', isError: true);
       return;
     }
     if (_name.text.trim().isEmpty) {
-      _showSnack('Permit holder name is required.', isError: true);
+      _showSnack(_isBuyer ? 'Name is required.' : 'Permit holder name is required.', isError: true);
       return;
     }
 
     ref.read(licenseHolderBrowserProvider.notifier).setSaving(true);
     try {
       final request = SaveLicenseHolderRequest(
-        permitNo: _permitNo.text.trim(),
+        permitNo: _isBuyer ? '' : _permitNo.text.trim(),
         name: _name.text.trim(),
-        issuedDate: _issuedDate.text.trim().isEmpty ? null : _issuedDate.text.trim(),
-        whereGranted: _whereGranted.text.trim().isEmpty ? null : _whereGranted.text.trim(),
+        issuedDate: _t(_issuedDate),
+        whereGranted: _whereGranted,
+        city: _t(_city),
+        validity: _validity,
+        address: _t(_address),
+        contactNo: _t(_contactNo),
+        remark: _t(_remark),
+        category: _category,
       );
 
       final repo = ref.read(mastersRepositoryProvider);
@@ -73,7 +99,7 @@ class _LicenseHolderFormCardState extends ConsumerState<LicenseHolderFormCard> {
           : await repo.updateLicenseHolder(browser.current!.id, request);
 
       final freshList = await repo.getLicenseHolders();
-      ref.read(licenseHolderBrowserProvider.notifier).afterSave(freshList, saved.permitNo);
+      ref.read(licenseHolderBrowserProvider.notifier).afterSave(freshList, saved.id);
       ref.invalidate(licenseHoldersListProvider);
 
       if (!mounted) return;
@@ -112,7 +138,9 @@ class _LicenseHolderFormCardState extends ConsumerState<LicenseHolderFormCard> {
     final title = isNew ? 'Add License Holder' : 'License Holder Details';
     final subtitle = isNew
         ? 'Register a new permit holder for excise sales'
-        : 'Permit No: ${browser.current?.permitNo ?? ''}';
+        : (browser.current?.isFrequentBuyer ?? false)
+            ? 'Frequent Buyer'
+            : 'Permit No: ${browser.current?.permitNo ?? ''}';
 
     return AppCard(
       child: SingleChildScrollView(
@@ -147,56 +175,99 @@ class _LicenseHolderFormCardState extends ConsumerState<LicenseHolderFormCard> {
             ),
             const SizedBox(height: AppSpacing.md),
 
-            // Permit No.
-            AppTextField(
-              label: 'Permit Number *',
-              hint: 'e.g. 20598 or 0169550',
-              controller: _permitNo,
+            Row(
+              children: [
+                Expanded(
+                  child: AppDropdown<String>(
+                    label: 'Category',
+                    items: LicenseHolderDto.categories,
+                    itemLabel: (v) => v,
+                    value: _category,
+                    onChanged: (v) => setState(() => _category = v ?? _category),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: AppDropdown<String>(
+                    label: 'Validity',
+                    items: LicenseHolderDto.validities,
+                    itemLabel: (v) => v,
+                    value: _validity,
+                    onChanged: (v) => setState(() => _validity = v ?? _validity),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: AppSpacing.sm),
 
-            // Permit Holder Name
+            if (!_isBuyer) ...[
+              AppTextField(
+                label: 'Permit Number *',
+                hint: 'e.g. 20598 or 0169550',
+                controller: _permitNo,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+            ],
+
             AppTextField(
-              label: 'Permit Holder Name *',
+              label: _isBuyer ? 'Name *' : 'Permit Holder Name *',
               hint: 'e.g. B J RAMA',
               controller: _name,
             ),
             const SizedBox(height: AppSpacing.sm),
 
-            // Issued Date
-            AppTextField(
-              label: 'Issued Date',
-              hint: 'e.g. 24-Mar-2017',
-              controller: _issuedDate,
-              suffix: IconButton(
-                icon: const AppIcon(AppIcons.calendar, size: 18),
-                onPressed: () async {
-                  final now = DateTime.now();
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: now,
-                    firstDate: DateTime(1950),
-                    lastDate: DateTime(2050),
-                  );
-                  if (picked != null) {
-                    const months = [
-                      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-                    ];
-                    final formatted =
-                        '${picked.day.toString().padLeft(2, '0')}-${months[picked.month - 1]}-${picked.year}';
-                    setState(() => _issuedDate.text = formatted);
-                  }
-                },
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: AppTextField(
+                    label: 'Issued Date',
+                    hint: 'e.g. 24-Mar-2017',
+                    controller: _issuedDate,
+                    suffix: IconButton(
+                      icon: const AppIcon(AppIcons.calendar, size: 18),
+                      onPressed: () async {
+                        final now = DateTime.now();
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: now,
+                          firstDate: DateTime(1950),
+                          lastDate: DateTime(2050),
+                        );
+                        if (picked != null) {
+                          const months = [
+                            'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+                          ];
+                          final formatted =
+                              '${picked.day.toString().padLeft(2, '0')}-${months[picked.month - 1]}-${picked.year}';
+                          setState(() => _issuedDate.text = formatted);
+                        }
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: AppTextField(label: 'City', hint: 'e.g. Pune', controller: _city),
+                ),
+              ],
             ),
             const SizedBox(height: AppSpacing.sm),
 
-            // Where Granted
-            AppTextField(
-              label: 'Where Granted / Validity',
-              hint: 'e.g. Life Time',
-              controller: _whereGranted,
+            AppTextField(label: 'Address', controller: _address),
+            const SizedBox(height: AppSpacing.sm),
+
+            Row(
+              children: [
+                Expanded(
+                  child: AppTextField(label: 'Contact Number', hint: 'e.g. 98xxxxxx10', controller: _contactNo),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  flex: 2,
+                  child: AppTextField(label: 'Remark', controller: _remark),
+                ),
+              ],
             ),
             const SizedBox(height: AppSpacing.md),
 

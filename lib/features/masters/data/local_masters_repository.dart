@@ -5,8 +5,10 @@ import 'package:drift/drift.dart' hide Column;
 import '../../../core/config/app_config.dart';
 import '../../../core/local/app_database.dart';
 import '../../../core/local/db_paths.dart';
+import '../../../core/local/material_lookup_cache.dart';
 import '../../../core/network/api_exception.dart';
 import '../../sales/data/models/material_dto.dart';
+import 'liquor_type.dart';
 import 'masters_api_repository.dart';
 import 'models/category_dto.dart';
 import 'models/manufacturer_dto.dart';
@@ -214,98 +216,112 @@ class LocalMastersRepository {
     final rows = await (_db.select(_db.cachedLicenseHolders)
           ..orderBy([(tbl) => OrderingTerm.asc(tbl.name)]))
         .get();
-    return rows
-        .map((row) => LicenseHolderDto(
-              id: row.id,
-              permitNo: row.permitNo,
-              name: row.name,
-              issuedDate: row.issuedDate,
-              whereGranted: row.whereGranted,
-              createdAt: row.createdAt,
-              updatedAt: row.updatedAt,
-            ))
+    return rows.map(_holderFromRow).toList();
+  }
+
+  static LicenseHolderDto _holderFromRow(CachedLicenseHolder row) => LicenseHolderDto(
+        id: row.id,
+        permitNo: row.permitNo,
+        name: row.name,
+        issuedDate: row.issuedDate,
+        whereGranted: row.whereGranted,
+        city: row.city,
+        validity: row.validity,
+        address: row.address,
+        contactNo: row.contactNo,
+        remark: row.remark,
+        category: row.category,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      );
+
+  /// Permits the sales screen rotates through, one per bill: License
+  /// Holders only (never Frequent Buyers), minus One Time permits that
+  /// already have a bill.
+  Future<List<LicenseHolderDto>> getRotationLicenseHolders() async {
+    final used = await _db.customSelect(
+      "SELECT DISTINCT LOWER(permit_no) AS p FROM cached_sales_bills "
+      "WHERE permit_no IS NOT NULL AND status != 'returned'",
+    ).get();
+    final usedPermits = used.map((r) => r.read<String>('p')).toSet();
+    final all = await getLicenseHolders();
+    return all
+        .where((h) => !h.isFrequentBuyer && h.permitNo.trim().isNotEmpty)
+        .where((h) => !(h.isOneTime && usedPermits.contains(h.permitNo.toLowerCase())))
         .toList();
   }
 
-  Future<LicenseHolderDto> createLicenseHolder(SaveLicenseHolderRequest request) async {
-    final permitNo = request.permitNo.trim();
-    final name = request.name.trim();
-    if (permitNo.isEmpty) {
+  static String? _clean(String? v) => (v == null || v.trim().isEmpty) ? null : v.trim();
+
+  static String _validity(String v) =>
+      LicenseHolderDto.validities.contains(v) ? v : LicenseHolderDto.lifetime;
+
+  static String _holderCategory(String v) =>
+      v == LicenseHolderDto.frequentBuyer ? LicenseHolderDto.frequentBuyer : LicenseHolderDto.licenseHolder;
+
+  void _validateHolder(SaveLicenseHolderRequest request) {
+    if (!request.isFrequentBuyer && request.permitNo.trim().isEmpty) {
       throw const ApiException('Permit Number is required.');
     }
-    if (name.isEmpty) {
-      throw const ApiException('Permit Holder Name is required.');
+    if (request.name.trim().isEmpty) {
+      throw ApiException(request.isFrequentBuyer ? 'Name is required.' : 'Permit Holder Name is required.');
     }
+  }
 
-    final existing = await (_db.select(_db.cachedLicenseHolders)
-          ..where((tbl) => tbl.permitNo.lower().equals(permitNo.toLowerCase())))
-        .getSingleOrNull();
-    if (existing != null) {
-      throw const ApiException('A license holder with this permit number already exists.');
+  CachedLicenseHoldersCompanion _holderCompanion(SaveLicenseHolderRequest r) => CachedLicenseHoldersCompanion(
+        permitNo: Value(r.permitNo.trim()),
+        name: Value(r.name.trim()),
+        issuedDate: Value(_clean(r.issuedDate)),
+        whereGranted: Value(_clean(r.whereGranted)),
+        city: Value(_clean(r.city)),
+        validity: Value(_validity(r.validity)),
+        address: Value(_clean(r.address)),
+        contactNo: Value(_clean(r.contactNo)),
+        remark: Value(_clean(r.remark)),
+        category: Value(_holderCategory(r.category)),
+      );
+
+  Future<LicenseHolderDto> createLicenseHolder(SaveLicenseHolderRequest request) async {
+    _validateHolder(request);
+    final permitNo = request.permitNo.trim();
+    if (permitNo.isNotEmpty) {
+      final existing = await (_db.select(_db.cachedLicenseHolders)
+            ..where((tbl) => tbl.permitNo.lower().equals(permitNo.toLowerCase())))
+          .get();
+      if (existing.isNotEmpty) {
+        throw const ApiException('A license holder with this permit number already exists.');
+      }
     }
 
     final now = DateTime.now().toUtc();
-    final id = permitNo;
+    // Frequent buyers have no permit; key them by a generated id.
+    final id = permitNo.isNotEmpty ? permitNo : 'FB-${DbPaths.newId()}';
     await _db.into(_db.cachedLicenseHolders).insert(
-          CachedLicenseHoldersCompanion.insert(
-            id: id,
-            permitNo: permitNo,
-            name: name,
-            issuedDate: Value(request.issuedDate?.trim().isEmpty ?? true ? null : request.issuedDate?.trim()),
-            whereGranted: Value(request.whereGranted?.trim().isEmpty ?? true ? null : request.whereGranted?.trim()),
-            createdAt: Value(now),
-            updatedAt: Value(now),
-          ),
+          _holderCompanion(request).copyWith(id: Value(id), createdAt: Value(now), updatedAt: Value(now)),
           mode: InsertMode.insertOrReplace,
         );
-
-    return LicenseHolderDto(
-      id: id,
-      permitNo: permitNo,
-      name: name,
-      issuedDate: request.issuedDate?.trim().isEmpty ?? true ? null : request.issuedDate?.trim(),
-      whereGranted: request.whereGranted?.trim().isEmpty ?? true ? null : request.whereGranted?.trim(),
-      createdAt: now,
-      updatedAt: now,
-    );
+    final row = await (_db.select(_db.cachedLicenseHolders)..where((t) => t.id.equals(id))).getSingle();
+    return _holderFromRow(row);
   }
 
   Future<LicenseHolderDto> updateLicenseHolder(String id, SaveLicenseHolderRequest request) async {
+    _validateHolder(request);
     final permitNo = request.permitNo.trim();
-    final name = request.name.trim();
-    if (permitNo.isEmpty) {
-      throw const ApiException('Permit Number is required.');
-    }
-    if (name.isEmpty) {
-      throw const ApiException('Permit Holder Name is required.');
-    }
-
-    final duplicate = await (_db.select(_db.cachedLicenseHolders)
-          ..where((tbl) => tbl.permitNo.lower().equals(permitNo.toLowerCase())))
-        .getSingleOrNull();
-    if (duplicate != null && duplicate.id != id) {
-      throw const ApiException('Another license holder already has this permit number.');
+    if (permitNo.isNotEmpty) {
+      final duplicates = await (_db.select(_db.cachedLicenseHolders)
+            ..where((tbl) => tbl.permitNo.lower().equals(permitNo.toLowerCase())))
+          .get();
+      if (duplicates.any((d) => d.id != id)) {
+        throw const ApiException('Another license holder already has this permit number.');
+      }
     }
 
     final now = DateTime.now().toUtc();
     await (_db.update(_db.cachedLicenseHolders)..where((tbl) => tbl.id.equals(id))).write(
-      CachedLicenseHoldersCompanion(
-        permitNo: Value(permitNo),
-        name: Value(name),
-        issuedDate: Value(request.issuedDate?.trim().isEmpty ?? true ? null : request.issuedDate?.trim()),
-        whereGranted: Value(request.whereGranted?.trim().isEmpty ?? true ? null : request.whereGranted?.trim()),
-        updatedAt: Value(now),
-      ),
+      _holderCompanion(request).copyWith(updatedAt: Value(now)),
     );
-
-    return LicenseHolderDto(
-      id: id,
-      permitNo: permitNo,
-      name: name,
-      issuedDate: request.issuedDate?.trim().isEmpty ?? true ? null : request.issuedDate?.trim(),
-      whereGranted: request.whereGranted?.trim().isEmpty ?? true ? null : request.whereGranted?.trim(),
-      updatedAt: now,
-    );
+    final row = await (_db.select(_db.cachedLicenseHolders)..where((t) => t.id.equals(id))).getSingle();
+    return _holderFromRow(row);
   }
 
   Future<void> deleteLicenseHolder(String id) async {
@@ -392,22 +408,23 @@ class LocalMastersRepository {
 
   Future<void> batchUpsertLicenseHolders(List<SaveLicenseHolderRequest> requests) async {
     final now = DateTime.now().toUtc();
+    final existing = await _db.select(_db.cachedLicenseHolders).get();
+    final buyerIdByName = {
+      for (final h in existing)
+        if (h.permitNo.trim().isEmpty) h.name.trim().toLowerCase(): h.id,
+    };
     await _db.batch((batch) {
       for (final req in requests) {
         final permitNo = req.permitNo.trim();
         final name = req.name.trim();
-        if (permitNo.isEmpty || name.isEmpty) continue;
+        if (name.isEmpty) continue;
+        if (permitNo.isEmpty && !req.isFrequentBuyer) continue;
+        final id = permitNo.isNotEmpty
+            ? permitNo
+            : buyerIdByName[name.toLowerCase()] ?? 'FB-${DbPaths.newId()}';
         batch.insert(
           _db.cachedLicenseHolders,
-          CachedLicenseHoldersCompanion.insert(
-            id: permitNo,
-            permitNo: permitNo,
-            name: name,
-            issuedDate: Value(req.issuedDate?.trim().isEmpty ?? true ? null : req.issuedDate?.trim()),
-            whereGranted: Value(req.whereGranted?.trim().isEmpty ?? true ? null : req.whereGranted?.trim()),
-            createdAt: Value(now),
-            updatedAt: Value(now),
-          ),
+          _holderCompanion(req).copyWith(id: Value(id), createdAt: Value(now), updatedAt: Value(now)),
           mode: InsertMode.insertOrReplace,
         );
       }
@@ -699,163 +716,119 @@ class LocalMastersRepository {
 
   Future<MaterialDto> createMaterial(SaveMaterialRequest request) async {
     await ensureManufacturerExists(request.manufacturer);
-    await ensureCategoryExists(request.category);
-    if (AppConfig.offlineOnly) {
-      final existing = await (_db.select(_db.cachedMaterials)..where((tbl) => tbl.id.equals(request.id))).getSingleOrNull();
-      if (existing != null) {
-        throw const ApiException('Material code already exists in local cache.');
+    final cat = normalizeLiquorCategory(request.category, request.liquorType);
+    await ensureCategoryExists(cat.category);
+    final id = await newMaterialId(request.scmCode ?? request.id, request.barcode);
+    final local = await _localMaterial(id, request, null);
+    if (!AppConfig.offlineOnly) {
+      try {
+        final created = await _remote.createMaterial(request);
+        final merged = local.copyWith(id: created.id, stockQty: created.stockQty, isPendingSync: false);
+        await _upsertMaterial(merged, syncStatus: 'synced');
+        await onMaterialsChanged?.call();
+        return merged;
+      } on ApiException catch (e) {
+        if (e.statusCode != null) rethrow;
       }
-      final local = MaterialDto(
-        id: request.id,
-        barcode: request.barcode ?? request.id,
-        name: request.name,
-        manufacturer: request.manufacturer,
-        category: request.category,
-        packing: request.packing,
-        saleRate: request.saleRate,
-        taxPercent: request.taxPercent,
-        stockQty: 0,
-        isActive: request.isActive,
-        isPendingSync: true,
-      );
-      await _upsertMaterial(local, syncStatus: 'pending_create');
-      await _enqueueSync(
-        entityType: 'material',
-        entityId: local.id,
-        operation: 'create',
-        payload: request.toJson(),
-      );
-      await onMaterialsChanged?.call();
-      return local;
     }
-    try {
-      final created = (await _remote.createMaterial(request)).copyWith(
-        manufacturer: request.manufacturer,
-        isActive: request.isActive,
-      );
-      await _upsertMaterial(created, syncStatus: 'synced');
-      await onMaterialsChanged?.call();
-      return created;
-    } on ApiException catch (e) {
-      if (e.statusCode != null) rethrow;
+    await _upsertMaterial(local, syncStatus: 'pending_create');
+    await _enqueueSync(
+      entityType: 'material',
+      entityId: local.id,
+      operation: 'create',
+      payload: request.toJson(),
+    );
+    await onMaterialsChanged?.call();
+    return local;
+  }
 
-      final existing = await (_db.select(_db.cachedMaterials)..where((tbl) => tbl.id.equals(request.id))).getSingleOrNull();
-      if (existing != null) {
-        throw const ApiException('Material code already exists in local cache.');
-      }
-
-      final local = MaterialDto(
-        id: request.id,
-        barcode: request.barcode ?? request.id,
-        name: request.name,
-        manufacturer: request.manufacturer,
-        category: request.category,
-        packing: request.packing,
-        saleRate: request.saleRate,
-        taxPercent: request.taxPercent,
-        stockQty: 0,
-        isActive: request.isActive,
-        isPendingSync: true,
-      );
-
-      await _upsertMaterial(local, syncStatus: 'pending_create');
-      await _enqueueSync(
-        entityType: 'material',
-        entityId: local.id,
-        operation: 'create',
-        payload: request.toJson(),
-      );
-      await onMaterialsChanged?.call();
-      return local;
+  /// The unique key for a new material. One SCM code can come with several
+  /// barcodes (and one barcode with several SCM codes); the pair must be
+  /// new. The first material on an SCM code keys by the code itself, the
+  /// rest by `SCM/barcode`.
+  Future<String> newMaterialId(String rawScm, String? rawBarcode) async {
+    final scm = rawScm.trim();
+    final barcode = (rawBarcode ?? '').trim().isEmpty ? scm : rawBarcode!.trim();
+    final rows = await (_db.select(_db.cachedMaterials)
+          ..where((t) => t.id.equals(scm) | t.scmCode.equals(scm)))
+        .get();
+    if (rows.any((r) => r.barcode == barcode)) {
+      throw ApiException('SCM code $scm with barcode $barcode already exists.');
     }
+    if (!rows.any((r) => r.id == scm)) return scm;
+    final composite = '$scm/$barcode';
+    if (rows.any((r) => r.id == composite)) {
+      throw ApiException('SCM code $scm with barcode $barcode already exists.');
+    }
+    return composite;
+  }
+
+  /// Builds the saved row: normalised category/type, counter brand name
+  /// (blank → display name) and its ID.
+  Future<MaterialDto> _localMaterial(String id, SaveMaterialRequest r, CachedMaterial? cached) async {
+    final cat = normalizeLiquorCategory(r.category, r.liquorType);
+    final scm = (cached?.scmCode.isNotEmpty ?? false) ? cached!.scmCode : (r.scmCode ?? r.id).trim();
+    final counterName = r.counterBrandName.trim().isEmpty ? r.name.trim() : r.counterBrandName.trim();
+    final sameBrand = cached != null &&
+        AppDatabase.normalizeCounterBrand(cached.counterBrandName) == AppDatabase.normalizeCounterBrand(counterName) &&
+        cached.counterBrandId.isNotEmpty;
+    return MaterialDto(
+      id: id,
+      barcode: (r.barcode ?? '').trim().isNotEmpty ? r.barcode!.trim() : (cached?.barcode ?? scm),
+      name: r.name.trim(),
+      manufacturer: r.manufacturer,
+      category: cat.category,
+      packing: r.packing,
+      saleRate: r.saleRate,
+      taxPercent: r.taxPercent,
+      stockQty: cached?.stockQty ?? 0,
+      isActive: r.isActive,
+      isPendingSync: true,
+      scmCode: scm,
+      liquorType: cat.type,
+      counterBrandName: counterName,
+      counterBrandId: sameBrand ? cached.counterBrandId : await _db.counterBrandIdFor(counterName),
+      wholesaleRate: r.wholesaleRate,
+      discountPercent: r.discountPercent,
+    );
   }
 
   Future<MaterialDto> updateMaterial(String id, SaveMaterialRequest request) async {
     await ensureManufacturerExists(request.manufacturer);
-    await ensureCategoryExists(request.category);
-    if (AppConfig.offlineOnly) {
-      final cached = await (_db.select(_db.cachedMaterials)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
-      final local = MaterialDto(
-        id: id,
-        barcode: request.barcode ?? cached?.barcode ?? id,
-        name: request.name,
-        manufacturer: request.manufacturer,
-        category: request.category,
-        packing: request.packing,
-        saleRate: request.saleRate,
-        taxPercent: request.taxPercent,
-        stockQty: cached?.stockQty ?? 0,
-        isActive: request.isActive,
-        isPendingSync: true,
-      );
-      final nextStatus = cached?.syncStatus == 'pending_create' ? 'pending_create' : 'pending_update';
-      await _upsertMaterial(local, syncStatus: nextStatus, preserveCreatedAt: cached?.createdAt);
-      await _enqueueSync(
-        entityType: 'material',
-        entityId: id,
-        operation: nextStatus == 'pending_create' ? 'create' : 'update',
-        payload: request.toJson(),
-      );
-      await onMaterialsChanged?.call();
-      return local;
+    final cat = normalizeLiquorCategory(request.category, request.liquorType);
+    await ensureCategoryExists(cat.category);
+    final cached = await (_db.select(_db.cachedMaterials)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
+    final local = await _localMaterial(id, request, cached);
+    if (!AppConfig.offlineOnly) {
+      try {
+        final updated = await _remote.updateMaterial(id, request);
+        final merged = local.copyWith(stockQty: updated.stockQty, isPendingSync: false);
+        await _upsertMaterial(merged, syncStatus: 'synced', preserveCreatedAt: cached?.createdAt);
+        await onMaterialsChanged?.call();
+        return merged;
+      } on ApiException catch (e) {
+        if (e.statusCode != null) rethrow;
+      }
     }
-    try {
-      final updated = (await _remote.updateMaterial(id, request)).copyWith(
-        manufacturer: request.manufacturer,
-        isActive: request.isActive,
-      );
-      await _upsertMaterial(updated, syncStatus: 'synced');
-      await onMaterialsChanged?.call();
-      return updated;
-    } on ApiException catch (e) {
-      if (e.statusCode != null) rethrow;
-
-      final cached = await (_db.select(_db.cachedMaterials)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
-      final local = MaterialDto(
-        id: id,
-        barcode: request.barcode ?? cached?.barcode ?? id,
-        name: request.name,
-        manufacturer: request.manufacturer,
-        category: request.category,
-        packing: request.packing,
-        saleRate: request.saleRate,
-        taxPercent: request.taxPercent,
-        stockQty: cached?.stockQty ?? 0,
-        isActive: request.isActive,
-        isPendingSync: true,
-      );
-
-      final nextStatus = cached?.syncStatus == 'pending_create' ? 'pending_create' : 'pending_update';
-      await _upsertMaterial(local, syncStatus: nextStatus, preserveCreatedAt: cached?.createdAt);
-      await _enqueueSync(
-        entityType: 'material',
-        entityId: id,
-        operation: nextStatus == 'pending_create' ? 'create' : 'update',
-        payload: request.toJson(),
-      );
-      await onMaterialsChanged?.call();
-      return local;
-    }
+    final nextStatus = cached?.syncStatus == 'pending_create' ? 'pending_create' : 'pending_update';
+    await _upsertMaterial(local, syncStatus: nextStatus, preserveCreatedAt: cached?.createdAt);
+    await _enqueueSync(
+      entityType: 'material',
+      entityId: id,
+      operation: nextStatus == 'pending_create' ? 'create' : 'update',
+      payload: request.toJson(),
+    );
+    await onMaterialsChanged?.call();
+    return local;
   }
 
+  /// The material for a scanned [barcode] (or typed SCM code / id). When
+  /// several materials share it (same counter brand, different SCM rows),
+  /// picks the active one with the most stock.
   Future<MaterialDto?> getMaterialByBarcode(String barcode) async {
-    final row = await (_db.select(_db.cachedMaterials)
-          ..where((tbl) => tbl.barcode.equals(barcode) | tbl.id.equals(barcode)))
-        .getSingleOrNull();
-    if (row == null) return null;
-
-    return MaterialDto(
-      id: row.id,
-      barcode: row.barcode,
-      name: row.name,
-      manufacturer: row.manufacturer,
-      category: row.category,
-      packing: row.packing,
-      saleRate: row.saleRate,
-      taxPercent: row.taxPercent,
-      stockQty: row.stockQty,
-      isPendingSync: row.syncStatus != 'synced',
-    );
+    final code = barcode.trim();
+    final all = await _getCachedMaterials();
+    return pickMaterialForCode(all, code);
   }
 
   Future<int> getPendingSyncCount({Set<String>? entityTypes}) async {
@@ -962,9 +935,11 @@ class LocalMastersRepository {
         COALESCE(m.tax_percent, 0.0) AS tax_percent,
         COALESCE(s.qty_on_hand, 0) AS stock_qty,
         COALESCE(m.is_active, 1) AS is_active,
-        COALESCE(m.sync_status, 'synced') AS sync_status
+        COALESCE(m.sync_status, 'synced') AS sync_status,
+        m.scm_code, m.liquor_type, m.counter_brand_name, m.counter_brand_id,
+        m.wholesale_rate, m.discount_percent
       FROM cached_materials m
-      LEFT JOIN cached_inventory_stocks s ON (s.material_id = m.id OR (s.barcode = m.barcode AND m.barcode != ''))
+      LEFT JOIN cached_inventory_stocks s ON s.material_id = m.id
       ORDER BY m.name ASC
     ''').get();
 
@@ -982,9 +957,17 @@ class LocalMastersRepository {
         stockQty: rawStock < 0 ? 0 : rawStock,
         isActive: (row.readNullable<bool>('is_active') ?? (row.readNullable<int>('is_active') == 1)),
         isPendingSync: (row.readNullable<String>('sync_status') ?? 'synced') != 'synced',
+        scmCode: _nonEmpty(row.readNullable<String>('scm_code')) ?? row.readNullable<String>('id'),
+        liquorType: row.readNullable<String>('liquor_type') ?? '',
+        counterBrandName: row.readNullable<String>('counter_brand_name') ?? '',
+        counterBrandId: row.readNullable<String>('counter_brand_id') ?? '',
+        wholesaleRate: row.readNullable<double>('wholesale_rate') ?? 0,
+        discountPercent: row.readNullable<double>('discount_percent') ?? 0,
       );
     }).toList();
   }
+
+  static String? _nonEmpty(String? v) => (v == null || v.isEmpty) ? null : v;
 
   Future<void> _cacheSuppliers(List<SupplierDto> suppliers) async {
     final pendingIds = await _pendingSupplierIds();
@@ -1052,6 +1035,9 @@ class LocalMastersRepository {
         );
       }
     });
+    await _db.customStatement("UPDATE cached_materials SET scm_code = id WHERE scm_code = ''");
+    await _db.customStatement("UPDATE cached_materials SET counter_brand_name = name WHERE counter_brand_name = ''");
+    await _db.assignMissingCounterBrandIds();
     for (final material in materials) {
       await ensureManufacturerExists(
         material.manufacturer.isNotEmpty ? material.manufacturer : _deriveManufacturerName(material.name),
@@ -1147,6 +1133,12 @@ class LocalMastersRepository {
             taxPercent: material.taxPercent,
             stockQty: Value(material.stockQty),
             isActive: Value(material.isActive),
+            scmCode: Value(material.scmCode),
+            liquorType: Value(material.liquorType),
+            counterBrandName: Value(material.counterBrandName),
+            counterBrandId: Value(material.counterBrandId),
+            wholesaleRate: Value(material.wholesaleRate),
+            discountPercent: Value(material.discountPercent),
             syncStatus: Value(syncStatus),
             createdAt: Value(preserveCreatedAt ?? now),
             updatedAt: Value(now),
@@ -1284,6 +1276,21 @@ class LocalMastersRepository {
     });
   }
 
+  /// The server doesn't store the v17 fields yet; keep the local ones.
+  Future<MaterialDto> _keepLocalExtras(MaterialDto remote, String localId) async {
+    final row = await (_db.select(_db.cachedMaterials)..where((t) => t.id.equals(localId))).getSingleOrNull();
+    if (row == null) return remote;
+    return remote.copyWith(
+      scmCode: row.scmCode,
+      liquorType: row.liquorType,
+      counterBrandName: row.counterBrandName,
+      counterBrandId: row.counterBrandId,
+      wholesaleRate: row.wholesaleRate,
+      discountPercent: row.discountPercent,
+      isActive: row.isActive,
+    );
+  }
+
   Future<void> _syncMaterial(SyncQueueItem item) async {
     final payload = _decodePayload(item.payload);
     final request = SaveMaterialRequest(
@@ -1295,12 +1302,17 @@ class LocalMastersRepository {
       packing: (payload['packing'] as String?) ?? '',
       saleRate: _asDouble(payload['saleRate']),
       taxPercent: _asDouble(payload['taxPercent']),
+      scmCode: payload['scmCode'] as String?,
+      liquorType: (payload['liquorType'] as String?) ?? '',
+      counterBrandName: (payload['counterBrandName'] as String?) ?? '',
+      wholesaleRate: _asDouble(payload['wholesaleRate']),
+      discountPercent: _asDouble(payload['discountPercent']),
     );
 
     if (item.operation == 'create') {
       final created = await _remote.createMaterial(request);
       await _db.transaction(() async {
-        await _upsertMaterial(created.copyWith(manufacturer: request.manufacturer), syncStatus: 'synced');
+        await _upsertMaterial(await _keepLocalExtras(created.copyWith(manufacturer: request.manufacturer), item.entityId), syncStatus: 'synced');
         await _clearQueueFor(item.entityType, item.entityId);
       });
       return;
@@ -1308,7 +1320,7 @@ class LocalMastersRepository {
 
     final updated = await _remote.updateMaterial(item.entityId, request);
     await _db.transaction(() async {
-      await _upsertMaterial(updated.copyWith(manufacturer: request.manufacturer), syncStatus: 'synced');
+      await _upsertMaterial(await _keepLocalExtras(updated.copyWith(manufacturer: request.manufacturer), item.entityId), syncStatus: 'synced');
       await _clearQueueFor(item.entityType, item.entityId);
     });
   }
@@ -1426,7 +1438,7 @@ class LocalMastersRepository {
 
   Map<String, dynamic> _decodePayload(String raw) => jsonDecode(raw) as Map<String, dynamic>;
 
-  double _asDouble(Object? value) => (value as num).toDouble();
+  double _asDouble(Object? value) => (value as num?)?.toDouble() ?? 0;
 
   Future<void> _renameCategoryReferences({
     required String previousName,

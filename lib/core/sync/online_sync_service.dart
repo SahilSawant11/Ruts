@@ -164,8 +164,10 @@ class OnlineSyncService {
         for (final p in await _db.select(_db.cachedPackings).get()) {'name': p.name, 'description': p.description},
       ],
       'licenseHolders': [
+        // Frequent buyers have no permit; the server keys holders by permit.
         for (final h in await _db.select(_db.cachedLicenseHolders).get())
-          {'permitNo': h.permitNo, 'name': h.name, 'issuedDate': h.issuedDate, 'whereGranted': h.whereGranted},
+          if (h.permitNo.trim().isNotEmpty)
+            {'permitNo': h.permitNo, 'name': h.name, 'issuedDate': h.issuedDate, 'whereGranted': h.whereGranted},
       ],
       'materials': [
         for (final m in await _db.select(_db.cachedMaterials).get())

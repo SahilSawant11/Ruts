@@ -16,6 +16,7 @@ import '../../data/master_import_service.dart';
 import '../../data/masters_providers.dart';
 import '../../data/local_masters_repository.dart';
 import 'bulk_select.dart';
+import 'shop_prefix_chip.dart';
 import '../material_browser_controller.dart';
 import '../../../../core/format/money.dart';
 
@@ -147,6 +148,8 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> with BulkSelect
                     : const SizedBox.shrink(),
                 orElse: () => const SizedBox.shrink(),
               ),
+              const ShopPrefixChip(),
+              const SizedBox(width: AppSpacing.xs),
               const MasterExportButton(kind: MasterExportKind.materials),
               const TemplateDownloadButton(target: MasterImportTarget.materials),
               const SizedBox(width: AppSpacing.xs),
@@ -254,6 +257,8 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> with BulkSelect
                   m.name.toLowerCase().contains(query) ||
                   m.id.toLowerCase().contains(query) ||
                   m.manufacturer.toLowerCase().contains(query) ||
+                  m.counterBrandName.toLowerCase().contains(query) ||
+                  m.counterBrandId.toLowerCase().contains(query) ||
                   m.barcode.toLowerCase().contains(query);
 
               final matchesCategory =
@@ -367,7 +372,7 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> with BulkSelect
           children: [
             SelectBox(value: selectAllState(visibleIds), onChanged: () => toggleSelectAll(visibleIds)),
             _sortableHeader('SCM CODE', _SortField.id, flex: 3),
-            _sortableHeader('NAME & BRAND', _SortField.name, flex: 6),
+            _sortableHeader('NAME & COUNTER BRAND', _SortField.name, flex: 6),
             _cell('PACKING', flex: 3, header: true),
             _cell('STATUS', flex: 2, header: true),
             _sortableHeader('RATE (₹)', _SortField.saleRate, flex: 2, alignEnd: true),
@@ -382,9 +387,9 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> with BulkSelect
         children: [
           SelectBox(value: selectAllState(visibleIds), onChanged: () => toggleSelectAll(visibleIds)),
           _sortableHeader('SCM CODE', _SortField.id, flex: 2),
-          _sortableHeader('NAME', _SortField.name, flex: 4),
-          _cell('MANUFACTURER', flex: 2, header: true),
-          _cell('CATEGORY', flex: 1, header: true),
+          _sortableHeader('BRAND DISPLAY NAME', _SortField.name, flex: 3),
+          _cell('COUNTER BRAND', flex: 3, header: true),
+          _cell('CATEGORY', flex: 2, header: true),
           _cell('PACKING', flex: 2, header: true),
           _cell('BARCODE', flex: 2, header: true),
           _cell('STATUS', flex: 1, header: true),
@@ -458,7 +463,7 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> with BulkSelect
               ? Row(
                   children: [
                     SelectBox(value: selectedIds.contains(m.id), onChanged: () => toggleSelected(m.id)),
-                    _cell(m.id, flex: 3, mono: true, selected: isSelected),
+                    _cell(m.scmCode, flex: 3, mono: true, selected: isSelected),
                     Expanded(
                       flex: 6,
                       child: Column(
@@ -474,9 +479,9 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> with BulkSelect
                               color: AppColors.textPrimaryFor(context),
                             ),
                           ),
-                          if (m.manufacturer.isNotEmpty)
+                          if (m.counterBrandName.isNotEmpty)
                             Text(
-                              m.manufacturer,
+                              '${m.counterBrandName}${m.counterBrandId.isEmpty ? '' : ' · ${m.counterBrandId}'}',
                               overflow: TextOverflow.ellipsis,
                               style: AppTypography.caption.copyWith(
                                 fontSize: 11,
@@ -522,16 +527,29 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> with BulkSelect
               : Row(
                   children: [
                     SelectBox(value: selectedIds.contains(m.id), onChanged: () => toggleSelected(m.id)),
-                    _cell(m.id, flex: 2, mono: true, selected: isSelected),
-                    _cell(m.name, flex: 4, bold: true, selected: isSelected),
-                    _cell(m.manufacturer, flex: 2, selected: isSelected),
-                    Expanded(flex: 1, child: TagPill(label: m.category, tone: TagPillTone.neutral)),
+                    _cell(m.scmCode, flex: 2, mono: true, selected: isSelected),
+                    _cell(m.name, flex: 3, bold: true, selected: isSelected),
+                    _cell(
+                      '${m.counterBrandName}${m.counterBrandId.isEmpty ? '' : '  ${m.counterBrandId}'}',
+                      flex: 3,
+                      selected: isSelected,
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: TagPill(
+                          label: m.liquorType.isEmpty ? m.category : '${m.category} · ${m.liquorType}',
+                          tone: TagPillTone.neutral,
+                        ),
+                      ),
+                    ),
                     _cell(m.packing, flex: 2, selected: isSelected),
                     _cell(
                       m.barcode,
                       flex: 2,
                       mono: true,
-                      muted: m.barcode == m.id,
+                      muted: m.barcode == m.scmCode,
                       selected: isSelected,
                     ),
                     Expanded(

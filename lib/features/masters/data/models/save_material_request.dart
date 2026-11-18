@@ -12,7 +12,21 @@ class SaveMaterialRequest {
     required this.saleRate,
     required this.taxPercent,
     this.isActive = true,
+    this.scmCode,
+    this.liquorType = '',
+    this.counterBrandName = '',
+    this.wholesaleRate = 0,
+    this.discountPercent = 0,
   });
+
+  /// SCM code; null = same as [id]. Differs from [id] when another
+  /// material already uses this SCM code with a different barcode.
+  final String? scmCode;
+  final String liquorType;
+  /// Counter brand the item rolls up into. Blank → the display name.
+  final String counterBrandName;
+  final double wholesaleRate;
+  final double discountPercent;
 
   final String id;
 
@@ -38,5 +52,10 @@ class SaveMaterialRequest {
         'saleRate': saleRate,
         'taxPercent': taxPercent,
         'isActive': isActive,
+        'scmCode': scmCode ?? id,
+        'liquorType': liquorType,
+        'counterBrandName': counterBrandName,
+        'wholesaleRate': wholesaleRate,
+        'discountPercent': discountPercent,
       };
 }

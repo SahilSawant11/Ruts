@@ -14,7 +14,13 @@ class MaterialDto {
     required this.stockQty,
     this.isActive = true,
     this.isPendingSync = false,
-  });
+    String? scmCode,
+    this.liquorType = '',
+    this.counterBrandName = '',
+    this.counterBrandId = '',
+    this.wholesaleRate = 0,
+    this.discountPercent = 0,
+  }) : scmCode = scmCode ?? id;
 
   final String id;
   final String barcode;
@@ -27,6 +33,15 @@ class MaterialDto {
   final int stockQty;
   final bool isActive;
   final bool isPendingSync;
+
+  /// The SCM code (not unique — see `CachedMaterials.scmCode`).
+  final String scmCode;
+  /// Beer type: Mild / Strong / Fermented; empty otherwise.
+  final String liquorType;
+  final String counterBrandName;
+  final String counterBrandId;
+  final double wholesaleRate;
+  final double discountPercent;
 
   factory MaterialDto.fromJson(Map<String, dynamic> json) {
     return MaterialDto(
@@ -41,6 +56,12 @@ class MaterialDto {
       stockQty: json['stockQty'] as int,
       isActive: (json['isActive'] as bool?) ?? true,
       isPendingSync: false,
+      scmCode: json['scmCode'] as String?,
+      liquorType: (json['liquorType'] as String?) ?? '',
+      counterBrandName: (json['counterBrandName'] as String?) ?? '',
+      counterBrandId: (json['counterBrandId'] as String?) ?? '',
+      wholesaleRate: (json['wholesaleRate'] as num?)?.toDouble() ?? 0,
+      discountPercent: (json['discountPercent'] as num?)?.toDouble() ?? 0,
     );
   }
 
@@ -56,6 +77,12 @@ class MaterialDto {
     int? stockQty,
     bool? isActive,
     bool? isPendingSync,
+    String? scmCode,
+    String? liquorType,
+    String? counterBrandName,
+    String? counterBrandId,
+    double? wholesaleRate,
+    double? discountPercent,
   }) {
     return MaterialDto(
       id: id ?? this.id,
@@ -69,6 +96,12 @@ class MaterialDto {
       stockQty: stockQty ?? this.stockQty,
       isActive: isActive ?? this.isActive,
       isPendingSync: isPendingSync ?? this.isPendingSync,
+      scmCode: scmCode ?? this.scmCode,
+      liquorType: liquorType ?? this.liquorType,
+      counterBrandName: counterBrandName ?? this.counterBrandName,
+      counterBrandId: counterBrandId ?? this.counterBrandId,
+      wholesaleRate: wholesaleRate ?? this.wholesaleRate,
+      discountPercent: discountPercent ?? this.discountPercent,
     );
   }
 }

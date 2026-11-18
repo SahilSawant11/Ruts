@@ -31,13 +31,15 @@ final counterBrandwiseExcelExporterProvider = Provider<CounterBrandwiseExcelExpo
 /// Re-fetches automatically whenever the date changes.
 /// Offline-first: builds report from local Drift tables first, falls
 /// back to the remote API only if local data is empty.
-/// Aggregates quantities by **manufacturer** instead of individual brand.
+/// Aggregates quantities by **counter brand** (Material Master → Counter
+/// Brand Name): every SCM row of "Kingfisher Strong" adds up to one line.
 final counterBrandwiseReportProvider = FutureProvider<CounterBrandwiseReportDto>((ref) async {
   final date = ref.watch(counterBrandwiseReportDateProvider);
+  final showAll = ref.watch(brandwiseShowAllProvider);
   final db = ref.watch(appDatabaseProvider);
 
   // 1. Try to build from local data first.
-  final local = await _buildLocalCounterBrandwiseReport(db, date);
+  final local = await _buildLocalCounterBrandwiseReport(db, date, showAll: showAll);
   if (local != null) return local;
 
   // 2. In offline mode, return empty report. Otherwise try remote.
@@ -105,7 +107,7 @@ int _packingIndex(String? packing) {
 }
 
 /// Returns `null` if there's no local data at all (triggers API fallback).
-Future<CounterBrandwiseReportDto?> _buildLocalCounterBrandwiseReport(AppDatabase db, DateTime date) async {
+Future<CounterBrandwiseReportDto?> _buildLocalCounterBrandwiseReport(AppDatabase db, DateTime date, {bool showAll = false}) async {
   final start = DateTime(date.year, date.month, date.day);
   final endExclusive = start.add(const Duration(days: 1));
 
@@ -174,7 +176,7 @@ Future<CounterBrandwiseReportDto?> _buildLocalCounterBrandwiseReport(AppDatabase
   final categoryItems = <String, Map<String, _ManufacturerAgg>>{};
 
   for (final mat in materials) {
-    final catName = brandwiseSection(mat.category);
+    final catName = brandwiseSection(mat.category, mat.liquorType);
     if (catName == null) continue;
 
     final colIdx = _packingIndex(mat.packing);
@@ -185,11 +187,11 @@ Future<CounterBrandwiseReportDto?> _buildLocalCounterBrandwiseReport(AppDatabase
     final purchaseQty = purchaseQtyByMaterial[mat.id] ?? 0;
     final opening = closing + saleQty - purchaseQty;
 
-    if (opening == 0 && saleQty == 0 && purchaseQty == 0 && closing == 0) continue;
+    if (!showAll && opening == 0 && saleQty == 0 && purchaseQty == 0 && closing == 0) continue;
 
-    // Use manufacturer instead of individual brand name
-    final trimmedMfr = mat.manufacturer.trim();
-    final manufacturerName = trimmedMfr.isNotEmpty ? trimmedMfr : mat.name;
+    // One line per counter brand (blank → the display name).
+    final counterName = mat.counterBrandName.trim();
+    final manufacturerName = counterName.isNotEmpty ? counterName : mat.name.trim();
 
     final manufacturers = categoryItems.putIfAbsent(catName, () => {});
     final agg = manufacturers.putIfAbsent(manufacturerName, _ManufacturerAgg.new);

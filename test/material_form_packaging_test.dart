@@ -64,19 +64,21 @@ void main() {
 
     // Locked state: should show AppTextField with hint '750 ML'
     expect(
-      find.byWidgetPredicate((w) => w is AppTextField && w.label == 'PACKING' && w.hint == '750 ML'),
+      find.byWidgetPredicate((w) => w is AppTextField && w.label == 'PACKAGING' && w.hint == '750 ML'),
       findsOneWidget,
     );
 
     // Tap "Modify" button to enter editing mode
     final modifyButton = find.text('Edit');
     expect(modifyButton, findsOneWidget);
+    await tester.ensureVisible(modifyButton);
+    await tester.pumpAndSettle();
     await tester.tap(modifyButton);
     await tester.pumpAndSettle();
 
     // Now in editable mode: AppDropdown<String> for PACKING should be present
     final packingDropdown = find.byWidgetPredicate(
-      (widget) => widget is AppDropdown<String> && widget.label == 'PACKING',
+      (widget) => widget is AppDropdown<String> && widget.label == 'PACKAGING',
     );
     expect(packingDropdown, findsOneWidget);
   });
