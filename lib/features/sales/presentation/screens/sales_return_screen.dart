@@ -17,6 +17,7 @@ import '../../../inventory/data/inventory_providers.dart';
 import '../../data/models/sales_return_models.dart';
 import '../../data/sales_providers.dart';
 import '../../../../core/format/money.dart';
+import '../../../reports/data/report_refresh.dart';
 
 class SalesReturnScreen extends ConsumerStatefulWidget {
   const SalesReturnScreen({super.key});
@@ -222,6 +223,7 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
       ref.invalidate(inventoryOverviewProvider);
       ref.invalidate(filteredInventoryOverviewProvider);
       ref.invalidate(dashboardSummaryProvider);
+      refreshStockReports(ref.invalidate);
 
       ref.read(selectedSalesBillProvider.notifier).state = null;
 

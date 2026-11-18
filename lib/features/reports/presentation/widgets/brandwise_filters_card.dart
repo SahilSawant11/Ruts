@@ -7,6 +7,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
 import '../../../../shared/widgets/layout/app_card.dart';
 import '../../data/brandwise_report_provider.dart';
+import '../../data/counter_brandwise_report_provider.dart';
 
 /// Single date picker + Generate button for the brandwise report.
 class BrandwiseFiltersCard extends ConsumerStatefulWidget {
@@ -41,6 +42,10 @@ class _BrandwiseFiltersCardState extends ConsumerState<BrandwiseFiltersCard> {
   void _generate() {
     if (_pendingDate == null) return;
     ref.read(brandwiseReportDateProvider.notifier).state = _pendingDate!;
+    // Same date as before → the provider wouldn't rebuild on its own, so
+    // purchases/sales made since the last Generate would be missing.
+    ref.invalidate(brandwiseReportProvider);
+    ref.invalidate(counterBrandwiseReportProvider);
   }
 
   @override

@@ -12,6 +12,7 @@ import '../data/models/create_sale_request.dart';
 import '../data/sales_providers.dart';
 import 'cart_controller.dart';
 import 'sales_providers.dart';
+import '../../reports/data/report_refresh.dart';
 
 /// Service that handles bill checkout (both manual Save & Print and
 /// automatic self-checkout when the 12-bottle / 12-barcode limit is reached).
@@ -108,6 +109,7 @@ class SalesCheckoutService {
       ref.invalidate(todaysBillsProvider);
       ref.invalidate(salesReportProvider);
       ref.invalidate(dashboardSummaryProvider);
+      refreshStockReports(ref.invalidate);
       ref.invalidate(inventoryListProvider);
       ref.invalidate(inventoryOverviewProvider);
       ref.invalidate(materialsListProvider);

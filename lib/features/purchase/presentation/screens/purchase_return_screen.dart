@@ -18,6 +18,7 @@ import '../../../masters/data/masters_providers.dart';
 import '../../data/models/purchase_return_models.dart';
 import '../../data/purchase_providers.dart';
 import '../../../../core/format/money.dart';
+import '../../../reports/data/report_refresh.dart';
 
 class PurchaseReturnScreen extends ConsumerStatefulWidget {
   const PurchaseReturnScreen({super.key});
@@ -216,6 +217,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
       ref.invalidate(inventoryOverviewProvider);
       ref.invalidate(filteredInventoryOverviewProvider);
       ref.invalidate(dashboardSummaryProvider);
+      refreshStockReports(ref.invalidate);
       ref.invalidate(materialsListProvider);
 
       ref.read(selectedPurchaseBillProvider.notifier).state = null;

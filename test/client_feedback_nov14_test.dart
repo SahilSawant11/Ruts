@@ -17,6 +17,7 @@ import 'package:pos_app/features/reports/data/brandwise_sections.dart';
 import 'package:pos_app/features/reports/data/counter_brandwise_report_provider.dart';
 
 import 'support/test_env.dart';
+import 'package:pos_app/features/reports/data/report_refresh.dart';
 
 void main() {
   test('categories map to the four register sections', () {
@@ -81,6 +82,37 @@ void main() {
     expect(counterStrong.items.map((r) => r.tpNo), ['TP-101', 'TP-102']);
     expect(counterStrong.items.map((r) => r.purchase.beer650), [24, 12]);
     expect(counterStrong.subtotal.purchase.beer650, 36);
+  });
+
+  test('brandwise picks up a purchase made after the report was opened, once refreshed', () async {
+    final env = await TestEnv.create(fileBacked: false);
+    addTearDown(env.dispose);
+    await env.addMaterial('KS', stock: 0);
+    await (env.db.update(env.db.cachedMaterials)..where((t) => t.id.equals('KS'))).write(const CachedMaterialsCompanion(
+        name: Value('KINGFISHER STRONG'), category: Value('Beer'), liquorType: Value('Strong'), packing: Value('650 ML')));
+    final container = ProviderContainer(overrides: [appDatabaseProvider.overrideWithValue(env.db)]);
+    addTearDown(container.dispose);
+    final sub = container.listen(brandwiseReportProvider, (_, __) {});
+    addTearDown(sub.close);
+
+    final before = await container.read(brandwiseReportProvider.future);
+    expect(before.categories.expand((c) => c.items), isEmpty);
+
+    await env.purchases.createPurchase(const CreatePurchaseRequest(
+      supplierId: 'SUP-1', billNo: 'INV-1', payMode: 'Credit', discount: 0, vat: 0, stamp: 0,
+      tcs: 0, loadingFreight: 0, netAmount: 0, totalAmount: 0,
+      lineItems: [
+        CreatePurchaseLineItemRequest(materialId: 'KS', batchNo: 'B', qty: 12, rate: 100, disPercent: 0,
+            disAmount: 0, taxPercent: 0, taxAmount: 0, amount: 1200),
+      ],
+    ));
+    // Same date, no refresh → still the cached report (the bug).
+    expect((await container.read(brandwiseReportProvider.future)).categories.expand((c) => c.items), isEmpty);
+
+    refreshStockReports(container.invalidate);
+    final after = await container.read(brandwiseReportProvider.future);
+    final strong = after.categories.firstWhere((c) => c.name == 'STRONG BEER').items.single;
+    expect(strong.purchase.beer650, 12);
   });
 
   test('VAT % on goods, TCS % on goods + VAT, other charges flat', () {
