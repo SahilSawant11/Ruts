@@ -56,13 +56,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Future<void> _exportExcel() async {
     setState(() => _isExporting = true);
     try {
-      final report = await ref.read(salesReportProvider.future);
-      if (report.items.isEmpty) {
-        _showSnack('No rows available to export for this date range.', isError: true);
-        return;
-      }
-
-      final file = await ref.read(reportExcelExporterProvider).exportDailySalesReport(report);
+      // SCM portal upload sheet: every liquor item for each day in the
+      // range, sold quantities filled in (blank when nothing sold).
+      final range = ref.read(reportDateRangeProvider);
+      final file = await ref
+          .read(reportExcelExporterProvider)
+          .export(ref.read(appDatabaseProvider), range.start, range.end);
       if (!mounted) return;
       _showSnack('Excel report saved to ${file.path}');
     } catch (e) {

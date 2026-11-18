@@ -1,3 +1,4 @@
+import 'master_export_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -77,6 +78,7 @@ class _CategoriesTableState extends ConsumerState<CategoriesTable> with BulkSele
                 ),
                 orElse: () => const SizedBox.shrink(),
               ),
+              const MasterExportButton(kind: MasterExportKind.categories),
               SecondaryButton(
                 label: 'New',
                 icon: AppIcons.add,

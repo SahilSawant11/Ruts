@@ -11,6 +11,7 @@ import '../../../core/network/api_exception.dart';
 import '../../../core/network/http_client_provider.dart';
 import '../../masters/data/masters_providers.dart';
 import 'brandwise_excel_exporter.dart';
+import 'brandwise_sections.dart';
 import 'models/brandwise_report_dto.dart';
 import 'stock_as_of.dart';
 
@@ -92,28 +93,6 @@ Future<BrandwiseReportDto> _fetchRemoteBrandwiseReport(http.Client client, DateT
 // ---------------------------------------------------------------------------
 
 /// Size-column names used in Material.packing → column index mapping.
-/// Maps a material's `category` field (case-insensitive) to the
-/// display name used in the report.
-String? _mapCategory(String category) {
-  final lower = category.toLowerCase().trim();
-  if (lower.contains('fermented') || lower.contains('strong beer')) {
-    return 'FERMENTED BEER';
-  }
-  if (lower.contains('mild') || lower.contains('mild beer')) {
-    return 'MILD BEER';
-  }
-  if (lower.contains('wine') || lower.contains('whisky') || lower.contains('whiskey') ||
-      lower.contains('rum') || lower.contains('vodka') || lower.contains('brandy') ||
-      lower.contains('gin')) {
-    return 'WINE';
-  }
-  // Catch-all for generic "beer" that isn't fermented/strong
-  if (lower.contains('beer')) {
-    return 'MILD BEER';
-  }
-  return null; // skip materials that don't fit the register (e.g. soft drinks)
-}
-
 /// Normalises packing strings like "750 ML", "750ml", "650ML",
 /// "500ml CAN", "330 ML (CAN)", "330ml" etc. into a column index.
 int _packingIndex(String? packing) {
@@ -188,12 +167,26 @@ Future<BrandwiseReportDto?> _buildLocalBrandwiseReport(AppDatabase db, DateTime 
         (purchaseQtyByMaterial[line.materialId] ?? 0) + line.qty;
   }
 
+  // TP numbers of the day's purchases, per materialId, in bill-time order
+  // (ties broken by TP No so the register is stable).
+  final billOrder = [...purchaseBills]
+    ..sort((a, b) {
+      final byTime = a.billDate.compareTo(b.billDate);
+      return byTime != 0 ? byTime : (a.tpNo ?? '').compareTo(b.tpNo ?? '');
+    });
+  final tpNosByMaterial = <String, List<String?>>{};
+  for (final bill in billOrder) {
+    for (final line in purchaseLines.where((l) => l.purchaseBillId == bill.id)) {
+      tpNosByMaterial.putIfAbsent(line.materialId, () => []).add(bill.tpNo);
+    }
+  }
+
   // Build rows grouped by category
   // Key: category display name → list of items
   final categoryItems = <String, Map<String, _BrandAgg>>{};
 
   for (final mat in materials) {
-    final catName = _mapCategory(mat.category);
+    final catName = brandwiseSection(mat.category);
     if (catName == null) continue;
 
     final colIdx = _packingIndex(mat.packing);
@@ -212,12 +205,13 @@ Future<BrandwiseReportDto?> _buildLocalBrandwiseReport(AppDatabase db, DateTime 
     agg.purchase[colIdx] += purchaseQty;
     agg.sale[colIdx] += saleQty;
     agg.closing[colIdx] += closing;
+    agg.tpNos.addAll(tpNosByMaterial[mat.id] ?? const []);
   }
 
   if (categoryItems.isEmpty) return null;
 
   // Build DTOs in the fixed display order
-  const categoryOrder = ['FERMENTED BEER', 'MILD BEER', 'WINE'];
+  const categoryOrder = brandwiseSectionOrder;
   final categories = <BrandwiseCategoryDto>[];
 
   for (final catName in categoryOrder) {
@@ -241,6 +235,7 @@ Future<BrandwiseReportDto?> _buildLocalBrandwiseReport(AppDatabase db, DateTime 
       final agg = brands[name]!;
       return BrandwiseReportItemDto(
         brandName: name,
+        tpNo: joinTpNos(agg.tpNos),
         openingBalance: _listToSizeQty(agg.opening),
         purchase: _listToSizeQty(agg.purchase),
         sale: _listToSizeQty(agg.sale),
@@ -275,37 +270,18 @@ BrandwiseSizeQty _listToSizeQty(List<int> vals) => BrandwiseSizeQty(
 BrandwiseReportDto _emptyReport(DateTime date) => BrandwiseReportDto(
       reportDate: date,
       licenseHeader: 'BEER A : WINE BR. II BRANDWISE STOCK REPORT',
-      categories: const [
-        BrandwiseCategoryDto(
-          name: 'FERMENTED BEER',
-          items: [],
-          subtotal: BrandwiseCategorySubtotal(
-            openingBalance: BrandwiseSizeQty.zero,
-            purchase: BrandwiseSizeQty.zero,
-            sale: BrandwiseSizeQty.zero,
-            closingBalance: BrandwiseSizeQty.zero,
+      categories: [
+        for (final name in brandwiseSectionOrder)
+          BrandwiseCategoryDto(
+            name: name,
+            items: const [],
+            subtotal: const BrandwiseCategorySubtotal(
+              openingBalance: BrandwiseSizeQty.zero,
+              purchase: BrandwiseSizeQty.zero,
+              sale: BrandwiseSizeQty.zero,
+              closingBalance: BrandwiseSizeQty.zero,
+            ),
           ),
-        ),
-        BrandwiseCategoryDto(
-          name: 'MILD BEER',
-          items: [],
-          subtotal: BrandwiseCategorySubtotal(
-            openingBalance: BrandwiseSizeQty.zero,
-            purchase: BrandwiseSizeQty.zero,
-            sale: BrandwiseSizeQty.zero,
-            closingBalance: BrandwiseSizeQty.zero,
-          ),
-        ),
-        BrandwiseCategoryDto(
-          name: 'WINE',
-          items: [],
-          subtotal: BrandwiseCategorySubtotal(
-            openingBalance: BrandwiseSizeQty.zero,
-            purchase: BrandwiseSizeQty.zero,
-            sale: BrandwiseSizeQty.zero,
-            closingBalance: BrandwiseSizeQty.zero,
-          ),
-        ),
       ],
     );
 
@@ -314,4 +290,5 @@ class _BrandAgg {
   final purchase = List<int>.filled(7, 0);
   final sale = List<int>.filled(7, 0);
   final closing = List<int>.filled(7, 0);
+  final tpNos = <String?>[];
 }

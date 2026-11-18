@@ -1,3 +1,5 @@
+import '../../data/sales_bills_export.dart';
+import '../../../../shared/export/export_excel_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/auth/auth_controller.dart';
@@ -359,6 +361,13 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
                   orElse: () => const SizedBox.shrink(),
                 ),
                 const SizedBox(width: 4),
+                ExportExcelButton(
+                  tooltip: 'Export these bills to Excel',
+                  onExport: switch (billsAsync.valueOrNull) {
+                    final bills? when bills.isNotEmpty => () => SalesBillsExport.save(bills),
+                    _ => null,
+                  },
+                ),
                 IconButton(
                   icon: AppIcon(
                     AppIcons.refresh,

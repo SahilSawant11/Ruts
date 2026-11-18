@@ -87,6 +87,8 @@ class LocalSalesRepository {
           id: bill.id,
           billNo: bill.billNo,
           customerId: bill.customerId,
+          permitNo: bill.permitNo,
+          permitHolderName: bill.permitHolderName,
           billType: 'CounterSale.Sale',
           billDate: bill.billDate.toIso8601String(),
           payMode: bill.payMode,

@@ -1,3 +1,5 @@
+import '../../data/purchase_bills_export.dart';
+import '../../../../shared/export/export_excel_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/auth/auth_controller.dart';
@@ -354,6 +356,13 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                   orElse: () => const SizedBox.shrink(),
                 ),
                 const SizedBox(width: 4),
+                ExportExcelButton(
+                  tooltip: 'Export these bills to Excel',
+                  onExport: switch (billsAsync.valueOrNull) {
+                    final bills? when bills.isNotEmpty => () => PurchaseBillsExport.save(bills),
+                    _ => null,
+                  },
+                ),
                 IconButton(
                   icon: AppIcon(
                     AppIcons.refresh,
@@ -856,7 +865,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                       children: [
                         _chargeItem(context, 'Discount', '-${Money.inr(bill.discount)}'),
                         _chargeItem(context, 'VAT', Money.inr(bill.vat)),
-                        _chargeItem(context, 'Stamp', Money.inr(bill.stamp)),
+                        _chargeItem(context, 'Other', Money.inr(bill.stamp)),
                         _chargeItem(context, 'TCS', Money.inr(bill.tcs)),
                         _chargeItem(context, 'Freight', Money.inr(bill.loadingFreight)),
                       ],

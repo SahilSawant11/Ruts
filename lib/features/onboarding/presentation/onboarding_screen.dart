@@ -1,3 +1,4 @@
+import '../../masters/presentation/widgets/template_download_button.dart';
 import 'dart:io';
 
 import 'package:file_selector/file_selector.dart';
@@ -428,6 +429,8 @@ class _WizardState extends ConsumerState<_Wizard> {
               const SizedBox(width: 12),
               Text(count == 1 ? 'product' : 'products', style: AppTypography.bodyMuted),
               const Spacer(),
+              const TemplateDownloadButton(target: MasterImportTarget.materials),
+              const SizedBox(width: 8),
               SecondaryButton(label: 'Import products', icon: AppIcons.uploadFile, onPressed: _importProducts),
             ],
           ),

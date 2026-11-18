@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/format/money.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_icons.dart';
@@ -35,7 +36,7 @@ class ExtraChargesTotalsCard extends ConsumerStatefulWidget {
 class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard> {
   final _discountController = TextEditingController(text: '0');
   final _vatController = TextEditingController(text: '0');
-  final _stampController = TextEditingController(text: '0');
+  final _otherController = TextEditingController(text: '0');
   final _tcsController = TextEditingController(text: '0');
   final _loadingFreightController = TextEditingController(text: '0');
 
@@ -53,7 +54,7 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
     for (final c in [
       _discountController,
       _vatController,
-      _stampController,
+      _otherController,
       _tcsController,
       _loadingFreightController
     ]) {
@@ -115,7 +116,7 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
               for (final c in [
                 _discountController,
                 _vatController,
-                _stampController,
+                _otherController,
                 _tcsController,
                 _loadingFreightController
               ]) {
@@ -144,7 +145,7 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
 
     setState(() => _isSaving = true);
     try {
-      final netAmount = cart.itemsAmount + form.extraCharges;
+      final netAmount = cart.itemsAmount + form.extraCharges(cart.itemsAmount);
 
       final request = CreatePurchaseRequest(
         supplierId: form.supplierId!,
@@ -156,9 +157,9 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
         tpDate: null,
         stNo: form.stNo,
         discount: form.discount,
-        vat: form.vat,
-        stamp: form.stamp,
-        tcs: form.tcs,
+        vat: form.vatAmount(cart.itemsAmount),
+        stamp: form.otherCharges,
+        tcs: form.tcsAmount(cart.itemsAmount),
         loadingFreight: form.loadingFreight,
         netAmount: netAmount,
         totalAmount: netAmount,
@@ -192,7 +193,7 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
       for (final c in [
         _discountController,
         _vatController,
-        _stampController,
+        _otherController,
         _tcsController,
         _loadingFreightController
       ]) {
@@ -213,6 +214,8 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
 
   @override
   Widget build(BuildContext context) {
+    final itemsAmount = ref.watch(purchaseCartControllerProvider).itemsAmount;
+    final form = ref.watch(purchaseFormControllerProvider);
     final fields = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -231,10 +234,10 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
             const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: AppTextField(
-                label: 'VAT',
+                label: 'OTHER / BREAKAGE',
                 hint: '0',
-                controller: _vatController,
-                onChanged: (v) => ref.read(purchaseFormControllerProvider.notifier).setVat(_parse(v)),
+                controller: _otherController,
+                onChanged: (v) => ref.read(purchaseFormControllerProvider.notifier).setOtherCharges(_parse(v)),
               ),
             ),
           ],
@@ -246,22 +249,30 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
           children: [
             Expanded(
               child: AppTextField(
-                label: 'STAMP DUTY',
+                label: 'VAT %',
                 hint: '0',
-                controller: _stampController,
-                onChanged: (v) => ref.read(purchaseFormControllerProvider.notifier).setStamp(_parse(v)),
+                controller: _vatController,
+                onChanged: (v) => ref.read(purchaseFormControllerProvider.notifier).setVatPercent(_parse(v)),
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: AppTextField(
-                label: 'TCS',
+                label: 'TCS %',
                 hint: '0',
                 controller: _tcsController,
-                onChanged: (v) => ref.read(purchaseFormControllerProvider.notifier).setTcs(_parse(v)),
+                onChanged: (v) => ref.read(purchaseFormControllerProvider.notifier).setTcsPercent(_parse(v)),
               ),
             ),
           ],
+        ),
+        // Rupee amounts the percentages work out to on this bill.
+        Padding(
+          padding: const EdgeInsets.only(top: 4, left: 2),
+          child: Text(
+            'VAT ${Money.inr(form.vatAmount(itemsAmount))} · TCS ${Money.inr(form.tcsAmount(itemsAmount))}',
+            style: AppTypography.caption.copyWith(color: AppColors.textSecondaryFor(context)),
+          ),
         ),
 
         const SizedBox(height: AppSpacing.xs),

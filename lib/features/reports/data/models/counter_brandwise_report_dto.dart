@@ -31,7 +31,7 @@ class CounterBrandwiseReportItemDto {
   }
 }
 
-/// A product category section (Fermented Beer / Mild Beer / Wine)
+/// A product category section (Fermented / Strong / Mild Beer / Wine)
 /// with its list of manufacturer rows and computed subtotals.
 class CounterBrandwiseCategoryDto {
   const CounterBrandwiseCategoryDto({

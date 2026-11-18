@@ -9,6 +9,7 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:drift/drift.dart' hide Column;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -50,6 +51,9 @@ Future<void> main() async {
   // The macOS app is sandboxed, so default to its own temp folder.
   _out = _outOverride.isNotEmpty ? _outOverride : '${(await getTemporaryDirectory()).path}/caskly_snaps';
   final db = AppDatabase(NativeDatabase.memory());
+  // --dart-define=SNAP_SHOP=beer: a believable Maharashtra beer & wine shop
+  // (promo/demo videos) instead of the generic demo catalog.
+  if (const String.fromEnvironment('SNAP_SHOP') == 'beer') await _seedBeerShop(db);
   await db.ensureStarterData(includeDemoData: true);
   final cache = await MaterialLookupCache.load(db);
 
@@ -180,3 +184,86 @@ Future<void> _capture(String name) async {
 // Keep the import used even if GoRouter APIs change.
 // ignore: unused_element
 typedef _R = GoRouter;
+
+
+// ── beer & wine shop for promo shots ─────────────────────────────────────
+
+// name, manufacturer, category, size, MRP, on hand, daily pace
+const _beerShop = <(String, String, String, String, double, int, int)>[
+  ('Kingfisher Strong', 'United Breweries', 'Fermented Beer', '650 ML', 180, 240, 22),
+  ('Kingfisher Strong', 'United Breweries', 'Fermented Beer', '500 ML CAN', 190, 96, 9),
+  ('Tuborg Strong', 'Carlsberg India', 'Fermented Beer', '650 ML', 170, 132, 11),
+  ('Budweiser Magnum', 'AB InBev', 'Fermented Beer', '650 ML', 210, 96, 7),
+  ('Haywards 5000', 'SABMiller', 'Fermented Beer', '650 ML', 150, 144, 9),
+  ('Carlsberg Elephant', 'Carlsberg India', 'Fermented Beer', '650 ML', 200, 60, 4),
+  ('Kingfisher Premium', 'United Breweries', 'Mild Beer', '650 ML', 160, 120, 9),
+  ('Kingfisher Premium', 'United Breweries', 'Mild Beer', '330 ML CAN', 110, 96, 7),
+  ('Budweiser', 'AB InBev', 'Mild Beer', '650 ML', 200, 84, 6),
+  ('Bira 91 White', 'B9 Beverages', 'Mild Beer', '330 ML CAN', 140, 7, 4),
+  ('Heineken', 'United Breweries', 'Mild Beer', '650 ML', 220, 48, 3),
+  ('Sula Shiraz', 'Sula Vineyards', 'Wine', '750 ML', 820, 12, 1),
+  ('Sula Chenin Blanc', 'Sula Vineyards', 'Wine', '750 ML', 790, 9, 1),
+  ('Big Banyan Merlot', 'Big Banyan', 'Wine', '750 ML', 900, 10, 1),
+  ('Golconda Port Wine', 'Golconda', 'Wine', '180 ML', 90, 60, 4),
+];
+
+Future<void> _seedBeerShop(AppDatabase db) async {
+  final now = DateTime.now().toUtc();
+  final today = DateTime.utc(now.year, now.month, now.day);
+  String id(int i) => 'SHOP-${(i + 1).toString().padLeft(3, '0')}';
+  String barcode(int i) => '89010630${(1001 + i * 7).toString().padLeft(5, '0')}';
+
+  await db.batch((b) {
+    for (var i = 0; i < _beerShop.length; i++) {
+      final m = _beerShop[i];
+      b.insert(db.cachedMaterials, CachedMaterialsCompanion.insert(
+        id: id(i), barcode: barcode(i), name: m.$1, manufacturer: Value(m.$2), category: m.$3,
+        packing: m.$4, saleRate: m.$5, taxPercent: 0, stockQty: Value(m.$6), isActive: const Value(true),
+        createdAt: Value(now), updatedAt: Value(now), lastSyncedAt: Value(now),
+      ));
+      b.insert(db.cachedInventoryStocks, CachedInventoryStocksCompanion.insert(
+        materialId: id(i), barcode: barcode(i), name: m.$1, category: m.$3, qtyOnHand: m.$6,
+        reorderLevel: const Value(24), updatedAt: Value(now),
+      ));
+    }
+
+    // A one-day permit so the bill header isn't empty (synthetic, not a person).
+    b.insert(db.cachedLicenseHolders, CachedLicenseHoldersCompanion.insert(
+      id: 'DAY-0001', permitNo: '0001', name: 'ONE DAY PERMIT', createdAt: Value(now), updatedAt: Value(now),
+    ));
+
+    // A year of bills, growing steadily, with a good last week; busier on Fri/Sat. Each bill is 1–3 lines.
+    var seq = 1;
+    for (var d = 364; d >= 0; d--) {
+      final day = today.subtract(Duration(days: d));
+      final busy = day.weekday == DateTime.friday || day.weekday == DateTime.saturday;
+      final bills = ((busy ? 34 : 24) * (0.45 + 0.55 * (364 - d) / 364) * (d < 7 ? 1.18 : 1)).round();
+      for (var k = 0; k < bills; k++) {
+        final billId = 'shop-sale-$d-$k';
+        final at = DateTime.utc(day.year, day.month, day.day, 5 + (k * 13) % 12, (k * 17) % 60);
+        final pay = const ['UPI', 'Cash', 'UPI', 'Cash', 'Card'][(k + d) % 5];
+        var total = 0.0;
+        final lineCount = 1 + (k + d) % 3;
+        for (var l = 0; l < lineCount; l++) {
+          // Weight towards the fast movers (earlier in the list within each pass).
+          final i = ((k * 5 + l * 3 + d) % (_beerShop.length + 6)) % _beerShop.length;
+          final m = _beerShop[i];
+          final qty = m.$3 == 'Wine' ? 1 : 1 + (k + l) % 4;
+          final amount = qty * m.$5;
+          total += amount;
+          b.insert(db.cachedSaleLineItems, CachedSaleLineItemsCompanion.insert(
+            id: '$billId-$l', salesBillId: billId, materialId: Value(id(i)), barcodeNo: barcode(i),
+            materialType: m.$3, materialName: m.$1, batchNo: const Value('-'), packing: Value(m.$4),
+            quantity: qty, qtyCase: const Value(0), rate: m.$5, discountPercent: 0, discountAmount: 0,
+            taxPercent: 0, taxAmount: 0, amount: amount, lineNumber: l + 1,
+          ));
+        }
+        b.insert(db.cachedSalesBills, CachedSalesBillsCompanion.insert(
+          id: billId, billNo: 'CS-2627-${(seq++).toString().padLeft(6, '0')}', payMode: pay, status: 'paid',
+          totalAmount: total, balanceDue: 0, totalTax: 0, syncStatus: const Value('synced'),
+          billDate: day, createdAt: Value(at), updatedAt: Value(at),
+        ));
+      }
+    }
+  });
+}

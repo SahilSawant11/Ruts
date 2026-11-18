@@ -4,7 +4,6 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../../data/models/customer_dto.dart';
 import '../../data/sales_providers.dart';
 import '../../../masters/data/masters_providers.dart';
 import '../../../masters/data/models/license_holder_dto.dart';
@@ -21,6 +20,7 @@ class InvoiceDetailsCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final billNo = ref.watch(billNoProvider);
+    final isNewPermit = ref.watch(newPermitModeProvider);
 
     final isDark = AppColors.isDark(context);
     final stripBg = isDark ? AppColors.surfaceFor(context) : AppColors.surfaceAltFor(context);
@@ -49,26 +49,50 @@ class InvoiceDetailsCard extends ConsumerWidget {
           ),
           _divider(borderColor),
 
-          // Customer (interactive pebble dropdown)
-          Expanded(
-            flex: 3,
-            child: _CustomerField(ref: ref),
-          ),
-          _divider(borderColor),
+          if (isNewPermit) ...[
+            // Customer → NEW: type the walk-in's name and license number.
+            const Expanded(
+              flex: 3,
+              child: _NewPermitBox(label: 'NAME', hint: 'Customer name', isName: true),
+            ),
+            _divider(borderColor),
+            const Expanded(
+              flex: 3,
+              child: _NewPermitBox(label: 'LICENSE NO', hint: 'Permit / license no.', isName: false),
+            ),
+            IconButton(
+              tooltip: 'Cancel new customer',
+              visualDensity: VisualDensity.compact,
+              icon: AppIcon(AppIcons.close, size: 16, color: AppColors.textSecondaryFor(context)),
+              onPressed: () {
+                ref.read(newPermitModeProvider.notifier).state = false;
+                ref.read(newPermitNameProvider.notifier).state = '';
+                ref.read(newPermitNoProvider.notifier).state = '';
+              },
+            ),
+            _divider(borderColor),
+          ] else ...[
+            // Customer (interactive pebble dropdown)
+            Expanded(
+              flex: 3,
+              child: _CustomerField(ref: ref),
+            ),
+            _divider(borderColor),
 
-          // License
-          Expanded(
-            flex: 3,
-            child: _LicenseHolderField(ref: ref),
-          ),
-          _divider(borderColor),
+            // License
+            Expanded(
+              flex: 3,
+              child: _LicenseHolderField(ref: ref),
+            ),
+            _divider(borderColor),
+          ],
 
           // Type
           Expanded(
             flex: 2,
             child: _MetaField(
               label: 'PERMIT TYPE',
-              value: ref.watch(activeLicenseHolderProvider)?.whereGranted ?? 'Life Time',
+              value: isNewPermit ? 'New' : ref.watch(activeLicenseHolderProvider)?.whereGranted ?? 'Life Time',
             ),
           ),
         ],
@@ -129,6 +153,81 @@ class _MetaField extends StatelessWidget {
   }
 }
 
+const _walkIn = '__walk_in__';
+const _newCustomer = '__new__';
+
+/// One of the two inline boxes shown for Customer → NEW.
+class _NewPermitBox extends ConsumerStatefulWidget {
+  const _NewPermitBox({required this.label, required this.hint, required this.isName});
+
+  final String label;
+  final String hint;
+  final bool isName;
+
+  @override
+  ConsumerState<_NewPermitBox> createState() => _NewPermitBoxState();
+}
+
+class _NewPermitBoxState extends ConsumerState<_NewPermitBox> {
+  late final TextEditingController _controller;
+
+  StateProvider<String> get _provider => widget.isName ? newPermitNameProvider : newPermitNoProvider;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: ref.read(_provider));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _MetaField(
+      label: widget.label,
+      child: SizedBox(
+        height: 24,
+        child: TextField(
+          controller: _controller,
+          autofocus: widget.isName,
+          textInputAction: TextInputAction.next,
+          textCapitalization: widget.isName ? TextCapitalization.words : TextCapitalization.characters,
+          onChanged: (v) => ref.read(_provider.notifier).state = v,
+          style: AppTypography.body.copyWith(
+            fontSize: 11.5,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimaryFor(context),
+          ),
+          decoration: InputDecoration(
+            isDense: true,
+            hintText: widget.hint,
+            hintStyle: AppTypography.bodyMutedFor(context).copyWith(fontSize: 11),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+            filled: true,
+            fillColor: AppColors.backgroundFor(context),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              borderSide: BorderSide(color: AppColors.borderFor(context)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              borderSide: BorderSide(color: AppColors.borderFor(context)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              borderSide: const BorderSide(color: AppColors.primary),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _CustomerField extends StatelessWidget {
   const _CustomerField({required this.ref});
 
@@ -159,28 +258,50 @@ class _CustomerField extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 2),
-            PopupMenuButton<CustomerDto?>(
+            PopupMenuButton<String>(
               tooltip: 'Select Customer',
-              initialValue: selected,
+              initialValue: selected?.id ?? _walkIn,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 side: BorderSide(color: AppColors.borderFor(context)),
               ),
               color: AppColors.backgroundFor(context),
-              onSelected: (customer) {
-                ref.read(selectedCustomerIdProvider.notifier).state = customer?.id;
+              onSelected: (value) {
+                if (value == _newCustomer) {
+                  ref.read(selectedCustomerIdProvider.notifier).state = null;
+                  ref.read(newPermitModeProvider.notifier).state = true;
+                  return;
+                }
+                ref.read(selectedCustomerIdProvider.notifier).state = value == _walkIn ? null : value;
               },
               itemBuilder: (context) => [
-                PopupMenuItem<CustomerDto?>(
-                  value: null,
+                PopupMenuItem<String>(
+                  value: _newCustomer,
+                  child: Row(
+                    children: [
+                      const AppIcon(AppIcons.add, size: 16, color: AppColors.primary),
+                      const SizedBox(width: 6),
+                      Text(
+                        'NEW',
+                        style: AppTypography.body.copyWith(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 12,
+                          color: AppColors.primaryInk,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuItem<String>(
+                  value: _walkIn,
                   child: Text(
                     'Counter Sale (Walk-in)',
                     style: AppTypography.body.copyWith(fontWeight: FontWeight.w700, fontSize: 12),
                   ),
                 ),
                 ...customers.map(
-                  (c) => PopupMenuItem<CustomerDto?>(
-                    value: c,
+                  (c) => PopupMenuItem<String>(
+                    value: c.id,
                     child: Text(c.name, style: AppTypography.body.copyWith(fontSize: 12)),
                   ),
                 ),

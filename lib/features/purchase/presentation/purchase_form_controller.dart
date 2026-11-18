@@ -11,9 +11,9 @@ class PurchaseFormState {
     this.tpDate,
     this.stNo,
     this.discount = 0,
-    this.vat = 0,
-    this.stamp = 0,
-    this.tcs = 0,
+    this.vatPercent = 0,
+    this.otherCharges = 0,
+    this.tcsPercent = 0,
     this.loadingFreight = 0,
   });
 
@@ -26,12 +26,34 @@ class PurchaseFormState {
   final DateTime? tpDate;
   final String? stNo;
   final double discount;
-  final double vat;
-  final double stamp;
-  final double tcs;
+
+  /// VAT % on the goods value (items total − discount).
+  final double vatPercent;
+
+  /// Other / breakage charges in ₹ (stored in the bill's `stamp` column,
+  /// which used to hold stamp duty).
+  final double otherCharges;
+
+  /// TCS % on goods value + VAT.
+  final double tcsPercent;
   final double loadingFreight;
 
-  double get extraCharges => vat + stamp + tcs + loadingFreight - discount;
+  static double _round2(double v) => (v * 100).roundToDouble() / 100;
+
+  /// Goods value the percentages apply to; never negative.
+  double _goods(double itemsAmount) {
+    final g = itemsAmount - discount;
+    return g < 0 ? 0 : g;
+  }
+
+  double vatAmount(double itemsAmount) => _round2(_goods(itemsAmount) * vatPercent / 100);
+
+  double tcsAmount(double itemsAmount) =>
+      _round2((_goods(itemsAmount) + vatAmount(itemsAmount)) * tcsPercent / 100);
+
+  /// Everything added on top of the items total (discount subtracts).
+  double extraCharges(double itemsAmount) =>
+      vatAmount(itemsAmount) + otherCharges + tcsAmount(itemsAmount) + loadingFreight - discount;
 
   PurchaseFormState copyWith({
     String? supplierId,
@@ -43,9 +65,9 @@ class PurchaseFormState {
     DateTime? tpDate,
     String? stNo,
     double? discount,
-    double? vat,
-    double? stamp,
-    double? tcs,
+    double? vatPercent,
+    double? otherCharges,
+    double? tcsPercent,
     double? loadingFreight,
   }) {
     return PurchaseFormState(
@@ -58,9 +80,9 @@ class PurchaseFormState {
       tpDate: tpDate ?? this.tpDate,
       stNo: stNo ?? this.stNo,
       discount: discount ?? this.discount,
-      vat: vat ?? this.vat,
-      stamp: stamp ?? this.stamp,
-      tcs: tcs ?? this.tcs,
+      vatPercent: vatPercent ?? this.vatPercent,
+      otherCharges: otherCharges ?? this.otherCharges,
+      tcsPercent: tcsPercent ?? this.tcsPercent,
       loadingFreight: loadingFreight ?? this.loadingFreight,
     );
   }
@@ -76,9 +98,9 @@ class PurchaseFormController extends StateNotifier<PurchaseFormState> {
   void setTpNo(String v) => state = state.copyWith(tpNo: v);
   void setStNo(String v) => state = state.copyWith(stNo: v);
   void setDiscount(double v) => state = state.copyWith(discount: v);
-  void setVat(double v) => state = state.copyWith(vat: v);
-  void setStamp(double v) => state = state.copyWith(stamp: v);
-  void setTcs(double v) => state = state.copyWith(tcs: v);
+  void setVatPercent(double v) => state = state.copyWith(vatPercent: v);
+  void setOtherCharges(double v) => state = state.copyWith(otherCharges: v);
+  void setTcsPercent(double v) => state = state.copyWith(tcsPercent: v);
   void setLoadingFreight(double v) => state = state.copyWith(loadingFreight: v);
 
   void reset() => state = const PurchaseFormState();

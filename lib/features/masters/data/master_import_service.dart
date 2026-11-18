@@ -161,7 +161,7 @@ class MasterImportService {
     List<List<String>> rows,
     Map<String, int> headerMap,
   ) async {
-    final codeIndex = _requiredIndex(headerMap, const ['localitemcode', 'itemcode', 'id', 'materialcode']);
+    final codeIndex = _requiredIndex(headerMap, const ['localitemcode', 'itemcode', 'scmcode', 'id', 'materialcode']);
     final nameIndex = _requiredIndex(headerMap, const ['name', 'materialname', 'brandname', 'itemname']);
     final barcodeIndex = _findIndex(headerMap, const ['barcode', 'scancode']);
     final manufacturerIndex = _findIndex(headerMap, const ['manufacturer', 'brand', 'maker', 'company']);
@@ -192,6 +192,14 @@ class MasterImportService {
         continue;
       }
 
+      // Category decides the brandwise section, so never guess it.
+      final category = _nullable(_valueAt(row, categoryIndex));
+      if (category == null) {
+        failed++;
+        errors.add('Row ${rowNumber + 2}: Category is required (e.g. Strong Beer, Mild Beer, Wine).');
+        continue;
+      }
+
       if (existing.containsKey(code.toLowerCase())) {
         skipped++;
         continue;
@@ -204,7 +212,7 @@ class MasterImportService {
             barcode: _nullable(_valueAt(row, barcodeIndex)) ?? code,
             name: name,
             manufacturer: _nullable(_valueAt(row, manufacturerIndex)) ?? name.split(' ').first,
-            category: _nullable(_valueAt(row, categoryIndex)) ?? 'Beer',
+            category: category,
             packing: _valueAt(row, packingIndex),
             saleRate: _parseDouble(_valueAt(row, saleRateIndex)),
             taxPercent: _parseDouble(_valueAt(row, taxIndex)),

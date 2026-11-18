@@ -1,3 +1,4 @@
+import 'master_export_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -78,6 +79,7 @@ class _ManufacturersTableState extends ConsumerState<ManufacturersTable> with Bu
                 ),
                 orElse: () => const SizedBox.shrink(),
               ),
+              const MasterExportButton(kind: MasterExportKind.manufacturers),
               SecondaryButton(
                 label: 'New',
                 icon: AppIcons.add,

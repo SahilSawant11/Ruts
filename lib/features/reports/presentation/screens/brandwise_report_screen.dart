@@ -13,7 +13,7 @@ import '../widgets/counter_brandwise_report_table.dart';
 
 /// Brandwise Stock Report screen — single-day excise register showing
 /// Opening Balance → Purchase → Sale → Closing Balance per brand or
-/// aggregated per manufacturer, grouped by Fermented Beer / Mild Beer / Wine.
+/// aggregated per manufacturer, grouped by Fermented / Strong / Mild Beer / Wine.
 class BrandwiseReportScreen extends ConsumerStatefulWidget {
   const BrandwiseReportScreen({super.key});
 

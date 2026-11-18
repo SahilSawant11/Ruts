@@ -1,3 +1,5 @@
+import 'master_export_button.dart';
+import 'template_download_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -145,6 +147,9 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> with BulkSelect
                     : const SizedBox.shrink(),
                 orElse: () => const SizedBox.shrink(),
               ),
+              const MasterExportButton(kind: MasterExportKind.materials),
+              const TemplateDownloadButton(target: MasterImportTarget.materials),
+              const SizedBox(width: AppSpacing.xs),
               SecondaryButton(
                 label: _isImporting ? 'Importing…' : 'Import Excel',
                 icon: AppIcons.uploadFile,

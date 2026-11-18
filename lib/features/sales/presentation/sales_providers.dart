@@ -11,6 +11,13 @@ final paymentMethodProvider = StateProvider<PaymentMethod>((ref) => PaymentMetho
 /// current bill. Null = walk-in / no customer selected yet.
 final selectedCustomerIdProvider = StateProvider<String?>((ref) => null);
 
+/// Customer → NEW: the bill is for a walk-in whose permit isn't on file.
+/// While on, the invoice strip shows Name + License No boxes; saving the
+/// bill adds them to the License Holder master and stamps them on the bill.
+final newPermitModeProvider = StateProvider<bool>((ref) => false);
+final newPermitNameProvider = StateProvider<String>((ref) => '');
+final newPermitNoProvider = StateProvider<String>((ref) => '');
+
 /// Explicitly selected license holder on the current bill (overrides rotation).
 final selectedLicenseHolderProvider = StateProvider<LicenseHolderDto?>((ref) => null);
 

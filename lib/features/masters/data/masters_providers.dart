@@ -3,6 +3,7 @@ import '../../../core/local/app_database.dart';
 import '../../../core/network/http_client_provider.dart';
 import '../../sales/data/models/material_dto.dart';
 import 'master_import_service.dart';
+import 'master_template_service.dart';
 import 'local_masters_repository.dart';
 import 'masters_api_repository.dart';
 import 'models/category_dto.dart';
@@ -37,6 +38,8 @@ final mastersRepositoryProvider = Provider<LocalMastersRepository>((ref) {
     },
   );
 });
+
+final masterTemplateServiceProvider = Provider<MasterTemplateService>((ref) => MasterTemplateService());
 
 final masterImportServiceProvider = Provider<MasterImportService>((ref) {
   return MasterImportService(ref.watch(mastersRepositoryProvider));

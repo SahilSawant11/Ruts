@@ -88,7 +88,7 @@ class BrandwiseReportItemDto {
   }
 }
 
-/// A product category section (Fermented Beer / Mild Beer / Wine)
+/// A product category section (Fermented / Strong / Mild Beer / Wine)
 /// with its list of brand rows and computed subtotals.
 class BrandwiseCategoryDto {
   const BrandwiseCategoryDto({

@@ -5,7 +5,7 @@ import '../../../core/network/http_client_provider.dart';
 import '../../sales/data/sales_providers.dart';
 import 'local_reports_repository.dart';
 import 'models/sales_report_dto.dart';
-import 'report_excel_exporter.dart';
+import 'scm_upload_exporter.dart';
 import 'reports_api_repository.dart';
 
 final reportsApiRepositoryProvider = Provider<ReportsApiRepository>((ref) {
@@ -20,8 +20,8 @@ final reportsRepositoryProvider = Provider<LocalReportsRepository>((ref) {
   );
 });
 
-final reportExcelExporterProvider = Provider<ReportExcelExporter>((ref) {
-  return ReportExcelExporter();
+final reportExcelExporterProvider = Provider<ScmUploadExporter>((ref) {
+  return ScmUploadExporter();
 });
 
 DateTime _startOfDay([DateTime? d]) {

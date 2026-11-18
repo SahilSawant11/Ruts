@@ -4,6 +4,8 @@ class SalesBillDetailDto {
     required this.billNo,
     this.customerId,
     this.customerName,
+    this.permitNo,
+    this.permitHolderName,
     required this.billType,
     required this.billDate,
     required this.payMode,
@@ -21,6 +23,8 @@ class SalesBillDetailDto {
   final String billNo;
   final String? customerId;
   final String? customerName;
+  final String? permitNo;
+  final String? permitHolderName;
   final String billType;
   final String billDate;
   final String payMode;
@@ -44,6 +48,8 @@ class SalesBillDetailDto {
       billNo: json['billNo']?.toString() ?? '',
       customerId: json['customerId']?.toString(),
       customerName: json['customerName']?.toString(),
+      permitNo: json['permitNo']?.toString(),
+      permitHolderName: json['permitHolderName']?.toString(),
       billType: json['billType']?.toString() ?? 'CounterSale.Sale',
       billDate: json['billDate']?.toString() ?? '',
       payMode: json['payMode']?.toString() ?? 'Cash',

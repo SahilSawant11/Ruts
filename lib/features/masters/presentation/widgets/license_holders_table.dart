@@ -1,3 +1,5 @@
+import 'master_export_button.dart';
+import 'template_download_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -129,6 +131,9 @@ class _LicenseHoldersTableState extends ConsumerState<LicenseHoldersTable> with 
                 ),
                 orElse: () => const SizedBox.shrink(),
               ),
+              const MasterExportButton(kind: MasterExportKind.licenseHolders),
+              const TemplateDownloadButton(target: MasterImportTarget.licenseHolders),
+              const SizedBox(width: AppSpacing.xs),
               SecondaryButton(
                 label: _isImporting ? 'Importing…' : 'Import Excel',
                 icon: AppIcons.uploadFile,

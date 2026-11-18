@@ -16,6 +16,7 @@ class CounterBrandwiseKpiRow extends ConsumerWidget {
       error: (_, __) => const _Skeleton(),
       data: (report) {
         int fermentedSale = 0;
+        int strongSale = 0;
         int mildSale = 0;
         int wineSale = 0;
 
@@ -24,6 +25,8 @@ class CounterBrandwiseKpiRow extends ConsumerWidget {
           switch (cat.name) {
             case 'FERMENTED BEER':
               fermentedSale = total;
+            case 'STRONG BEER':
+              strongSale = total;
             case 'MILD BEER':
               mildSale = total;
             case 'WINE':
@@ -31,11 +34,13 @@ class CounterBrandwiseKpiRow extends ConsumerWidget {
           }
         }
 
-        final grandTotal = fermentedSale + mildSale + wineSale;
+        final grandTotal = fermentedSale + strongSale + mildSale + wineSale;
 
         return Row(
           children: [
             Expanded(child: KpiCard(label: 'Fermented Beer (Sale)', value: '$fermentedSale')),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(child: KpiCard(label: 'Strong Beer (Sale)', value: '$strongSale')),
             const SizedBox(width: AppSpacing.md),
             Expanded(child: KpiCard(label: 'Mild Beer (Sale)', value: '$mildSale')),
             const SizedBox(width: AppSpacing.md),
@@ -57,6 +62,8 @@ class _Skeleton extends StatelessWidget {
     return const Row(
       children: [
         Expanded(child: KpiCard(label: 'Fermented Beer (Sale)', value: '—')),
+        SizedBox(width: AppSpacing.md),
+        Expanded(child: KpiCard(label: 'Strong Beer (Sale)', value: '—')),
         SizedBox(width: AppSpacing.md),
         Expanded(child: KpiCard(label: 'Mild Beer (Sale)', value: '—')),
         SizedBox(width: AppSpacing.md),

@@ -316,7 +316,7 @@ class AppDatabase extends _$AppDatabase {
         ));
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -387,6 +387,17 @@ class AppDatabase extends _$AppDatabase {
             await _ensureColumn('cached_purchase_bills', 'returned_at', 'INTEGER');
             await _ensureColumn('cached_purchase_bills', 'returned_by', 'TEXT');
             await _createIndexes();
+          }
+          if (from < 16) {
+            // v16: brandwise register now has a STRONG BEER section — give
+            // existing stores the three beer categories to pick from.
+            for (final name in const ['Fermented Beer', 'Strong Beer', 'Mild Beer']) {
+              await customStatement(
+                'INSERT OR IGNORE INTO cached_categories (name, created_at, updated_at) '
+                "VALUES (?, strftime('%s','now'), strftime('%s','now'))",
+                [name],
+              );
+            }
           }
           await _healMaterialsTable();
         },
@@ -1206,7 +1217,7 @@ _StarterSeedBundle _buildStarterSalesHistory(DateTime now) {
 
       for (var lineIndex = 0; lineIndex < lineCount; lineIndex++) {
         final material = _starterMaterials[((89 - dayIndex) * 3 + (billOffset * 5) + lineIndex) % _starterMaterials.length];
-        final isCaseHeavy = material.category == 'Beer' && ((dayIndex + lineIndex) % 4 == 0);
+        final isCaseHeavy = material.category.contains('Beer') && ((dayIndex + lineIndex) % 4 == 0);
         final qtyCase = isCaseHeavy ? 1 : 0;
         final quantity = 1 + ((dayIndex + billOffset + lineIndex) % 5);
         final grossUnits = quantity + (qtyCase * 12);
@@ -1339,7 +1350,7 @@ const _starterMaterials = <_StarterMaterial>[
     barcode: '8901001000035',
     name: 'Kingfisher Premium',
     manufacturer: 'Kingfisher',
-    category: 'Beer',
+    category: 'Mild Beer',
     packing: '650 ML',
     saleRate: 160,
     taxPercent: 12,
@@ -1350,7 +1361,7 @@ const _starterMaterials = <_StarterMaterial>[
     barcode: '8901001000042',
     name: 'Bira White',
     manufacturer: 'Bira',
-    category: 'Beer',
+    category: 'Mild Beer',
     packing: '330 ML',
     saleRate: 140,
     taxPercent: 12,
@@ -1414,7 +1425,9 @@ const _starterManufacturers = <_StarterManufacturer>[
 ];
 
 const _starterCategories = <_StarterCategory>[
-  _StarterCategory(name: 'Beer', description: 'Lager, strong beer, cans and bottles'),
+  _StarterCategory(name: 'Fermented Beer', description: 'Fermented beer (brandwise register section)'),
+  _StarterCategory(name: 'Strong Beer', description: 'Strong beer, bottles and cans'),
+  _StarterCategory(name: 'Mild Beer', description: 'Mild / lager beer, bottles and cans'),
   _StarterCategory(name: 'Wine', description: 'Red, white, rose, sparkling'),
   _StarterCategory(name: 'Whisky', description: 'Indian and imported whisky'),
   _StarterCategory(name: 'Rum', description: 'White and dark rum'),
@@ -1454,7 +1467,7 @@ const _starterInventory = <_StarterInventoryStock>[
     materialId: 'SKU-1003',
     barcode: '8901001000035',
     name: 'Kingfisher Premium',
-    category: 'Beer',
+    category: 'Mild Beer',
     qtyOnHand: 48,
     reorderLevel: 20,
   ),
@@ -1462,7 +1475,7 @@ const _starterInventory = <_StarterInventoryStock>[
     materialId: 'SKU-1004',
     barcode: '8901001000042',
     name: 'Bira White',
-    category: 'Beer',
+    category: 'Mild Beer',
     qtyOnHand: 36,
     reorderLevel: 12,
   ),
