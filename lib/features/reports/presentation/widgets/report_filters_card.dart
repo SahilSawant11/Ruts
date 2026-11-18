@@ -119,6 +119,7 @@ class _ReportFiltersCardState extends ConsumerState<ReportFiltersCard> {
     ref.read(reportCategoryFilterProvider.notifier).state = selectedCategory;
     ref.read(reportManufacturerFilterProvider.notifier).state = selectedManufacturer;
     ref.invalidate(salesReportProvider);
+    ref.invalidate(licenseHolderReportProvider);
   }
 
   @override

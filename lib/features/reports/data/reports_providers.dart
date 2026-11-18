@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../masters/data/masters_providers.dart';
 import '../../../core/network/http_client_provider.dart';
 import '../../sales/data/sales_providers.dart';
+import 'license_holder_report.dart';
 import 'local_reports_repository.dart';
 import 'models/sales_report_dto.dart';
 import 'scm_upload_exporter.dart';
@@ -54,4 +55,14 @@ final salesReportProvider = FutureProvider<SalesReportDto>((ref) {
         category: category,
         manufacturer: manufacturer,
       );
+});
+
+final licenseHolderReportExporterProvider = Provider<LicenseHolderReportExporter>((ref) {
+  return LicenseHolderReportExporter();
+});
+
+/// Quantity sold per license holder over the Reports screen's date range.
+final licenseHolderReportProvider = FutureProvider<LicenseHolderReport>((ref) {
+  final range = ref.watch(reportDateRangeProvider);
+  return LicenseHolderReport.build(ref.watch(appDatabaseProvider), range.start, range.end);
 });
