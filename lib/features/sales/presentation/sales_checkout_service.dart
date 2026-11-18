@@ -40,6 +40,14 @@ class SalesCheckoutService {
       final isNewBuyer = isNewMode && ref.read(newFrequentBuyerProvider);
       final isNewPermit = isNewMode && !isNewBuyer;
       final activeHolder = isNewPermit ? await _resolveNewPermit() : ref.read(activeLicenseHolderProvider);
+      // Every liquor bill must carry a permit (frequent-buyer bills carry
+      // the rotating one).
+      if ((activeHolder?.permitNo.trim() ?? '').isEmpty) {
+        throw const ApiException(
+          'No license holder available for this bill. Add one in License Holders, '
+          'or use New → Walk in with the customer\'s license number.',
+        );
+      }
       final customerId = isNewBuyer ? (await _resolveNewBuyer()).id : ref.read(selectedCustomerIdProvider);
 
       final request = CreateSaleRequest(

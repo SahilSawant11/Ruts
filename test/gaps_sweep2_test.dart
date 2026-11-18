@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pos_app/core/local/backup_service.dart';
 import 'package:pos_app/core/local/material_lookup_cache.dart';
+import 'package:pos_app/core/network/api_exception.dart';
 import 'package:pos_app/features/masters/data/masters_providers.dart';
 import 'package:pos_app/features/masters/data/models/save_license_holder_request.dart';
 import 'package:pos_app/features/onboarding/data/opening_stock_service.dart';
@@ -57,5 +58,19 @@ void main() {
     await c.read(salesCheckoutServiceProvider).executeCheckout();
     await c.read(rotationLicenseHoldersProvider.future);
     expect(c.read(activeLicenseHolderProvider)?.permitNo, 'B');
+  });
+
+  test('P4: a bill with no license holder available is blocked', () async {
+    final env = await TestEnv.create(fileBacked: false);
+    addTearDown(env.dispose);
+    await env.addMaterial('M1', stock: 5);
+    final c = ProviderContainer(overrides: [appDatabaseProvider.overrideWithValue(env.db)]);
+    addTearDown(c.dispose);
+    c.read(materialLookupCacheProvider.notifier).state = await MaterialLookupCache.load(env.db);
+    await c.read(rotationLicenseHoldersProvider.future);
+    await c.read(cartControllerProvider.notifier).addByBarcode('BC-M1');
+    await expectLater(c.read(salesCheckoutServiceProvider).executeCheckout(), throwsA(isA<ApiException>()));
+    expect(await env.db.select(env.db.cachedSalesBills).get(), isEmpty);
+    expect(await env.stockOf('M1'), 5);
   });
 }
