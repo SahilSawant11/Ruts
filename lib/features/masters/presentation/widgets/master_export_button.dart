@@ -25,6 +25,7 @@ class MasterExportButton extends ConsumerWidget {
     switch (kind) {
       case MasterExportKind.materials:
         final list = await ref.read(materialsListProvider.future);
+        final supplierNames = {for (final s in await ref.read(suppliersListProvider.future)) s.id: s.name};
         return x.save(
           fileBaseName: 'materials',
           sheetName: 'Materials',
@@ -33,7 +34,7 @@ class MasterExportButton extends ConsumerWidget {
             for (final m in list)
               [m.scmCode, m.barcode, m.name, m.category, m.liquorType, m.packing, m.manufacturer,
                 m.counterBrandName, m.saleRate, m.wholesaleRate, m.taxPercent, m.discountPercent,
-                m.counterBrandId, m.stockQty, m.isActive ? 'Yes' : 'No'],
+                supplierNames[m.defaultSupplierId] ?? '', m.counterBrandId, m.stockQty, m.isActive ? 'Yes' : 'No'],
           ],
         );
       case MasterExportKind.suppliers:

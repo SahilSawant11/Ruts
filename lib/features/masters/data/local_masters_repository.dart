@@ -768,7 +768,8 @@ class LocalMastersRepository {
   Future<MaterialDto> _localMaterial(String id, SaveMaterialRequest r, CachedMaterial? cached) async {
     final cat = normalizeLiquorCategory(r.category, r.liquorType);
     final scm = (cached?.scmCode.isNotEmpty ?? false) ? cached!.scmCode : (r.scmCode ?? r.id).trim();
-    final counterName = r.counterBrandName.trim().isEmpty ? r.name.trim() : r.counterBrandName.trim();
+    final counterName =
+        r.counterBrandName.trim().isEmpty ? defaultCounterBrandName(r.name) : r.counterBrandName.trim();
     final sameBrand = cached != null &&
         AppDatabase.normalizeCounterBrand(cached.counterBrandName) == AppDatabase.normalizeCounterBrand(counterName) &&
         cached.counterBrandId.isNotEmpty;
@@ -790,6 +791,7 @@ class LocalMastersRepository {
       counterBrandId: sameBrand ? cached.counterBrandId : await _db.counterBrandIdFor(counterName),
       wholesaleRate: r.wholesaleRate,
       discountPercent: r.discountPercent,
+      defaultSupplierId: r.defaultSupplierId.trim(),
     );
   }
 
@@ -937,7 +939,7 @@ class LocalMastersRepository {
         COALESCE(m.is_active, 1) AS is_active,
         COALESCE(m.sync_status, 'synced') AS sync_status,
         m.scm_code, m.liquor_type, m.counter_brand_name, m.counter_brand_id,
-        m.wholesale_rate, m.discount_percent
+        m.wholesale_rate, m.discount_percent, m.default_supplier_id
       FROM cached_materials m
       LEFT JOIN cached_inventory_stocks s ON s.material_id = m.id
       ORDER BY m.name ASC
@@ -963,6 +965,7 @@ class LocalMastersRepository {
         counterBrandId: row.readNullable<String>('counter_brand_id') ?? '',
         wholesaleRate: row.readNullable<double>('wholesale_rate') ?? 0,
         discountPercent: row.readNullable<double>('discount_percent') ?? 0,
+        defaultSupplierId: row.readNullable<String>('default_supplier_id') ?? '',
       );
     }).toList();
   }
@@ -1139,6 +1142,7 @@ class LocalMastersRepository {
             counterBrandId: Value(material.counterBrandId),
             wholesaleRate: Value(material.wholesaleRate),
             discountPercent: Value(material.discountPercent),
+            defaultSupplierId: Value(material.defaultSupplierId),
             syncStatus: Value(syncStatus),
             createdAt: Value(preserveCreatedAt ?? now),
             updatedAt: Value(now),
@@ -1287,6 +1291,7 @@ class LocalMastersRepository {
       counterBrandId: row.counterBrandId,
       wholesaleRate: row.wholesaleRate,
       discountPercent: row.discountPercent,
+      defaultSupplierId: row.defaultSupplierId,
       isActive: row.isActive,
     );
   }
@@ -1307,6 +1312,7 @@ class LocalMastersRepository {
       counterBrandName: (payload['counterBrandName'] as String?) ?? '',
       wholesaleRate: _asDouble(payload['wholesaleRate']),
       discountPercent: _asDouble(payload['discountPercent']),
+      defaultSupplierId: (payload['defaultSupplierId'] as String?) ?? '',
     );
 
     if (item.operation == 'create') {

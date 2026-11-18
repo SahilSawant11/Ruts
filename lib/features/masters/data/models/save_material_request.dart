@@ -17,7 +17,11 @@ class SaveMaterialRequest {
     this.counterBrandName = '',
     this.wholesaleRate = 0,
     this.discountPercent = 0,
+    this.defaultSupplierId = '',
   });
+
+  /// Supplier id that pre-fills Purchase; empty = none.
+  final String defaultSupplierId;
 
   /// SCM code; null = same as [id]. Differs from [id] when another
   /// material already uses this SCM code with a different barcode.
@@ -57,5 +61,6 @@ class SaveMaterialRequest {
         'counterBrandName': counterBrandName,
         'wholesaleRate': wholesaleRate,
         'discountPercent': discountPercent,
+        'defaultSupplierId': defaultSupplierId,
       };
 }

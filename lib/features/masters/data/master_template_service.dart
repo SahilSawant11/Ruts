@@ -14,6 +14,7 @@ class MasterTemplateService {
     MasterImportTarget.materials: [
       'SCM Code', 'Barcode', 'Brand Display Name', 'Liquor Category', 'Type', 'Packaging',
       'Manufacturer', 'Counter Brand Name', 'Sale Rate', 'Wholesale Rate', 'VAT %', 'Discount %',
+      'Distributor',
     ],
     MasterImportTarget.suppliers: [
       'Name', 'Address', 'Contact No', 'Email', 'VAT No', 'Bank Details',
@@ -97,16 +98,19 @@ class MasterTemplateService {
           ['Packaging', 'Bottle size, e.g. 750 ML, 650 ML, 500 ML (CAN), 330 ML (CAN).'],
           ['Manufacturer', 'The company, e.g. UB Group. Blank = first word of the name.'],
           ['Counter Brand Name', 'Bottles that look the same share one (e.g. KINGFISHER STRONG). '
-              'Brandwise reports add them up under it. Blank = Brand Display Name. The ID is made for you.'],
+              'Brandwise reports add them up under it. Blank = Brand Display Name without a trailing " ." '
+              'or (s)/(OS). The ID is made for you.'],
           ['Sale Rate', 'MRP / selling price per bottle, numbers only.'],
           ['Wholesale Rate', 'Optional, numbers only.'],
           ['VAT %', 'Numbers only. Blank = 0.'],
           ['Discount %', 'Applied automatically when billed. Blank = 0.'],
+          ['Distributor', 'Optional. Who usually supplies it (e.g. Magnum Traders); pre-fills Purchase. '
+              'New names are added to Distributors.'],
           ['', ''],
           ['Categories', categories.isEmpty ? 'Beer, Wine, Whisky, Rum, Vodka, Brandy, Gin' : categories.join(', ')],
           if (packings.isNotEmpty) ['Packings', packings.join(', ')],
           ['Example', 'SCM1234 | 84549000 | KINGFISHER STRONG | Beer | Strong | 650 ML | UB Group | '
-              'KINGFISHER STRONG | 190 | 170 | 0 | 0'],
+              'KINGFISHER STRONG | 190 | 170 | 0 | 0 | Magnum Traders'],
         ]);
       case MasterImportTarget.suppliers:
         rows.addAll([

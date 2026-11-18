@@ -41,6 +41,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
   final _counterBrandFocus = FocusNode();
   String _counterBrandId = '';
   String _liquorType = '';
+  String _defaultSupplierId = '';
   String _manufacturer = '';
   String _category = '';
   String _packing = '';
@@ -75,6 +76,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
     _counterBrand.text = material?.counterBrandName ?? '';
     _counterBrandId = material?.counterBrandId ?? '';
     _liquorType = material?.liquorType ?? '';
+    _defaultSupplierId = material?.defaultSupplierId ?? '';
     _manufacturer = material?.manufacturer ?? '';
     _category = material?.category ?? '';
     _isActive = material?.isActive ?? true;
@@ -113,6 +115,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
         counterBrandName: _counterBrand.text.trim(),
         wholesaleRate: double.tryParse(_wholesaleRate.text) ?? 0,
         discountPercent: double.tryParse(_discount.text) ?? 0,
+        defaultSupplierId: _defaultSupplierId,
       );
 
       final repo = ref.read(mastersRepositoryProvider);
@@ -521,6 +524,9 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
           ],
         ),
 
+        const SizedBox(height: AppSpacing.sm),
+        _defaultDistributorField(context, editable),
+
         const SizedBox(height: AppSpacing.md),
 
         // Section 3: Counter brand
@@ -590,6 +596,29 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
     );
   }
 
+  /// Supplier this item usually comes from; Purchase pre-fills it.
+  Widget _defaultDistributorField(BuildContext context, bool editable) {
+    final suppliers = ref.watch(suppliersListProvider).valueOrNull ?? const [];
+    final names = {for (final s in suppliers) s.id: s.name};
+    const none = '';
+    if (!editable) {
+      return AppTextField(
+        label: 'DEFAULT DISTRIBUTOR',
+        hint: names[_defaultSupplierId] ?? (_defaultSupplierId.isEmpty ? '—' : _defaultSupplierId),
+        enabled: false,
+      );
+    }
+    final ids = [none, ...names.keys];
+    return AppDropdown<String>(
+      label: 'DEFAULT DISTRIBUTOR',
+      items: ids,
+      itemLabel: (id) => id == none ? 'None' : names[id] ?? id,
+      value: ids.contains(_defaultSupplierId) ? _defaultSupplierId : none,
+      hint: suppliers.isEmpty ? 'Add distributors in Masters' : null,
+      onChanged: (v) => setState(() => _defaultSupplierId = v ?? none),
+    );
+  }
+
   /// Free text with suggestions from existing counter brands, so the same
   /// brand isn't typed two ways. Blank = the display name.
   Widget _counterBrandField(BuildContext context, bool editable, List<MaterialDto> materials) {
@@ -617,7 +646,7 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
         label: 'COUNTER BRAND NAME',
         controller: controller,
         focusNode: focusNode,
-        hint: 'e.g. Kingfisher Strong (blank = display name)',
+        hint: 'e.g. Kingfisher Strong (blank = display name without (s)/(OS))',
       ),
       optionsViewBuilder: (context, onSelected, options) => Align(
         alignment: Alignment.topLeft,

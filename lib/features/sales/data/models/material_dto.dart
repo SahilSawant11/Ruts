@@ -20,6 +20,7 @@ class MaterialDto {
     this.counterBrandId = '',
     this.wholesaleRate = 0,
     this.discountPercent = 0,
+    this.defaultSupplierId = '',
   }) : scmCode = scmCode ?? id;
 
   final String id;
@@ -42,6 +43,8 @@ class MaterialDto {
   final String counterBrandId;
   final double wholesaleRate;
   final double discountPercent;
+  /// Supplier this item usually comes from (empty = none).
+  final String defaultSupplierId;
 
   factory MaterialDto.fromJson(Map<String, dynamic> json) {
     return MaterialDto(
@@ -62,6 +65,7 @@ class MaterialDto {
       counterBrandId: (json['counterBrandId'] as String?) ?? '',
       wholesaleRate: (json['wholesaleRate'] as num?)?.toDouble() ?? 0,
       discountPercent: (json['discountPercent'] as num?)?.toDouble() ?? 0,
+      defaultSupplierId: (json['defaultSupplierId'] as String?) ?? '',
     );
   }
 
@@ -83,6 +87,7 @@ class MaterialDto {
     String? counterBrandId,
     double? wholesaleRate,
     double? discountPercent,
+    String? defaultSupplierId,
   }) {
     return MaterialDto(
       id: id ?? this.id,
@@ -102,6 +107,7 @@ class MaterialDto {
       counterBrandId: counterBrandId ?? this.counterBrandId,
       wholesaleRate: wholesaleRate ?? this.wholesaleRate,
       discountPercent: discountPercent ?? this.discountPercent,
+      defaultSupplierId: defaultSupplierId ?? this.defaultSupplierId,
     );
   }
 }

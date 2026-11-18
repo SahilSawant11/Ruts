@@ -92,6 +92,14 @@ class PurchaseFormController extends StateNotifier<PurchaseFormState> {
   PurchaseFormController() : super(const PurchaseFormState());
 
   void setSupplier(String? id) => state = state.copyWith(supplierId: id);
+
+  /// Picks the item's default distributor when no supplier is chosen yet.
+  /// Never overrides a supplier the user already picked.
+  void prefillSupplier(String defaultSupplierId) {
+    final id = defaultSupplierId.trim();
+    if (id.isEmpty || (state.supplierId?.isNotEmpty ?? false)) return;
+    state = state.copyWith(supplierId: id);
+  }
   void setChallanNo(String v) => state = state.copyWith(challanNo: v);
   void setNoteNo(String v) => state = state.copyWith(noteNo: v);
   void setPayMode(String v) => state = state.copyWith(payMode: v);

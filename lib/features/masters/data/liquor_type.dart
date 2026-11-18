@@ -18,6 +18,19 @@ bool isBeerCategory(String category) => category.toLowerCase().contains('beer');
   return (category: 'Beer', type: t);
 }
 
+/// The counter brand a blank Counter Brand Name falls back to: the display
+/// name without the register's trailing " ." and variant tags like "(s)"
+/// or "(OS)", so "Kingfisher Strong Premium Beer(OS) ." and
+/// "Kingfisher Strong Premium Beer ." land in one counter brand.
+String defaultCounterBrandName(String displayName) {
+  var s = displayName.trim();
+  final tail = RegExp(r'(\s*\.+$)|(\s*\([^()]{1,4}\)$)');
+  while (tail.hasMatch(s)) {
+    s = s.replaceFirst(tail, '').trim();
+  }
+  return s.replaceAll(RegExp(r'\s+'), ' ');
+}
+
 String? _beerType(String raw) {
   final lower = raw.toLowerCase();
   for (final t in beerTypes) {

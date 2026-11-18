@@ -32,6 +32,8 @@ class CachedMaterials extends Table {
   RealColumn get wholesaleRate => real().withDefault(const Constant(0))();
   /// Discount % applied automatically when the item is billed.
   RealColumn get discountPercent => real().withDefault(const Constant(0))();
+  /// Supplier id this item usually comes from; pre-fills Purchase.
+  TextColumn get defaultSupplierId => text().withDefault(const Constant(''))();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
   TextColumn get syncStatus => text().withDefault(const Constant('synced'))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
@@ -947,6 +949,7 @@ class AppDatabase extends _$AppDatabase {
       'counter_brand_id': "TEXT NOT NULL DEFAULT ''",
       'wholesale_rate': 'REAL NOT NULL DEFAULT 0',
       'discount_percent': 'REAL NOT NULL DEFAULT 0',
+      'default_supplier_id': "TEXT NOT NULL DEFAULT ''",
     };
     for (final e in materialCols.entries) {
       await _ensureColumn('cached_materials', e.key, e.value);
@@ -1103,6 +1106,8 @@ class AppDatabase extends _$AppDatabase {
     try {
       await _ensureColumn('cached_materials', 'is_active', 'INTEGER NOT NULL DEFAULT 1');
       await _ensureColumn('cached_materials', 'manufacturer', "TEXT NOT NULL DEFAULT ''");
+      // Added late in v17 — dev databases already at v17 need it too.
+      await _ensureColumn('cached_materials', 'default_supplier_id', "TEXT NOT NULL DEFAULT ''");
       await customStatement('UPDATE cached_materials SET is_active = 1 WHERE is_active IS NULL');
       await customStatement("UPDATE cached_materials SET manufacturer = '' WHERE manufacturer IS NULL");
       await customStatement("UPDATE cached_materials SET sync_status = 'synced' WHERE sync_status IS NULL");

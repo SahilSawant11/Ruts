@@ -17,6 +17,7 @@ import 'package:pos_app/features/masters/data/masters_providers.dart';
 import 'package:pos_app/features/masters/data/models/license_holder_dto.dart';
 import 'package:pos_app/features/masters/data/models/save_license_holder_request.dart';
 import 'package:pos_app/features/masters/data/models/save_material_request.dart';
+import 'package:pos_app/features/purchase/presentation/purchase_form_controller.dart';
 import 'package:pos_app/features/reports/data/brandwise_report_provider.dart';
 import 'package:pos_app/features/reports/data/counter_brandwise_report_provider.dart';
 import 'package:pos_app/features/sales/data/models/create_sale_request.dart';
@@ -57,6 +58,30 @@ void main() {
     expect(normalizeLiquorCategory('Fermented Beer'), (category: 'Beer', type: 'Fermented'));
     expect(normalizeLiquorCategory('Beer', 'mild'), (category: 'Beer', type: 'Mild'));
     expect(normalizeLiquorCategory('Whisky', 'Strong'), (category: 'Whisky', type: ''));
+  });
+
+  test('blank counter brand strips " ." and (s)/(OS) so variants group', () {
+    // Names straight from the client's manufacturer & distributor sheet.
+    for (final n in [
+      'Kingfisher Strong Premium Beer .',
+      'Kingfisher Strong Premium Beer(OS) .',
+      'Kingfisher Strong Premium Beer(s) .',
+    ]) {
+      expect(defaultCounterBrandName(n), 'Kingfisher Strong Premium Beer', reason: n);
+    }
+    expect(defaultCounterBrandName('Budweiser Universal King Of Beers. .'), 'Budweiser Universal King Of Beers');
+    expect(defaultCounterBrandName('REVO SPARKLER WINE - Red .'), 'REVO SPARKLER WINE - Red');
+    expect(defaultCounterBrandName('BIRA 91 WHITE'), 'BIRA 91 WHITE');
+  });
+
+  test('purchase pre-fills the default distributor only when none is picked', () {
+    final form = PurchaseFormController();
+    form.prefillSupplier('');
+    expect(form.state.supplierId, isNull);
+    form.prefillSupplier('SUP-MAGNUM');
+    expect(form.state.supplierId, 'SUP-MAGNUM');
+    form.prefillSupplier('SUP-OTHER');
+    expect(form.state.supplierId, 'SUP-MAGNUM', reason: 'never overrides a chosen supplier');
   });
 
   group('material master', () {
@@ -193,16 +218,28 @@ void main() {
         'SCM1234,845445889,KINGFISHER STRONG,Beer,Strong,650 ML,UB Group,KINGFISHER STRONG,190,170,0,5',
         'SCM4394,3984578456,KINGFISHER SUPER STRONG,Strong Beer,,650 ML,UB Group,Kingfisher Strong,200,,0,',
         'SCM9999,,BUDWEISER,Beer,,650 ML,AB InBev,,200,,0,',
+        'SCMBR0009846,,Kingfisher Strong Premium Beer .,Beer,Strong,650 ML,UNITED BREWERIES LTD.,,190,,0,,Magnum Traders',
+        'SCMKB0027896,,Kingfisher Strong Premium Beer(OS) .,Beer,Strong,500 ML (CAN),UNITED BREWERIES LTD.,,120,,0,,magnum traders',
       ].join('\n');
       final summary = await c.read(masterImportServiceProvider).importFile(
             MasterImportTarget.materials,
             XFile.fromData(Uint8List.fromList(csv.codeUnits), name: 'm.csv', path: 'm.csv'),
           );
-      expect(summary.imported, 3);
+      expect(summary.imported, 5);
       expect(summary.errors.single, contains('Beer needs a Type'));
       final all = await c.read(mastersRepositoryProvider).getMaterials();
-      expect(all.map((m) => m.counterBrandId).toSet(), {'CB-0001'});
+      final kf = all.where((m) => m.scmCode.startsWith('SCM1') || m.id == 'SCM4394');
+      expect(kf.map((m) => m.counterBrandId).toSet(), {'CB-0001'});
       expect(all.firstWhere((m) => m.id == 'SCM4394').liquorType, 'Strong');
+
+      final variants = all.where((m) => m.id.startsWith('SCMBR0009846') || m.id.startsWith('SCMKB0027896'));
+      expect(variants.map((m) => m.counterBrandName).toSet(), {'Kingfisher Strong Premium Beer'});
+      expect(variants.map((m) => m.counterBrandId).toSet().length, 1);
+      final suppliers = await c.read(mastersRepositoryProvider).getSuppliers();
+      expect(suppliers.where((s) => s.name.toLowerCase() == 'magnum traders').length, 1,
+          reason: 'distributor created once, matched case-insensitively after');
+      final magnum = suppliers.firstWhere((s) => s.name == 'Magnum Traders');
+      expect(variants.map((m) => m.defaultSupplierId).toSet(), {magnum.id});
     });
   });
 

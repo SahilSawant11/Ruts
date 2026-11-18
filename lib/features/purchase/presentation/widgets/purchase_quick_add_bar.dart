@@ -11,6 +11,7 @@ import '../../../masters/data/masters_providers.dart';
 import '../../../sales/data/models/material_dto.dart';
 import '../../domain/purchase_line_item.dart';
 import '../purchase_cart_controller.dart';
+import '../purchase_form_controller.dart';
 import 'add_material_line_dialog.dart';
 import '../../../../shared/keyboard/screen_key_guard.dart';
 
@@ -278,6 +279,7 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
     );
 
     ref.read(purchaseCartControllerProvider.notifier).addLine(lineItem);
+    ref.read(purchaseFormControllerProvider.notifier).prefillSupplier(_selectedMaterial!.defaultSupplierId);
 
     // Reset input for next scan
     setState(() {

@@ -86,7 +86,7 @@ class MaterialLookupCache {
       'COALESCE(m.is_active, 1) AS is_active, '
       'COALESCE(m.sync_status, \'synced\') AS sync_status, '
       'm.scm_code, m.liquor_type, m.counter_brand_name, m.counter_brand_id, '
-      'm.wholesale_rate, m.discount_percent '
+      'm.wholesale_rate, m.discount_percent, m.default_supplier_id '
       'FROM cached_materials m '
       'LEFT JOIN cached_inventory_stocks s ON s.material_id = m.id',
     ).get();
@@ -116,6 +116,7 @@ class MaterialLookupCache {
         counterBrandId: row.readNullable<String>('counter_brand_id') ?? '',
         wholesaleRate: row.readNullable<double>('wholesale_rate') ?? 0,
         discountPercent: row.readNullable<double>('discount_percent') ?? 0,
+        defaultSupplierId: row.readNullable<String>('default_supplier_id') ?? '',
       ));
     }
     return fromMaterials(materials);

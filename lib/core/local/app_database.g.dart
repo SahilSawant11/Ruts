@@ -113,6 +113,14 @@ class $CachedMaterialsTable extends CachedMaterials
       type: DriftSqlType.double,
       requiredDuringInsert: false,
       defaultValue: const Constant(0));
+  static const VerificationMeta _defaultSupplierIdMeta =
+      const VerificationMeta('defaultSupplierId');
+  @override
+  late final GeneratedColumn<String> defaultSupplierId =
+      GeneratedColumn<String>('default_supplier_id', aliasedName, false,
+          type: DriftSqlType.string,
+          requiredDuringInsert: false,
+          defaultValue: const Constant(''));
   static const VerificationMeta _isActiveMeta =
       const VerificationMeta('isActive');
   @override
@@ -170,6 +178,7 @@ class $CachedMaterialsTable extends CachedMaterials
         counterBrandId,
         wholesaleRate,
         discountPercent,
+        defaultSupplierId,
         isActive,
         syncStatus,
         createdAt,
@@ -273,6 +282,12 @@ class $CachedMaterialsTable extends CachedMaterials
           discountPercent.isAcceptableOrUnknown(
               data['discount_percent']!, _discountPercentMeta));
     }
+    if (data.containsKey('default_supplier_id')) {
+      context.handle(
+          _defaultSupplierIdMeta,
+          defaultSupplierId.isAcceptableOrUnknown(
+              data['default_supplier_id']!, _defaultSupplierIdMeta));
+    }
     if (data.containsKey('is_active')) {
       context.handle(_isActiveMeta,
           isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta));
@@ -336,6 +351,8 @@ class $CachedMaterialsTable extends CachedMaterials
           .read(DriftSqlType.double, data['${effectivePrefix}wholesale_rate'])!,
       discountPercent: attachedDatabase.typeMapping.read(
           DriftSqlType.double, data['${effectivePrefix}discount_percent'])!,
+      defaultSupplierId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}default_supplier_id'])!,
       isActive: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_active'])!,
       syncStatus: attachedDatabase.typeMapping
@@ -386,6 +403,9 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
 
   /// Discount % applied automatically when the item is billed.
   final double discountPercent;
+
+  /// Supplier id this item usually comes from; pre-fills Purchase.
+  final String defaultSupplierId;
   final bool isActive;
   final String syncStatus;
   final DateTime createdAt;
@@ -407,6 +427,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
       required this.counterBrandId,
       required this.wholesaleRate,
       required this.discountPercent,
+      required this.defaultSupplierId,
       required this.isActive,
       required this.syncStatus,
       required this.createdAt,
@@ -430,6 +451,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
     map['counter_brand_id'] = Variable<String>(counterBrandId);
     map['wholesale_rate'] = Variable<double>(wholesaleRate);
     map['discount_percent'] = Variable<double>(discountPercent);
+    map['default_supplier_id'] = Variable<String>(defaultSupplierId);
     map['is_active'] = Variable<bool>(isActive);
     map['sync_status'] = Variable<String>(syncStatus);
     map['created_at'] = Variable<DateTime>(createdAt);
@@ -457,6 +479,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
       counterBrandId: Value(counterBrandId),
       wholesaleRate: Value(wholesaleRate),
       discountPercent: Value(discountPercent),
+      defaultSupplierId: Value(defaultSupplierId),
       isActive: Value(isActive),
       syncStatus: Value(syncStatus),
       createdAt: Value(createdAt),
@@ -486,6 +509,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
       counterBrandId: serializer.fromJson<String>(json['counterBrandId']),
       wholesaleRate: serializer.fromJson<double>(json['wholesaleRate']),
       discountPercent: serializer.fromJson<double>(json['discountPercent']),
+      defaultSupplierId: serializer.fromJson<String>(json['defaultSupplierId']),
       isActive: serializer.fromJson<bool>(json['isActive']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -512,6 +536,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
       'counterBrandId': serializer.toJson<String>(counterBrandId),
       'wholesaleRate': serializer.toJson<double>(wholesaleRate),
       'discountPercent': serializer.toJson<double>(discountPercent),
+      'defaultSupplierId': serializer.toJson<String>(defaultSupplierId),
       'isActive': serializer.toJson<bool>(isActive),
       'syncStatus': serializer.toJson<String>(syncStatus),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -536,6 +561,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
           String? counterBrandId,
           double? wholesaleRate,
           double? discountPercent,
+          String? defaultSupplierId,
           bool? isActive,
           String? syncStatus,
           DateTime? createdAt,
@@ -557,6 +583,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
         counterBrandId: counterBrandId ?? this.counterBrandId,
         wholesaleRate: wholesaleRate ?? this.wholesaleRate,
         discountPercent: discountPercent ?? this.discountPercent,
+        defaultSupplierId: defaultSupplierId ?? this.defaultSupplierId,
         isActive: isActive ?? this.isActive,
         syncStatus: syncStatus ?? this.syncStatus,
         createdAt: createdAt ?? this.createdAt,
@@ -593,6 +620,9 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
       discountPercent: data.discountPercent.present
           ? data.discountPercent.value
           : this.discountPercent,
+      defaultSupplierId: data.defaultSupplierId.present
+          ? data.defaultSupplierId.value
+          : this.defaultSupplierId,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
       syncStatus:
           data.syncStatus.present ? data.syncStatus.value : this.syncStatus,
@@ -622,6 +652,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
           ..write('counterBrandId: $counterBrandId, ')
           ..write('wholesaleRate: $wholesaleRate, ')
           ..write('discountPercent: $discountPercent, ')
+          ..write('defaultSupplierId: $defaultSupplierId, ')
           ..write('isActive: $isActive, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('createdAt: $createdAt, ')
@@ -632,27 +663,29 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
   }
 
   @override
-  int get hashCode => Object.hash(
-      id,
-      barcode,
-      name,
-      manufacturer,
-      category,
-      packing,
-      saleRate,
-      taxPercent,
-      stockQty,
-      scmCode,
-      liquorType,
-      counterBrandName,
-      counterBrandId,
-      wholesaleRate,
-      discountPercent,
-      isActive,
-      syncStatus,
-      createdAt,
-      updatedAt,
-      lastSyncedAt);
+  int get hashCode => Object.hashAll([
+        id,
+        barcode,
+        name,
+        manufacturer,
+        category,
+        packing,
+        saleRate,
+        taxPercent,
+        stockQty,
+        scmCode,
+        liquorType,
+        counterBrandName,
+        counterBrandId,
+        wholesaleRate,
+        discountPercent,
+        defaultSupplierId,
+        isActive,
+        syncStatus,
+        createdAt,
+        updatedAt,
+        lastSyncedAt
+      ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -672,6 +705,7 @@ class CachedMaterial extends DataClass implements Insertable<CachedMaterial> {
           other.counterBrandId == this.counterBrandId &&
           other.wholesaleRate == this.wholesaleRate &&
           other.discountPercent == this.discountPercent &&
+          other.defaultSupplierId == this.defaultSupplierId &&
           other.isActive == this.isActive &&
           other.syncStatus == this.syncStatus &&
           other.createdAt == this.createdAt &&
@@ -695,6 +729,7 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
   final Value<String> counterBrandId;
   final Value<double> wholesaleRate;
   final Value<double> discountPercent;
+  final Value<String> defaultSupplierId;
   final Value<bool> isActive;
   final Value<String> syncStatus;
   final Value<DateTime> createdAt;
@@ -717,6 +752,7 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
     this.counterBrandId = const Value.absent(),
     this.wholesaleRate = const Value.absent(),
     this.discountPercent = const Value.absent(),
+    this.defaultSupplierId = const Value.absent(),
     this.isActive = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -740,6 +776,7 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
     this.counterBrandId = const Value.absent(),
     this.wholesaleRate = const Value.absent(),
     this.discountPercent = const Value.absent(),
+    this.defaultSupplierId = const Value.absent(),
     this.isActive = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -769,6 +806,7 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
     Expression<String>? counterBrandId,
     Expression<double>? wholesaleRate,
     Expression<double>? discountPercent,
+    Expression<String>? defaultSupplierId,
     Expression<bool>? isActive,
     Expression<String>? syncStatus,
     Expression<DateTime>? createdAt,
@@ -792,6 +830,7 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
       if (counterBrandId != null) 'counter_brand_id': counterBrandId,
       if (wholesaleRate != null) 'wholesale_rate': wholesaleRate,
       if (discountPercent != null) 'discount_percent': discountPercent,
+      if (defaultSupplierId != null) 'default_supplier_id': defaultSupplierId,
       if (isActive != null) 'is_active': isActive,
       if (syncStatus != null) 'sync_status': syncStatus,
       if (createdAt != null) 'created_at': createdAt,
@@ -817,6 +856,7 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
       Value<String>? counterBrandId,
       Value<double>? wholesaleRate,
       Value<double>? discountPercent,
+      Value<String>? defaultSupplierId,
       Value<bool>? isActive,
       Value<String>? syncStatus,
       Value<DateTime>? createdAt,
@@ -839,6 +879,7 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
       counterBrandId: counterBrandId ?? this.counterBrandId,
       wholesaleRate: wholesaleRate ?? this.wholesaleRate,
       discountPercent: discountPercent ?? this.discountPercent,
+      defaultSupplierId: defaultSupplierId ?? this.defaultSupplierId,
       isActive: isActive ?? this.isActive,
       syncStatus: syncStatus ?? this.syncStatus,
       createdAt: createdAt ?? this.createdAt,
@@ -896,6 +937,9 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
     if (discountPercent.present) {
       map['discount_percent'] = Variable<double>(discountPercent.value);
     }
+    if (defaultSupplierId.present) {
+      map['default_supplier_id'] = Variable<String>(defaultSupplierId.value);
+    }
     if (isActive.present) {
       map['is_active'] = Variable<bool>(isActive.value);
     }
@@ -935,6 +979,7 @@ class CachedMaterialsCompanion extends UpdateCompanion<CachedMaterial> {
           ..write('counterBrandId: $counterBrandId, ')
           ..write('wholesaleRate: $wholesaleRate, ')
           ..write('discountPercent: $discountPercent, ')
+          ..write('defaultSupplierId: $defaultSupplierId, ')
           ..write('isActive: $isActive, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('createdAt: $createdAt, ')
@@ -9483,6 +9528,7 @@ typedef $$CachedMaterialsTableCreateCompanionBuilder = CachedMaterialsCompanion
   Value<String> counterBrandId,
   Value<double> wholesaleRate,
   Value<double> discountPercent,
+  Value<String> defaultSupplierId,
   Value<bool> isActive,
   Value<String> syncStatus,
   Value<DateTime> createdAt,
@@ -9507,6 +9553,7 @@ typedef $$CachedMaterialsTableUpdateCompanionBuilder = CachedMaterialsCompanion
   Value<String> counterBrandId,
   Value<double> wholesaleRate,
   Value<double> discountPercent,
+  Value<String> defaultSupplierId,
   Value<bool> isActive,
   Value<String> syncStatus,
   Value<DateTime> createdAt,
@@ -9570,6 +9617,10 @@ class $$CachedMaterialsTableFilterComposer
 
   ColumnFilters<double> get discountPercent => $composableBuilder(
       column: $table.discountPercent,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get defaultSupplierId => $composableBuilder(
+      column: $table.defaultSupplierId,
       builder: (column) => ColumnFilters(column));
 
   ColumnFilters<bool> get isActive => $composableBuilder(
@@ -9647,6 +9698,10 @@ class $$CachedMaterialsTableOrderingComposer
       column: $table.discountPercent,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get defaultSupplierId => $composableBuilder(
+      column: $table.defaultSupplierId,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<bool> get isActive => $composableBuilder(
       column: $table.isActive, builder: (column) => ColumnOrderings(column));
 
@@ -9718,6 +9773,9 @@ class $$CachedMaterialsTableAnnotationComposer
   GeneratedColumn<double> get discountPercent => $composableBuilder(
       column: $table.discountPercent, builder: (column) => column);
 
+  GeneratedColumn<String> get defaultSupplierId => $composableBuilder(
+      column: $table.defaultSupplierId, builder: (column) => column);
+
   GeneratedColumn<bool> get isActive =>
       $composableBuilder(column: $table.isActive, builder: (column) => column);
 
@@ -9776,6 +9834,7 @@ class $$CachedMaterialsTableTableManager extends RootTableManager<
             Value<String> counterBrandId = const Value.absent(),
             Value<double> wholesaleRate = const Value.absent(),
             Value<double> discountPercent = const Value.absent(),
+            Value<String> defaultSupplierId = const Value.absent(),
             Value<bool> isActive = const Value.absent(),
             Value<String> syncStatus = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
@@ -9799,6 +9858,7 @@ class $$CachedMaterialsTableTableManager extends RootTableManager<
             counterBrandId: counterBrandId,
             wholesaleRate: wholesaleRate,
             discountPercent: discountPercent,
+            defaultSupplierId: defaultSupplierId,
             isActive: isActive,
             syncStatus: syncStatus,
             createdAt: createdAt,
@@ -9822,6 +9882,7 @@ class $$CachedMaterialsTableTableManager extends RootTableManager<
             Value<String> counterBrandId = const Value.absent(),
             Value<double> wholesaleRate = const Value.absent(),
             Value<double> discountPercent = const Value.absent(),
+            Value<String> defaultSupplierId = const Value.absent(),
             Value<bool> isActive = const Value.absent(),
             Value<String> syncStatus = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
@@ -9845,6 +9906,7 @@ class $$CachedMaterialsTableTableManager extends RootTableManager<
             counterBrandId: counterBrandId,
             wholesaleRate: wholesaleRate,
             discountPercent: discountPercent,
+            defaultSupplierId: defaultSupplierId,
             isActive: isActive,
             syncStatus: syncStatus,
             createdAt: createdAt,

@@ -15,6 +15,7 @@ import '../../../sales/data/models/material_dto.dart';
 import '../../data/purchase_providers.dart';
 import '../../domain/purchase_line_item.dart';
 import '../purchase_cart_controller.dart';
+import '../purchase_form_controller.dart';
 import '../../../../core/format/money.dart';
 
 Future<void> showAddMaterialLineDialog(BuildContext context) {
@@ -235,6 +236,7 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
     );
 
     ref.read(purchaseCartControllerProvider.notifier).addLine(line);
+    ref.read(purchaseFormControllerProvider.notifier).prefillSupplier(material.defaultSupplierId);
     Navigator.of(context).pop();
   }
 

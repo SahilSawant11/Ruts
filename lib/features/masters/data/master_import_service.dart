@@ -194,6 +194,26 @@ class MasterImportService {
     final wholesaleIndex = _findIndex(headerMap, const ['wholesalerate', 'wholesale']);
     final taxIndex = _findIndex(headerMap, const ['vat', 'vatpercent', 'taxpercent', 'gst', 'gstpercent', 'tax']);
     final discountIndex = _findIndex(headerMap, const ['discountpercent', 'discount', 'dispercent']);
+    final distributorIndex =
+        _findIndex(headerMap, const ['distributor', 'distributors', 'defaultdistributor', 'supplier']);
+
+    // Distributor names → supplier ids; unknown names become new suppliers.
+    final supplierIdByName = {
+      for (final s in await _repo.getSuppliers()) s.name.trim().toLowerCase(): s.id,
+    };
+    Future<String> supplierIdFor(String rawName) async {
+      final name = rawName.trim();
+      if (name.isEmpty) return '';
+      final known = supplierIdByName[name.toLowerCase()];
+      if (known != null) return known;
+      final created = await _repo.createSupplier(SaveSupplierRequest(
+        name: name,
+        disPercent: 0,
+        openingBalance: 0,
+        balanceType: 'Credit',
+      ));
+      return supplierIdByName[name.toLowerCase()] = created.id;
+    }
 
     // A material is one SCM code + barcode pair; the same pair again is a skip.
     final existing = {
@@ -255,6 +275,7 @@ class MasterImportService {
             wholesaleRate: _parseDouble(_valueAt(row, wholesaleIndex)),
             taxPercent: _parseDouble(_valueAt(row, taxIndex)),
             discountPercent: _parseDouble(_valueAt(row, discountIndex)),
+            defaultSupplierId: await supplierIdFor(_valueAt(row, distributorIndex)),
           ),
         );
         existing[pairKey] = true;
