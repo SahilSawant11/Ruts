@@ -164,11 +164,11 @@ class CounterBrandwiseExcelExporter {
       // Data rows
       for (final item in category.items) {
         buf.writeln('<Row>');
-        buf.writeln('<Cell ss:StyleID="text"><Data ss:Type="String">${_xml(item.manufacturerName)}</Data></Cell>');
+        buf.writeln('<Cell ss:StyleID="text"><Data ss:Type="String">${item.isTpContinuation ? '' : _xml(item.manufacturerName)}</Data></Cell>');
         buf.writeln('<Cell ss:StyleID="text"><Data ss:Type="String">${_xml(item.tpNo ?? '')}</Data></Cell>');
         _writeSizeQty(buf, item.openingBalance);
         _writeSizeQty(buf, item.purchase);
-        buf.writeln('<Cell ss:StyleID="text"><Data ss:Type="String">${_xml(item.manufacturerName)}</Data></Cell>');
+        buf.writeln('<Cell ss:StyleID="text"><Data ss:Type="String">${item.isTpContinuation ? '' : _xml(item.manufacturerName)}</Data></Cell>');
         _writeSizeQty(buf, item.sale);
         _writeSizeQty(buf, item.closingBalance);
         buf.writeln('</Row>');

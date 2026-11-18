@@ -27,7 +27,6 @@ void main() {
     expect(brandwiseSection('Beer'), 'MILD BEER');
     expect(brandwiseSection('Whisky'), 'WINE');
     expect(brandwiseSection('Soft Drink'), isNull);
-    expect(joinTpNos(['TP-9', null, ' ', 'TP-9', 'TP-10']), 'TP-9, TP-10');
   });
 
   test('brandwise reports show STRONG BEER section and purchase TP numbers', () async {
@@ -60,16 +59,28 @@ void main() {
 
     final report = await container.read(brandwiseReportProvider.future);
     expect(report.categories.map((c) => c.name), ['FERMENTED BEER', 'STRONG BEER', 'MILD BEER', 'WINE']);
-    final strong = report.categories.firstWhere((c) => c.name == 'STRONG BEER').items.single;
-    expect(strong.brandName, 'KINGFISHER STRONG');
-    expect(strong.purchase.beer650, 36);
-    expect(strong.tpNo, 'TP-101, TP-102');
+    // Two TPs on the same day → one register row per TP. The first row
+    // carries opening/sale/closing, the second only its own purchase.
+    final strongSection = report.categories.firstWhere((c) => c.name == 'STRONG BEER');
+    final strong = strongSection.items;
+    expect(strong.map((r) => r.tpNo), ['TP-101', 'TP-102']);
+    expect(strong.map((r) => r.brandName), ['KINGFISHER STRONG', 'KINGFISHER STRONG']);
+    expect(strong.map((r) => r.isTpContinuation), [false, true]);
+    expect(strong.map((r) => r.purchase.beer650), [24, 12]);
+    expect(strong[0].closingBalance.beer650, 36);
+    expect(strong[1].closingBalance.beer650, 0);
+    expect(strong[1].openingBalance.beer650, 0);
+    expect(strongSection.subtotal.purchase.beer650, 36);
+    expect(strongSection.subtotal.closingBalance.beer650, 36);
     final mild = report.categories.firstWhere((c) => c.name == 'MILD BEER').items.single;
     expect(mild.tpNo, 'TP-101');
+    expect(mild.isTpContinuation, isFalse);
 
     final counter = await container.read(counterBrandwiseReportProvider.future);
-    final counterStrong = counter.categories.firstWhere((c) => c.name == 'STRONG BEER').items.single;
-    expect(counterStrong.tpNo, 'TP-101, TP-102');
+    final counterStrong = counter.categories.firstWhere((c) => c.name == 'STRONG BEER');
+    expect(counterStrong.items.map((r) => r.tpNo), ['TP-101', 'TP-102']);
+    expect(counterStrong.items.map((r) => r.purchase.beer650), [24, 12]);
+    expect(counterStrong.subtotal.purchase.beer650, 36);
   });
 
   test('VAT % on goods, TCS % on goods + VAT, other charges flat', () {

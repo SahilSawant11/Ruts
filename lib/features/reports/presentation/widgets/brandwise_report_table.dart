@@ -50,7 +50,7 @@ class BrandwiseReportTable extends ConsumerWidget {
             loading: () => const SectionHeader(title: 'Brandwise Stock Report', subtitle: 'Loading…'),
             error: (e, _) => SectionHeader(title: 'Brandwise Stock Report', subtitle: 'Error: $e'),
             data: (report) {
-              final totalItems = report.categories.fold<int>(0, (s, c) => s + c.items.length);
+              final totalItems = report.categories.fold<int>(0, (s, c) => s + c.items.where((x) => !x.isTpContinuation).length);
               return SectionHeader(
                 title: 'Brandwise Stock Report',
                 subtitle: '${_fmtDate(report.reportDate)} · $totalItems brand${totalItems == 1 ? '' : 's'}',
@@ -65,7 +65,7 @@ class BrandwiseReportTable extends ConsumerWidget {
             ),
             error: (_, __) => const SizedBox.shrink(),
             data: (report) {
-              final totalItems = report.categories.fold<int>(0, (s, c) => s + c.items.length);
+              final totalItems = report.categories.fold<int>(0, (s, c) => s + c.items.where((x) => !x.isTpContinuation).length);
               if (totalItems == 0) {
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
@@ -293,7 +293,9 @@ class _FrozenColumnTableState extends State<_FrozenColumnTable> {
         final item = category.items[i];
         final rowKey = '${category.name}__$i';
         final isSelected = _selectedRowKey == rowKey;
-        final bg = _resolveRowBg(rowKey, i.isEven);
+        // Extra TP rows share their brand's stripe.
+        final brandNo = category.items.take(i + 1).where((x) => !x.isTpContinuation).length;
+        final bg = _resolveRowBg(rowKey, brandNo.isOdd);
 
         rows.add(Material(
           color: bg,
@@ -325,7 +327,7 @@ class _FrozenColumnTableState extends State<_FrozenColumnTable> {
                         message: item.brandName,
                         waitDuration: const Duration(milliseconds: 300),
                         child: Text(
-                          item.brandName,
+                          item.isTpContinuation ? '' : item.brandName,
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
                           style: TextStyle(
@@ -584,7 +586,9 @@ class _FrozenColumnTableState extends State<_FrozenColumnTable> {
         final item = category.items[i];
         final rowKey = '${category.name}__$i';
         final isSelected = _selectedRowKey == rowKey;
-        final bg = _resolveRowBg(rowKey, i.isEven);
+        // Extra TP rows share their brand's stripe.
+        final brandNo = category.items.take(i + 1).where((x) => !x.isTpContinuation).length;
+        final bg = _resolveRowBg(rowKey, brandNo.isOdd);
 
         rows.add(Material(
           color: bg,
@@ -619,7 +623,7 @@ class _FrozenColumnTableState extends State<_FrozenColumnTable> {
                       message: item.brandName,
                       waitDuration: const Duration(milliseconds: 300),
                       child: Text(
-                        item.brandName,
+                        item.isTpContinuation ? '' : item.brandName,
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
                         style: TextStyle(

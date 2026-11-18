@@ -21,13 +21,25 @@ String? brandwiseSection(String category, [String type = '']) {
   return null;
 }
 
-/// Distinct, non-empty TP numbers joined in first-seen order ("TP1, TP2"),
-/// or `null` when there are none.
-String? joinTpNos(Iterable<String?> tpNos) {
-  final seen = <String>{};
-  for (final tp in tpNos) {
-    final t = tp?.trim() ?? '';
-    if (t.isNotEmpty) seen.add(t);
+
+/// One register row's purchase: a TP number and its qty per size column.
+typedef TpPurchase = ({String? tpNo, List<int> qty});
+
+/// A brand's purchases on the report day, kept apart per TP (in bill order)
+/// so two TPs on the same day print as two register rows.
+class TpPurchaseSplit {
+  final _byTp = <String, List<int>>{};
+
+  void add(String? tpNo, int col, int qty) {
+    final key = tpNo?.trim() ?? '';
+    (_byTp[key] ??= List<int>.filled(7, 0))[col] += qty;
   }
-  return seen.isEmpty ? null : seen.join(', ');
+
+  /// One entry per TP; a single empty entry when nothing was purchased.
+  List<TpPurchase> rows() {
+    if (_byTp.isEmpty) return [(tpNo: null, qty: List<int>.filled(7, 0))];
+    return [
+      for (final e in _byTp.entries) (tpNo: e.key.isEmpty ? null : e.key, qty: e.value),
+    ];
+  }
 }

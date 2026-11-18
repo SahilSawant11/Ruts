@@ -6,6 +6,7 @@ class CounterBrandwiseReportItemDto {
   const CounterBrandwiseReportItemDto({
     required this.manufacturerName,
     this.tpNo,
+    this.isTpContinuation = false,
     required this.openingBalance,
     required this.purchase,
     required this.sale,
@@ -14,6 +15,10 @@ class CounterBrandwiseReportItemDto {
 
   final String manufacturerName;
   final String? tpNo;
+
+  /// Extra row for a second (third…) TP of the same brand on the same day:
+  /// carries only that TP's purchase; the brand name is left blank.
+  final bool isTpContinuation;
   final BrandwiseSizeQty openingBalance;
   final BrandwiseSizeQty purchase;
   final BrandwiseSizeQty sale;
@@ -23,6 +28,7 @@ class CounterBrandwiseReportItemDto {
     return CounterBrandwiseReportItemDto(
       manufacturerName: json['manufacturerName'] as String,
       tpNo: json['tpNo'] as String?,
+      isTpContinuation: json['isTpContinuation'] == true,
       openingBalance: BrandwiseSizeQty.fromJson(json['openingBalance'] as Map<String, dynamic>),
       purchase: BrandwiseSizeQty.fromJson(json['purchase'] as Map<String, dynamic>),
       sale: BrandwiseSizeQty.fromJson(json['sale'] as Map<String, dynamic>),

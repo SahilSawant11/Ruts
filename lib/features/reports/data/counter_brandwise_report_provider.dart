@@ -164,10 +164,10 @@ Future<CounterBrandwiseReportDto?> _buildLocalCounterBrandwiseReport(AppDatabase
       final byTime = a.billDate.compareTo(b.billDate);
       return byTime != 0 ? byTime : (a.tpNo ?? '').compareTo(b.tpNo ?? '');
     });
-  final tpNosByMaterial = <String, List<String?>>{};
+  final tpQtyByMaterial = <String, List<(String?, int)>>{};
   for (final bill in billOrder) {
     for (final line in purchaseLines.where((l) => l.purchaseBillId == bill.id)) {
-      tpNosByMaterial.putIfAbsent(line.materialId, () => []).add(bill.tpNo);
+      tpQtyByMaterial.putIfAbsent(line.materialId, () => []).add((bill.tpNo, line.qty));
     }
   }
 
@@ -196,10 +196,11 @@ Future<CounterBrandwiseReportDto?> _buildLocalCounterBrandwiseReport(AppDatabase
     final manufacturers = categoryItems.putIfAbsent(catName, () => {});
     final agg = manufacturers.putIfAbsent(manufacturerName, _ManufacturerAgg.new);
     agg.opening[colIdx] += opening;
-    agg.purchase[colIdx] += purchaseQty;
     agg.sale[colIdx] += saleQty;
     agg.closing[colIdx] += closing;
-    agg.tpNos.addAll(tpNosByMaterial[mat.id] ?? const []);
+    for (final (tp, qty) in tpQtyByMaterial[mat.id] ?? const <(String?, int)>[]) {
+      agg.tps.add(tp, colIdx, qty);
+    }
   }
 
   if (categoryItems.isEmpty) return null;
@@ -225,17 +226,25 @@ Future<CounterBrandwiseReportDto?> _buildLocalCounterBrandwiseReport(AppDatabase
     }
 
     final sortedNames = manufacturers.keys.toList()..sort();
-    final items = sortedNames.map((name) {
+    // One row per TP: the first carries opening/sale/closing, the
+    // following rows only that TP's purchase (subtotals stay the same).
+    final items = <CounterBrandwiseReportItemDto>[];
+    for (final name in sortedNames) {
       final agg = manufacturers[name]!;
-      return CounterBrandwiseReportItemDto(
-        manufacturerName: name,
-        tpNo: joinTpNos(agg.tpNos),
-        openingBalance: _listToSizeQty(agg.opening),
-        purchase: _listToSizeQty(agg.purchase),
-        sale: _listToSizeQty(agg.sale),
-        closingBalance: _listToSizeQty(agg.closing),
-      );
-    }).toList();
+      final split = agg.tps.rows();
+      for (var k = 0; k < split.length; k++) {
+        final first = k == 0;
+        items.add(CounterBrandwiseReportItemDto(
+          manufacturerName: name,
+          tpNo: split[k].tpNo,
+          isTpContinuation: !first,
+          openingBalance: first ? _listToSizeQty(agg.opening) : BrandwiseSizeQty.zero,
+          purchase: _listToSizeQty(split[k].qty),
+          sale: first ? _listToSizeQty(agg.sale) : BrandwiseSizeQty.zero,
+          closingBalance: first ? _listToSizeQty(agg.closing) : BrandwiseSizeQty.zero,
+        ));
+      }
+    }
 
     categories.add(CounterBrandwiseCategoryDto(
       name: catName,
@@ -281,8 +290,7 @@ CounterBrandwiseReportDto _emptyReport(DateTime date) => CounterBrandwiseReportD
 
 class _ManufacturerAgg {
   final opening = List<int>.filled(7, 0);
-  final purchase = List<int>.filled(7, 0);
   final sale = List<int>.filled(7, 0);
   final closing = List<int>.filled(7, 0);
-  final tpNos = <String?>[];
+  final tps = TpPurchaseSplit();
 }
