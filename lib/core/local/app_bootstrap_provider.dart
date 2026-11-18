@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/masters/data/masters_providers.dart';
@@ -32,6 +34,12 @@ final appBootstrapProvider = FutureProvider<void>((ref) async {
   // ── Daily automatic backup (never blocks or fails startup) ─────────
   final backup = await ref.read(backupServiceProvider).autoBackupIfDue();
   if (backup != null) AppLogger.info('Backup', 'Automatic backup: ${backup.path}');
+  // Shops leave Caskly open for days: check hourly too, not just at launch.
+  final backupTimer = Timer.periodic(const Duration(hours: 1), (_) async {
+    final f = await ref.read(backupServiceProvider).autoBackupIfDue();
+    if (f != null) AppLogger.info('Backup', 'Automatic backup: ${f.path}');
+  });
+  ref.onDispose(backupTimer.cancel);
 
   // Optional online sync: a no-op unless an owner connected a server.
   ref.read(autoSyncProvider);

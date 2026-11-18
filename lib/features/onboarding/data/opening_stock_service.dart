@@ -4,6 +4,7 @@ import 'package:drift/drift.dart' show InsertMode, Value;
 import 'package:file_selector/file_selector.dart';
 
 import '../../../core/local/app_database.dart';
+import '../../masters/data/liquor_type.dart';
 import '../../masters/data/local_masters_repository.dart';
 import '../../masters/data/master_import_service.dart';
 import '../../masters/data/models/save_material_request.dart';
@@ -226,6 +227,13 @@ class OpeningStockService {
       if (missing.isNotEmpty) {
         final label = row.name.isNotEmpty ? row.name : row.code;
         problems.add('Row ${row.rowNumber}: "$label" isn\'t in your products, and the row has no ${missing.join(', ')} to add it.');
+        continue;
+      }
+      // The beer type decides its register section; never default to Mild.
+      final cat = normalizeLiquorCategory(row.category);
+      if (cat.category == 'Beer' && cat.type.isEmpty) {
+        problems.add('Row ${row.rowNumber}: "${row.name}" is beer — write its category as Mild Beer, '
+            'Strong Beer or Fermented Beer so it lands in the right register section.');
         continue;
       }
       final prev = newProducts[code];

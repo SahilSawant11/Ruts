@@ -341,8 +341,11 @@ class AppDatabase extends _$AppDatabase {
           native: const DriftNativeOptions(databasePath: DbPaths.prepareDatabaseFile),
         ));
 
+  /// Bump together with a new migration step.
+  static const currentSchemaVersion = 17;
+
   @override
-  int get schemaVersion => 17;
+  int get schemaVersion => currentSchemaVersion;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

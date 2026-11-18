@@ -91,9 +91,13 @@ class SalesCheckoutService {
         ref.read(newPermitNoProvider.notifier).state = '';
       }
 
-      // Advance license holder sequentially to the next one in rotation
+      // Advance license holder sequentially to the next one in rotation —
+      // unless the bill used a walk-in permit (rotation untouched) or a One
+      // Time permit, which leaves the list, so the next one slides into its
+      // place by itself.
       final holdersList = ref.read(rotationLicenseHoldersProvider).valueOrNull ?? [];
-      if (holdersList.isNotEmpty) {
+      final rotationMoves = !isNewPermit && !(activeHolder?.isOneTime ?? false);
+      if (holdersList.isNotEmpty && rotationMoves) {
         final currentIdx = ref.read(activeLicenseHolderIndexProvider);
         ref.read(activeLicenseHolderIndexProvider.notifier).state =
             (currentIdx + 1) % holdersList.length;

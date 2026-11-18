@@ -171,6 +171,11 @@ class BackupService {
       if (missing.isNotEmpty) {
         return 'This is not a Caskly backup (missing: ${missing.join(', ')}).';
       }
+      // A backup from a newer Caskly may hold data this version can't read.
+      final version = db.select('PRAGMA user_version').first.values.first as int;
+      if (version > AppDatabase.currentSchemaVersion) {
+        return 'This backup was made by a newer version of Caskly. Update Caskly first, then restore it.';
+      }
       return null;
     } catch (e) {
       return 'Could not read the file as a database: $e';
