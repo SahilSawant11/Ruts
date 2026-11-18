@@ -111,7 +111,11 @@ class CounterBrandwiseReportDto {
     required this.reportDate,
     required this.licenseHeader,
     required this.categories,
+    this.extraSizes = const [],
   });
+
+  /// Sizes outside the 7 register columns used by this report.
+  final List<String> extraSizes;
 
   final DateTime reportDate;
   final String licenseHeader;

@@ -115,7 +115,10 @@ class _FrozenColumnTableState extends State<_FrozenColumnTable> {
   static const _frozenW = BrandwiseReportTable.frozenTotalWidth;
   static const _sizeW = BrandwiseReportTable.sizeColWidth;
   static const _sepW = BrandwiseReportTable.groupSepWidth;
-  static const _scrollW = BrandwiseReportTable.scrollableWidth;
+  /// Size columns: the register's 7, then this report's extra sizes.
+  List<String> get _sizeLabels => [...BrandwiseReportTable.sizeLabels, ...widget.report.extraSizes];
+  int get _cols => _sizeLabels.length;
+  double get _scrollW => (_sizeW * _cols * 4) + (_sepW * 4) + BrandwiseReportTable.middleBrandWidth;
 
   static const _headerH = BrandwiseReportTable.headerTotalH;
   static const _groupH = BrandwiseReportTable.groupHeaderH;
@@ -417,7 +420,7 @@ class _FrozenColumnTableState extends State<_FrozenColumnTable> {
         children: [
           // OPENING BALANCE
           Container(
-            width: _sizeW * 7,
+            width: _sizeW * _cols,
             height: _groupH,
             alignment: Alignment.center,
             decoration: BoxDecoration(
@@ -438,7 +441,7 @@ class _FrozenColumnTableState extends State<_FrozenColumnTable> {
           Container(width: _sepW, color: _strongBorder),
           // PURCHASE
           Container(
-            width: _sizeW * 7,
+            width: _sizeW * _cols,
             height: _groupH,
             alignment: Alignment.center,
             decoration: BoxDecoration(
@@ -480,7 +483,7 @@ class _FrozenColumnTableState extends State<_FrozenColumnTable> {
           Container(width: _sepW, color: _strongBorder),
           // SALE
           Container(
-            width: _sizeW * 7,
+            width: _sizeW * _cols,
             height: _groupH,
             alignment: Alignment.center,
             decoration: BoxDecoration(
@@ -501,7 +504,7 @@ class _FrozenColumnTableState extends State<_FrozenColumnTable> {
           Container(width: _sepW, color: _strongBorder),
           // CLOSING BALANCE
           Container(
-            width: _sizeW * 7,
+            width: _sizeW * _cols,
             height: _groupH,
             alignment: Alignment.center,
             decoration: BoxDecoration(
@@ -529,10 +532,10 @@ class _FrozenColumnTableState extends State<_FrozenColumnTable> {
       child: Row(
         children: [
           // Opening sizes
-          for (final label in BrandwiseReportTable.sizeLabels) _buildSizeHeaderCell(label),
+          for (final label in _sizeLabels) _buildSizeHeaderCell(label),
           Container(width: _sepW, color: _strongBorder),
           // Purchase sizes
-          for (final label in BrandwiseReportTable.sizeLabels) _buildSizeHeaderCell(label),
+          for (final label in _sizeLabels) _buildSizeHeaderCell(label),
           Container(width: _sepW, color: _strongBorder),
           // Brand subheader
           Container(
@@ -559,10 +562,10 @@ class _FrozenColumnTableState extends State<_FrozenColumnTable> {
           ),
           Container(width: _sepW, color: _strongBorder),
           // Sale sizes
-          for (final label in BrandwiseReportTable.sizeLabels) _buildSizeHeaderCell(label),
+          for (final label in _sizeLabels) _buildSizeHeaderCell(label),
           Container(width: _sepW, color: _strongBorder),
           // Closing sizes
-          for (final label in BrandwiseReportTable.sizeLabels) _buildSizeHeaderCell(label),
+          for (final label in _sizeLabels) _buildSizeHeaderCell(label),
         ],
       ),
     ));
@@ -725,7 +728,7 @@ class _FrozenColumnTableState extends State<_FrozenColumnTable> {
 
     return [
       if (groupIndex > 0) Container(width: _sepW, color: _strongBorder),
-      for (int i = 0; i < 7; i++)
+      for (int i = 0; i < _cols; i++)
         Container(
           width: _sizeW,
           alignment: Alignment.centerRight,
@@ -738,7 +741,7 @@ class _FrozenColumnTableState extends State<_FrozenColumnTable> {
             ),
           ),
           child: Text(
-            qty.byIndex(i) == 0 ? '' : '${qty.byIndex(i)}',
+            qty.at(i, widget.report.extraSizes) == 0 ? '' : '${qty.at(i, widget.report.extraSizes)}',
             textAlign: TextAlign.right,
             style: TextStyle(
               fontSize: 10.5,

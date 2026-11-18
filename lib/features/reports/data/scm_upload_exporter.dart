@@ -23,7 +23,7 @@ class ScmUploadExporter {
   /// Rows (without header) for each calendar day from [from] to [to].
   static Future<List<List<Object?>>> rows(AppDatabase db, DateTime from, DateTime to) async {
     final materials = (await db.select(db.cachedMaterials).get())
-        .where((m) => m.isActive && brandwiseSection(m.category, m.liquorType) != null)
+        .where((m) => brandwiseSection(m.category, m.liquorType) != null)
         .toList()
       ..sort((a, b) {
         final byName = a.name.toLowerCase().compareTo(b.name.toLowerCase());
@@ -51,6 +51,8 @@ class ScmUploadExporter {
       final seen = <String>{};
       for (final m in materials) {
         final scm = m.scmCode.isEmpty ? m.id : m.scmCode;
+        // Inactive items are listed only on days they sold.
+        if (!m.isActive && (cases[m.id] ?? 0) == 0 && (loose[m.id] ?? 0) == 0) continue;
         if (!seen.add(scm)) continue;
         var c = 0, b = 0;
         for (final x in materials.where((x) => (x.scmCode.isEmpty ? x.id : x.scmCode) == scm)) {

@@ -28,18 +28,67 @@ typedef TpPurchase = ({String? tpNo, List<int> qty});
 /// A brand's purchases on the report day, kept apart per TP (in bill order)
 /// so two TPs on the same day print as two register rows.
 class TpPurchaseSplit {
+  TpPurchaseSplit([this.width = 7]);
+
+  /// Number of size columns (7 standard + the report's extra sizes).
+  final int width;
   final _byTp = <String, List<int>>{};
 
   void add(String? tpNo, int col, int qty) {
     final key = tpNo?.trim() ?? '';
-    (_byTp[key] ??= List<int>.filled(7, 0))[col] += qty;
+    (_byTp[key] ??= List<int>.filled(width, 0))[col] += qty;
   }
 
   /// One entry per TP; a single empty entry when nothing was purchased.
   List<TpPurchase> rows() {
-    if (_byTp.isEmpty) return [(tpNo: null, qty: List<int>.filled(7, 0))];
+    if (_byTp.isEmpty) return [(tpNo: null, qty: List<int>.filled(width, 0))];
     return [
       for (final e in _byTp.entries) (tpNo: e.key.isEmpty ? null : e.key, qty: e.value),
     ];
   }
+}
+
+/// The register's 7 standard size columns, as printed.
+const standardSizeLabels = ['750ml', '375ml', '180ml', '650ml', '500ml (CAN)', '330ml (CAN)', '330ml'];
+
+/// Standard register column (0–6) for a packing like "750 ML", "500ml CAN",
+/// "330 ML (CAN)"; -1 when the size has no register column.
+int registerColumn(String? packing) {
+  final size = _sizeOf(packing);
+  if (size == null) return -1;
+  return switch (size.ml) {
+    750 => 0,
+    375 => 1,
+    180 => 2,
+    650 => 3,
+    500 => 4,
+    330 => size.isCan ? 5 : 6,
+    _ => -1,
+  };
+}
+
+/// Column label for a size with no register column: "1000ml", "2000ml
+/// (CAN)", or the packing as typed when it has no number.
+String extraSizeLabel(String packing) {
+  final size = _sizeOf(packing);
+  if (size == null) return packing.trim().toUpperCase();
+  return '${size.ml}ml${size.isCan ? ' (CAN)' : ''}';
+}
+
+/// Orders extra size labels largest first, like the register.
+int compareSizeLabels(String a, String b) {
+  final x = int.tryParse(RegExp(r'^\d+').stringMatch(a) ?? '') ?? 0;
+  final y = int.tryParse(RegExp(r'^\d+').stringMatch(b) ?? '') ?? 0;
+  return x != y ? y.compareTo(x) : a.compareTo(b);
+}
+
+({int ml, bool isCan})? _sizeOf(String? packing) {
+  if (packing == null || packing.trim().isEmpty) return null;
+  final n = packing.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '');
+  final m = RegExp(r'(\d+(?:\.\d+)?)(ml|ltr|lt|l)?').firstMatch(n);
+  if (m == null) return null;
+  final value = double.tryParse(m.group(1)!) ?? 0;
+  final unit = m.group(2) ?? 'ml';
+  final ml = unit == 'ml' ? value.round() : (value * 1000).round();
+  return (ml: ml, isCan: n.contains('can'));
 }

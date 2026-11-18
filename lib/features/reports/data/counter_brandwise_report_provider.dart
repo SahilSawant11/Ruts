@@ -86,25 +86,6 @@ Future<CounterBrandwiseReportDto> _fetchRemoteCounterBrandwiseReport(http.Client
 //  Local (offline) report builder
 // ---------------------------------------------------------------------------
 
-/// Normalises packing strings into a column index.
-int _packingIndex(String? packing) {
-  if (packing == null || packing.trim().isEmpty) return -1;
-  final normalized = packing.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '');
-  final isCan = normalized.contains('can');
-  final numMatch = RegExp(r'(\d+)').firstMatch(normalized);
-  if (numMatch == null) return -1;
-  final size = int.tryParse(numMatch.group(1)!) ?? 0;
-
-  return switch (size) {
-    750 => 0,   // wine750
-    375 => 1,   // wine375
-    180 => 2,   // wine180
-    650 => 3,   // beer650
-    500 => 4,   // beer500Can
-    330 => isCan ? 5 : 6, // beer330Can or beer330Bottle
-    _ => -1,
-  };
-}
 
 /// Returns `null` if there's no local data at all (triggers API fallback).
 Future<CounterBrandwiseReportDto?> _buildLocalCounterBrandwiseReport(AppDatabase db, DateTime date, {bool showAll = false}) async {
@@ -113,7 +94,7 @@ Future<CounterBrandwiseReportDto?> _buildLocalCounterBrandwiseReport(AppDatabase
 
   // Load active materials (for category / packing / manufacturer info)
   final rawMaterials = await db.select(db.cachedMaterials).get();
-  final materials = rawMaterials.where((m) => m.isActive).toList();
+  final materials = rawMaterials; // inactive ones are dropped below unless they moved
   if (materials.isEmpty) return null;
 
   // Load sales for this day
@@ -175,11 +156,39 @@ Future<CounterBrandwiseReportDto?> _buildLocalCounterBrandwiseReport(AppDatabase
   // Key: category display name → manufacturer name → aggregated quantities
   final categoryItems = <String, Map<String, _ManufacturerAgg>>{};
 
+  // Whether a material shows on this day's register: it moved, or Show
+  // all is on and it's active.
+  bool shows(CachedMaterial mat) {
+    final closing = stockByMaterialId[mat.id] ?? 0;
+    final saleQty = saleQtyByMaterial[mat.id] ?? 0;
+    final purchaseQty = purchaseQtyByMaterial[mat.id] ?? 0;
+    final moved = closing != 0 || saleQty != 0 || purchaseQty != 0;
+    return moved || (showAll && mat.isActive);
+  }
+
+  // Sizes with no register column (1000 ML, 2000 ML…) get their own
+  // columns after the standard 7 — only the ones this report uses.
+  final extraSizes = {
+    for (final mat in materials)
+      if (brandwiseSection(mat.category, mat.liquorType) != null &&
+          registerColumn(mat.packing) < 0 &&
+          mat.packing.trim().isNotEmpty &&
+          shows(mat))
+        extraSizeLabel(mat.packing),
+  }.toList()
+    ..sort(compareSizeLabels);
+  final width = 7 + extraSizes.length;
+
   for (final mat in materials) {
     final catName = brandwiseSection(mat.category, mat.liquorType);
     if (catName == null) continue;
 
-    final colIdx = _packingIndex(mat.packing);
+    final standardCol = registerColumn(mat.packing);
+    final colIdx = standardCol >= 0
+        ? standardCol
+        : mat.packing.trim().isEmpty
+            ? -1
+            : 7 + extraSizes.indexOf(extraSizeLabel(mat.packing));
     if (colIdx < 0) continue;
 
     final closing = stockByMaterialId[mat.id] ?? 0;
@@ -187,7 +196,10 @@ Future<CounterBrandwiseReportDto?> _buildLocalCounterBrandwiseReport(AppDatabase
     final purchaseQty = purchaseQtyByMaterial[mat.id] ?? 0;
     final opening = closing + saleQty - purchaseQty;
 
-    if (!showAll && opening == 0 && saleQty == 0 && purchaseQty == 0 && closing == 0) continue;
+    final moved = opening != 0 || saleQty != 0 || purchaseQty != 0 || closing != 0;
+    // Inactive materials are hidden unless they moved that day, so the
+    // register always matches the bills. Show all adds idle active ones.
+    if (!moved && (!showAll || !mat.isActive)) continue;
 
     // One line per counter brand (blank → the display name).
     final counterName = mat.counterBrandName.trim();
@@ -200,7 +212,7 @@ Future<CounterBrandwiseReportDto?> _buildLocalCounterBrandwiseReport(AppDatabase
       (k) => AppDatabase.normalizeCounterBrand(k) == AppDatabase.normalizeCounterBrand(manufacturerName),
       orElse: () => manufacturerName,
     );
-    final agg = manufacturers.putIfAbsent(key, _ManufacturerAgg.new);
+    final agg = manufacturers.putIfAbsent(key, () => _ManufacturerAgg(width));
     agg.opening[colIdx] += opening;
     agg.sale[colIdx] += saleQty;
     agg.closing[colIdx] += closing;
@@ -244,10 +256,10 @@ Future<CounterBrandwiseReportDto?> _buildLocalCounterBrandwiseReport(AppDatabase
           manufacturerName: name,
           tpNo: split[k].tpNo,
           isTpContinuation: !first,
-          openingBalance: first ? _listToSizeQty(agg.opening) : BrandwiseSizeQty.zero,
-          purchase: _listToSizeQty(split[k].qty),
-          sale: first ? _listToSizeQty(agg.sale) : BrandwiseSizeQty.zero,
-          closingBalance: first ? _listToSizeQty(agg.closing) : BrandwiseSizeQty.zero,
+          openingBalance: first ? _listToSizeQty(agg.opening, extraSizes) : BrandwiseSizeQty.zero,
+          purchase: _listToSizeQty(split[k].qty, extraSizes),
+          sale: first ? _listToSizeQty(agg.sale, extraSizes) : BrandwiseSizeQty.zero,
+          closingBalance: first ? _listToSizeQty(agg.closing, extraSizes) : BrandwiseSizeQty.zero,
         ));
       }
     }
@@ -260,13 +272,14 @@ Future<CounterBrandwiseReportDto?> _buildLocalCounterBrandwiseReport(AppDatabase
   }
 
   return CounterBrandwiseReportDto(
+    extraSizes: extraSizes,
     reportDate: date,
     licenseHeader: 'COUNTER BRANDWISE STOCK REPORT',
     categories: categories,
   );
 }
 
-BrandwiseSizeQty _listToSizeQty(List<int> vals) => BrandwiseSizeQty(
+BrandwiseSizeQty _listToSizeQty(List<int> vals, List<String> extraSizes) => BrandwiseSizeQty(
       wine750: vals[0],
       wine375: vals[1],
       wine180: vals[2],
@@ -274,6 +287,10 @@ BrandwiseSizeQty _listToSizeQty(List<int> vals) => BrandwiseSizeQty(
       beer500Can: vals[4],
       beer330Can: vals[5],
       beer330Bottle: vals[6],
+      extra: {
+        for (var i = 0; i < extraSizes.length; i++)
+          if (vals[7 + i] != 0) extraSizes[i]: vals[7 + i],
+      },
     );
 
 CounterBrandwiseReportDto _emptyReport(DateTime date) => CounterBrandwiseReportDto(
@@ -295,8 +312,14 @@ CounterBrandwiseReportDto _emptyReport(DateTime date) => CounterBrandwiseReportD
     );
 
 class _ManufacturerAgg {
-  final opening = List<int>.filled(7, 0);
-  final sale = List<int>.filled(7, 0);
-  final closing = List<int>.filled(7, 0);
-  final tps = TpPurchaseSplit();
+  _ManufacturerAgg(int width)
+      : opening = List<int>.filled(width, 0),
+        sale = List<int>.filled(width, 0),
+        closing = List<int>.filled(width, 0),
+        tps = TpPurchaseSplit(width);
+
+  final List<int> opening;
+  final List<int> sale;
+  final List<int> closing;
+  final TpPurchaseSplit tps;
 }

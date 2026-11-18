@@ -1,7 +1,10 @@
 /// Quantities broken out by bottle-size column, matching the excise
-/// register's 7 physical columns (3 wine + 4 beer).
+/// register's 7 physical columns (3 wine + 4 beer), plus [extra] for any
+/// other size the shop stocks (label like "1000ml" → qty). Extra sizes get
+/// their own columns after the standard 7, only when a report uses them.
 class BrandwiseSizeQty {
   const BrandwiseSizeQty({
+    this.extra = const {},
     this.wine750 = 0,
     this.wine375 = 0,
     this.wine180 = 0,
@@ -18,8 +21,16 @@ class BrandwiseSizeQty {
   final int beer500Can;
   final int beer330Can;
   final int beer330Bottle;
+  final Map<String, int> extra;
 
-  int get total => wine750 + wine375 + wine180 + beer650 + beer500Can + beer330Can + beer330Bottle;
+  int get total =>
+      wine750 + wine375 + wine180 + beer650 + beer500Can + beer330Can + beer330Bottle +
+      extra.values.fold(0, (s, v) => s + v);
+
+  /// Column [index] of a report whose extra size columns are [extraSizes]:
+  /// 0–6 the standard columns, 7+ the extras in that order.
+  int at(int index, List<String> extraSizes) =>
+      index < 7 ? byIndex(index) : (index - 7 < extraSizes.length ? extra[extraSizes[index - 7]] ?? 0 : 0);
 
   /// Returns the value for a given column index (0–6).
   int byIndex(int index) => switch (index) {
@@ -41,6 +52,9 @@ class BrandwiseSizeQty {
         beer500Can: beer500Can + other.beer500Can,
         beer330Can: beer330Can + other.beer330Can,
         beer330Bottle: beer330Bottle + other.beer330Bottle,
+        extra: {
+          for (final k in {...extra.keys, ...other.extra.keys}) k: (extra[k] ?? 0) + (other.extra[k] ?? 0),
+        },
       );
 
   factory BrandwiseSizeQty.fromJson(Map<String, dynamic> json) {
@@ -168,7 +182,12 @@ class BrandwiseReportDto {
     required this.reportDate,
     required this.licenseHeader,
     required this.categories,
+    this.extraSizes = const [],
   });
+
+  /// Sizes outside the 7 register columns that this report uses (e.g.
+  /// "1000ml"); each gets its own column after the standard ones.
+  final List<String> extraSizes;
 
   final DateTime reportDate;
   final String licenseHeader;

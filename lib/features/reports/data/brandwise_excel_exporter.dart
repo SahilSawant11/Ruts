@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:path_provider/path_provider.dart';
 
 import 'models/brandwise_report_dto.dart';
+import 'brandwise_sections.dart';
 
 /// Generates an XML Spreadsheet 2003 (.xls) file matching the excise
 /// register format: BEER A : WINE BR. II BRANDWISE STOCK REPORT.
@@ -36,10 +37,17 @@ class BrandwiseExcelExporter {
   //  CLOSING BALANCE: [23-25] wine            [26-29] beer
   // ---------------------------------------------------------------
 
-  static const _totalColumns = 31;
+  /// Extra size columns of the report being written (after the 7 standard).
+  List<String> _extras = const [];
+
+  int get _sizeCols => 7 + _extras.length;
+
+  /// Name + TP + 4 size groups + middle name column.
+  int get _totalColumns => 3 + 4 * _sizeCols;
 
   @visibleForTesting
   String buildWorkbook(BrandwiseReportDto report) {
+    _extras = report.extraSizes;
     final buf = StringBuffer()
       ..writeln('<?xml version="1.0"?>')
       ..writeln('<?mso-application progid="Excel.Sheet"?>')
@@ -52,21 +60,16 @@ class BrandwiseExcelExporter {
       ..writeln('<Worksheet ss:Name="BrandwiseStock">')
       ..writeln('<Table>');
 
-    // Column widths: 31 columns
-    buf.writeln('<Column ss:Width="220"/>'); // Brand Name [0]
-    buf.writeln('<Column ss:Width="65"/>');  // T.P. No. [1]
-    for (var i = 0; i < 7; i++) {
-      buf.writeln('<Column ss:Width="52"/>'); // Opening [2-8]
+    // Column widths: name, TP, opening + purchase sizes, middle name,
+    // sale + closing sizes.
+    buf.writeln('<Column ss:Width="220"/>');
+    buf.writeln('<Column ss:Width="65"/>');
+    for (var i = 0; i < _sizeCols * 2; i++) {
+      buf.writeln('<Column ss:Width="52"/>');
     }
-    for (var i = 0; i < 7; i++) {
-      buf.writeln('<Column ss:Width="52"/>'); // Purchase [9-15]
-    }
-    buf.writeln('<Column ss:Width="200"/>'); // Brand Name (Middle) [16]
-    for (var i = 0; i < 7; i++) {
-      buf.writeln('<Column ss:Width="52"/>'); // Sale [17-23]
-    }
-    for (var i = 0; i < 7; i++) {
-      buf.writeln('<Column ss:Width="52"/>'); // Closing [24-30]
+    buf.writeln('<Column ss:Width="200"/>');
+    for (var i = 0; i < _sizeCols * 2; i++) {
+      buf.writeln('<Column ss:Width="52"/>');
     }
 
     // ── Row 1: Title ──
@@ -84,80 +87,49 @@ class BrandwiseExcelExporter {
       ..writeln('</Row>');
 
     // ── Row 3: Top-tier headers (merged groups) ──
+    final span = _sizeCols - 1;
     buf.writeln('<Row ss:Height="20">');
-    // BRAND NAME spans 1 col, merges down 1 row
     buf.writeln('<Cell ss:StyleID="header" ss:MergeDown="1"><Data ss:Type="String">BRAND NAME</Data></Cell>');
-    // T.P. No. spans 1 col, merges down 1 row
     buf.writeln('<Cell ss:StyleID="header" ss:MergeDown="1"><Data ss:Type="String">T.P. No.</Data></Cell>');
-    // OPENING BALANCE — 7 cols
-    buf.writeln('<Cell ss:StyleID="header" ss:MergeAcross="6"><Data ss:Type="String">OPENING BALANCE</Data></Cell>');
-    // PURCHASE — 7 cols
-    buf.writeln('<Cell ss:StyleID="header" ss:MergeAcross="6"><Data ss:Type="String">PURCHASE</Data></Cell>');
-    // BRAND NAME (Middle Column) spans 1 col, merges down 1 row
+    buf.writeln('<Cell ss:StyleID="header" ss:MergeAcross="$span"><Data ss:Type="String">OPENING BALANCE</Data></Cell>');
+    buf.writeln('<Cell ss:StyleID="header" ss:MergeAcross="$span"><Data ss:Type="String">PURCHASE</Data></Cell>');
     buf.writeln('<Cell ss:StyleID="header" ss:MergeDown="1"><Data ss:Type="String">BRAND NAME</Data></Cell>');
-    // SALE — 7 cols
-    buf.writeln('<Cell ss:StyleID="header" ss:MergeAcross="6"><Data ss:Type="String">SALE</Data></Cell>');
-    // CLOSING BALANCE — 7 cols
-    buf.writeln('<Cell ss:StyleID="header" ss:MergeAcross="6"><Data ss:Type="String">CLOSING BALANCE</Data></Cell>');
+    buf.writeln('<Cell ss:StyleID="header" ss:MergeAcross="$span"><Data ss:Type="String">SALE</Data></Cell>');
+    buf.writeln('<Cell ss:StyleID="header" ss:MergeAcross="$span"><Data ss:Type="String">CLOSING BALANCE</Data></Cell>');
     buf.writeln('</Row>');
 
-    // ── Row 4: Sub-tier headers (size columns) ──
+    // ── Row 4: WINE / BEER / OTHER over each size group ──
+    // (Columns are 1-based; the middle name column is merged down.)
+    final saleStart = 2 + 2 * _sizeCols + 2;
+    void groupLabels(int? index) {
+      for (var i = 0; i < _sizeCols; i++) {
+        final label = i == 0 ? 'WINE' : i == 3 ? 'BEER' : i == 7 ? 'OTHER' : '';
+        final at = i == 0 && index != null ? ' ss:Index="$index"' : '';
+        buf.writeln('<Cell$at ss:StyleID="subHeader"><Data ss:Type="String">$label</Data></Cell>');
+      }
+    }
     buf.writeln('<Row ss:Height="20">');
-    // Opening: Wine + Beer
-    buf.writeln('<Cell ss:Index="3" ss:StyleID="subHeader"><Data ss:Type="String">WINE</Data></Cell>');
-    buf.writeln('<Cell ss:StyleID="subHeader"><Data ss:Type="String"></Data></Cell>');
-    buf.writeln('<Cell ss:StyleID="subHeader"><Data ss:Type="String"></Data></Cell>');
-    buf.writeln('<Cell ss:StyleID="subHeader"><Data ss:Type="String">BEER</Data></Cell>');
-    buf.writeln('<Cell ss:StyleID="subHeader"><Data ss:Type="String"></Data></Cell>');
-    buf.writeln('<Cell ss:StyleID="subHeader"><Data ss:Type="String"></Data></Cell>');
-    buf.writeln('<Cell ss:StyleID="subHeader"><Data ss:Type="String"></Data></Cell>');
-    // Purchase: Wine + Beer
-    buf.writeln('<Cell ss:StyleID="subHeader"><Data ss:Type="String">WINE</Data></Cell>');
-    buf.writeln('<Cell ss:StyleID="subHeader"><Data ss:Type="String"></Data></Cell>');
-    buf.writeln('<Cell ss:StyleID="subHeader"><Data ss:Type="String"></Data></Cell>');
-    buf.writeln('<Cell ss:StyleID="subHeader"><Data ss:Type="String">BEER</Data></Cell>');
-    buf.writeln('<Cell ss:StyleID="subHeader"><Data ss:Type="String"></Data></Cell>');
-    buf.writeln('<Cell ss:StyleID="subHeader"><Data ss:Type="String"></Data></Cell>');
-    buf.writeln('<Cell ss:StyleID="subHeader"><Data ss:Type="String"></Data></Cell>');
-    // Middle Brand column is merged down at Index 17, so Sale starts at Index 18
-    buf.writeln('<Cell ss:Index="18" ss:StyleID="subHeader"><Data ss:Type="String">WINE</Data></Cell>');
-    buf.writeln('<Cell ss:StyleID="subHeader"><Data ss:Type="String"></Data></Cell>');
-    buf.writeln('<Cell ss:StyleID="subHeader"><Data ss:Type="String"></Data></Cell>');
-    buf.writeln('<Cell ss:StyleID="subHeader"><Data ss:Type="String">BEER</Data></Cell>');
-    buf.writeln('<Cell ss:StyleID="subHeader"><Data ss:Type="String"></Data></Cell>');
-    buf.writeln('<Cell ss:StyleID="subHeader"><Data ss:Type="String"></Data></Cell>');
-    buf.writeln('<Cell ss:StyleID="subHeader"><Data ss:Type="String"></Data></Cell>');
-    // Closing: Wine + Beer
-    buf.writeln('<Cell ss:StyleID="subHeader"><Data ss:Type="String">WINE</Data></Cell>');
-    buf.writeln('<Cell ss:StyleID="subHeader"><Data ss:Type="String"></Data></Cell>');
-    buf.writeln('<Cell ss:StyleID="subHeader"><Data ss:Type="String"></Data></Cell>');
-    buf.writeln('<Cell ss:StyleID="subHeader"><Data ss:Type="String">BEER</Data></Cell>');
-    buf.writeln('<Cell ss:StyleID="subHeader"><Data ss:Type="String"></Data></Cell>');
-    buf.writeln('<Cell ss:StyleID="subHeader"><Data ss:Type="String"></Data></Cell>');
-    buf.writeln('<Cell ss:StyleID="subHeader"><Data ss:Type="String"></Data></Cell>');
+    groupLabels(3);
+    groupLabels(null);
+    groupLabels(saleStart);
+    groupLabels(null);
     buf.writeln('</Row>');
 
     // ── Row 5: Size labels ──
+    final sizes = [...standardSizeLabels, ..._extras];
+    void sizeRow(int? index) {
+      for (var i = 0; i < sizes.length; i++) {
+        final at = i == 0 && index != null ? ' ss:Index="$index"' : '';
+        buf.writeln('<Cell$at ss:StyleID="sizeHeader"><Data ss:Type="String">${_xml(sizes[i])}</Data></Cell>');
+      }
+    }
     buf.writeln('<Row ss:Height="18">');
     buf.writeln('<Cell ss:StyleID="subHeader"><Data ss:Type="String"></Data></Cell>');
     buf.writeln('<Cell ss:StyleID="subHeader"><Data ss:Type="String"></Data></Cell>');
-    // Opening sizes
-    for (final size in const ['750ml', '375ml', '180ml', '650ml', '500ml (CAN)', '330ml (CAN)', '330ml']) {
-      buf.writeln('<Cell ss:StyleID="sizeHeader"><Data ss:Type="String">$size</Data></Cell>');
-    }
-    // Purchase sizes
-    for (final size in const ['750ml', '375ml', '180ml', '650ml', '500ml (CAN)', '330ml (CAN)', '330ml']) {
-      buf.writeln('<Cell ss:StyleID="sizeHeader"><Data ss:Type="String">$size</Data></Cell>');
-    }
-    // Middle Brand placeholder (Index 18 for Sale)
-    buf.writeln('<Cell ss:Index="18" ss:StyleID="sizeHeader"><Data ss:Type="String">750ml</Data></Cell>');
-    for (final size in const ['375ml', '180ml', '650ml', '500ml (CAN)', '330ml (CAN)', '330ml']) {
-      buf.writeln('<Cell ss:StyleID="sizeHeader"><Data ss:Type="String">$size</Data></Cell>');
-    }
-    // Closing sizes
-    for (final size in const ['750ml', '375ml', '180ml', '650ml', '500ml (CAN)', '330ml (CAN)', '330ml']) {
-      buf.writeln('<Cell ss:StyleID="sizeHeader"><Data ss:Type="String">$size</Data></Cell>');
-    }
+    sizeRow(null);
+    sizeRow(null);
+    sizeRow(saleStart);
+    sizeRow(null);
     buf.writeln('</Row>');
 
     // ── Category sections ──
@@ -203,8 +175,8 @@ class BrandwiseExcelExporter {
   }
 
   void _writeSizeQty(StringBuffer buf, BrandwiseSizeQty qty) {
-    for (var i = 0; i < 7; i++) {
-      final v = qty.byIndex(i);
+    for (var i = 0; i < _sizeCols; i++) {
+      final v = qty.at(i, _extras);
       if (v == 0) {
         buf.writeln('<Cell ss:StyleID="number"><Data ss:Type="String"></Data></Cell>');
       } else {
@@ -214,8 +186,8 @@ class BrandwiseExcelExporter {
   }
 
   void _writeSizeQtyBold(StringBuffer buf, BrandwiseSizeQty qty) {
-    for (var i = 0; i < 7; i++) {
-      final v = qty.byIndex(i);
+    for (var i = 0; i < _sizeCols; i++) {
+      final v = qty.at(i, _extras);
       if (v == 0) {
         buf.writeln('<Cell ss:StyleID="totalNumber"><Data ss:Type="String"></Data></Cell>');
       } else {

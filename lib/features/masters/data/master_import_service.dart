@@ -10,6 +10,7 @@ import 'liquor_type.dart';
 import 'models/license_holder_dto.dart';
 import 'models/save_material_request.dart';
 import 'models/save_supplier_request.dart';
+import '../../sales/data/models/material_dto.dart';
 import 'models/save_license_holder_request.dart';
 
 enum MasterImportTarget { materials, suppliers, licenseHolders }
@@ -22,7 +23,11 @@ class MasterImportSummary {
     required this.skipped,
     required this.failed,
     required this.errors,
+    this.updated = 0,
   });
+
+  /// Existing records (same key) whose fields were refreshed from the file.
+  final int updated;
 
   final MasterImportTarget target;
   final String fileName;
@@ -40,6 +45,7 @@ class MasterImportSummary {
   String get message {
     final parts = <String>[
       '$imported $entityLabel imported',
+      if (updated > 0) '$updated updated',
       '$skipped skipped',
     ];
     if (failed > 0) {
@@ -215,12 +221,17 @@ class MasterImportService {
       return supplierIdByName[name.toLowerCase()] = created.id;
     }
 
-    // A material is one SCM code + barcode pair; the same pair again is a skip.
-    final existing = {
-      for (final m in await _repo.getMaterials()) '${m.scmCode.trim().toLowerCase()}|${m.barcode.trim().toLowerCase()}': true,
+    // A material is one SCM code + barcode pair. A pair already in the
+    // master is updated from the sheet (rates, names…; never stock); blank
+    // optional cells keep what the material already has. A pair repeated
+    // within the same file is skipped.
+    final existing = <String, MaterialDto?>{
+      for (final m in await _repo.getMaterials()) '${m.scmCode.trim().toLowerCase()}|${m.barcode.trim().toLowerCase()}': m,
     };
+    final seenInFile = <String>{};
 
     var imported = 0;
+    var updated = 0;
     var skipped = 0;
     var failed = 0;
     final errors = <String>[];
@@ -254,8 +265,43 @@ class MasterImportService {
 
       final barcode = _nullable(_valueAt(row, barcodeIndex)) ?? code;
       final pairKey = '${code.toLowerCase()}|${barcode.toLowerCase()}';
-      if (existing.containsKey(pairKey)) {
+      if (!seenInFile.add(pairKey)) {
         skipped++;
+        continue;
+      }
+      final current = existing[pairKey];
+      if (current != null) {
+        String keep(int? index, String old) => _nullable(_valueAt(row, index)) ?? old;
+        double keepNum(int? index, double old) =>
+            _nullable(_valueAt(row, index)) == null ? old : _parseDouble(_valueAt(row, index));
+        try {
+          final distributor = _valueAt(row, distributorIndex);
+          await _repo.updateMaterial(
+            current.id,
+            SaveMaterialRequest(
+              id: current.id,
+              scmCode: current.scmCode,
+              barcode: current.barcode,
+              name: name,
+              manufacturer: keep(manufacturerIndex, current.manufacturer),
+              category: cat.category,
+              liquorType: cat.type,
+              packing: keep(packingIndex, current.packing),
+              counterBrandName: keep(counterIndex, current.counterBrandName),
+              saleRate: keepNum(saleRateIndex, current.saleRate),
+              wholesaleRate: keepNum(wholesaleIndex, current.wholesaleRate),
+              taxPercent: keepNum(taxIndex, current.taxPercent),
+              discountPercent: keepNum(discountIndex, current.discountPercent),
+              defaultSupplierId:
+                  distributor.trim().isEmpty ? current.defaultSupplierId : await supplierIdFor(distributor),
+              isActive: current.isActive,
+            ),
+          );
+          updated++;
+        } on ApiException catch (e) {
+          failed++;
+          errors.add('Row ${rowNumber + 2}: ${e.message}');
+        }
         continue;
       }
 
@@ -278,7 +324,7 @@ class MasterImportService {
             defaultSupplierId: await supplierIdFor(_valueAt(row, distributorIndex)),
           ),
         );
-        existing[pairKey] = true;
+        existing[pairKey] = null;
         imported++;
       } on ApiException catch (e) {
         failed++;
@@ -293,6 +339,7 @@ class MasterImportService {
       target: MasterImportTarget.materials,
       fileName: fileName,
       imported: imported,
+      updated: updated,
       skipped: skipped,
       failed: failed,
       errors: errors,
