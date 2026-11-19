@@ -119,7 +119,9 @@ class LocalPurchaseRepository {
       final s = search.trim().toLowerCase();
       query.where((tbl) =>
           (tbl.billNo.isNotNull() & tbl.billNo.lower().contains(s)) |
-          (tbl.challanNo.isNotNull() & tbl.challanNo.lower().contains(s)));
+          (tbl.challanNo.isNotNull() & tbl.challanNo.lower().contains(s)) |
+          // A return is usually looked up by the TP on the paperwork.
+          (tbl.tpNo.isNotNull() & tbl.tpNo.lower().contains(s)));
     }
     final billRows = await query.get();
     final result = <PurchaseBillDetailDto>[];

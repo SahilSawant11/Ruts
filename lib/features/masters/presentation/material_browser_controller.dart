@@ -7,7 +7,12 @@ class MaterialBrowserState {
     this.index = -1,
     this.isEditing = false,
     this.isSaving = false,
+    this.newCount = 0,
   });
+
+  /// Bumped by every New press, so the form clears even when it is
+  /// already showing a (half-filled) new record.
+  final int newCount;
 
   final List<MaterialDto> materials;
 
@@ -26,12 +31,14 @@ class MaterialBrowserState {
     int? index,
     bool? isEditing,
     bool? isSaving,
+    int? newCount,
   }) {
     return MaterialBrowserState(
       materials: materials ?? this.materials,
       index: index ?? this.index,
       isEditing: isEditing ?? this.isEditing,
       isSaving: isSaving ?? this.isSaving,
+      newCount: newCount ?? this.newCount,
     );
   }
 }
@@ -85,7 +92,7 @@ class MaterialBrowserController extends StateNotifier<MaterialBrowserState> {
     selectById(material.id, currentList);
   }
 
-  void startNew() => state = state.copyWith(index: -1, isEditing: true);
+  void startNew() => state = state.copyWith(index: -1, isEditing: true, newCount: state.newCount + 1);
 
   void toggleEditing() => state = state.copyWith(isEditing: !state.isEditing);
 

@@ -81,6 +81,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                     collapsed: collapsed,
                     onTap: () {
                       ref.invalidate(dashboardSummaryProvider);
+                      ref.invalidate(dashboardSnapshotProvider);
                       context.go('/dashboard');
                       setState(() => _isHovered = false);
                     },

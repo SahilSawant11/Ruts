@@ -217,6 +217,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
       ref.invalidate(inventoryOverviewProvider);
       ref.invalidate(filteredInventoryOverviewProvider);
       ref.invalidate(dashboardSummaryProvider);
+      ref.invalidate(dashboardSnapshotProvider);
       refreshStockReports(ref.invalidate);
       ref.invalidate(materialsListProvider);
 
@@ -383,7 +384,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
               Expanded(
                 child: AppTextField(
                   label: '',
-                  hint: 'Search Bill #, Challan #, Supplier…',
+                  hint: 'Search Bill #, Challan #, TP No, Supplier…',
                   controller: _searchController,
                   onChanged: _onSearchChanged,
                   suffix: _searchQuery.isNotEmpty
@@ -470,7 +471,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    bill.billNo ?? bill.challanNo ?? 'Bill #${bill.id.substring(0, 8)}',
+                                    _billTitle(bill),
                                     style: AppTypography.body.copyWith(
                                       fontWeight: FontWeight.w700,
                                       color: isSelected ? AppColors.primary : AppColors.textPrimaryFor(context),
@@ -974,4 +975,15 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
       ),
     );
   }
+}
+
+/// A readable name for a purchase in the list: its bill no, else challan,
+/// else TP no — never the internal id ("local-pu…" told bills apart badly).
+String _billTitle(PurchaseBillDetailDto bill) {
+  String? nonBlank(String? v) => (v == null || v.trim().isEmpty) ? null : v.trim();
+  final billNo = nonBlank(bill.billNo), challan = nonBlank(bill.challanNo), tp = nonBlank(bill.tpNo);
+  if (billNo != null) return tp == null ? 'Bill $billNo' : 'Bill $billNo · TP $tp';
+  if (challan != null) return 'Challan $challan';
+  if (tp != null) return 'TP $tp';
+  return 'Purchase (no bill no)';
 }

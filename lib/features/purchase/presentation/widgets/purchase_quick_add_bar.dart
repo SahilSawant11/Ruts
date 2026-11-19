@@ -25,6 +25,10 @@ import '../../../../core/local/material_lookup_cache.dart';
 /// - Zero-tap Add Line on Enter or button click
 /// - F1 (focus search), F4 (focus qty), F2 (open full dialog)
 class PurchaseQuickAddBar extends ConsumerStatefulWidget {
+  /// True while the search box shows its suggestion list (see
+  /// ScanAddItemCard.suggestionsOpen): Esc then only closes the list.
+  static bool suggestionsOpen = false;
+
   const PurchaseQuickAddBar({super.key});
 
   @override
@@ -112,6 +116,11 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
     } else if (isF2) {
       if (_portalController.isShowing) _portalController.hide();
       showAddMaterialLineDialog(context);
+      return true;
+    } else if ((event.logicalKey == LogicalKeyboardKey.escape || event.physicalKey == PhysicalKeyboardKey.escape) &&
+        _portalController.isShowing) {
+      _portalController.hide();
+      setState(() => _suggestions = []);
       return true;
     } else if (isF4) {
       _qtyFocusNode.requestFocus();
@@ -341,6 +350,7 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
 
   @override
   Widget build(BuildContext context) {
+    PurchaseQuickAddBar.suggestionsOpen = _portalController.isShowing && _suggestions.isNotEmpty;
     final materialsAsync = ref.watch(materialsListProvider);
     final materials = materialsAsync.maybeWhen(
       data: (list) => list,

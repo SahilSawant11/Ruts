@@ -18,6 +18,7 @@ import '../purchase_cart_controller.dart';
 import '../purchase_form_controller.dart';
 import '../../../../shared/keyboard/screen_key_guard.dart';
 import '../../../reports/data/report_refresh.dart';
+import 'purchase_quick_add_bar.dart';
 
 /// Settlement, extra charges and actions card for Purchase,
 /// styled in the app's signature pebble card aesthetic matching PaymentCard.
@@ -75,6 +76,8 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
       }
       return true;
     } else if (isEscape) {
+      // Esc first closes an open suggestion list; only then offers to clear.
+      if (PurchaseQuickAddBar.suggestionsOpen) return false;
       _clear();
       return true;
     }
@@ -188,6 +191,7 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
       ref.invalidate(inventoryManufacturerOptionsProvider);
       ref.invalidate(filteredInventoryOverviewProvider);
       ref.invalidate(dashboardSummaryProvider);
+      ref.invalidate(dashboardSnapshotProvider);
       refreshStockReports(ref.invalidate);
 
       ref.read(purchaseCartControllerProvider.notifier).clear();

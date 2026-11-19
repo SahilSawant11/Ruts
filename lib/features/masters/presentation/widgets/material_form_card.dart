@@ -48,7 +48,11 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
   bool _isActive = true;
 
   int? _lastIndex;
+  // Which record the form shows: reload on a different record, not just a
+  // different list position (the list re-sorts after adds).
+  MaterialDto? _lastRecord;
   bool? _lastIsNew;
+  int? _lastNewCount;
 
   @override
   void dispose() {
@@ -164,9 +168,16 @@ class _MaterialFormCardState extends ConsumerState<MaterialFormCard> {
       });
     }
 
-    if (_lastIndex != browser.index || _lastIsNew != browser.isNew) {
+    final record = browser.current;
+    // A different record, or fresh data for the same one while only viewing
+    // (never while editing, so typed changes are kept).
+    final recordChanged = record?.id != _lastRecord?.id ||
+        (!identical(record, _lastRecord) && !(browser.isEditing || browser.isNew));
+    if (recordChanged || (!browser.isNew && _lastIndex != browser.index) || _lastIsNew != browser.isNew || _lastNewCount != browser.newCount) {
+      _lastRecord = record;
       _lastIndex = browser.index;
       _lastIsNew = browser.isNew;
+      _lastNewCount = browser.newCount;
       _populateFrom(browser.current);
     }
 

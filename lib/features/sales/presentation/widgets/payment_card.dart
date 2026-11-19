@@ -12,6 +12,7 @@ import '../sales_checkout_service.dart';
 import '../sales_providers.dart';
 import '../../../../core/format/money.dart';
 import '../../../../shared/keyboard/screen_key_guard.dart';
+import 'scan_add_item_card.dart';
 
 /// Payment method selector, cash received input, and billing actions
 /// in the app's signature pebble card aesthetic and brand styling.
@@ -52,6 +53,8 @@ class _PaymentCardState extends ConsumerState<PaymentCard> {
       }
       return true;
     } else if (isEscape) {
+      // Esc first closes an open suggestion list; only then clears the bill.
+      if (ScanAddItemCard.suggestionsOpen) return false;
       _clearBill();
       return true;
     }

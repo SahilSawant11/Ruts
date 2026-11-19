@@ -121,6 +121,7 @@ class SalesCheckoutService {
       ref.invalidate(todaysBillsProvider);
       ref.invalidate(salesReportProvider);
       ref.invalidate(dashboardSummaryProvider);
+      ref.invalidate(dashboardSnapshotProvider);
       refreshStockReports(ref.invalidate);
       ref.invalidate(inventoryListProvider);
       ref.invalidate(inventoryOverviewProvider);

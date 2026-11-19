@@ -20,6 +20,10 @@ import '../../../../shared/keyboard/screen_key_guard.dart';
 /// Supports F1 (focus scan) and F4 (focus qty) hotkeys.
 /// Features instant autocomplete suggestions dropdown on typing.
 class ScanAddItemCard extends ConsumerStatefulWidget {
+  /// True while the scan box shows its suggestion list. Screen-wide Esc
+  /// (clear the bill) leaves that Esc to the scan box, which closes the list.
+  static bool suggestionsOpen = false;
+
   const ScanAddItemCard({super.key, this.compact = true});
 
   final bool compact;
@@ -146,7 +150,8 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
     }
 
     final q = trimmed.toLowerCase();
-    final matches = allMaterials.where((m) =>
+    // Inactive items can't be billed, so don't suggest them.
+    final matches = allMaterials.where((m) => m.isActive).where((m) =>
         m.id.toLowerCase().contains(q) ||
         m.barcode.toLowerCase().contains(q) ||
         m.name.toLowerCase().contains(q) ||
@@ -290,6 +295,17 @@ Future<void> _triggerAutoCheckout() async {
   }
   @override
   Widget build(BuildContext context) {
+    // Bill saved or cleared (also by mouse, which takes focus away from
+    // this box on desktop): put the cursor back here so the scanner's next
+    // scan isn't lost.
+    ref.listen(cartControllerProvider.select((c) => c.isEmpty), (wasEmpty, isEmpty) {
+      if (isEmpty && wasEmpty == false) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _barcodeFocusNode.requestFocus();
+        });
+      }
+    });
+    ScanAddItemCard.suggestionsOpen = _portalController.isShowing && _suggestions.isNotEmpty;
     final isScanning = ref.watch(cartControllerProvider.select((s) => s.isScanning));
     final scanError = ref.watch(cartControllerProvider.select((s) => s.scanError));
     final materialsAsync = ref.watch(materialsListProvider);

@@ -276,9 +276,7 @@ class MasterImportService {
             _nullable(_valueAt(row, index)) == null ? old : _parseDouble(_valueAt(row, index));
         try {
           final distributor = _valueAt(row, distributorIndex);
-          await _repo.updateMaterial(
-            current.id,
-            SaveMaterialRequest(
+          final next = SaveMaterialRequest(
               id: current.id,
               scmCode: current.scmCode,
               barcode: current.barcode,
@@ -295,8 +293,24 @@ class MasterImportService {
               defaultSupplierId:
                   distributor.trim().isEmpty ? current.defaultSupplierId : await supplierIdFor(distributor),
               isActive: current.isActive,
-            ),
-          );
+            );
+          // Rows the sheet leaves as they are count as skipped, not updated.
+          final changed = next.name.trim() != current.name ||
+              next.manufacturer != current.manufacturer ||
+              cat.category != current.category ||
+              cat.type != current.liquorType ||
+              next.packing != current.packing ||
+              next.counterBrandName.trim().toLowerCase() != current.counterBrandName.toLowerCase() ||
+              next.saleRate != current.saleRate ||
+              next.wholesaleRate != current.wholesaleRate ||
+              next.taxPercent != current.taxPercent ||
+              next.discountPercent != current.discountPercent ||
+              next.defaultSupplierId != current.defaultSupplierId;
+          if (!changed) {
+            skipped++;
+            continue;
+          }
+          await _repo.updateMaterial(current.id, next);
           updated++;
         } on ApiException catch (e) {
           failed++;

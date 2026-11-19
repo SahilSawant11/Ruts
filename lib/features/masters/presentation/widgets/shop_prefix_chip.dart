@@ -45,33 +45,12 @@ class ShopPrefixChip extends ConsumerWidget {
   }
 
   Future<void> _edit(BuildContext context, WidgetRef ref, String current) async {
-    final controller = TextEditingController(text: current == '…' ? '' : current);
+    // The dialog owns its text controller and disposes it only once the
+    // dialog has fully closed.
     final next = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Shop prefix'),
-        content: SizedBox(
-          width: 360,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppTextField(label: 'PREFIX', controller: controller, autofocus: true, hint: 'e.g. RS'),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                'Counter brand IDs are PREFIX-0001, PREFIX-0002… Changing it updates every ID; the numbers stay the same.',
-                style: AppTypography.caption.copyWith(color: AppColors.textMutedFor(ctx)),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          SecondaryButton(label: 'Cancel', onPressed: () => Navigator.of(ctx).pop()),
-          PrimaryButton(label: 'Save', onPressed: () => Navigator.of(ctx).pop(controller.text)),
-        ],
-      ),
+      builder: (ctx) => _PrefixDialog(initial: current == '…' ? '' : current),
     );
-    controller.dispose();
     if (next == null) return;
     try {
       await ref.read(appDatabaseProvider).setShopPrefix(next);
@@ -82,5 +61,49 @@ class ShopPrefixChip extends ConsumerWidget {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${e.message}')));
     }
+  }
+}
+
+class _PrefixDialog extends StatefulWidget {
+  const _PrefixDialog({required this.initial});
+  final String initial;
+
+  @override
+  State<_PrefixDialog> createState() => _PrefixDialogState();
+}
+
+class _PrefixDialogState extends State<_PrefixDialog> {
+  late final _controller = TextEditingController(text: widget.initial);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Shop prefix'),
+      content: SizedBox(
+        width: 360,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppTextField(label: 'PREFIX', controller: _controller, autofocus: true, hint: 'e.g. RS'),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Counter brand IDs are PREFIX-0001, PREFIX-0002… Changing it updates every ID; the numbers stay the same.',
+              style: AppTypography.caption.copyWith(color: AppColors.textMutedFor(context)),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        SecondaryButton(label: 'Cancel', onPressed: () => Navigator.of(context).pop()),
+        PrimaryButton(label: 'Save', onPressed: () => Navigator.of(context).pop(_controller.text)),
+      ],
+    );
   }
 }

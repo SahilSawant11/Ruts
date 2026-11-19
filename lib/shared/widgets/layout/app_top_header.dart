@@ -51,6 +51,7 @@ class AppTopHeader extends ConsumerWidget {
 
   void _handleRefresh(BuildContext context, WidgetRef ref) {
     ref.invalidate(dashboardSummaryProvider);
+    ref.invalidate(dashboardSnapshotProvider);
     ref.invalidate(inventoryOverviewProvider);
     ref.invalidate(inventoryListProvider);
     ref.invalidate(filteredInventoryOverviewProvider);

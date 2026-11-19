@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../widgets/add_material_line_dialog.dart';
 import '../widgets/bill_details_card.dart';
 import '../widgets/extra_charges_totals_card.dart';
 import '../widgets/purchase_item_table.dart';
 import '../widgets/purchase_quick_add_bar.dart';
 import '../widgets/purchase_summary_card.dart';
-import '../../../../shared/keyboard/screen_key_guard.dart';
 
 /// Redesigned POS Inward / Purchase Screen:
 /// - Aligned to match the visual architecture and UX of SalesBillingScreen.
@@ -27,27 +24,8 @@ class PurchaseBillScreen extends StatefulWidget {
 }
 
 class _PurchaseBillScreenState extends State<PurchaseBillScreen> {
-  @override
-  void initState() {
-    super.initState();
-    HardwareKeyboard.instance.addHandler(_handleKeyEvent);
-  }
-
-  @override
-  void dispose() {
-    HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
-    super.dispose();
-  }
-
-  bool _handleKeyEvent(KeyEvent event) {
-    if (event is! KeyDownEvent || !screenOwnsKeyboard(context)) return false;
-    final isF2 = event.logicalKey == LogicalKeyboardKey.f2 || event.physicalKey == PhysicalKeyboardKey.f2;
-    if (isF2) {
-      showAddMaterialLineDialog(context);
-      return true;
-    }
-    return false;
-  }
+  // F2 (Add Line dialog) is handled by the quick-add bar only; a second
+  // handler here used to open a second dialog on top of the first.
 
   @override
   Widget build(BuildContext context) {

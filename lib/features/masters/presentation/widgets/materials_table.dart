@@ -132,39 +132,42 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> with BulkSelect
                   subtitle: widget.isSplitView ? 'Select an item to inspect & modify' : 'Tap a row to load it below',
                 ),
               ),
-              materialsAsync.maybeWhen(
-                data: (materials) => Padding(
-                  padding: const EdgeInsets.only(right: AppSpacing.xs),
-                  child: StatusChip(label: '${materials.length} SCM codes'),
+              // Wraps to a second line on narrow windows instead of overflowing.
+              Flexible(
+                flex: 3,
+                child: Wrap(
+                  alignment: WrapAlignment.end,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: AppSpacing.xs,
+                  runSpacing: AppSpacing.xs,
+                  children: [
+                  materialsAsync.maybeWhen(
+                    data: (materials) => StatusChip(label: '${materials.length} SCM codes'),
+                    orElse: () => const SizedBox.shrink(),
+                  ),
+                  pendingSyncAsync.maybeWhen(
+                    data: (count) => count > 0
+                        ? StatusChip(label: '$count pending sync', tone: StatusChipTone.neutral)
+                        : const SizedBox.shrink(),
+                    orElse: () => const SizedBox.shrink(),
+                  ),
+                  const ShopPrefixChip(),
+                  const MasterExportButton(kind: MasterExportKind.materials),
+                  const TemplateDownloadButton(target: MasterImportTarget.materials),
+                  SecondaryButton(
+                    label: _isImporting ? 'Importing…' : 'Import Excel',
+                    icon: AppIcons.uploadFile,
+                    dense: true,
+                    onPressed: _isImporting ? null : _import,
+                  ),
+                  SecondaryButton(
+                    label: 'New',
+                    icon: AppIcons.add,
+                    dense: true,
+                    onPressed: () => ref.read(materialBrowserProvider.notifier).startNew(),
+                  ),
+                  ],
                 ),
-                orElse: () => const SizedBox.shrink(),
-              ),
-              pendingSyncAsync.maybeWhen(
-                data: (count) => count > 0
-                    ? Padding(
-                        padding: const EdgeInsets.only(right: AppSpacing.xs),
-                        child: StatusChip(label: '$count pending sync', tone: StatusChipTone.neutral),
-                      )
-                    : const SizedBox.shrink(),
-                orElse: () => const SizedBox.shrink(),
-              ),
-              const ShopPrefixChip(),
-              const SizedBox(width: AppSpacing.xs),
-              const MasterExportButton(kind: MasterExportKind.materials),
-              const TemplateDownloadButton(target: MasterImportTarget.materials),
-              const SizedBox(width: AppSpacing.xs),
-              SecondaryButton(
-                label: _isImporting ? 'Importing…' : 'Import Excel',
-                icon: AppIcons.uploadFile,
-                dense: true,
-                onPressed: _isImporting ? null : _import,
-              ),
-              const SizedBox(width: AppSpacing.xs),
-              SecondaryButton(
-                label: 'New',
-                icon: AppIcons.add,
-                dense: true,
-                onPressed: () => ref.read(materialBrowserProvider.notifier).startNew(),
               ),
             ],
           ),
@@ -463,7 +466,28 @@ class _MaterialsTableState extends ConsumerState<MaterialsTable> with BulkSelect
               ? Row(
                   children: [
                     SelectBox(value: selectedIds.contains(m.id), onChanged: () => toggleSelected(m.id)),
-                    _cell(m.scmCode, flex: 3, mono: true, selected: isSelected),
+                    // Barcode under the SCM code, so rows sharing one SCM
+                    // code (one per barcode) can be told apart.
+                    Expanded(
+                      flex: 3,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(m.scmCode,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.mono.copyWith(
+                                fontSize: 12,
+                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                color: AppColors.textPrimaryFor(context),
+                              )),
+                          if (m.barcode.isNotEmpty && m.barcode != m.scmCode)
+                            Text(m.barcode,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.mono.copyWith(fontSize: 10.5, color: AppColors.textMutedFor(context))),
+                        ],
+                      ),
+                    ),
                     Expanded(
                       flex: 6,
                       child: Column(

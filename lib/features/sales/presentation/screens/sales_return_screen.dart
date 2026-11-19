@@ -223,6 +223,7 @@ class _SalesReturnScreenState extends ConsumerState<SalesReturnScreen> {
       ref.invalidate(inventoryOverviewProvider);
       ref.invalidate(filteredInventoryOverviewProvider);
       ref.invalidate(dashboardSummaryProvider);
+      ref.invalidate(dashboardSnapshotProvider);
       refreshStockReports(ref.invalidate);
 
       ref.read(selectedSalesBillProvider.notifier).state = null;

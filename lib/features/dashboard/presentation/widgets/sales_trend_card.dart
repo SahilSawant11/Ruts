@@ -37,6 +37,7 @@ class SalesTrendCard extends ConsumerWidget {
               constraints: const BoxConstraints(),
               onPressed: () {
                 ref.invalidate(dashboardSummaryProvider);
+                ref.invalidate(dashboardSnapshotProvider);
                 ref.invalidate(inventoryOverviewProvider);
               },
             ),

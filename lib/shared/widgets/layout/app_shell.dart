@@ -70,7 +70,13 @@ class _AppShellState extends ConsumerState<AppShell> {
     super.didUpdateWidget(oldWidget);
     if (widget.navigationShell.currentIndex == 0 &&
         oldWidget.navigationShell.currentIndex != 0) {
-      ref.invalidate(dashboardSummaryProvider);
+      // didUpdateWidget runs mid-build: refreshing here made the dashboard
+      // cards rebuild each other during the draw. Refresh after the frame.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref.invalidate(dashboardSummaryProvider);
+        ref.invalidate(dashboardSnapshotProvider);
+      });
     }
   }
 
@@ -115,6 +121,7 @@ class _AppShellState extends ConsumerState<AppShell> {
 
     if (_matches(event, LogicalKeyboardKey.f1, PhysicalKeyboardKey.f1)) {
       ref.invalidate(dashboardSummaryProvider);
+      ref.invalidate(dashboardSnapshotProvider);
       _goBranchIfAllowed(0);
       return true;
     } else if (_matches(event, LogicalKeyboardKey.f2, PhysicalKeyboardKey.f2)) {
@@ -165,6 +172,7 @@ class _AppShellState extends ConsumerState<AppShell> {
   void _triggerBranch(int targetBranch) {
     if (targetBranch == 0) {
       ref.invalidate(dashboardSummaryProvider);
+      ref.invalidate(dashboardSnapshotProvider);
     }
     final currentBranch = widget.navigationShell.currentIndex;
     if (currentBranch == targetBranch) return;

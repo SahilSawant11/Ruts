@@ -17,7 +17,12 @@ abstract final class DbPaths {
 
   /// Demo transactions (fake sales history, sample materials) are only
   /// seeded in debug builds or when built with --dart-define=CASKLY_DEMO_DATA=true.
-  static bool get seedDemoData => kDebugMode || const bool.fromEnvironment('CASKLY_DEMO_DATA');
+  static bool get seedDemoData =>
+      seedDemoDataOverride ?? (kDebugMode || const bool.fromEnvironment('CASKLY_DEMO_DATA'));
+
+  /// End-to-end tests start from an empty store, even in debug builds.
+  @visibleForTesting
+  static bool? seedDemoDataOverride;
 
   static Directory? _rootOverride;
 

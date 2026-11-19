@@ -37,6 +37,9 @@ class _LicenseHolderFormCardState extends ConsumerState<LicenseHolderFormCard> {
   bool get _isBuyer => _category == LicenseHolderDto.frequentBuyer;
 
   int? _lastIndex;
+  // Which record the form shows: reload on a different record, not just a
+  // different list position (the list re-sorts after adds).
+  LicenseHolderDto? _lastRecord;
   bool? _lastIsNew;
 
   @override
@@ -128,7 +131,13 @@ class _LicenseHolderFormCardState extends ConsumerState<LicenseHolderFormCard> {
   Widget build(BuildContext context) {
     final browser = ref.watch(licenseHolderBrowserProvider);
 
-    if (_lastIndex != browser.index || _lastIsNew != browser.isNew) {
+    final record = browser.current;
+    // A different record, or fresh data for the same one while only viewing
+    // (never while editing, so typed changes are kept).
+    final recordChanged = record?.id != _lastRecord?.id ||
+        (!identical(record, _lastRecord) && !(browser.isEditing || browser.isNew));
+    if (recordChanged || (!browser.isNew && _lastIndex != browser.index) || _lastIsNew != browser.isNew) {
+      _lastRecord = record;
       _lastIndex = browser.index;
       _lastIsNew = browser.isNew;
       _populateFrom(browser.current);
