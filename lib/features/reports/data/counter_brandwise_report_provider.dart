@@ -145,6 +145,7 @@ Future<CounterBrandwiseReportDto?> _buildLocalCounterBrandwiseReport(AppDatabase
       final byTime = a.billDate.compareTo(b.billDate);
       return byTime != 0 ? byTime : (a.tpNo ?? '').compareTo(b.tpNo ?? '');
     });
+  final tpOrder = [for (final bill in billOrder) bill.tpNo?.trim() ?? ''];
   final tpQtyByMaterial = <String, List<(String?, int)>>{};
   for (final bill in billOrder) {
     for (final line in purchaseLines.where((l) => l.purchaseBillId == bill.id)) {
@@ -249,7 +250,7 @@ Future<CounterBrandwiseReportDto?> _buildLocalCounterBrandwiseReport(AppDatabase
     final items = <CounterBrandwiseReportItemDto>[];
     for (final name in sortedNames) {
       final agg = manufacturers[name]!;
-      final split = agg.tps.rows();
+      final split = agg.tps.rows(tpOrder);
       for (var k = 0; k < split.length; k++) {
         final first = k == 0;
         items.add(CounterBrandwiseReportItemDto(

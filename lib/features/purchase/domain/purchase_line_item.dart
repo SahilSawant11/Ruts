@@ -27,11 +27,15 @@ class PurchaseLineItem {
   final double discountPercent;
   final double taxPercent;
 
-  double get grossValue => rate * qty;
-  double get discountAmount => grossValue * discountPercent / 100;
-  double get taxableAmount => grossValue - discountAmount;
-  double get taxAmount => taxableAmount * taxPercent / 100;
-  double get amount => taxableAmount + taxAmount;
+  // Every money figure is kept in whole paise, so the line, the bill and
+  // the supplier's account always agree to the paisa.
+  static double _round2(double v) => (v * 100).roundToDouble() / 100;
+
+  double get grossValue => _round2(rate * qty);
+  double get discountAmount => _round2(grossValue * discountPercent / 100);
+  double get taxableAmount => _round2(grossValue - discountAmount);
+  double get taxAmount => _round2(taxableAmount * taxPercent / 100);
+  double get amount => _round2(taxableAmount + taxAmount);
 
   PurchaseLineItem copyWith({
     int? index,

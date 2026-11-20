@@ -1,3 +1,4 @@
+import '../../masters/data/models/supplier_dto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class PurchaseFormState {
@@ -54,6 +55,21 @@ class PurchaseFormState {
   /// Everything added on top of the items total (discount subtracts).
   double extraCharges(double itemsAmount) =>
       vatAmount(itemsAmount) + otherCharges + tcsAmount(itemsAmount) + loadingFreight - discount;
+
+  /// The bill's payable amount, in whole paise.
+  double netAmount(double itemsAmount) => _round2(itemsAmount + extraCharges(itemsAmount));
+
+  /// Why this bill can't be saved, or null when it can.
+  String? problem(double itemsAmount) {
+    if ([discount, vatPercent, otherCharges, tcsPercent, loadingFreight].any((v) => v < 0)) {
+      return 'Discount and charges cannot be negative.';
+    }
+    if (discount > itemsAmount + 0.005) {
+      return 'Discount (₹${discount.toStringAsFixed(2)}) is more than the items total '
+          '(₹${itemsAmount.toStringAsFixed(2)}).';
+    }
+    return null;
+  }
 
   PurchaseFormState copyWith({
     String? supplierId,
@@ -116,3 +132,20 @@ class PurchaseFormController extends StateNotifier<PurchaseFormState> {
 
 final purchaseFormControllerProvider =
     StateNotifierProvider<PurchaseFormController, PurchaseFormState>((ref) => PurchaseFormController());
+
+/// Starting discount % for a purchase line: the chosen supplier's discount,
+/// or (no supplier chosen yet) the drink's default distributor's, which the
+/// bill pre-fills anyway. 0 when neither is known. The person can still
+/// change it on the line.
+double supplierLineDiscount({
+  required String? selectedSupplierId,
+  required String defaultSupplierId,
+  required List<SupplierDto>? suppliers,
+}) {
+  final id = (selectedSupplierId ?? '').isNotEmpty ? selectedSupplierId! : defaultSupplierId;
+  if (id.isEmpty) return 0;
+  for (final s in suppliers ?? const <SupplierDto>[]) {
+    if (s.id == id) return s.disPercent.clamp(0, 100).toDouble();
+  }
+  return 0;
+}

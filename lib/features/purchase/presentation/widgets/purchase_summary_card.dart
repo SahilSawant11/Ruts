@@ -26,7 +26,7 @@ class PurchaseSummaryCard extends ConsumerWidget {
     final totalQty = cart.items.fold<int>(0, (sum, i) => sum + i.qty);
     final itemsAmount = cart.itemsAmount;
     final extraCharges = form.extraCharges(itemsAmount);
-    final netAmount = itemsAmount + extraCharges;
+    final netAmount = form.netAmount(itemsAmount);
 
     return Container(
       decoration: BoxDecoration(

@@ -40,10 +40,24 @@ class TpPurchaseSplit {
   }
 
   /// One entry per TP; a single empty entry when nothing was purchased.
-  List<TpPurchase> rows() {
+  /// [order] lists the day's TP numbers as they arrived: rows follow it, so
+  /// a line merged from several drinks still reads in arrival order.
+  List<TpPurchase> rows([List<String>? order]) {
     if (_byTp.isEmpty) return [(tpNo: null, qty: List<int>.filled(width, 0))];
+    final keys = _byTp.keys.toList();
+    if (order != null) {
+      int rank(String k) {
+        final i = order.indexOf(k);
+        return i < 0 ? order.length : i;
+      }
+      final firstSeen = {for (var i = 0; i < keys.length; i++) keys[i]: i};
+      keys.sort((a, b) {
+        final byOrder = rank(a).compareTo(rank(b));
+        return byOrder != 0 ? byOrder : firstSeen[a]!.compareTo(firstSeen[b]!);
+      });
+    }
     return [
-      for (final e in _byTp.entries) (tpNo: e.key.isEmpty ? null : e.key, qty: e.value),
+      for (final k in keys) (tpNo: k.isEmpty ? null : k, qty: _byTp[k]!),
     ];
   }
 }

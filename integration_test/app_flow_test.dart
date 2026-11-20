@@ -44,46 +44,80 @@ void main() {
     await t.pumpWidget(const ProviderScope(child: PosApp()));
     final d = Driver(t);
     d.captureErrors();
-    await d.until(() => d.shows('Enter Caskly'), timeout: const Duration(seconds: 30));
-
-    // Background records the checklist doesn't test, and a store that has
-    // finished first-run setup (onboarding needs a native file dialog).
-    final repo = d.c.read(mastersRepositoryProvider);
-    await t.runAsync(() async {
-      await d.db.setSetting('onboarding_complete', 'e2e');
-      await repo.createSupplier(const SaveSupplierRequest(
-          name: 'Magnum Traders', disPercent: 0, openingBalance: 0, balanceType: 'Credit'));
-      await repo.createManufacturer(const SaveManufacturerRequest(name: 'UB Group'));
-      await repo.createPacking(const SavePackagingRequest(name: '1000 ML', description: 'Litre bottle'));
-    });
-
-    // Sign in as the owner; first sign-in must set a new password.
-    await d.type('USERNAME', 'owner');
-    await d.type('PASSWORD', 'owner123');
-    await d.tapText('Enter Caskly');
-    await d.until(() => d.shows('Save password'), timeout: const Duration(seconds: 15));
-    await d.type('CURRENT PASSWORD', 'owner123');
-    await d.type('NEW PASSWORD', 'Owner@2026x');
-    await d.type('CONFIRM NEW PASSWORD', 'Owner@2026x');
-    await d.tapText('Save password');
-    await d.until(() => find.byType(MaterialApp).evaluate().isNotEmpty && !d.shows('Save password'),
-        timeout: const Duration(seconds: 15));
-    await d.wait(const Duration(seconds: 2));
-
-    // --dart-define=E2E_STAGES=ABC runs only those (A and B set up data later stages use).
-    const only = String.fromEnvironment('E2E_STAGES', defaultValue: 'ABCDEFGHZ');
-    final stages = {
-      'A': stageA, 'B': stageB, 'C': stageC, 'D': stageD, 'E': stageE,
-      'F': stageF, 'G': stageG, 'H': stageH, 'Z': stageNoPermit, 'X': stageX,
-    };
-    for (final e in stages.entries) {
-      if (only.contains(e.key)) await e.value(d);
+    try {
+      await _run(t, d);
+    } catch (e, st) {
+      // ignore: avoid_print
+      print(
+          'E2E_ABORTED $e\n${st.toString().split('\n').take(8).join('\n')}\nApp errors: ${d.flutterErrors.take(5)}');
+      rethrow;
+    } finally {
+      // Always hand error handling back, so a failure reports itself
+      // instead of hanging the run.
+      d.restoreErrors();
     }
-
-    d.restoreErrors();
-    await d.writeReport('build/e2e_report.json');
-    final failed = d.results.where((r) => r.status == 'fail').map((r) => r.id).toList();
-    // ignore: avoid_print
-    print('E2E: ${d.results.where((r) => r.status == 'pass').length} pass, ${failed.length} fail $failed');
   }, timeout: const Timeout(Duration(minutes: 30)));
+}
+
+Future<void> _run(WidgetTester t, Driver d) async {
+  await d.until(() => d.shows('Enter Caskly'),
+      timeout: const Duration(seconds: 30));
+
+  // Background records the checklist doesn't test, and a store that has
+  // finished first-run setup (onboarding needs a native file dialog).
+  final repo = d.c.read(mastersRepositoryProvider);
+  await t.runAsync(() async {
+    await d.db.setSetting('onboarding_complete', 'e2e');
+    await repo.createSupplier(const SaveSupplierRequest(
+        name: 'Magnum Traders',
+        disPercent: 0,
+        openingBalance: 0,
+        balanceType: 'Credit'));
+    await repo
+        .createManufacturer(const SaveManufacturerRequest(name: 'UB Group'));
+    await repo.createPacking(const SavePackagingRequest(
+        name: '1000 ML', description: 'Litre bottle'));
+  });
+
+  // Sign in as the owner; first sign-in must set a new password.
+  await d.type('USERNAME', 'owner');
+  await d.type('PASSWORD', 'owner123');
+  await d.tapText('Enter Caskly');
+  await d.until(() => d.shows('Save password'),
+      timeout: const Duration(seconds: 15));
+  await d.type('CURRENT PASSWORD', 'owner123');
+  await d.type('NEW PASSWORD', 'Owner@2026x');
+  await d.type('CONFIRM NEW PASSWORD', 'Owner@2026x');
+  await d.tapText('Save password');
+  await d.until(
+      () =>
+          find.byType(MaterialApp).evaluate().isNotEmpty &&
+          !d.shows('Save password'),
+      timeout: const Duration(seconds: 15));
+  await d.wait(const Duration(seconds: 2));
+
+  // --dart-define=E2E_STAGES=ABC runs only those (A and B set up data later stages use).
+  const only = String.fromEnvironment('E2E_STAGES', defaultValue: 'ABCDEFGHZ');
+  final stages = {
+    'A': stageA,
+    'B': stageB,
+    'C': stageC,
+    'D': stageD,
+    'E': stageE,
+    'F': stageF,
+    'G': stageG,
+    'H': stageH,
+    'Z': stageNoPermit,
+    'X': stageX,
+  };
+  for (final e in stages.entries) {
+    if (only.contains(e.key)) await e.value(d);
+  }
+
+  await d.writeReport('build/e2e_report.json');
+  final failed =
+      d.results.where((r) => r.status == 'fail').map((r) => r.id).toList();
+  // ignore: avoid_print
+  print(
+      'E2E: ${d.results.where((r) => r.status == 'pass').length} pass, ${failed.length} fail $failed');
 }

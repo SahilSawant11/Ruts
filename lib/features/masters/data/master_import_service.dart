@@ -10,6 +10,7 @@ import 'liquor_type.dart';
 import 'models/license_holder_dto.dart';
 import 'models/save_material_request.dart';
 import 'models/save_supplier_request.dart';
+import 'models/supplier_dto.dart';
 import '../../sales/data/models/material_dto.dart';
 import 'models/save_license_holder_request.dart';
 
@@ -375,9 +376,12 @@ class MasterImportService {
     final openingIndex = _findIndex(headerMap, const ['openingbalance', 'balance']);
     final balanceTypeIndex = _findIndex(headerMap, const ['balancetype']);
 
-    final existing = {
-      for (final supplier in await _repo.getSuppliers()) supplier.name.trim().toLowerCase(): true,
+    // Suppliers already on file (by name, ignoring case) are updated from
+    // the sheet; blank cells keep what's there. Unchanged rows are skipped.
+    final existing = <String, SupplierDto?>{
+      for (final supplier in await _repo.getSuppliers()) supplier.name.trim().toLowerCase(): supplier,
     };
+    var updated = 0;
 
     var imported = 0;
     var skipped = 0;
@@ -395,13 +399,55 @@ class MasterImportService {
         continue;
       }
 
-      if (existing.containsKey(name.toLowerCase())) {
-        skipped++;
-        continue;
-      }
-
       final rawBalanceType = _nullable(_valueAt(row, balanceTypeIndex)) ?? 'Credit';
       final balanceType = rawBalanceType.toLowerCase() == 'debit' ? 'Debit' : 'Credit';
+
+      if (existing.containsKey(name.toLowerCase())) {
+        final current = existing[name.toLowerCase()];
+        // Repeated within this file, or nothing to compare against.
+        if (current == null) {
+          skipped++;
+          continue;
+        }
+        String? text(int? index, String? old) => _nullable(_valueAt(row, index)) ?? old;
+        double number(int? index, double old) {
+          final raw = _valueAt(row, index).trim();
+          return raw.isEmpty ? old : _parseDouble(raw);
+        }
+
+        final next = SaveSupplierRequest(
+          name: current.name,
+          address: text(addressIndex, current.address),
+          contactNo: text(contactIndex, current.contactNo),
+          email: text(emailIndex, current.email),
+          vatNo: text(vatIndex, current.vatNo),
+          bankDetails: text(bankIndex, current.bankDetails),
+          disPercent: number(disIndex, current.disPercent),
+          openingBalance: number(openingIndex, current.openingBalance),
+          balanceType: _nullable(_valueAt(row, balanceTypeIndex)) == null ? current.balanceType : balanceType,
+        );
+        existing[name.toLowerCase()] = null;
+        final unchanged = next.address == current.address &&
+            next.contactNo == current.contactNo &&
+            next.email == current.email &&
+            next.vatNo == current.vatNo &&
+            next.bankDetails == current.bankDetails &&
+            next.disPercent == current.disPercent &&
+            next.openingBalance == current.openingBalance &&
+            next.balanceType == current.balanceType;
+        if (unchanged) {
+          skipped++;
+          continue;
+        }
+        try {
+          await _repo.updateSupplier(current.id, next);
+          updated++;
+        } on ApiException catch (e) {
+          failed++;
+          errors.add('Row ${rowNumber + 2}: ${e.message}');
+        }
+        continue;
+      }
 
       try {
         await _repo.createSupplier(
@@ -417,7 +463,7 @@ class MasterImportService {
             balanceType: balanceType,
           ),
         );
-        existing[name.toLowerCase()] = true;
+        existing[name.toLowerCase()] = null;
         imported++;
       } on ApiException catch (e) {
         failed++;
@@ -435,6 +481,7 @@ class MasterImportService {
       skipped: skipped,
       failed: failed,
       errors: errors,
+      updated: updated,
     );
   }
 

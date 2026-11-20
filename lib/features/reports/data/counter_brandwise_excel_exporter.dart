@@ -15,7 +15,7 @@ class CounterBrandwiseExcelExporter {
 
     final fileName = 'counter_brandwise_stock_report_${_dateStamp(report.reportDate)}.xls';
     final file = File('${outputDir.path}${Platform.pathSeparator}$fileName');
-    await file.writeAsString(_buildWorkbook(report));
+    await file.writeAsString(buildWorkbook(report));
     return file;
   }
 
@@ -45,7 +45,7 @@ class CounterBrandwiseExcelExporter {
   /// Name + TP + 4 size groups + middle name column.
   int get _totalColumns => 3 + 4 * _sizeCols;
 
-  String _buildWorkbook(CounterBrandwiseReportDto report) {
+  String buildWorkbook(CounterBrandwiseReportDto report) {
     _extras = report.extraSizes;
     final buf = StringBuffer()
       ..writeln('<?xml version="1.0"?>')

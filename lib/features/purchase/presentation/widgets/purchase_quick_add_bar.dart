@@ -8,6 +8,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/buttons/named_buttons.dart';
 import '../../../masters/data/masters_providers.dart';
+import '../../data/purchase_providers.dart';
 import '../../../sales/data/models/material_dto.dart';
 import '../../domain/purchase_line_item.dart';
 import '../purchase_cart_controller.dart';
@@ -225,7 +226,7 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
       _rateController.text =
           material.saleRate > 0 ? material.saleRate.toStringAsFixed(2) : '100.00';
       _taxController.text = material.taxPercent.toStringAsFixed(0);
-      _discountController.text = '0';
+      _discountController.text = _fmtPercent(supplierLineDiscount(selectedSupplierId: ref.read(purchaseFormControllerProvider).supplierId, defaultSupplierId: material.defaultSupplierId, suppliers: ref.read(suppliersProvider).valueOrNull));
       if (_batchController.text.trim().isEmpty) {
         _batchController.text = 'B-1';
       }
@@ -305,6 +306,11 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
     final packing = _packingController.text.trim().isEmpty
         ? _selectedMaterial!.packing
         : _packingController.text.trim();
+
+    if (discountPercent > 100) {
+      setState(() => _inlineError = 'Discount cannot be more than 100%.');
+      return;
+    }
 
     final cart = ref.read(purchaseCartControllerProvider);
     final lineItem = PurchaseLineItem(
@@ -1161,3 +1167,5 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
     );
   }
 }
+
+String _fmtPercent(double v) => v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toString();

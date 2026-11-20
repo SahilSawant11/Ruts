@@ -414,27 +414,52 @@ class LocalMastersRepository {
     return BulkDeleteResult(deleted: deleted, kept: kept);
   }
 
+  /// Saves imported holders. A row whose permit number (or, for frequent
+  /// buyers, name) is already on file updates that holder in place, keeping
+  /// its id and created date; anything else is added. Never matches by id:
+  /// a holder whose permit no was edited keeps its old id, and a new holder
+  /// given that old number must not replace them.
   Future<void> batchUpsertLicenseHolders(List<SaveLicenseHolderRequest> requests) async {
     final now = DateTime.now().toUtc();
-    final existing = await _db.select(_db.cachedLicenseHolders).get();
-    final buyerIdByName = {
-      for (final h in existing)
-        if (h.permitNo.trim().isEmpty) h.name.trim().toLowerCase(): h.id,
-    };
-    await _db.batch((batch) {
+    await _db.transaction(() async {
+      final existing = await _db.select(_db.cachedLicenseHolders).get();
+      final idByPermit = {
+        for (final h in existing)
+          if (h.permitNo.trim().isNotEmpty) h.permitNo.trim().toLowerCase(): h.id,
+      };
+      final buyerIdByName = {
+        for (final h in existing)
+          if (h.permitNo.trim().isEmpty) h.name.trim().toLowerCase(): h.id,
+      };
+      final takenIds = {for (final h in existing) h.id};
+
       for (final req in requests) {
         final permitNo = req.permitNo.trim();
         final name = req.name.trim();
         if (name.isEmpty) continue;
         if (permitNo.isEmpty && !req.isFrequentBuyer) continue;
-        final id = permitNo.isNotEmpty
-            ? permitNo
-            : buyerIdByName[name.toLowerCase()] ?? 'FB-${DbPaths.newId()}';
-        batch.insert(
-          _db.cachedLicenseHolders,
-          _holderCompanion(req).copyWith(id: Value(id), createdAt: Value(now), updatedAt: Value(now)),
-          mode: InsertMode.insertOrReplace,
-        );
+
+        final match = permitNo.isNotEmpty ? idByPermit[permitNo.toLowerCase()] : buyerIdByName[name.toLowerCase()];
+        if (match != null) {
+          await (_db.update(_db.cachedLicenseHolders)..where((t) => t.id.equals(match)))
+              .write(_holderCompanion(req).copyWith(updatedAt: Value(now)));
+          continue;
+        }
+
+        final id = permitNo.isEmpty
+            ? 'FB-${DbPaths.newId()}'
+            : takenIds.contains(permitNo)
+                ? 'LH-${DbPaths.newId()}'
+                : permitNo;
+        await _db.into(_db.cachedLicenseHolders).insert(
+              _holderCompanion(req).copyWith(id: Value(id), createdAt: Value(now), updatedAt: Value(now)),
+            );
+        takenIds.add(id);
+        if (permitNo.isNotEmpty) {
+          idByPermit[permitNo.toLowerCase()] = id;
+        } else {
+          buyerIdByName[name.toLowerCase()] = id;
+        }
       }
     });
   }
@@ -723,6 +748,7 @@ class LocalMastersRepository {
   }
 
   Future<MaterialDto> createMaterial(SaveMaterialRequest request) async {
+    _validateMaterialNumbers(request);
     await ensureManufacturerExists(request.manufacturer);
     final cat = normalizeLiquorCategory(request.category, request.liquorType);
     await ensureCategoryExists(cat.category);
@@ -748,6 +774,20 @@ class LocalMastersRepository {
     );
     await onMaterialsChanged?.call();
     return local;
+  }
+
+  /// Rates can't be negative and a discount must be 0–100 %, or every
+  /// bill of the item would come out wrong (form and Excel import alike).
+  void _validateMaterialNumbers(SaveMaterialRequest r) {
+    if (r.saleRate < 0 || r.wholesaleRate < 0) {
+      throw const ApiException('Rates cannot be negative.');
+    }
+    if (r.discountPercent < 0 || r.discountPercent > 100) {
+      throw ApiException('Discount must be between 0 and 100% (got ${r.discountPercent}).');
+    }
+    if (r.taxPercent < 0) {
+      throw const ApiException('Tax cannot be negative.');
+    }
   }
 
   /// The unique key for a new material. One SCM code can come with several
@@ -807,6 +847,7 @@ class LocalMastersRepository {
   }
 
   Future<MaterialDto> updateMaterial(String id, SaveMaterialRequest request) async {
+    _validateMaterialNumbers(request);
     await ensureManufacturerExists(request.manufacturer);
     final cat = normalizeLiquorCategory(request.category, request.liquorType);
     await ensureCategoryExists(cat.category);

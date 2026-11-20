@@ -146,10 +146,15 @@ class _ExtraChargesTotalsCardState extends ConsumerState<ExtraChargesTotalsCard>
       _showSnack('Select a distributor before saving.', isError: true);
       return;
     }
+    final problem = form.problem(cart.itemsAmount);
+    if (problem != null) {
+      _showSnack(problem, isError: true);
+      return;
+    }
 
     setState(() => _isSaving = true);
     try {
-      final netAmount = cart.itemsAmount + form.extraCharges(cart.itemsAmount);
+      final netAmount = form.netAmount(cart.itemsAmount);
 
       final request = CreatePurchaseRequest(
         supplierId: form.supplierId!,

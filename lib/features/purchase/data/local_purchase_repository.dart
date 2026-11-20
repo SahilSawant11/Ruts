@@ -280,7 +280,7 @@ class LocalPurchaseRepository {
               batchNo: item.batchNo,
               quantity: returnQty,
               rate: item.rate,
-              amount: item.qty == 0 ? 0 : item.amount * returnQty / item.qty,
+              amount: item.qty == 0 ? 0 : _round2(item.amount * returnQty / item.qty),
               isFullBillReturn: Value(isFullReturn),
               returnedBy: Value(returnedBy),
               deviceId: Value(deviceId),
@@ -305,7 +305,8 @@ class LocalPurchaseRepository {
                 ..where((tbl) => tbl.purchaseBillId.equals(billId) & tbl.lineNumber.equals(item.lineNumber)))
               .write(CachedPurchaseLineItemsCompanion(
             qty: Value(remainingQty),
-            amount: Value(remainingQty * item.rate),
+            // Keeps the line's discount and tax: its share of the amount paid.
+            amount: Value(_round2(item.amount - item.amount * returnQty / item.qty)),
           ));
         } else {
           await (_db.delete(_db.cachedPurchaseLineItems)
@@ -354,10 +355,25 @@ class LocalPurchaseRepository {
       final remainingLineItems = await (_db.select(_db.cachedPurchaseLineItems)
             ..where((tbl) => tbl.purchaseBillId.equals(billId)))
           .get();
-      final newTotalAmount = remainingLineItems.fold<double>(0.0, (sum, i) => sum + i.amount);
-      final newNetAmount = newTotalAmount - bill.discount + bill.vat + bill.stamp + bill.tcs + bill.loadingFreight;
+      // VAT is a % of (items − discount) and TCS a % of (goods + VAT), so
+      // both are worked out again on what's left; the bill discount, other
+      // charges and freight are fixed amounts and stay.
+      final oldItems = allLineItems.fold<double>(0.0, (sum, i) => sum + i.amount);
+      final newItems = _round2(remainingLineItems.fold<double>(0.0, (sum, i) => sum + i.amount));
+      final oldGoods = oldItems - bill.discount;
+      final newGoods = (newItems - bill.discount).clamp(0.0, double.infinity);
+      final vatRate = oldGoods > 0 ? bill.vat / oldGoods : 0.0;
+      final newVat = _round2(newGoods * vatRate);
+      final tcsBase = oldGoods + bill.vat;
+      final tcsRate = tcsBase > 0 ? bill.tcs / tcsBase : 0.0;
+      final newTcs = _round2((newGoods + newVat) * tcsRate);
+      final newNetAmount = _round2(newItems - bill.discount + newVat + bill.stamp + newTcs + bill.loadingFreight);
+      // totalAmount is saved equal to the net amount (see the Purchase screen).
+      final newTotalAmount = bill.totalAmount == bill.netAmount ? newNetAmount : newItems;
       await (_db.update(_db.cachedPurchaseBills)..where((tbl) => tbl.id.equals(billId))).write(
         CachedPurchaseBillsCompanion(
+          vat: Value(newVat),
+          tcs: Value(newTcs),
           totalAmount: Value(newTotalAmount),
           netAmount: Value(newNetAmount),
           updatedAt: Value(now.toUtc()),
@@ -639,3 +655,5 @@ class LocalPurchaseRepository {
     );
   }
 }
+
+double _round2(double v) => (v * 100).roundToDouble() / 100;

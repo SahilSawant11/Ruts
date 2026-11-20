@@ -75,6 +75,7 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
       _error = null;
       _lookupController.text = material.id;
       _taxController.text = material.taxPercent.toStringAsFixed(0);
+      _discountController.text = _fmtPercent(supplierLineDiscount(selectedSupplierId: ref.read(purchaseFormControllerProvider).supplierId, defaultSupplierId: material.defaultSupplierId, suppliers: ref.read(suppliersProvider).valueOrNull));
       if (_rateController.text.trim().isEmpty || _rateController.text.trim() == '0') {
         _rateController.text = material.saleRate.toStringAsFixed(0);
       }
@@ -138,6 +139,7 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
         if (material != null) {
           _lookupController.text = material.id;
           _taxController.text = material.taxPercent.toStringAsFixed(0);
+          _discountController.text = _fmtPercent(supplierLineDiscount(selectedSupplierId: ref.read(purchaseFormControllerProvider).supplierId, defaultSupplierId: material.defaultSupplierId, suppliers: ref.read(suppliersProvider).valueOrNull));
           if (_rateController.text.trim().isEmpty || _rateController.text.trim() == '0') {
             _rateController.text = material.saleRate.toStringAsFixed(0);
           }
@@ -252,6 +254,14 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
 
     if (qty <= 0 || rate <= 0) {
       setState(() => _error = 'Enter a valid quantity and rate.');
+      return;
+    }
+    if (discountPercent < 0 || discountPercent > 100) {
+      setState(() => _error = 'Discount must be between 0 and 100%.');
+      return;
+    }
+    if (taxPercent < 0) {
+      setState(() => _error = 'Tax cannot be negative.');
       return;
     }
 
@@ -659,3 +669,5 @@ class _AddMaterialLineDialogState extends ConsumerState<_AddMaterialLineDialog> 
     );
   }
 }
+
+String _fmtPercent(double v) => v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toString();
