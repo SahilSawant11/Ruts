@@ -32,11 +32,15 @@ class SaleLineItem {
   final double discountPercent;
   final double taxPercent;
 
-  double get grossValue => rate * qty;
-  double get discountAmount => grossValue * discountPercent / 100;
-  double get taxableAmount => grossValue - discountAmount;
-  double get taxAmount => taxableAmount * taxPercent / 100;
-  double get amount => taxableAmount + taxAmount;
+  // Money is kept in whole paise so the bill, its lines and the reports
+  // always agree to the paisa.
+  static double _round2(double v) => (v * 100).roundToDouble() / 100;
+
+  double get grossValue => _round2(rate * qty);
+  double get discountAmount => _round2(grossValue * discountPercent / 100);
+  double get taxableAmount => _round2(grossValue - discountAmount);
+  double get taxAmount => _round2(taxableAmount * taxPercent / 100);
+  double get amount => _round2(taxableAmount + taxAmount);
 
   /// Builds a new cart row from a freshly scanned material. `type` uses
   /// the material's category as a stand-in for the license/item-type

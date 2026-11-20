@@ -198,7 +198,7 @@ class LocalSalesRepository {
               materialName: item.materialName,
               quantity: returnQty,
               rate: item.rate,
-              amount: item.quantity == 0 ? 0 : item.amount * returnQty / item.quantity,
+              amount: item.quantity == 0 ? 0 : _round2(item.amount * returnQty / item.quantity),
               isFullBillReturn: Value(isFullReturn),
               returnedBy: Value(returnedBy),
               deviceId: Value(deviceId),
@@ -224,11 +224,11 @@ class LocalSalesRepository {
 
         if (returnQty < item.quantity) {
           final remainingQty = item.quantity - returnQty;
-          final base = remainingQty * item.rate;
-          final discAmt = base * (item.discountPercent / 100.0);
-          final taxable = base - discAmt;
-          final taxAmt = taxable * (item.taxPercent / 100.0);
-          final lineAmt = taxable + taxAmt;
+          final base = _round2(remainingQty * item.rate);
+          final discAmt = _round2(base * (item.discountPercent / 100.0));
+          final taxable = _round2(base - discAmt);
+          final taxAmt = _round2(taxable * (item.taxPercent / 100.0));
+          final lineAmt = _round2(taxable + taxAmt);
 
           await (_db.update(_db.cachedSaleLineItems)
                 ..where((tbl) => tbl.salesBillId.equals(billId) & tbl.lineNumber.equals(item.lineNumber)))
@@ -290,8 +290,8 @@ class LocalSalesRepository {
           .get();
       await (_db.update(_db.cachedSalesBills)..where((tbl) => tbl.id.equals(billId))).write(
         CachedSalesBillsCompanion(
-          totalAmount: Value(remainingLineItems.fold<double>(0.0, (sum, i) => sum + i.amount)),
-          totalTax: Value(remainingLineItems.fold<double>(0.0, (sum, i) => sum + i.taxAmount)),
+          totalAmount: Value(_round2(remainingLineItems.fold<double>(0.0, (sum, i) => sum + i.amount))),
+          totalTax: Value(_round2(remainingLineItems.fold<double>(0.0, (sum, i) => sum + i.taxAmount))),
           updatedAt: Value(now.toUtc()),
         ),
       );
@@ -636,3 +636,5 @@ class LocalSalesRepository {
   static String _isoDate(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 }
+
+double _round2(double v) => (v * 100).roundToDouble() / 100;

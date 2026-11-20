@@ -206,8 +206,9 @@ class _PurchaseTableRowState extends ConsumerState<_PurchaseTableRow> {
       message: 'Double-click to edit in quick add bar',
       waitDuration: const Duration(milliseconds: 500),
       child: GestureDetector(
+        // Loads the line into the quick-add bar for editing; it stays on
+        // the bill until the edit replaces it.
         onDoubleTap: () {
-          ref.read(purchaseCartControllerProvider.notifier).removeAt(widget.index);
           ref.read(purchaseEditingLineProvider.notifier).state = item;
         },
         child: MouseRegion(

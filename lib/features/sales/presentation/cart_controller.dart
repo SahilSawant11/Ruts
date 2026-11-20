@@ -16,10 +16,12 @@ class CartState {
   final String? scanError;
 
   int get totalQty => items.fold(0, (sum, i) => sum + i.qty);
-  double get taxableValue => items.fold(0, (sum, i) => sum + i.taxableAmount);
-  double get totalDiscount => items.fold(0, (sum, i) => sum + i.discountAmount);
-  double get totalTax => items.fold(0, (sum, i) => sum + i.taxAmount);
-  double get totalAmount => items.fold(0, (sum, i) => sum + i.amount);
+  double get taxableValue => _paise(items.fold(0, (sum, i) => sum + i.taxableAmount));
+  double get totalDiscount => _paise(items.fold(0, (sum, i) => sum + i.discountAmount));
+  double get totalTax => _paise(items.fold(0, (sum, i) => sum + i.taxAmount));
+  double get totalAmount => _paise(items.fold(0, (sum, i) => sum + i.amount));
+
+  static double _paise(double v) => (v * 100).roundToDouble() / 100;
   bool get isEmpty => items.isEmpty;
   bool get isLimitReached => items.length >= CartController.maxBottlesLimit || totalQty >= CartController.maxBottlesLimit;
   int get remainingBottles => (CartController.maxBottlesLimit - totalQty).clamp(0, CartController.maxBottlesLimit);

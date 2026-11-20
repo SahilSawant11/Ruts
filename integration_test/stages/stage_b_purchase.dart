@@ -1,3 +1,5 @@
+import 'package:pos_app/features/purchase/domain/purchase_line_item.dart';
+import 'package:pos_app/features/purchase/presentation/purchase_cart_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -153,5 +155,36 @@ Future<void> stageB(Driver d) async {
       await d.tapText('Cancel', last: true);
     }
     return open == 1 ? null : 'F2 opened $open dialogs.';
+  });
+
+  await d.step('b8', 'Editing a line keeps it on the bill and updates it in place', () async {
+    await d.go('/purchase');
+    final cart = d.c.read(purchaseCartControllerProvider.notifier);
+    if (d.c.read(purchaseCartControllerProvider).items.isNotEmpty) await clearBill(d);
+    await addLine(d, '111', 5);
+    await addLine(d, 'SCMW', 2);
+    List<PurchaseLineItem> lines() => d.c.read(purchaseCartControllerProvider).items;
+    if (lines().length != 2) return 'Could not set up two lines (${lines().length}).';
+    final first = lines().first;
+
+    // Double-click the first line, as a person does to edit it.
+    final row = find.text(first.material).first;
+    await d.t.tap(row);
+    await d.t.pump(const Duration(milliseconds: 60));
+    await d.t.tap(row);
+    await d.idle();
+    if (lines().length != 2) return 'Double-click took the line off the bill (${lines().length} lines left).';
+    if (!d.shows('Update Line 1')) return 'The bar does not say it is editing line 1.';
+
+    await d.typeFocused('9');
+    await d.tapText('Update Line 1');
+    final after = lines();
+    cart.clear();
+    await d.idle();
+    if (after.length != 2) return 'After the edit the bill has ${after.length} lines.';
+    if (after.first.materialId != first.materialId || after.first.qty != 9) {
+      return 'Line 1 is ${after.first.material} × ${after.first.qty}, expected ${first.material} × 9.';
+    }
+    return null;
   });
 }

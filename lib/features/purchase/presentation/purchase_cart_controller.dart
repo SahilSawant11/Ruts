@@ -6,7 +6,7 @@ class PurchaseCartState {
 
   final List<PurchaseLineItem> items;
 
-  double get itemsAmount => items.fold(0, (sum, i) => sum + i.amount);
+  double get itemsAmount => (items.fold<double>(0, (sum, i) => sum + i.amount) * 100).roundToDouble() / 100;
   bool get isEmpty => items.isEmpty;
 
   PurchaseCartState copyWith({List<PurchaseLineItem>? items}) {

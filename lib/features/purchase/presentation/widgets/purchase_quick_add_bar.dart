@@ -43,6 +43,11 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
   /// next Enter picks from them instead of re-checking.
   bool _pickingShared = false;
 
+  /// The bill line (0-based) being edited, after a double-click on it. The
+  /// line stays on the bill until the edit is added back, which replaces it
+  /// in place; abandoning the edit leaves it untouched.
+  int? _editingIndex;
+
   List<MaterialDto> _candidatesFor(String code) {
     final cache = ref.read(materialLookupCacheProvider);
     final listed = ref.read(materialsListProvider).asData?.value ?? const <MaterialDto>[];
@@ -218,6 +223,7 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
 
   void _onMaterialSelected(MaterialDto material) {
     _pickingShared = false;
+    _editingIndex = null; // a different drink is a new line, not the edit
     if (_portalController.isShowing) _portalController.hide();
     setState(() {
       _selectedMaterial = material;
@@ -326,7 +332,16 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
       taxPercent: taxPercent >= 0 ? taxPercent : 0,
     );
 
-    ref.read(purchaseCartControllerProvider.notifier).addLine(lineItem);
+    final cartNow = ref.read(purchaseCartControllerProvider);
+    final editing = _editingIndex;
+    _editingIndex = null;
+    if (editing != null &&
+        editing < cartNow.items.length &&
+        cartNow.items[editing].materialId == lineItem.materialId) {
+      ref.read(purchaseCartControllerProvider.notifier).updateLine(editing, lineItem);
+    } else {
+      ref.read(purchaseCartControllerProvider.notifier).addLine(lineItem);
+    }
     ref.read(purchaseFormControllerProvider.notifier).prefillSupplier(_selectedMaterial!.defaultSupplierId);
 
     // Reset input for next scan
@@ -374,6 +389,12 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
     final borderColor = AppColors.borderFor(context);
     final liveTotal = _computeLiveTotal();
 
+    // Lines removed or the bill cleared: the line numbers moved, so an edit
+    // in progress can no longer replace "its" line.
+    ref.listen<int>(purchaseCartControllerProvider.select((c) => c.items.length), (previous, next) {
+      if (next < (previous ?? 0) && _editingIndex != null) setState(() => _editingIndex = null);
+    });
+
     ref.listen<PurchaseLineItem?>(purchaseEditingLineProvider, (previous, next) {
       if (next != null) {
         final match = materials.cast<MaterialDto?>().firstWhere(
@@ -382,6 +403,7 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
         );
 
         setState(() {
+          _editingIndex = next.index - 1;
           _selectedMaterial = match ??
               MaterialDto(
                 id: next.materialId,
@@ -575,7 +597,7 @@ class _PurchaseQuickAddBarState extends ConsumerState<PurchaseQuickAddBar> {
 
               // Inline Add Line Button
               PrimaryButton(
-                label: 'Add Line',
+                label: _editingIndex != null ? 'Update Line ${_editingIndex! + 1}' : 'Add Line',
                 icon: AppIcons.add,
                 dense: true,
                 onPressed: _submitLine,
