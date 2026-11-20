@@ -26,6 +26,13 @@ Future<void> scan(Driver d, String code, {int qty = 1}) async {
     if (d.textOf(d.hinted(scanHint)) == code) break;
   }
   await d.enter();
+  // The Enter didn't reach the box (focus elsewhere for a frame): the code
+  // is still sitting there. Click back in and press Enter once more.
+  if (d.c.read(cartControllerProvider).totalQty == before && d.textOf(d.hinted(scanHint)) == code) {
+    await d.t.tap(d.hinted(scanHint), warnIfMissed: false);
+    await d.idle(200);
+    await d.enter();
+  }
   final after = d.c.read(cartControllerProvider).totalQty;
   lastScan = after > before
       ? 'added'

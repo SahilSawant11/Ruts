@@ -24,6 +24,7 @@ import 'stages/stage_d_returns.dart';
 import 'stages/stage_e_reports.dart';
 import 'stages/stage_fgh.dart';
 import 'stages/stage_x_probe.dart';
+import 'stages/stage_y_heavy.dart';
 import 'support/driver.dart';
 
 void main() {
@@ -109,6 +110,7 @@ Future<void> _run(WidgetTester t, Driver d) async {
     'H': stageH,
     'Z': stageNoPermit,
     'X': stageX,
+    'Y': stageY, // heavy days; moves the clock, so run alone: E2E_STAGES=Y
   };
   for (final e in stages.entries) {
     if (only.contains(e.key)) await e.value(d);

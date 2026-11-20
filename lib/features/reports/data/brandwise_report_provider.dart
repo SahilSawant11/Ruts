@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../../../core/clock.dart';
 
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,7 +30,7 @@ final brandwiseViewModeProvider = StateProvider<BrandwiseViewMode>((ref) {
 });
 
 final brandwiseReportDateProvider = StateProvider<DateTime>((ref) {
-  final now = DateTime.now();
+  final now = AppClock.now();
   return DateTime(now.year, now.month, now.day);
 });
 

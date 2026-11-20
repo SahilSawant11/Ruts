@@ -54,8 +54,7 @@ Future<void> stageF(Driver d) async {
   await d.step('f1', 'Materials Excel round-trip updates two rates', () async {
     await d.go('/material');
     await d.t.tap(find.byTooltip('Export to Excel').first);
-    await d.wait(const Duration(seconds: 1));
-    final snack = d.snacks();
+    final snack = await d.catchSnack(timeout: const Duration(seconds: 6));
     final m = RegExp(r'Exported to (.+?\.xlsx)').firstMatch(snack);
     if (m == null) return 'No export file reported: "$snack"';
     final file = File(m.group(1)!);

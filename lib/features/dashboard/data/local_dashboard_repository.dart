@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart' hide Column;
+import '../../../core/clock.dart';
 
 import '../../../core/config/app_config.dart';
 import '../../../core/local/app_database.dart';
@@ -43,7 +44,7 @@ class LocalDashboardRepository {
   // ── Period snapshot (KPIs, categories, top products, payment mix) ────
 
   Future<DashboardPeriodSnapshot> getPeriodSnapshot(DashboardPeriod period, {DateTime? now}) async {
-    final at = now ?? DateTime.now();
+    final at = now ?? AppClock.now();
     final (start, end) = period.range(at);
     final (prevStart, prevEnd) = period.previousRange(at);
 
@@ -154,7 +155,7 @@ class LocalDashboardRepository {
   // ── Period-independent summary (charts, heatmap, counts, recent) ─────
 
   Future<DashboardSummaryDto> _buildLocalSummary() async {
-    final now = DateTime.now();
+    final now = AppClock.now();
     final today = DateTime(now.year, now.month, now.day);
     final tomorrow = today.add(const Duration(days: 1));
     final yearStart = DateTime(today.year, today.month, today.day - 364);

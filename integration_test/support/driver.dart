@@ -146,11 +146,15 @@ class Driver {
     final f = field(label, index: index);
     expect(f, findsWidgets, reason: 'field "$label" not on screen');
     await t.ensureVisible(f.first);
-    // Click into the box first, as a person does, then type.
-    await t.tap(f.first, warnIfMissed: false);
-    await idle(100);
-    await t.enterText(f.first, text);
-    await idle(150);
+    // Click into the box first, as a person does, then type. A window that
+    // has just opened (or isn't in front yet) can miss the first try.
+    for (var attempt = 0; attempt < 3 && textOf(f.first) != text; attempt++) {
+      if (attempt > 0) await wait(const Duration(milliseconds: 500));
+      await t.tap(f.first, warnIfMissed: false);
+      await idle(100);
+      await t.enterText(f.first, text);
+      await idle(150);
+    }
     if (textOf(f.first) != text) {
       throw StateError('typed "$text" into "$label" but it shows "${textOf(f.first)}"');
     }

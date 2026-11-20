@@ -173,35 +173,9 @@ class _ScanAddItemCardState extends ConsumerState<ScanAddItemCard> {
     if (_portalController.isShowing) _portalController.hide();
     setState(() => _suggestions = []);
 
-    if (material.stockQty <= 0) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const AppIcon(AppIcons.block, color: Colors.white, size: 18),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Cannot sell "${material.name}": Out of stock / 0 on hand in inventory.',
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: AppColors.danger,
-            duration: const Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-      _barcodeController.clear();
-      _qtyController.text = '1';
-      _barcodeFocusNode.requestFocus();
-      return;
-    }
-
+    // No stock check here: the suggestion list's stock figure can be out of
+    // date (it refreshes only on some events), and refused real stock. The
+    // cart checks the live stock and says "out of stock" itself.
     _barcodeController.text = material.barcode.isNotEmpty ? material.barcode : material.id;
     await _submit();
   }

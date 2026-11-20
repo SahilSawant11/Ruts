@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../../../core/clock.dart';
 
 import 'package:drift/drift.dart' hide Column;
 
@@ -23,7 +24,7 @@ class LocalSalesRepository {
 
   Future<List<SalesBillDto>> getTodaysBills() async {
 
-    final now = DateTime.now();
+    final now = AppClock.now();
     final dayStart = DateTime(now.year, now.month, now.day);
     final dayEnd = dayStart.add(const Duration(days: 1));
 
@@ -175,7 +176,7 @@ class LocalSalesRepository {
       final returningItems = allLineItems.where((li) => selectedLineNumbers.contains(li.lineNumber)).toList();
       if (returningItems.isEmpty) return;
 
-      final now = DateTime.now();
+      final now = AppClock.now();
       final returnedQty = <int, int>{};
       for (final item in returningItems) {
         returnedQty[item.lineNumber] = (lineQuantities != null && lineQuantities.containsKey(item.lineNumber))
@@ -329,7 +330,7 @@ class LocalSalesRepository {
           SyncQueueItemsCompanion(
             status: const Value('processing'),
             lastError: const Value(null),
-            updatedAt: Value(DateTime.now().toUtc()),
+            updatedAt: Value(AppClock.now().toUtc()),
           ),
         );
 
@@ -358,7 +359,7 @@ class LocalSalesRepository {
           SyncQueueItemsCompanion(
             status: Value(nextStatus),
             lastError: Value(e.message),
-            updatedAt: Value(DateTime.now().toUtc()),
+            updatedAt: Value(AppClock.now().toUtc()),
           ),
         );
         if (e.statusCode == null) rethrow;
@@ -390,7 +391,7 @@ class LocalSalesRepository {
       );
       final payload = request.toJson()
         ..['billNo'] = billNo
-        ..['billDate'] = _isoDate(DateTime.now())
+        ..['billDate'] = _isoDate(AppClock.now())
         ..['deviceId'] = deviceId
         ..['clientId'] = localId;
       await _db.into(_db.syncQueueItems).insert(
@@ -400,7 +401,7 @@ class LocalSalesRepository {
               operation: 'create',
               payload: jsonEncode(payload),
               status: const Value('pending'),
-              updatedAt: Value(DateTime.now().toUtc()),
+              updatedAt: Value(AppClock.now().toUtc()),
             ),
           );
     });
@@ -466,7 +467,7 @@ class LocalSalesRepository {
     required String billNo,
     String? deviceId,
   }) async {
-    final now = DateTime.now();
+    final now = AppClock.now();
     final billDate = now;
 
     await _db.transaction(() async {

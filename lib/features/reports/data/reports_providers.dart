@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../masters/data/masters_providers.dart';
 import '../../../core/network/http_client_provider.dart';
@@ -26,12 +27,12 @@ final reportExcelExporterProvider = Provider<ScmUploadExporter>((ref) {
 });
 
 DateTime _startOfDay([DateTime? d]) {
-  final now = d ?? DateTime.now();
+  final now = d ?? AppClock.now();
   return DateTime(now.year, now.month, now.day, 0, 0, 0);
 }
 
 DateTime _endOfDay([DateTime? d]) {
-  final now = d ?? DateTime.now();
+  final now = d ?? AppClock.now();
   return DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
 }
 

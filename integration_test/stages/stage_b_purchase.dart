@@ -20,9 +20,17 @@ const _search = 'Scan barcode, type SCM code';
 
 /// Quick-add bar: scan/type [code], Enter, type [qty], press Add Line.
 Future<void> addLine(Driver d, String code, int qty) async {
-  await d.t.enterText(d.hinted(_search), code);
-  await d.idle(150);
-  await d.enter();
+  // Click into the search box (as the cashier's cursor is), scan, Enter;
+  // once picked, the quantity box has focus. One retry for a slow frame.
+  for (var attempt = 0; attempt < 2; attempt++) {
+    await d.t.tap(d.hinted(_search), warnIfMissed: false);
+    await d.idle(150);
+    await d.t.enterText(d.hinted(_search), code);
+    await d.idle(250);
+    await d.enter();
+    // Picked: the box now shows the drink's name instead of the code.
+    if (d.textOf(d.hinted(_search)) != code) break;
+  }
   await d.typeFocused('$qty');
   await d.tapText('Add Line');
 }

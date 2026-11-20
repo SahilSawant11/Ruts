@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../../../core/clock.dart';
 
 import 'package:drift/drift.dart' hide Column;
 
@@ -60,7 +61,7 @@ class LocalPurchaseRepository {
           SyncQueueItemsCompanion(
             status: const Value('processing'),
             lastError: const Value(null),
-            updatedAt: Value(DateTime.now().toUtc()),
+            updatedAt: Value(AppClock.now().toUtc()),
           ),
         );
 
@@ -88,7 +89,7 @@ class LocalPurchaseRepository {
           SyncQueueItemsCompanion(
             status: Value(nextStatus),
             lastError: Value(e.message),
-            updatedAt: Value(DateTime.now().toUtc()),
+            updatedAt: Value(AppClock.now().toUtc()),
           ),
         );
         if (e.statusCode == null) rethrow;
@@ -243,7 +244,7 @@ class LocalPurchaseRepository {
       final returningItems = allLineItems.where((li) => selectedLineNumbers.contains(li.lineNumber)).toList();
       if (returningItems.isEmpty) return;
 
-      final now = DateTime.now();
+      final now = AppClock.now();
       final returnedQty = <int, int>{
         for (final item in returningItems)
           item.lineNumber: (lineQuantities != null && lineQuantities.containsKey(item.lineNumber))
@@ -442,7 +443,7 @@ class LocalPurchaseRepository {
         billNo: request.billNo,
         deviceId: deviceId,
       );
-      final now = DateTime.now();
+      final now = AppClock.now();
       final payload = request.toJson()
         ..['billDate'] =
             '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}'
@@ -455,7 +456,7 @@ class LocalPurchaseRepository {
               operation: 'create',
               payload: jsonEncode(payload),
               status: const Value('pending'),
-              updatedAt: Value(DateTime.now().toUtc()),
+              updatedAt: Value(AppClock.now().toUtc()),
             ),
           );
     });
@@ -476,9 +477,9 @@ class LocalPurchaseRepository {
     String? billNo,
     String? deviceId,
   }) async {
-    final now = DateTime.now().toUtc();
+    final now = AppClock.now().toUtc();
     // Local calendar day (not the UTC day — in IST that's wrong before 05:30).
-    final local = DateTime.now();
+    final local = AppClock.now();
     final billDate = DateTime(local.year, local.month, local.day);
 
     await _db.transaction(() async {

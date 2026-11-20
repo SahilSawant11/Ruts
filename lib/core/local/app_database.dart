@@ -1,5 +1,6 @@
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
+import '../clock.dart';
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
@@ -559,7 +560,7 @@ class AppDatabase extends _$AppDatabase {
       return;
     }
     await _seedStarterData(demo: includeDemoData ?? DbPaths.seedDemoData);
-    await setSetting(_seededKey, DateTime.now().toUtc().toIso8601String());
+    await setSetting(_seededKey, AppClock.now().toUtc().toIso8601String());
   }
 
   static const _demoPurgedKey = 'demo_data_purged';
@@ -621,7 +622,7 @@ class AppDatabase extends _$AppDatabase {
         updates: {cachedSuppliers},
         updateKind: UpdateKind.delete,
       );
-      await setSetting(_demoPurgedKey, DateTime.now().toUtc().toIso8601String());
+      await setSetting(_demoPurgedKey, AppClock.now().toUtc().toIso8601String());
     });
     if (removed > 0) notifyUpdates({TableUpdate.onTable(cachedSalesBills, kind: UpdateKind.delete)});
     return removed;
@@ -650,7 +651,7 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> setSetting(String key, String value) async {
     await into(appSettings).insertOnConflictUpdate(
-      AppSettingsCompanion.insert(key: key, value: value, updatedAt: Value(DateTime.now().toUtc())),
+      AppSettingsCompanion.insert(key: key, value: value, updatedAt: Value(AppClock.now().toUtc())),
     );
   }
 
@@ -679,7 +680,7 @@ class AppDatabase extends _$AppDatabase {
 
   /// Preview of the next sales bill number (does not reserve it).
   Future<String> peekNextSalesBillNo([DateTime? at]) async {
-    final fy = financialYearCode(at ?? DateTime.now());
+    final fy = financialYearCode(at ?? AppClock.now());
     final current = int.tryParse(await getSetting('bill_seq_sales_$fy') ?? '') ?? 0;
     return formatSalesBillNo(fy, current + 1);
   }
@@ -687,7 +688,7 @@ class AppDatabase extends _$AppDatabase {
   /// Reserves the next sales bill number. Call inside the same transaction
   /// that inserts the bill so a failed save never burns or duplicates a number.
   Future<String> reserveNextSalesBillNo([DateTime? at]) async {
-    final fy = financialYearCode(at ?? DateTime.now());
+    final fy = financialYearCode(at ?? AppClock.now());
     final key = 'bill_seq_sales_$fy';
     final current = int.tryParse(await getSetting(key) ?? '') ?? 0;
     final next = current + 1;
@@ -718,7 +719,7 @@ class AppDatabase extends _$AppDatabase {
       return;
     }
 
-    final now = DateTime.now().toUtc();
+    final now = AppClock.now().toUtc();
 
     await transaction(() async {
       if (demo && !hasSuppliers) {
@@ -1136,7 +1137,7 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> _backfillPackings() async {
     final rows = await customSelect('SELECT packing FROM cached_materials').get();
-    final now = DateTime.now().toUtc();
+    final now = AppClock.now().toUtc();
     final packings = <String>{};
 
     for (final row in rows) {
@@ -1173,7 +1174,7 @@ class AppDatabase extends _$AppDatabase {
     final rows = await customSelect('SELECT id, name FROM cached_materials').get();
     if (rows.isEmpty) return;
 
-    final now = DateTime.now().toUtc();
+    final now = AppClock.now().toUtc();
     final manufacturers = <String>{};
     for (final row in rows) {
       final id = row.readNullable<String>('id');

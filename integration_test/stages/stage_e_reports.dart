@@ -16,6 +16,16 @@ File? savedFile(String snack) {
   return m == null ? null : File(m.group(1)!);
 }
 
+/// Clicks Export Excel and returns the "saved to …" message the moment it
+/// shows (it disappears after 2 s; waiting for the screen to settle can
+/// miss it).
+Future<String> exportExcel(Driver d) async {
+  final button = find.text('Export Excel').first;
+  await d.t.ensureVisible(button);
+  await d.t.tap(button);
+  return d.catchSnack(timeout: const Duration(seconds: 6));
+}
+
 Future<String> setActive(Driver d, String code, bool active) async {
   Future<bool?> isActive() async => (await d.t.runAsync(
           () => (d.db.select(d.db.cachedMaterials)..where((t) => t.id.equals(code))).getSingleOrNull()))
@@ -145,10 +155,9 @@ Future<void> stageE(Driver d) async {
 
   await d.step('e8', 'License Holders Excel export', () async {
     await d.tapText('Day-wise');
-    await d.tapText('Export Excel');
-    await d.wait(const Duration(seconds: 1));
-    final f = savedFile(d.snacks());
-    if (f == null || !f.existsSync()) return 'No file reported: "${d.snacks()}"';
+    final snack = await exportExcel(d);
+    final f = savedFile(snack);
+    if (f == null || !f.existsSync()) return 'No file reported: "$snack"';
     final sheet = Excel.decodeBytes(f.readAsBytesSync()).tables.values.first;
     f.deleteSync();
     final header = sheet.rows.first.map((c) => c?.value.toString()).toList();
@@ -158,10 +167,9 @@ Future<void> stageE(Driver d) async {
 
   await d.step('e9', 'SCM Daily Sale export: one row per SCM code', () async {
     await d.tapText('SCM Daily Sale', last: true);
-    await d.tapText('Export Excel');
-    await d.wait(const Duration(seconds: 1));
-    final f = savedFile(d.snacks());
-    if (f == null || !f.existsSync()) return 'No file reported: "${d.snacks()}"';
+    final snack = await exportExcel(d);
+    final f = savedFile(snack);
+    if (f == null || !f.existsSync()) return 'No file reported: "$snack"';
     final sheet = Excel.decodeBytes(f.readAsBytesSync()).tables.values.first;
     f.deleteSync();
     final scm1 = sheet.rows.skip(1).where((r) => r[1]?.value.toString() == 'SCM1').toList();
@@ -177,10 +185,9 @@ Future<void> stageE(Driver d) async {
 
   await d.step('e10', 'Brandwise Excel matches the screen', () async {
     await generateBrandwise(d);
-    await d.tapText('Export Excel');
-    await d.wait(const Duration(seconds: 1));
-    final f = savedFile(d.snacks());
-    if (f == null || !f.existsSync()) return 'No file reported: "${d.snacks()}"';
+    final snack = await exportExcel(d);
+    final f = savedFile(snack);
+    if (f == null || !f.existsSync()) return 'No file reported: "$snack"';
     final xml = f.readAsStringSync();
     f.deleteSync();
     final missing = ['TP-1', 'TP-2', '1000ml', 'KF STRONG 650'].where((s) => !xml.contains(s)).toList();
