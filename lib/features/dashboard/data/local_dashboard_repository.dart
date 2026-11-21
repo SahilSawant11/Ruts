@@ -22,7 +22,16 @@ class LocalDashboardRepository {
   final LocalSalesRepository _sales;
 
   static const _activeSale = "b.status <> 'returned'";
-  static const _activePurchase = 'p.returned_at IS NULL';
+
+  // Sales and purchases count on the bill's day as they were made; returns
+  // count on their own day (Sales Returns / Purchase Returns). A partial
+  // return lowers the bill's stored total, so its entries are added back.
+  // (Purchases: the line value is added back; VAT/TCS recomputed on a
+  // partial purchase return can leave that day a few rupees lower.)
+  static const _saleAsSold = '(b.total_amount + COALESCE((SELECT SUM(e.amount) FROM sales_return_entries e '
+      'WHERE e.sales_bill_id = b.id AND e.is_full_bill_return = 0), 0))';
+  static const _purchaseAsReceived = '(p.total_amount + COALESCE((SELECT SUM(e.amount) FROM purchase_return_entries e '
+      'WHERE e.purchase_bill_id = p.id AND e.is_full_bill_return = 0), 0))';
   static const _localDay = "date(b.bill_date, 'unixepoch', 'localtime')";
 
   Future<DashboardSummaryDto> getSummary() async {
@@ -66,8 +75,8 @@ class LocalDashboardRepository {
 
   Future<double> _salesTotal(DateTime s, DateTime e) async {
     final r = await _db.customSelect(
-      'SELECT COALESCE(SUM(b.total_amount), 0) AS v FROM cached_sales_bills b '
-      'WHERE $_activeSale AND b.bill_date >= ? AND b.bill_date < ?',
+      'SELECT COALESCE(SUM($_saleAsSold), 0) AS v FROM cached_sales_bills b '
+      'WHERE b.bill_date >= ? AND b.bill_date < ?',
       variables: [Variable.withDateTime(s), Variable.withDateTime(e)],
     ).getSingle();
     return r.read<double>('v');
@@ -75,7 +84,7 @@ class LocalDashboardRepository {
 
   Future<double> _billCount(DateTime s, DateTime e) async {
     final r = await _db.customSelect(
-      'SELECT COUNT(*) AS v FROM cached_sales_bills b WHERE $_activeSale AND b.bill_date >= ? AND b.bill_date < ?',
+      'SELECT COUNT(*) AS v FROM cached_sales_bills b WHERE b.bill_date >= ? AND b.bill_date < ?',
       variables: [Variable.withDateTime(s), Variable.withDateTime(e)],
     ).getSingle();
     return r.read<int>('v').toDouble();
@@ -83,8 +92,8 @@ class LocalDashboardRepository {
 
   Future<double> _purchaseTotal(DateTime s, DateTime e) async {
     final r = await _db.customSelect(
-      'SELECT COALESCE(SUM(p.total_amount), 0) AS v FROM cached_purchase_bills p '
-      'WHERE $_activePurchase AND p.bill_date >= ? AND p.bill_date < ?',
+      'SELECT COALESCE(SUM($_purchaseAsReceived), 0) AS v FROM cached_purchase_bills p '
+      'WHERE p.bill_date >= ? AND p.bill_date < ?',
       variables: [Variable.withDateTime(s), Variable.withDateTime(e)],
     ).getSingle();
     return r.read<double>('v');
@@ -162,8 +171,8 @@ class LocalDashboardRepository {
 
     // Daily sales totals + bill counts for the last 365 days, one query.
     final dailyRows = await _db.customSelect(
-      'SELECT $_localDay AS day, COUNT(*) AS bills, SUM(b.total_amount) AS amount '
-      'FROM cached_sales_bills b WHERE $_activeSale AND b.bill_date >= ? AND b.bill_date < ? GROUP BY day',
+      'SELECT $_localDay AS day, COUNT(*) AS bills, SUM($_saleAsSold) AS amount '
+      'FROM cached_sales_bills b WHERE b.bill_date >= ? AND b.bill_date < ? GROUP BY day',
       variables: [Variable.withDateTime(yearStart), Variable.withDateTime(tomorrow)],
     ).get();
     final salesByDay = <String, (int, double)>{
@@ -171,8 +180,8 @@ class LocalDashboardRepository {
     };
 
     final purchaseRows = await _db.customSelect(
-      "SELECT date(p.bill_date, 'unixepoch', 'localtime') AS day, SUM(p.total_amount) AS amount "
-      'FROM cached_purchase_bills p WHERE $_activePurchase AND p.bill_date >= ? AND p.bill_date < ? GROUP BY day',
+      "SELECT date(p.bill_date, 'unixepoch', 'localtime') AS day, SUM($_purchaseAsReceived) AS amount "
+      'FROM cached_purchase_bills p WHERE p.bill_date >= ? AND p.bill_date < ? GROUP BY day',
       variables: [Variable.withDateTime(yearStart), Variable.withDateTime(tomorrow)],
     ).get();
     final purchasesByDay = <String, double>{

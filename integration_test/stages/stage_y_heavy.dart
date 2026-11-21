@@ -61,14 +61,15 @@ const _catalog = <(String, String, String, String, String, double, int)>[
 const _permits = ['HLT-1', 'HLT-2', 'HLT-3', 'HLT-4'];
 
 class _Bill {
-  _Bill(this.id, this.day, this.lines, this.rates);
+  _Bill(this.id, this.day, this.lines, this.rates) : original = Map.of(lines);
   final String id;
   final int day;
   final Map<int, (String, int)> lines; // line no → (material, qty left)
+  final Map<int, (String, int)> original; // as sold
   final Map<String, double> rates;
   bool active = true;
   int get bottles => lines.values.fold(0, (s, l) => s + l.$2);
-  double get amount => lines.values.fold(0.0, (s, l) => s + l.$2 * rates[l.$1]!);
+  double get amountAsSold => original.values.fold(0.0, (s, l) => s + l.$2 * rates[l.$1]!);
 }
 
 /// Everything the screens should show, worked out independently.
@@ -77,10 +78,14 @@ class _Ledger {
   late final stock = Map.of(opening);
   final bills = <_Bill>[];
   final purchases = <String, (int, Map<String, int>, String)>{}; // id → (day, qty, TP)
+  final returns = <(int, String, int)>[]; // (return day, material, qty)
 
-  int soldOn(int d, String id) => bills
-      .where((b) => b.active && b.day == d)
-      .fold(0, (s, b) => s + b.lines.values.where((l) => l.$1 == id).fold(0, (t, l) => t + l.$2));
+  /// Returns count on the day they happen, never on the bill's day.
+  int soldOn(int d, String id) =>
+      bills
+          .where((b) => b.day == d)
+          .fold<int>(0, (s, b) => s + b.original.values.where((l) => l.$1 == id).fold<int>(0, (t, l) => t + l.$2)) -
+      returns.where((r) => r.$1 == d && r.$2 == id).fold<int>(0, (s, r) => s + r.$3);
   int boughtOn(int d, String id) => purchases.values.where((p) => p.$1 == d).fold(0, (s, p) => s + (p.$2[id] ?? 0));
   Map<String, int> closingOn(int d) {
     var prev = Map.of(opening);
@@ -90,7 +95,8 @@ class _Ledger {
     return prev;
   }
 
-  double salesOn(int d) => bills.where((b) => b.active && b.day == d).fold(0.0, (s, b) => s + b.amount);
+  /// Dashboard Sales: the day's bills as sold (returns are shown apart).
+  double salesOn(int d) => bills.where((b) => b.day == d).fold(0.0, (s, b) => s + b.amountAsSold);
 }
 
 Future<void> stageY(Driver d) async {
@@ -180,7 +186,10 @@ Future<void> stageY(Driver d) async {
               final b = pool[rng.nextInt(pool.length)];
               if (rng.nextInt(4) == 0) {
                 await sales.returnSalesBill(b.id);
-                b.lines.forEach((_, l) => ledger.stock[l.$1] = ledger.stock[l.$1]! + l.$2);
+                b.lines.forEach((_, l) {
+                  ledger.stock[l.$1] = ledger.stock[l.$1]! + l.$2;
+                  if (l.$2 > 0) ledger.returns.add((day, l.$1, l.$2));
+                });
                 b.active = false;
               } else {
                 final open = b.lines.entries.where((e) => e.value.$2 > 0).toList();
@@ -189,6 +198,7 @@ Future<void> stageY(Driver d) async {
                 await sales.returnSalesBill(b.id, lineQuantities: {line.key: q});
                 b.lines[line.key] = (line.value.$1, line.value.$2 - q);
                 ledger.stock[line.value.$1] = ledger.stock[line.value.$1]! + q;
+                ledger.returns.add((day, line.value.$1, q));
                 if (b.bottles == 0) b.active = false;
               }
             }

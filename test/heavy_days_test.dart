@@ -15,9 +15,9 @@
 //  - Excel builds for Brandwise and Counter Brandwise;
 // and for the last day: Dashboard (today / 7 days), and Inventory stock.
 //
-// Returns change the register of the day the bill was made (the bill
-// shrinks). The test checks reports against that rule, and also records
-// which already-printed days changed later, for the client.
+// Returns count on the day they happen, never on the bill's day: every
+// evening's register is captured as printed and must still be identical
+// at the end, after all the later returns.
 import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -85,11 +85,12 @@ const _permits = ['LT-1', 'LT-2', 'LT-3', 'LT-4', 'LT-5', 'LT-6'];
 
 /// What the test knows about one bill.
 class _Bill {
-  _Bill(this.id, this.day, this.permit, this.lines, this.rates);
+  _Bill(this.id, this.day, this.permit, this.lines, this.rates) : original = Map.of(lines);
   final String id;
   final int day;
   final String permit;
   final Map<int, (String, int)> lines; // line no → (material, qty left)
+  final Map<int, (String, int)> original; // as sold
   final Map<String, double> rates;
   bool active = true;
   int get bottles => lines.values.fold(0, (s, l) => s + l.$2);
@@ -129,7 +130,8 @@ void main() {
     final bills = <_Bill>[];
     var permitTurn = 0, tpSeq = 0, salesReturns = 0, fullReturns = 0, purchaseReturns = 0, rejected = 0;
     final saleReturnAmountByDay = List<double>.filled(_days, 0);
-    final printedSalesByDay = <int, Map<String, int>>{}; // what each day's register said that evening
+    final printedByDay = <int, String>{}; // each day's register as printed that evening
+    final returnsLog = <(int, String, String, int)>[]; // (return day, permit, material, qty)
 
     Future<BrandwiseReportDto> brandwiseFor(DateTime day) async {
       c.read(brandwiseReportDateProvider.notifier).state = day;
@@ -210,6 +212,7 @@ void main() {
             b.lines.forEach((_, l) {
               stock[l.$1] = stock[l.$1]! + l.$2;
               saleReturnAmountByDay[d] += l.$2 * b.rates[l.$1]!;
+              if (l.$2 > 0) returnsLog.add((d, b.permit, l.$1, l.$2));
             });
             b.active = false;
             fullReturns++;
@@ -222,6 +225,7 @@ void main() {
             b.lines[line.key] = (line.value.$1, left);
             stock[line.value.$1] = stock[line.value.$1]! + q;
             saleReturnAmountByDay[d] += q * b.rates[line.value.$1]!;
+            returnsLog.add((d, b.permit, line.value.$1, q));
             if (b.bottles == 0) b.active = false; // last bottle back: the bill is fully returned
             salesReturns++;
           }
@@ -243,17 +247,16 @@ void main() {
       }
 
       // The evening register, as it would be printed.
-      final printed = await brandwiseFor(date);
-      printedSalesByDay[d] = {
-        for (final cat in printed.categories)
-          for (final r in cat.items.where((r) => !r.isTpContinuation)) r.brandName: r.sale.total,
-      };
+      printedByDay[d] = BrandwiseExcelExporter().buildWorkbook(await brandwiseFor(date));
     }
 
     // ── What every report should say ───────────────────────────────────
-    int soldOn(int d, String id) => bills
-        .where((b) => b.active && b.day == d)
-        .fold(0, (s, b) => s + b.lines.values.where((l) => l.$1 == id).fold(0, (t, l) => t + l.$2));
+    // Sold on the bill's day as sold; bottles brought back on the return day.
+    int soldOn(int d, String id) =>
+        bills
+            .where((b) => b.day == d)
+            .fold<int>(0, (s, b) => s + b.original.values.where((l) => l.$1 == id).fold<int>(0, (t, l) => t + l.$2)) -
+        returnsLog.where((r) => r.$1 == d && r.$3 == id).fold<int>(0, (s, r) => s + r.$4);
     int boughtOn(int d, String id) =>
         purchaseLines.values.where((p) => p.$1 == d).fold(0, (s, p) => s + (p.$2[id] ?? 0));
     final closing = <int, Map<String, int>>{};
@@ -269,7 +272,6 @@ void main() {
       expect(await env.stockOf(id), stock[id], reason: 'inventory stock of $id');
     }
 
-    final changedLater = <String>[];
     for (var d = 0; d < _days; d++) {
       final date = DateTime(day0.year, day0.month, day0.day + d);
       final r = await brandwiseFor(date);
@@ -310,7 +312,6 @@ void main() {
         final tps = purchaseLines.values.where((p) => p.$1 == d && (p.$2[id] ?? 0) > 0).map((p) => p.$3).toSet();
         if (tps.isNotEmpty) expect(rowsOfBrand.map((t) => t.tpNo).toSet(), tps, reason: 'day $d ${m.$2} TP rows');
 
-        if ((printedSalesByDay[d]![m.$2] ?? 0) != want.sold) changedLater.add('day ${d + 1} ${m.$2}');
       }
 
       // Counter Brandwise: every section subtotal equals Brandwise's.
@@ -346,14 +347,15 @@ void main() {
       // License Holder report for the day.
       final lh = await LicenseHolderReport.build(env.db, date, DateTime(date.year, date.month, date.day, 23, 59, 59, 999));
       for (final p in _permits) {
-        final mine = bills.where((b) => b.active && b.day == d && b.permit == p);
+        final mine = bills.where((b) => b.day == d && b.permit == p).toList();
+        final back = returnsLog.where((r) => r.$1 == d && r.$2 == p).fold<int>(0, (s, r) => s + r.$4);
         final row = lh.rows.where((row) => row.permitNo == p);
-        final bottles = mine.fold<int>(0, (s, b) => s + b.bottles);
-        if (bottles == 0 && mine.isEmpty) {
+        if (mine.isEmpty && back == 0) {
           expect(row, isEmpty, reason: 'day $d $p');
           continue;
         }
-        expect(row.single.qtyBottles, bottles, reason: 'day $d License Holder $p bottles');
+        final bottles = mine.fold<int>(0, (s, b) => s + b.original.values.fold<int>(0, (t, l) => t + l.$2)) - back;
+        expect(row.single.qtyBottles, bottles, reason: 'day $d License Holder $p bottles (sold − brought back)');
         expect(row.single.bills, mine.length, reason: 'day $d License Holder $p bills');
       }
 
@@ -365,15 +367,21 @@ void main() {
       }
     }
 
+    // ── Every evening's register is still exactly as printed ───────────
+    for (var d = 0; d < _days; d++) {
+      final now = BrandwiseExcelExporter().buildWorkbook(await brandwiseFor(DateTime(day0.year, day0.month, day0.day + d)));
+      expect(now, printedByDay[d], reason: 'day ${d + 1}\'s register changed after it was printed');
+    }
+
     // ── Dashboard on the last evening ─────────────────────────────────
     final dash = LocalDashboardRepository(env.db, DashboardApiRepository(http.Client()), env.sales);
     double amountOn(int d) => bills
-        .where((b) => b.active && b.day == d)
-        .fold(0.0, (s, b) => s + b.lines.values.fold(0.0, (t, l) => t + l.$2 * b.rates[l.$1]!));
+        .where((b) => b.day == d)
+        .fold(0.0, (s, b) => s + b.original.values.fold(0.0, (t, l) => t + l.$2 * b.rates[l.$1]!));
     final today = await dash.getPeriodSnapshot(DashboardPeriod.today, now: clock);
     expect(today.sales.current, closeTo(amountOn(_days - 1), 0.01), reason: 'Dashboard today');
     expect(today.sales.previous, closeTo(amountOn(_days - 2), 0.01), reason: 'Dashboard yesterday');
-    expect(today.billCount.current, bills.where((b) => b.active && b.day == _days - 1).length);
+    expect(today.billCount.current, bills.where((b) => b.day == _days - 1).length);
     expect(today.salesReturns.current, closeTo(saleReturnAmountByDay[_days - 1], 0.01), reason: 'returns today');
     final week = await dash.getPeriodSnapshot(DashboardPeriod.week, now: clock);
     expect(week.sales.current, closeTo([for (var d = 0; d < _days; d++) amountOn(d)].reduce((a, b) => a + b), 0.01));
@@ -382,8 +390,7 @@ void main() {
     print('Heavy days: ${bills.length} bills ($rejected refused for stock), $tpSeq purchases, '
         '$salesReturns partial + $fullReturns full sales returns, $purchaseReturns purchase returns, '
         'in ${sw.elapsedMilliseconds} ms.\n'
-        'Registers that changed after their evening (returns of that day\'s bills later): '
-        '${changedLater.isEmpty ? 'none' : changedLater.length} ${changedLater.take(6).toList()}');
+        '${returnsLog.length} returned lines, each counted on its return day.');
 
     c.dispose();
     await env.dispose();

@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:drift/drift.dart' hide Column;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
@@ -16,6 +15,7 @@ import 'brandwise_sections.dart';
 import 'models/brandwise_report_dto.dart';
 import 'models/counter_brandwise_report_dto.dart';
 import 'stock_as_of.dart';
+import 'stock_movements.dart';
 
 // ---------------------------------------------------------------------------
 //  Providers
@@ -97,61 +97,20 @@ Future<CounterBrandwiseReportDto?> _buildLocalCounterBrandwiseReport(AppDatabase
   final materials = rawMaterials; // inactive ones are dropped below unless they moved
   if (materials.isEmpty) return null;
 
-  // Load sales for this day
-  // Fully returned bills are kept for audit but never counted.
-  final saleLines = await (db.select(db.cachedSaleLineItems)
-        ..where((t) => db.lineOfActiveBillBetween(t, start, endExclusive)))
-      .get();
-
-  // Load purchases for this day
-  final purchaseBills = await (db.select(db.cachedPurchaseBills)
-        ..where((t) =>
-            db.isActivePurchaseBill(t) &
-            t.billDate.isBiggerOrEqualValue(start) &
-            t.billDate.isSmallerThanValue(endExclusive)))
-      .get();
-  final purchaseBillIds = purchaseBills.map((b) => b.id).toList();
-
-  List<CachedPurchaseLineItem> purchaseLines = [];
-  if (purchaseBillIds.isNotEmpty) {
-    purchaseLines = await (db.select(db.cachedPurchaseLineItems)
-          ..where((t) => t.purchaseBillId.isIn(purchaseBillIds)))
-        .get();
-  }
+  // What moved this day. Returns count on the day they happen (a sale
+  // return lowers that day's Sale; goods sent back lower that day's
+  // Purchase, as a minus row under their TP), never on the original bill's
+  // day, so a printed register never changes later.
+  final moves = await stockMovements(db, start, endExclusive);
 
   // Stock at the end of the report day (not today's stock), so past
   // days report their own closing and opening balances.
   final stockByMaterialId = await closingStockAsOf(db, endExclusive);
 
-  // Aggregate sale qty per materialId
-  final saleQtyByMaterial = <String, int>{};
-  for (final line in saleLines) {
-    final mid = line.materialId ?? '';
-    if (mid.isEmpty) continue;
-    saleQtyByMaterial[mid] = (saleQtyByMaterial[mid] ?? 0) + line.quantity;
-  }
-
-  // Aggregate purchase qty per materialId
-  final purchaseQtyByMaterial = <String, int>{};
-  for (final line in purchaseLines) {
-    purchaseQtyByMaterial[line.materialId] =
-        (purchaseQtyByMaterial[line.materialId] ?? 0) + line.qty;
-  }
-
-  // TP numbers of the day's purchases, per materialId, in bill-time order
-  // (ties broken by TP No so the register is stable).
-  final billOrder = [...purchaseBills]
-    ..sort((a, b) {
-      final byTime = a.billDate.compareTo(b.billDate);
-      return byTime != 0 ? byTime : (a.tpNo ?? '').compareTo(b.tpNo ?? '');
-    });
-  final tpOrder = [for (final bill in billOrder) bill.tpNo?.trim() ?? ''];
-  final tpQtyByMaterial = <String, List<(String?, int)>>{};
-  for (final bill in billOrder) {
-    for (final line in purchaseLines.where((l) => l.purchaseBillId == bill.id)) {
-      tpQtyByMaterial.putIfAbsent(line.materialId, () => []).add((bill.tpNo, line.qty));
-    }
-  }
+  final saleQtyByMaterial = {for (final id in moves.materialIds) id: moves.netSale(id)};
+  final purchaseQtyByMaterial = {for (final id in moves.materialIds) id: moves.netPurchase(id)};
+  final tpQtyByMaterial = moves.tpRows;
+  final tpOrder = moves.tpOrder;
 
   // Build rows grouped by category, aggregated by manufacturer
   // Key: category display name → manufacturer name → aggregated quantities

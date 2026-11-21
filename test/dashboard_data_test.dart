@@ -25,7 +25,7 @@ void main() {
         .write(CachedSalesBillsCompanion(billDate: Value(when), createdAt: Value(when)));
   }
 
-  test('today vs yesterday uses real sales and returns, excludes returned bills', () async {
+  test('today vs yesterday: bills count as sold on their day, returns on the return day', () async {
     final now = DateTime.now();
     final yesterday = DateTime(now.year, now.month, now.day - 1, 12);
 
@@ -37,11 +37,12 @@ void main() {
     await env.sales.returnSalesBill(back.id);
 
     final s = await dash.getPeriodSnapshot(DashboardPeriod.today);
-    expect(s.sales.current, 300);
+    expect(s.sales.current, 500, reason: 'both of today\'s bills, as sold');
     expect(s.sales.previous, 400);
-    expect(s.sales.deltaPercent, closeTo(-25, 0.001));
-    expect(s.billCount.current, 1);
-    expect(s.salesReturns.current, 200);
+    expect(s.sales.deltaPercent, closeTo(25, 0.001));
+    expect(s.billCount.current, 2);
+    expect(s.salesReturns.current, 200, reason: 'returned today');
+    expect(s.sales.current - s.salesReturns.current, 300, reason: 'net for today');
     expect(s.salesReturns.deltaPercent, isNull, reason: 'nothing to compare with → no invented %');
     expect(s.purchases.current, 0);
     expect(s.topSellingItems.single.materialName, 'Item A');

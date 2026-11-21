@@ -540,11 +540,12 @@ class AppDatabase extends _$AppDatabase {
     DateTime start,
     DateTime end, {
     bool endInclusive = false,
+    bool includeReturned = false,
   }) {
     final b = cachedSalesBills;
     final q = selectOnly(b)
       ..addColumns([b.id])
-      ..where(isActiveSaleBill(b) &
+      ..where((includeReturned ? const Constant(true) : isActiveSaleBill(b)) &
           b.billDate.isBiggerOrEqualValue(start) &
           (endInclusive ? b.billDate.isSmallerOrEqualValue(end) : b.billDate.isSmallerThanValue(end)));
     return line.salesBillId.isInQuery(q);

@@ -40,41 +40,50 @@ class LicenseHolderReport {
   double get totalAmount => rows.fold(0.0, (s, r) => s + r.amount);
 
   /// Quantity sold per license number over [from]..[to] (both inclusive),
-  /// from the sale bills that carry that permit. Returned bills don't count.
-  /// Sorted by quantity, highest first.
+  /// from the sale bills that carry that permit. A bill counts on its own
+  /// day as it was sold; bottles the customer brings back come off on the
+  /// day of the return (so a past period's figures never change). Sorted
+  /// by quantity, highest first.
   static Future<LicenseHolderReport> build(AppDatabase db, DateTime from, DateTime to) async {
-    final bills = await (db.select(db.cachedSalesBills)
-          ..where((t) =>
-              db.isActiveSaleBill(t) &
-              t.billDate.isBiggerOrEqualValue(from) &
-              t.billDate.isSmallerOrEqualValue(to)))
-        .get();
-    final lines = await (db.select(db.cachedSaleLineItems)
-          ..where((t) => db.lineOfActiveBillBetween(t, from, to, endInclusive: true)))
-        .get();
+    final range = [Variable.withDateTime(from), Variable.withDateTime(to)];
     final holders = {
       for (final h in await db.select(db.cachedLicenseHolders).get())
         if (h.permitNo.trim().isNotEmpty) h.permitNo.trim(): h,
     };
+    final agg = <String, _Agg>{};
+    _Agg of(String? permit, String? name) =>
+        agg.putIfAbsent(permit!.trim(), () => _Agg(name?.trim() ?? ''));
 
-    final cases = <String, int>{};
-    final bottles = <String, int>{};
-    final amounts = <String, double>{};
-    for (final l in lines) {
-      amounts[l.salesBillId] = (amounts[l.salesBillId] ?? 0) + l.amount;
-      cases[l.salesBillId] = (cases[l.salesBillId] ?? 0) + l.qtyCase;
-      bottles[l.salesBillId] = (bottles[l.salesBillId] ?? 0) + l.quantity;
+    // Bills of the period, as sold (current lines + what partial returns took off).
+    for (final r in await db.customSelect('''
+      SELECT b.permit_no AS permit, b.permit_holder_name AS name, COUNT(*) AS bills,
+        COALESCE(SUM((SELECT SUM(l.qty_case) FROM cached_sale_line_items l WHERE l.sales_bill_id = b.id)), 0) AS cases,
+        COALESCE(SUM((SELECT SUM(l.quantity) FROM cached_sale_line_items l WHERE l.sales_bill_id = b.id)), 0)
+          + COALESCE(SUM((SELECT SUM(e.quantity) FROM sales_return_entries e
+              WHERE e.sales_bill_id = b.id AND e.is_full_bill_return = 0)), 0) AS bottles,
+        COALESCE(SUM((SELECT SUM(l.amount) FROM cached_sale_line_items l WHERE l.sales_bill_id = b.id)), 0)
+          + COALESCE(SUM((SELECT SUM(e.amount) FROM sales_return_entries e
+              WHERE e.sales_bill_id = b.id AND e.is_full_bill_return = 0)), 0) AS amount
+      FROM cached_sales_bills b
+      WHERE TRIM(COALESCE(b.permit_no, '')) <> '' AND b.bill_date >= ? AND b.bill_date <= ?
+      GROUP BY TRIM(b.permit_no)''', variables: range).get()) {
+      final a = of(r.read<String>('permit'), r.readNullable<String>('name'));
+      a.bills += r.read<int>('bills');
+      a.qtyCase += r.read<int>('cases');
+      a.qtyBottles += r.read<int>('bottles');
+      a.amount += r.read<double>('amount');
     }
 
-    final agg = <String, _Agg>{};
-    for (final b in bills) {
-      final permit = b.permitNo?.trim() ?? '';
-      if (permit.isEmpty) continue;
-      final a = agg.putIfAbsent(permit, () => _Agg(b.permitHolderName?.trim() ?? ''));
-      a.bills++;
-      a.qtyCase += cases[b.id] ?? 0;
-      a.qtyBottles += bottles[b.id] ?? 0;
-      a.amount += amounts[b.id] ?? 0;
+    // Bottles brought back during the period, whatever day the bill was.
+    for (final r in await db.customSelect('''
+      SELECT b.permit_no AS permit, b.permit_holder_name AS name,
+        SUM(e.quantity) AS bottles, SUM(e.amount) AS amount
+      FROM sales_return_entries e JOIN cached_sales_bills b ON b.id = e.sales_bill_id
+      WHERE TRIM(COALESCE(b.permit_no, '')) <> '' AND e.returned_at >= ? AND e.returned_at <= ?
+      GROUP BY TRIM(b.permit_no)''', variables: range).get()) {
+      final a = of(r.read<String>('permit'), r.readNullable<String>('name'));
+      a.qtyBottles -= r.read<int>('bottles');
+      a.amount -= r.read<double>('amount');
     }
 
     final rows = [

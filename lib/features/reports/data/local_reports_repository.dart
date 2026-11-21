@@ -60,31 +60,33 @@ class LocalReportsRepository {
     final normalizedCategory = category?.trim();
     final normalizedManufacturer = manufacturer?.trim();
 
+    // Every bill of the period counts, as sold; bottles brought back count
+    // (as minus) on the day of the return, so a past period never changes.
     final bills = await (_db.select(_db.cachedSalesBills)
           ..where((tbl) =>
-              _db.isActiveSaleBill(tbl) &
               tbl.billDate.isBiggerOrEqualValue(start) &
               tbl.billDate.isSmallerOrEqualValue(end)))
         .get();
 
-    if (bills.isEmpty) {
-      return SalesReportDto(
-        fromDate: start,
-        toDate: DateTime(to.year, to.month, to.day),
-        totalBills: 0,
-        distinctBrands: 0,
-        totalQtyCase: 0,
-        totalQtyLoose: 0,
-        totalAmount: 0,
-        totalTax: 0,
-        items: const [],
-      );
-    }
-
     final lines = await (_db.select(_db.cachedSaleLineItems)
-          ..where((tbl) => _db.lineOfActiveBillBetween(tbl, start, end, endInclusive: true)))
+          ..where((tbl) => _db.lineOfActiveBillBetween(tbl, start, end, endInclusive: true, includeReturned: true)))
         .get();
     final materials = await _db.select(_db.cachedMaterials).get();
+    final materialById = {for (final m in materials) m.id: m};
+    final billIds = {for (final b in bills) b.id};
+    // What partial returns took off this period's bills (added back: as sold)…
+    final takenOff = (await (_db.select(_db.salesReturnEntries)
+              ..where((e) => e.isFullBillReturn.equals(false)))
+            .get())
+        .where((e) => billIds.contains(e.salesBillId));
+    // …and every bottle brought back during the period (taken off).
+    final broughtBack = await (_db.select(_db.salesReturnEntries)
+          ..where((e) => e.returnedAt.isBiggerOrEqualValue(start) & e.returnedAt.isSmallerOrEqualValue(end)))
+        .get();
+    final entryLines = [
+      for (final e in takenOff) (e, 1),
+      for (final e in broughtBack) (e, -1),
+    ];
     final manufacturerByMaterialId = {
       for (final material in materials) material.id: material.manufacturer,
     };
@@ -123,6 +125,26 @@ class LocalReportsRepository {
       agg.amount += line.amount;
     }
 
+    for (final (e, sign) in entryLines) {
+      final mat = materialById[e.materialId ?? ''];
+      final type = mat?.category ?? '';
+      if (normalizedCategory != null && normalizedCategory.isNotEmpty && type != normalizedCategory) continue;
+      final manufacturerName = mat?.manufacturer ?? manufacturerByBarcode[e.barcodeNo] ?? '';
+      if (normalizedManufacturer != null &&
+          normalizedManufacturer.isNotEmpty &&
+          manufacturerName != normalizedManufacturer) {
+        continue;
+      }
+      final packing = mat?.packing;
+      final key = '${e.barcodeNo}|${e.materialName}|$manufacturerName|${packing ?? ''}';
+      final agg = grouped.putIfAbsent(
+        key,
+        () => _Agg(materialId: e.barcodeNo, materialName: e.materialName, manufacturer: manufacturerName, packing: packing),
+      );
+      agg.qtyLoose += sign * e.quantity;
+      agg.amount += sign * e.amount;
+    }
+
     final items = grouped.values
         .map(
           (agg) => SalesReportItemDto(
@@ -145,7 +167,7 @@ class LocalReportsRepository {
       distinctBrands: items.length,
       totalQtyCase: items.fold(0, (sum, item) => sum + item.qtyCase),
       totalQtyLoose: items.fold(0, (sum, item) => sum + item.qtyLoose),
-      totalAmount: bills.fold(0.0, (sum, bill) => sum + bill.totalAmount),
+      totalAmount: items.fold(0.0, (sum, item) => sum + item.amount),
       totalTax: bills.fold(0.0, (sum, bill) => sum + bill.totalTax),
       items: items,
     );

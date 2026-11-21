@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../../core/local/app_database.dart';
 import 'brandwise_sections.dart';
+import 'stock_movements.dart';
 
 /// SCM daily sale export in the exact layout of the state SCM portal's
 /// upload sheet (client sample "SCMSample.xlsx"):
@@ -34,17 +35,11 @@ class ScmUploadExporter {
     for (var day = DateTime(from.year, from.month, from.day);
         !day.isAfter(DateTime(to.year, to.month, to.day));
         day = DateTime(day.year, day.month, day.day + 1)) {
-      final lines = await (db.select(db.cachedSaleLineItems)
-            ..where((t) => db.lineOfActiveBillBetween(t, day, DateTime(day.year, day.month, day.day + 1))))
-          .get();
+      // The day's sales less the bottles customers brought back that day
+      // (returns count on the day they happen, so a filed day never changes).
+      final moves = await stockMovements(db, day, DateTime(day.year, day.month, day.day + 1));
       final cases = <String, int>{};
-      final loose = <String, int>{};
-      for (final l in lines) {
-        final id = l.materialId ?? '';
-        if (id.isEmpty) continue;
-        cases[id] = (cases[id] ?? 0) + l.qtyCase;
-        loose[id] = (loose[id] ?? 0) + l.quantity;
-      }
+      final loose = {for (final id in moves.materialIds) id: moves.netSale(id)};
       final date = _slashDate(day);
       // One portal row per SCM code: materials sharing an SCM code (same
       // item, different barcode) are summed together.

@@ -175,12 +175,15 @@ Future<void> stageH(Driver d) async {
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
 
+  // Bills count as sold on their day (returns show separately on theirs).
   await d.step('h3', 'Dashboard sales equal the bill totals', () async {
     d.c.read(dashboardPeriodProvider.notifier).state = DashboardPeriod.today;
     await d.go('/dashboard');
     final snap = (await d.t.runAsync(() => d.c.read(dashboardSnapshotProvider.future)))!;
     final sum = (await d.t.runAsync(() => d.db.customSelect(
-              "SELECT COALESCE(SUM(total_amount),0) AS v FROM cached_sales_bills WHERE status != 'returned' AND bill_date >= ?",
+              "SELECT COALESCE(SUM(b.total_amount + COALESCE((SELECT SUM(e.amount) FROM sales_return_entries e "
+              "WHERE e.sales_bill_id = b.id AND e.is_full_bill_return = 0), 0)),0) AS v "
+              "FROM cached_sales_bills b WHERE b.bill_date >= ?",
               variables: [Variable.withDateTime(today)],
             ).getSingle()))!
         .read<double>('v');
@@ -196,6 +199,10 @@ Future<void> stageH(Driver d) async {
   await d.t.runAsync(() async {
     for (final t in ['cached_sales_bills', 'cached_purchase_bills']) {
       await d.db.customStatement('UPDATE $t SET bill_date = bill_date - 86400');
+    }
+    // Today's returns happened "yesterday" too.
+    for (final t in ['sales_return_entries', 'purchase_return_entries']) {
+      await d.db.customStatement('UPDATE $t SET returned_at = returned_at - 86400');
     }
   });
   final yesterday = today.subtract(const Duration(days: 1));

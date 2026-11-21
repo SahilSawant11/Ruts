@@ -134,9 +134,15 @@ Future<void> stageE(Driver d) async {
     await d.tapText('Day-wise');
     await d.wait(const Duration(milliseconds: 600));
     final day = (await d.t.runAsync(() => d.c.read(licenseHolderReportProvider.future)))!;
+    // Today's bills as sold (current lines + what partial returns took off),
+    // less the bottles brought back today. A bill returned today still counts
+    // as a bill, with its bottles back to 0.
     final expected = await d.t.runAsync(() => d.db.customSelect(
-          "SELECT b.permit_no AS p, SUM(l.quantity) AS q FROM cached_sales_bills b JOIN cached_sale_line_items l "
-          "ON l.sales_bill_id = b.id WHERE b.status != 'returned' AND COALESCE(b.permit_no,'') != '' GROUP BY b.permit_no",
+          "SELECT TRIM(b.permit_no) AS p, "
+          "COALESCE(SUM((SELECT SUM(l.quantity) FROM cached_sale_line_items l WHERE l.sales_bill_id = b.id)), 0) "
+          "+ COALESCE(SUM((SELECT SUM(e.quantity) FROM sales_return_entries e WHERE e.sales_bill_id = b.id AND e.is_full_bill_return = 0)), 0) "
+          "- COALESCE(SUM((SELECT SUM(e.quantity) FROM sales_return_entries e WHERE e.sales_bill_id = b.id)), 0) AS q "
+          "FROM cached_sales_bills b WHERE COALESCE(b.permit_no,'') != '' GROUP BY TRIM(b.permit_no)",
         ).get());
     final want = {for (final r in expected!) r.read<String>('p'): r.read<int>('q')};
     final got = {for (final r in day.rows) r.permitNo: r.qtyBottles};

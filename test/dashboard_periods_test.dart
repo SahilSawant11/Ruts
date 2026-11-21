@@ -54,11 +54,19 @@ void main() {
     expect(await sales(DashboardPeriod.year), (1 + 2 + 4 + 8 + 16 + 32 + 64 + 256.0, 128.0, 8.0));
   });
 
-  test('a fully returned bill counts as a return, not a sale', () async {
-    await billOn(0, 5);
-    final gone = await billOn(0, 7);
-    await env.sales.returnSalesBill(gone);
-    final s = await dash.getPeriodSnapshot(DashboardPeriod.today, now: DateTime.now());
+  test('a bill returned a day later: yesterday stays as sold, the return shows today', () async {
+    // Real dates here (returns are stamped with the real clock).
+    final today = DateTime.now();
+    final r = await env.sales.createSale(TestEnv.sale({'A': 7}, rate: 1));
+    await (env.db.update(env.db.cachedSalesBills)..where((t) => t.id.equals(r.id)))
+        .write(CachedSalesBillsCompanion(billDate: Value(DateTime(today.year, today.month, today.day - 1, 12))));
+    await env.sales.createSale(TestEnv.sale({'A': 5}, rate: 1));
+    final before = await dash.getPeriodSnapshot(DashboardPeriod.today, now: today);
+
+    await env.sales.returnSalesBill(r.id);
+    final s = await dash.getPeriodSnapshot(DashboardPeriod.today, now: today);
+    expect(s.sales.previous, 7, reason: 'yesterday never changes');
+    expect(s.sales.previous, before.sales.previous);
     expect(s.sales.current, 5);
     expect(s.billCount.current, 1);
     expect(s.salesReturns.current, 7, reason: 'returned today');

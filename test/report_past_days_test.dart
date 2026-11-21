@@ -1,6 +1,7 @@
 // Brandwise reports for past days must show that day's own stock, not
 // today's. Three days of sales, a purchase and returns; each day's closing
 // must equal the next day's opening, and match what stock really was.
+// Returns count on the day they happen, never on the bill's day.
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -50,7 +51,8 @@ void main() {
         .write(CachedPurchaseBillsCompanion(billDate: Value(d1.add(const Duration(hours: 10)))));
     await saleOn(d1, 3);
     final undone = await saleOn(d1, 6);
-    // Today: sell 4. Returns happen today but belong to their bills' days.
+    // Today: sell 4. The returns happen today and count today (a filed
+    // day never changes): 3 from day −2's bill and all 6 of day −1's.
     await saleOn(today, 4);
     final lines = await (env.db.select(env.db.cachedSaleLineItems)..where((t) => t.salesBillId.equals(partly))).get();
     await env.sales.returnSalesBill(partly, lineQuantities: {lines.single.lineNumber: 3});
@@ -77,9 +79,11 @@ void main() {
     }
 
     for (final report in [brandwise, counter]) {
-      expect(await report(d2), (opening: 100, purchase: 0, sale: 12, closing: 88));
-      expect(await report(d1), (opening: 88, purchase: 24, sale: 3, closing: 109));
-      expect(await report(today), (opening: 109, purchase: 0, sale: 4, closing: 105));
+      // Day −2 as sold: 5 + 10. Day −1 as sold: 3 + 6.
+      expect(await report(d2), (opening: 100, purchase: 0, sale: 15, closing: 85));
+      expect(await report(d1), (opening: 85, purchase: 24, sale: 9, closing: 100));
+      // Today: sold 4, 9 brought back → Sale −5; closing = real stock.
+      expect(await report(today), (opening: 100, purchase: 0, sale: -5, closing: 105));
     }
   });
 }
