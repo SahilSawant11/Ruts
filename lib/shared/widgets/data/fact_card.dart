@@ -10,6 +10,7 @@ import 'figure.dart';
 /// detail (delta, ●●○, "3 suppliers") and an ↗ button when tappable.
 class FactCard extends StatelessWidget {
   const FactCard({
+    super.key,
     required this.icon,
     required this.title,
     required this.value,

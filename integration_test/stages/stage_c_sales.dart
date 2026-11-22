@@ -26,9 +26,15 @@ Future<void> scan(Driver d, String code, {int qty = 1}) async {
     if (d.textOf(d.hinted(scanHint)) == code) break;
   }
   await d.enter();
-  // The Enter didn't reach the box (focus elsewhere for a frame): the code
-  // is still sitting there. Click back in and press Enter once more.
-  if (d.c.read(cartControllerProvider).totalQty == before && d.textOf(d.hinted(scanHint)) == code) {
+  // Give the scan time to land (slow runs), polling rather than one fixed
+  // wait. If the Enter didn't reach the box (focus elsewhere for a frame),
+  // the code is still sitting there: click back in and press Enter again.
+  for (var retry = 0; retry < 3; retry++) {
+    for (var i = 0; i < 8 && d.c.read(cartControllerProvider).totalQty == before && scanError(d) == null; i++) {
+      await d.idle(100);
+    }
+    if (d.c.read(cartControllerProvider).totalQty != before || scanError(d) != null) break;
+    if (d.textOf(d.hinted(scanHint)) != code) break;
     await d.t.tap(d.hinted(scanHint), warnIfMissed: false);
     await d.idle(200);
     await d.enter();

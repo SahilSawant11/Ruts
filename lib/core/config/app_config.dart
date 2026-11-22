@@ -10,5 +10,5 @@ abstract final class AppConfig {
 
   /// Shown in the status bar and support screens. Keep in sync with
   /// `version:` in pubspec.yaml (release builds may override it).
-  static const String version = String.fromEnvironment('CASKLY_VERSION', defaultValue: '1.0.0');
+  static const String version = String.fromEnvironment('CASKLY_VERSION', defaultValue: '1.1.0');
 }

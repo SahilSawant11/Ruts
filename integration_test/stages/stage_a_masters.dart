@@ -40,6 +40,10 @@ Future<String> createMaterial(
   await d.type('VAT %', '0');
   await d.tapText('Create');
   await d.wait(const Duration(milliseconds: 800));
+  // On a slow run the message can take longer than the fixed wait.
+  for (var i = 0; i < 15 && d.snacks().isEmpty; i++) {
+    await d.wait(const Duration(milliseconds: 200));
+  }
   return d.snacks();
 }
 
